@@ -37,7 +37,12 @@ final class CrudRuleExecutor
         }
 
         foreach ($rules->protectedConditions() as $condition) {
-            if ($model->isDirty($condition['attributes']) && ($condition['predicate'])($model)) {
+            $protectedChanges = array_filter(
+                $condition['attributes'],
+                fn (string $attribute): bool => $model->isDirty($attribute)
+                    && ! CrudMutationScope::permits($model, $attribute),
+            );
+            if ($protectedChanges && ($condition['predicate'])($model)) {
                 throw ValidationException::withMessages([$condition['field'] => $condition['message']]);
             }
         }
@@ -56,7 +61,25 @@ final class CrudRuleExecutor
                 $relation->withTrashed();
             }
 
+            if ($restriction['filter'] instanceof DeleteFilter) {
+                // Keep OR filters inside relation constraints: never escape the parent's foreign key.
+                $relation->where(fn (\Illuminate\Database\Eloquent\Builder $query) => $restriction['filter']->apply($query));
+            }
+
             if ($relation->exists()) {
+                throw ValidationException::withMessages([
+                    $restriction['field'] => $restriction['message'],
+                ]);
+            }
+        }
+
+        foreach ($rules->deleteRecordFilters() as $restriction) {
+            $matches = $model->newQuery()
+                ->whereKey($model->getKey())
+                ->where(fn (\Illuminate\Database\Eloquent\Builder $query) => $restriction['filter']->apply($query))
+                ->exists();
+
+            if ($matches) {
                 throw ValidationException::withMessages([
                     $restriction['field'] => $restriction['message'],
                 ]);

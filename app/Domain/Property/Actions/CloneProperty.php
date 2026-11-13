@@ -2,24 +2,20 @@
 
 namespace App\Domain\Property\Actions;
 
+use App\Framework\Crud\CloneService;
 use App\Models\Property;
-use Illuminate\Support\Facades\DB;
 
 final class CloneProperty
 {
     public function handle(Property $source, string $code, string $name, bool $withUnits): Property
     {
-        return DB::transaction(function () use ($source, $code, $name, $withUnits) {
-            $copy = $source->replicate(['deleted_at']);
-            $copy->forceFill(['code' => $code, 'name' => $name, 'status' => 'active', 'next_inspection_on' => null]);
-            $copy->save();
-            if ($withUnits) {
-                foreach ($source->units as $unit) {
-                    app(CloneUnit::class)->handle($unit, $unit->code, $unit->name, $copy->id);
-                }
-            }
+        /** @var Property $copy */
+        $copy = app(CloneService::class)->handle(
+            $source,
+            ['code' => $code, 'name' => $name],
+            $withUnits ? ['units'] : [],
+        );
 
-            return $copy;
-        });
+        return $copy;
     }
 }

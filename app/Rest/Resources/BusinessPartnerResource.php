@@ -3,6 +3,8 @@
 namespace App\Rest\Resources;
 
 use App\Models\BusinessPartner;
+use App\Rest\Actions\CloneBusinessPartner;
+use App\Rest\Actions\PartnerSummary;
 use Illuminate\Validation\Rule;
 use Lomkit\Rest\Fields\Date;
 use Lomkit\Rest\Fields\DateTime;
@@ -23,6 +25,7 @@ class BusinessPartnerResource extends Resource
             Text::make('code')->searchable()->rules('max:40', Contextual::rule(fn (MutationContext $m) => Rule::unique('business_partners', 'code')->ignore($m->key)))->creationRules('required')->updateRules('filled'),
             Text::make('kind')->rules('in:person,company'),
             Text::make('display_name')->searchable()->rules('max:160')->creationRules('required')->updateRules('filled'),
+            Text::make('full_name')->readonly(),
             Text::make('first_name')->nullable()->rules('max:100'),
             Text::make('last_name')->nullable()->rules('max:100'),
             Text::make('company_name')->nullable()->rules('max:160'),
@@ -38,6 +41,11 @@ class BusinessPartnerResource extends Resource
             DateTime::make('created_at')->readonly(),
             DateTime::make('updated_at')->readonly(),
         ];
+    }
+
+    public function actions(): array
+    {
+        return [CloneBusinessPartner::class, PartnerSummary::class];
     }
 
     public function relations(): array

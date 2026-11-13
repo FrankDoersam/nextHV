@@ -9,6 +9,8 @@ import { FormProvider, useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import type { ResourceAction } from "./actions";
+import { extractActionFeedback, type ActionFeedback } from "./action-feedback";
+import { resources } from "@/modules/registry";
 import { useReload } from "./data/hooks";
 import { ApiError } from "./data/http";
 import { normalizeValidationErrors } from "./data/provider";
@@ -130,12 +132,17 @@ function ActionDialog({
         values: Values;
     }>();
     const [busy, setBusy] = useState(false);
+    const [outcome, setOutcome] = useState<ActionFeedback>();
     const form = useForm<Values>({
         defaultValues: initialValues(
             action.fields,
             undefined,
             action.id === "clone"
-                ? { name: `${context.rows[0].name} · Kopie` }
+                ? {
+                      [action.fields.find((f) => f.name === "display_name")
+                          ? "display_name"
+                          : "name"]: `${context.rows[0].display_name ?? context.rows[0].name ?? context.rows[0].code} · Kopie`
+                  }
                 : undefined,
         ),
         resolver: zodResolver(schemaFor(action.fields)),
@@ -144,11 +151,20 @@ function ActionDialog({
         setBusy(true);
         setError(undefined);
         try {
-            await action.execute({ ...context, values }, token);
+            const response = await action.execute({ ...context, values }, token);
             await context.instance.reload();
             await context.instance.refreshForm?.();
-            toast.success(`${action.label}: erfolgreich`);
-            onClose();
+            const feedback = extractActionFeedback(response);
+            if (feedback?.severity === "error") {
+                toast.error(feedback.message);
+            } else {
+                toast.success(feedback?.message ?? `${action.label}: erfolgreich`);
+            }
+            if (feedback?.record) {
+                setOutcome(feedback);
+            } else {
+                onClose();
+            }
         } catch (e) {
             if (e instanceof ApiError && e.status === 428 && e.confirmation) {
                 setConfirmation({
@@ -168,6 +184,14 @@ function ActionDialog({
             setBusy(false);
         }
     };
+    const target =
+        outcome?.navigate &&
+        Number.isSafeInteger(outcome.navigate.id) &&
+        outcome.navigate.id > 0 &&
+        resources.some((r) => r.name === outcome.navigate?.resource)
+            ? `/${outcome.navigate.resource}/${outcome.navigate.id}`
+            : null;
+
     return (
         <Overlay
             open
@@ -176,6 +200,17 @@ function ActionDialog({
             description={`${context.rows.length} ${context.resource.label} ausgewählt`}
             presentation={presentation}
             footer={
+                outcome ? (
+                    <>
+                        <Button variant="outline" onClick={onClose}>Schließen</Button>
+                        {target && (
+                            <Button onClick={() => {
+                                onClose();
+                                context.instance.navigate(target);
+                            }}>Datensatz öffnen</Button>
+                        )}
+                    </>
+                ) : (
                 <>
                     <Button variant="outline" disabled={busy} onClick={onClose}>
                         Abbrechen
@@ -200,10 +235,27 @@ function ActionDialog({
                               : action.label}
                     </Button>
                 </>
+                )
             }
         >
             {!!error && <ErrorState error={error} />}{" "}
-            {confirmation ? (
+            {outcome ? (
+                <div className="space-y-3">
+                    {outcome.message && <p role="status">{outcome.message}</p>}
+                    {outcome.record && (
+                        <dl className="space-y-2">
+                            {Object.entries(outcome.record).map(([name, value]) => (
+                                <div key={name} className="flex gap-3 text-sm">
+                                    <dt className="min-w-32 font-medium">{name}</dt>
+                                    <dd className="break-all">
+                                        {value == null ? "—" : typeof value === "object" ? JSON.stringify(value) : String(value)}
+                                    </dd>
+                                </div>
+                            ))}
+                        </dl>
+                    )}
+                </div>
+            ) : confirmation ? (
                 <p className="text-sm leading-6">{confirmation.message}</p>
             ) : (
                 <FormProvider {...form}>

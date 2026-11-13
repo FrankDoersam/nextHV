@@ -2,6 +2,7 @@ import { DynamicList, ListRow } from "@/components/blocks/content";
 import { LazyTabs } from "@/components/blocks/lazy-tabs";
 import { Button } from "@/components/ui/button";
 import { CloneAction } from "@/modules/properties/clone-action";
+import { PartnerSummaryAction } from "@/modules/business-partners/summary-action";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
@@ -110,6 +111,20 @@ function OpenForm({ wizard = false }: { wizard?: boolean }) {
         </Button>
     );
 }
+function OpenSummary() {
+    const workbench = useWorkbench();
+    return (
+        <Button onClick={() =>
+            workbench.runAction(new PartnerSummaryAction(), {
+                resource,
+                rows: [rows[0]],
+            })
+        }>
+            Übersicht starten
+        </Button>
+    );
+}
+
 beforeEach(() => {
     vi.spyOn(dataProvider, "metadata").mockResolvedValue({
         data: { defaults: {}, forced: [], createOnly: [], deleteRestrictions: [] },
@@ -127,6 +142,27 @@ afterEach(() => {
     vi.restoreAllMocks();
 });
 describe("CRUD interactions", () => {
+    it("shows server-provided action message and structured record in the shared dialog", async () => {
+        vi.spyOn(dataProvider, "action").mockResolvedValue({
+            data: {
+                impacted: 1,
+                result: {
+                    data: {
+                        message: "Zusammenfassung bereit",
+                        record: { id: 1, full_name: "Max Muster" },
+                        navigate: { resource: "business-partners", id: 1 },
+                    },
+                },
+            },
+        });
+        const user = userEvent.setup();
+        wrap(<OpenSummary />);
+        await user.click(screen.getByRole("button", { name: "Übersicht starten" }));
+        await user.click(screen.getByRole("button", { name: "Geschäftspartnerübersicht" }));
+        expect(await screen.findByRole("status")).toHaveTextContent("Zusammenfassung bereit");
+        expect(screen.getByText("Max Muster")).toBeVisible();
+        expect(screen.getByRole("button", { name: "Datensatz öffnen" })).toBeVisible();
+    });
     it("validates each wizard step, preserves values when going back and submits once", async () => {
         const user = userEvent.setup();
         wrap(<OpenForm wizard />);

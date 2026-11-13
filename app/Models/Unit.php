@@ -26,7 +26,9 @@ class Unit extends Model
             ->default('rooms', 0)
             ->default('has_balcony', false)
             ->default('barrier_free', false)
-            ->restrictDelete('contracts', 'Einheiten mit Vertragshistorie können nicht gelöscht werden.', true, 'unit');
+            ->restrictDelete('contracts', 'Einheiten mit Vertragshistorie können nicht gelöscht werden.', true, 'unit')
+            ->cloneUnique(['property_id', 'code'])
+            ->cloneOverride('status', 'ready');
     }
 
     use HasFactory, SoftDeletes;

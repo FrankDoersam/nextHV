@@ -7,6 +7,7 @@ import type {
     Values,
 } from "../types";
 import { request } from "./http";
+import type { ActionFeedback } from "../action-feedback";
 export interface ListParams {
     page?: number;
     limit?: number;
@@ -49,7 +50,7 @@ export const dataProvider = {
     async save(resource: ResourceDefinition, values: Values, row?: RecordData) {
         const attributes = Object.fromEntries(
             resource.fields
-                .filter((f) => !(row && f.readonlyOnEdit))
+                .filter((f) => !f.readOnly && !(row && f.readonlyOnEdit))
                 .filter((f) => values[f.name] !== undefined)
                 .map((f) => [
                     f.name,
@@ -90,7 +91,7 @@ export const dataProvider = {
         confirmation?: string,
     ) =>
         request<{
-            data: { impacted: number; result?: { data?: { ids: number[] } } };
+            data: { impacted: number; result?: { data?: ActionFeedback } };
         }>(`/api/v1/${resource}/actions/${action}`, {
             resources: rows.map((r) => r.id),
             fields: Object.entries(values).map(([name, value]) => ({

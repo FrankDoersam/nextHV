@@ -3,6 +3,7 @@
 namespace App\Domain\Contract\Actions;
 
 use App\Models\TerminationNotice;
+use App\Framework\Crud\CrudMutationScope;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -19,7 +20,11 @@ final class ConfirmTermination
             if ($contract->conditions()->whereDate('effective_from', '>', $endDate)->exists()) {
                 throw ValidationException::withMessages(['confirmed_end_on' => 'Es bestehen Konditionen nach dem gewünschten Enddatum.']);
             }
-            $contract->update(['ends_on' => $endDate, 'status' => 'ended']);
+            CrudMutationScope::allow(
+                $contract,
+                ['ends_on'],
+                fn () => $contract->update(['ends_on' => $endDate, 'status' => 'ended']),
+            );
             $notice->update(['status' => 'confirmed', 'confirmed_end_on' => $endDate]);
 
             return $notice;

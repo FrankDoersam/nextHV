@@ -1,4 +1,5 @@
 import { CloneAction } from "@/modules/properties/clone-action";
+import { extractActionFeedback } from "./action-feedback";
 import { describe, expect, it, vi } from "vitest";
 import { DeleteAction } from "./actions";
 import { normalizeValidationErrors, searchPayload } from "./data/provider";
@@ -6,6 +7,28 @@ import { applyCrudMetadata, initialValues, schemaFor } from "./forms/schema";
 import { can, permissionConfig } from "./permissions";
 import type { ResourceDefinition } from "./types";
 describe("resource contracts", () => {
+    it("handles native Lomkit message and danger action results", () => {
+        expect(extractActionFeedback({ data: { result: { type: "message", message: "OK" } } }))
+            .toMatchObject({ message: "OK", severity: "success" });
+        expect(extractActionFeedback({ data: { result: { type: "danger", message: "Gesperrt" } } }))
+            .toMatchObject({ message: "Gesperrt", severity: "error" });
+    });
+    it("reads structured action messages, records and navigation from the API", () => {
+        const response = {
+            data: {
+                impacted: 1,
+                result: {
+                    data: {
+                        message: "Zusammenfassung bereit",
+                        record: { id: 7, full_name: "Max Muster" },
+                        navigate: { resource: "business-partners", id: 7 },
+                    },
+                },
+            },
+        };
+        expect(extractActionFeedback(response)).toEqual(response.data.result.data);
+        expect(extractActionFeedback({ data: { impacted: 1 } })).toBeUndefined();
+    });
     it("uses authoritative backend metadata for defaults and field protection", () => {
         const original = [
             { name: "status", label: "Status", default: "draft" },

@@ -24,7 +24,11 @@ class Property extends Model
             ->default('management_type', 'rental')
             ->default('status', 'active')
             ->default('country', 'DE')
-            ->restrictDelete('units', 'Objekte mit Einheiten können nicht gelöscht werden. Bitte archivieren.', false, 'property');
+            ->restrictDelete('units', 'Objekte mit Einheiten können nicht gelöscht werden. Bitte archivieren.', false, 'property')
+            ->cloneUnique(['code'])
+            ->cloneOverride('status', 'active')
+            ->cloneOverride('next_inspection_on', null)
+            ->cloneRelation('units', ['status' => 'ready'], true);
     }
 
     use HasFactory, SoftDeletes;

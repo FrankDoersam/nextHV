@@ -1,4 +1,6 @@
 import type { ResourceDefinition } from "@/framework/types";
+import { CloneAction } from "@/modules/properties/clone-action";
+import { PartnerSummaryAction } from "./summary-action";
 import {
     code,
     col,
@@ -25,6 +27,11 @@ export const partners: ResourceDefinition = {
     fields: [
         code,
         text("display_name", "Anzeigename", "general", true),
+        {
+            ...text("full_name", "Vollständiger Name (berechnet)"),
+            readOnly: true,
+            description: "Aus Vor- und Nachname, Unternehmen oder Anzeigename; wird nicht gespeichert.",
+        },
         select("kind", "Typ", ["person", "company"]),
         text("first_name", "Vorname"),
         text("last_name", "Nachname"),
@@ -46,6 +53,7 @@ export const partners: ResourceDefinition = {
     columns: [
         col("code", "Nr."),
         col("display_name", "Geschäftspartner"),
+        { ...col("full_name", "Vollständiger Name"), sortable: false },
         col("kind", "Typ", "badge"),
         col("email", "E-Mail"),
         col("city", "Ort"),
@@ -54,7 +62,14 @@ export const partners: ResourceDefinition = {
         { value: "kind", label: "Typ" },
         { value: "city", label: "Ort" },
     ],
-    actions: crud(),
+    actions: [
+        ...crud(),
+        new CloneAction({
+            nameField: "display_name",
+            relations: [{ name: "roles", label: "Rollen mitkopieren", default: false }],
+        }),
+        new PartnerSummaryAction(),
+    ],
     relations: [
         {
             resource: "partner-roles",

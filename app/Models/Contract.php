@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Framework\Crud\CrudRules;
+use App\Framework\Crud\DeleteFilter;
 use App\Framework\Crud\HasCrudRules;
 
 use Illuminate\Database\Eloquent\Model;
@@ -23,8 +24,8 @@ class Contract extends Model
             ->default('payment_day', 3)
             ->default('deposit', 0)
             ->default('deposit_status', 'outstanding')
-            ->preventDeleteWhen(
-                fn (Contract $contract): bool => $contract->status !== 'draft',
+            ->restrictDeleteOnRecord(
+                DeleteFilter::make()->where('status', '!=', 'draft'),
                 'Aktive oder historische Verträge bleiben erhalten. Vertrag beenden statt löschen.',
                 'contract',
             )

@@ -61,6 +61,7 @@ export interface CrudMetadata {
     forced: string[];
     createOnly: string[];
     deleteRestrictions: string[];
+    cloneRelations?: string[];
 }
 
 export interface ResourceDefinition {

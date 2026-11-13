@@ -135,6 +135,15 @@ Die Workbench führt nach erfolgreicher Action den Reload aus. Bei `428` werden 
 
 Für eine neue Ressource: Migration und Model mit Relationen erstellen, fachliche Regeln/Actions ergänzen, REST-Resource + Controller + Policy registrieren, Frontend-Definition im Fachmodul anlegen und in `registry.ts` aufnehmen. Nur bei abweichendem fachlichem Verhalten ist eine eigene Seite nötig.
 
+### Erweiterter CRUD-Kern
+
+Die deklarativen Lösch- und Statusfilter, relationale Klonprofile, strukturierte
+Action-Rückgaben (Nachricht, Objekt, Navigation) und berechnete Felder sind in
+[docs/advanced-crud.md](docs/advanced-crud.md) beschrieben.
+[docs/crud-framework.md](docs/crud-framework.md) erläutert die Grundabstraktion;
+[docs/crud-roadmap.md](docs/crud-roadmap.md) sammelt die priorisierten
+Erweiterungen für Core und UI.
+
 ## Objektübersicht
 
 Im Vordergrund stehen monatliche Grundmiete, daraus auf zwölf Monate hochgerechneter Betrag, Belegung, Nebenkosten/Heizung und durchschnittliche laufende Mietdauer. Berechnet wird aus den zum heutigen Tag gültigen Vertragskonditionen; zukünftige Konditionen zählen noch nicht. Die Jahreshochrechnung ist ausdrücklich als Hochrechnung beschrieben und kein Zahlungseingang.
