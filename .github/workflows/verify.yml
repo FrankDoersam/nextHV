@@ -1,0 +1,51 @@
+name: Verify nextHV
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  application:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, fileinfo, intl, bcmath
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist
+      - run: cp .env.example .env
+      - run: php artisan key:generate
+      - run: composer validate --strict
+      - run: php artisan test --compact
+      - run: php artisan rest:check
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Prepare isolated browser database
+        run: |
+          touch database/e2e.sqlite
+          php artisan migrate --force
+          php artisan db:seed --class=PropertySeeder --force
+          php tests/e2e/seed.php
+        env:
+          APP_ENV: testing
+          DB_DATABASE: ${{ github.workspace }}/database/e2e.sqlite
+          E2E_PASSWORD: local-e2e-password-only
+      - run: npm run test:e2e
+        env:
+          APP_ENV: testing
+          DB_DATABASE: ${{ github.workspace }}/database/e2e.sqlite
+          E2E_PASSWORD: local-e2e-password-only
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-diagnostics
+          path: test-results
+          retention-days: 7

@@ -1,0 +1,158 @@
+[
+    {
+        "file": "resources/js/components/reui/data-grid/data-grid-cell-selection.tsx",
+        "source": "https://reui.io/r/base-nova/data-grid.json"
+    },
+    {
+        "file": "resources/js/components/reui/data-grid/data-grid-column-filter.tsx",
+        "source": "https://reui.io/r/base-nova/data-grid.json"
+    },
+    {
+        "file": "resources/js/components/reui/data-grid/data-grid-column-header.tsx",
+        "source": "https://reui.io/r/base-nova/data-grid.json"
+    },
+    {
+        "file": "resources/js/components/reui/data-grid/data-grid-column-visibility.tsx",
+        "source": "https://reui.io/r/base-nova/data-grid.json"
+    },
+    {
+        "file": "resources/js/components/reui/data-grid/data-grid-i18n.tsx",
+        "source": "https://reui.io/r/base-nova/data-grid.json"
+    },
+    {
+        "file": "resources/js/components/reui/data-grid/data-grid-pagination.tsx",
+        "source": "https://reui.io/r/base-nova/data-grid.json"
+    },
+    {
+        "file": "resources/js/components/reui/data-grid/data-grid-scroll-area.tsx",
+        "source": "https://reui.io/r/base-nova/data-grid.json"
+    },
+    {
+        "file": "resources/js/components/reui/data-grid/data-grid-table-dnd-rows.tsx",
+        "source": "https://reui.io/r/base-nova/data-grid.json"
+    },
+    {
+        "file": "resources/js/components/reui/data-grid/data-grid-table-dnd.tsx",
+        "source": "https://reui.io/r/base-nova/data-grid.json"
+    },
+    {
+        "file": "resources/js/components/reui/data-grid/data-grid-table-virtual.tsx",
+        "source": "https://reui.io/r/base-nova/data-grid.json"
+    },
+    {
+        "file": "resources/js/components/reui/data-grid/data-grid-table.tsx",
+        "source": "https://reui.io/r/base-nova/data-grid.json"
+    },
+    {
+        "file": "resources/js/components/reui/data-grid/data-grid.tsx",
+        "source": "https://reui.io/r/base-nova/data-grid.json"
+    },
+    {
+        "file": "resources/js/components/reui/stepper.tsx",
+        "source": "https://reui.io/r/base-nova/stepper.json"
+    },
+    {
+        "file": "resources/js/components/reui/time-picker.tsx",
+        "source": "https://reui.io/r/base-nova/time-picker.json"
+    },
+    {
+        "file": "resources/js/components/ui/badge.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/badge.json"
+    },
+    {
+        "file": "resources/js/components/ui/button.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/button.json"
+    },
+    {
+        "file": "resources/js/components/ui/calendar.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/calendar.json"
+    },
+    {
+        "file": "resources/js/components/ui/card.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/card.json"
+    },
+    {
+        "file": "resources/js/components/ui/checkbox.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/checkbox.json"
+    },
+    {
+        "file": "resources/js/components/ui/command.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/command.json"
+    },
+    {
+        "file": "resources/js/components/ui/dialog.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/dialog.json"
+    },
+    {
+        "file": "resources/js/components/ui/dropdown-menu.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/dropdown-menu.json"
+    },
+    {
+        "file": "resources/js/components/ui/input.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/input.json"
+    },
+    {
+        "file": "resources/js/components/ui/label.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/label.json"
+    },
+    {
+        "file": "resources/js/components/ui/popover.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/popover.json"
+    },
+    {
+        "file": "resources/js/components/ui/scroll-area.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/scroll-area.json"
+    },
+    {
+        "file": "resources/js/components/ui/select.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/select.json"
+    },
+    {
+        "file": "resources/js/components/ui/separator.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/separator.json"
+    },
+    {
+        "file": "resources/js/components/ui/sheet.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/sheet.json"
+    },
+    {
+        "file": "resources/js/components/ui/skeleton.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/skeleton.json"
+    },
+    {
+        "file": "resources/js/components/ui/sonner.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/sonner.json"
+    },
+    {
+        "file": "resources/js/components/ui/tabs.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/tabs.json"
+    },
+    {
+        "file": "resources/js/components/ui/textarea.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/textarea.json"
+    },
+    {
+        "file": "resources/js/components/ui/tooltip.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/tooltip.json"
+    },
+    {
+        "file": "resources/js/components/reui/badge.tsx",
+        "source": "https://reui.io/r/base-nova/badge.json"
+    },
+    {
+        "file": "resources/js/components/reui/data-grid/data-grid-i18n.tsx",
+        "source": "https://reui.io/r/base-nova/data-grid-i18n.json"
+    },
+    {
+        "file": "resources/js/components/reui/data-grid/data-grid-table.tsx",
+        "source": "https://reui.io/r/base-nova/data-grid-table.json"
+    },
+    {
+        "file": "resources/js/components/ui/input-group.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/input-group.json"
+    },
+    {
+        "file": "resources/js/components/ui/spinner.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/spinner.json"
+    }
+]
