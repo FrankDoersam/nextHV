@@ -2,12 +2,25 @@
 
 namespace App\Models;
 
+use App\Framework\Crud\CrudRules;
+use App\Framework\Crud\HasCrudRules;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class BusinessPartner extends Model
 {
+    use HasCrudRules;
+
+    public static function crudRules(): CrudRules
+    {
+        return CrudRules::make()
+            ->default('kind', 'person')
+            ->default('country', 'DE')
+            ->restrictDelete('contractParties', 'Geschäftspartner mit Vertragsbezug können nicht gelöscht werden.', false, 'partner');
+    }
+
     use SoftDeletes;
 
     protected $guarded = ['id'];

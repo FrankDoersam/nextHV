@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Framework\Crud\CrudRules;
+use App\Framework\Crud\HasCrudRules;
+
 use App\Domain\Property\Enums\ManagementType;
 use App\Domain\Property\Enums\PropertyStatus;
 use App\Domain\Property\Enums\PropertyType;
@@ -12,6 +15,18 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Property extends Model
 {
+    use HasCrudRules;
+
+    public static function crudRules(): CrudRules
+    {
+        return CrudRules::make()
+            ->default('type', 'residential')
+            ->default('management_type', 'rental')
+            ->default('status', 'active')
+            ->default('country', 'DE')
+            ->restrictDelete('units', 'Objekte mit Einheiten können nicht gelöscht werden. Bitte archivieren.', false, 'property');
+    }
+
     use HasFactory, SoftDeletes;
 
     protected $guarded = ['id'];

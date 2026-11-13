@@ -15,15 +15,15 @@ import { Button } from "@/components/ui/button";
 import { getResource } from "@/modules/registry";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ChevronLeft, ChevronRight, Save } from "lucide-react";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { useReload } from "../data/hooks";
+import { useCrudMetadata, useReload } from "../data/hooks";
 import { ApiError } from "../data/http";
 import { dataProvider, normalizeValidationErrors } from "../data/provider";
 import { ResourceCollection } from "../tables/resource-collection";
 import type { FormRequest, Values } from "../types";
-import { initialValues, schemaFor } from "./schema";
+import { applyCrudMetadata, initialValues, schemaFor } from "./schema";
 export function ResourceEditor({
     request,
     onClose,
@@ -33,14 +33,19 @@ export function ResourceEditor({
 }) {
     const formId = useId();
     const { resource, row } = request;
-    const fields = resource.fields.filter(
+    const metadata = useCrudMetadata(resource.name).data?.data;
+    const allFields = useMemo(
+        () => applyCrudMetadata(resource.fields, metadata),
+        [resource.fields, metadata],
+    );
+    const fields = allFields.filter(
         (f) => !request.reduced || f.required || f.reduced,
     );
     const groups = resource.groups?.filter((g) =>
         fields.some((f) => (f.group ?? "general") === g.id),
     ) ?? [{ id: "general", label: "Grunddaten" }];
     const form = useForm<Values>({
-        defaultValues: initialValues(resource.fields, row, request.defaults),
+        defaultValues: initialValues(allFields, row, request.defaults),
         resolver: zodResolver(schemaFor(fields)),
         shouldUnregister: false,
     });
@@ -50,6 +55,14 @@ export function ResourceEditor({
     const [version, setVersion] = useState(row);
     const reload = useReload();
     const dirty = form.formState.isDirty;
+    const reset = form.reset;
+    useEffect(() => {
+        if (metadata) {
+            reset(initialValues(allFields, row, request.defaults), {
+                keepDirtyValues: true,
+            });
+        }
+    }, [metadata, allFields, row, request.defaults, reset]);
     useEffect(() => {
         const warn = (e: BeforeUnloadEvent) => {
             if (dirty) {
@@ -65,7 +78,7 @@ export function ResourceEditor({
         if (!row) return;
         const latest = await dataProvider.one(resource, row.id);
         setVersion(latest);
-        form.reset(initialValues(resource.fields, latest), {
+        form.reset(initialValues(allFields, latest), {
             keepDirtyValues: true,
         });
     };

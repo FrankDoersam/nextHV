@@ -111,6 +111,9 @@ function OpenForm({ wizard = false }: { wizard?: boolean }) {
     );
 }
 beforeEach(() => {
+    vi.spyOn(dataProvider, "metadata").mockResolvedValue({
+        data: { defaults: {}, forced: [], createOnly: [], deleteRestrictions: [] },
+    });
     vi.spyOn(dataProvider, "list").mockResolvedValue({
         data: rows,
         total: 2,

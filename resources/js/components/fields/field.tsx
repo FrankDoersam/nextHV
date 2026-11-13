@@ -29,7 +29,7 @@ export function ResourceField({
     const { control } = useFormContext<Values>();
     const d = definition;
     const id = useId();
-    const disabled = editing && d.readonlyOnEdit;
+    const disabled = Boolean(d.readOnly || (editing && d.readonlyOnEdit));
     return (
         <Controller
             name={d.name}

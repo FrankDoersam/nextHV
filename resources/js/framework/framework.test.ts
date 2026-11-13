@@ -2,10 +2,25 @@ import { CloneAction } from "@/modules/properties/clone-action";
 import { describe, expect, it, vi } from "vitest";
 import { DeleteAction } from "./actions";
 import { normalizeValidationErrors, searchPayload } from "./data/provider";
-import { initialValues, schemaFor } from "./forms/schema";
+import { applyCrudMetadata, initialValues, schemaFor } from "./forms/schema";
 import { can, permissionConfig } from "./permissions";
 import type { ResourceDefinition } from "./types";
 describe("resource contracts", () => {
+    it("uses authoritative backend metadata for defaults and field protection", () => {
+        const original = [
+            { name: "status", label: "Status", default: "draft" },
+            { name: "code", label: "Nummer" },
+        ];
+        const updated = applyCrudMetadata(original, {
+            defaults: { status: "active" },
+            forced: ["status"],
+            createOnly: ["code"],
+            deleteRestrictions: [],
+        });
+        expect(updated[0]).toMatchObject({ default: "active", readOnly: true });
+        expect(updated[1].readonlyOnEdit).toBe(true);
+        expect(original[0].default).toBe("draft");
+    });
     it("keeps Currency numeric, including zero, and rejects extra precision", () => {
         const schema = schemaFor([
             {

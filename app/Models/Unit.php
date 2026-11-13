@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Framework\Crud\CrudRules;
+use App\Framework\Crud\HasCrudRules;
+
 use App\Domain\Property\Enums\UnitStatus;
 use App\Domain\Property\Enums\UnitType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,6 +15,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Unit extends Model
 {
+    use HasCrudRules;
+
+    public static function crudRules(): CrudRules
+    {
+        return CrudRules::make()
+            ->default('type', 'apartment')
+            ->default('status', 'ready')
+            ->default('area', 0)
+            ->default('rooms', 0)
+            ->default('has_balcony', false)
+            ->default('barrier_free', false)
+            ->restrictDelete('contracts', 'Einheiten mit Vertragshistorie können nicht gelöscht werden.', true, 'unit');
+    }
+
     use HasFactory, SoftDeletes;
 
     protected $guarded = ['id'];

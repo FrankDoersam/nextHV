@@ -6,9 +6,7 @@ use App\Domain\Property\Enums\UnitStatus;
 use App\Domain\Property\Enums\UnitType;
 use App\Models\Unit;
 use App\Rest\Actions\CloneUnit;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Lomkit\Rest\Fields\Boolean;
 use Lomkit\Rest\Fields\DateTime;
 use Lomkit\Rest\Fields\Enum;
@@ -16,7 +14,6 @@ use Lomkit\Rest\Fields\ID;
 use Lomkit\Rest\Fields\Integer;
 use Lomkit\Rest\Fields\Number;
 use Lomkit\Rest\Fields\Text;
-use Lomkit\Rest\Mutations\MutationNode;
 use Lomkit\Rest\Relations\BelongsTo;
 use Lomkit\Rest\Relations\HasMany;
 
@@ -46,11 +43,4 @@ class UnitResource extends Resource
         return [CloneUnit::class];
     }
 
-    public function mutating(MutationNode $entry, Model $model): void
-    {
-        $propertyId = $entry->attributes['property_id'] ?? $model->property_id;
-        if ($propertyId && isset($entry->attributes['code']) && Unit::withTrashed()->where('property_id', $propertyId)->where('code', $entry->attributes['code'])->when($model->exists, fn ($q) => $q->whereKeyNot($model->id))->exists()) {
-            throw ValidationException::withMessages(['code' => 'Diese Nummer ist im Objekt bereits vergeben.']);
-        }
-    }
 }

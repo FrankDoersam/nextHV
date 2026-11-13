@@ -5,9 +5,7 @@ namespace App\Rest\Resources;
 use App\Models\Contract;
 use App\Rest\Actions\ActivateContract;
 use App\Rest\Fields\Currency;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Lomkit\Rest\Fields\Date;
 use Lomkit\Rest\Fields\DateTime;
 use Lomkit\Rest\Fields\ID;
@@ -15,22 +13,12 @@ use Lomkit\Rest\Fields\Integer;
 use Lomkit\Rest\Fields\Text;
 use Lomkit\Rest\Mutations\Contextual;
 use Lomkit\Rest\Mutations\MutationContext;
-use Lomkit\Rest\Mutations\MutationNode;
 use Lomkit\Rest\Relations\BelongsTo;
 use Lomkit\Rest\Relations\HasMany;
 
 class ContractResource extends Resource
 {
     public static string $model = Contract::class;
-
-    public function mutating(MutationNode $entry, Model $model): void
-    {
-        $candidate = clone $model;
-        $candidate->fill($entry->attributes ?? []);
-        if ($model->exists && $model->status !== 'draft' && $candidate->isDirty(['unit_id', 'starts_on', 'ends_on', 'type', 'deposit', 'notice_period_months', 'payment_day', 'signed_on', 'minimum_term_until', 'notice_to'])) {
-            throw ValidationException::withMessages(['contract' => 'Vertragsstammdaten sind nach Aktivierung geschützt. Konditionen separat fortschreiben.']);
-        }
-    }
 
     public function fields(): array
     {

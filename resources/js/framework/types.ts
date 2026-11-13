@@ -44,6 +44,7 @@ export interface FieldDefinition {
     group?: string;
     description?: string;
     readonlyOnEdit?: boolean;
+    readOnly?: boolean;
     writeOnly?: boolean;
     reduced?: boolean;
     validate?: (value: unknown, values: Values) => string | undefined;
@@ -55,6 +56,13 @@ export interface ColumnDefinition {
     sortable?: boolean;
     render?: (row: RecordData) => ReactNode;
 }
+export interface CrudMetadata {
+    defaults: Record<string, unknown>;
+    forced: string[];
+    createOnly: string[];
+    deleteRestrictions: string[];
+}
+
 export interface ResourceDefinition {
     name: string;
     label: string;

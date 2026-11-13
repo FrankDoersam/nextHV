@@ -3,6 +3,7 @@ import type {
     PageResult,
     RecordData,
     ResourceDefinition,
+    CrudMetadata,
     Values,
 } from "../types";
 import { request } from "./http";
@@ -30,6 +31,8 @@ export function searchPayload(
     };
 }
 export const dataProvider = {
+    metadata: (resource: string) =>
+        request<{ data: CrudMetadata }>("/api/v1/_meta/resources/" + encodeURIComponent(resource)),
     list: (resource: ResourceDefinition, params: ListParams = {}) =>
         request<PageResult>(
             `/api/v1/${resource.name}/search`,

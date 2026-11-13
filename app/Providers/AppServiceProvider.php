@@ -3,23 +3,19 @@
 namespace App\Providers;
 
 use App\Contracts\PermissionAdapter;
-use App\Models\BusinessPartner;
 use App\Models\Contract;
 use App\Models\ContractLink;
 use App\Models\ContractParty;
 use App\Models\IdentityDocument;
 use App\Models\PartnerRole;
-use App\Models\Property;
 use App\Models\RentCondition;
 use App\Models\TerminationNotice;
 use App\Models\Unit;
-use App\Observers\BusinessPartnerObserver;
 use App\Observers\ContractLinkObserver;
 use App\Observers\ContractObserver;
 use App\Observers\ContractPartyObserver;
 use App\Observers\IdentityDocumentObserver;
 use App\Observers\PartnerRoleObserver;
-use App\Observers\PropertyObserver;
 use App\Observers\RentConditionObserver;
 use App\Observers\TerminationNoticeObserver;
 use App\Observers\UnitObserver;
@@ -39,13 +35,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        Property::observe(PropertyObserver::class);
         Unit::observe(UnitObserver::class);
         Contract::observe(ContractObserver::class);
         RentCondition::observe(RentConditionObserver::class);
         ContractParty::observe(ContractPartyObserver::class);
         PartnerRole::observe(PartnerRoleObserver::class);
-        BusinessPartner::observe(BusinessPartnerObserver::class);
         IdentityDocument::observe(IdentityDocumentObserver::class);
         ContractLink::observe(ContractLinkObserver::class);
         TerminationNotice::observe(TerminationNoticeObserver::class);

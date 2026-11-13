@@ -3,6 +3,13 @@ import { useEffect, useState } from "react";
 import type { ResourceDefinition } from "../types";
 import { dataProvider, type ListParams } from "./provider";
 export const resourceKey = (name: string) => ["resources", name] as const;
+export function useCrudMetadata(name: string) {
+    return useQuery({
+        queryKey: ["crud-metadata", name],
+        queryFn: () => dataProvider.metadata(name),
+        staleTime: 5 * 60 * 1000,
+    });
+}
 export function useResourceList(
     resource: ResourceDefinition,
     params: ListParams = {},

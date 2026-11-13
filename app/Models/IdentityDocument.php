@@ -2,12 +2,25 @@
 
 namespace App\Models;
 
+use App\Framework\Crud\CrudRules;
+use App\Framework\Crud\HasCrudRules;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class IdentityDocument extends Model
 {
+    use HasCrudRules;
+
+    public static function crudRules(): CrudRules
+    {
+        return CrudRules::make()
+            ->default('type', 'identity_card')
+            ->default('issuing_country', 'DE')
+            ->createOnly('business_partner_id');
+    }
+
     use SoftDeletes;
 
     protected $guarded = ['id'];

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { FieldDefinition, Values } from "../types";
+import type { CrudMetadata, FieldDefinition, Values } from "../types";
 function validDate(value: unknown, month = false): boolean {
     const text = String(value);
     if (month) return /^\d{4}-(0[1-9]|1[0-2])$/.test(text);
@@ -84,6 +84,22 @@ export function schemaFor(fields: FieldDefinition[]) {
         }
     });
 }
+export function applyCrudMetadata(
+    fields: FieldDefinition[],
+    metadata?: CrudMetadata,
+): FieldDefinition[] {
+    if (!metadata) return fields;
+    return fields.map((field) => ({
+        ...field,
+        ...(Object.prototype.hasOwnProperty.call(metadata.defaults, field.name)
+            ? { default: metadata.defaults[field.name] }
+            : {}),
+        readOnly: field.readOnly || metadata.forced.includes(field.name),
+        readonlyOnEdit:
+            field.readonlyOnEdit || metadata.createOnly.includes(field.name),
+    }));
+}
+
 export function initialValues(
     fields: FieldDefinition[],
     row?: Values,
