@@ -1,5 +1,7 @@
 import {
     createContext,
+    lazy,
+    Suspense,
     useContext,
     useRef,
     useState,
@@ -16,8 +18,17 @@ import { useReload } from "./data/hooks";
 import { can } from "./permissions";
 import { readPanels, panelSearch, type PanelLink } from "./navigation/panels";
 import { NavigationGuard } from "./navigation/navigation-guard";
-import { FormLayer } from "./forms/form-layer";
-import { ActionDialog } from "./forms/action-dialog";
+import { advanceFlow, flowPanel, type RecordReference } from "./forms/flow";
+import { getFlow } from "@/modules/flows";
+import { getResource } from "@/modules/registry";
+const FormLayer = lazy(() =>
+    import("./forms/form-layer").then((m) => ({ default: m.FormLayer })),
+);
+const ActionDialog = lazy(() =>
+    import("./forms/action-dialog").then((m) => ({ default: m.ActionDialog })),
+);
+import { Loading } from "@/components/blocks/content";
+import { Overlay } from "@/components/blocks/overlay";
 import {
     actionResult,
     ActionResultOverlay,
@@ -28,9 +39,20 @@ import type {
     FormRequest,
     Presentation,
     ResourceInstance,
+    RelationDefinition,
+    RecordData,
 } from "./types";
 interface Workbench {
     openForm: (request: FormRequest) => void;
+    openFlow: (
+        id: string,
+        options?: { parent?: RecordReference; presentation?: Presentation },
+    ) => void;
+    openRelation: (
+        relation: RelationDefinition,
+        parent: RecordReference,
+        row?: RecordData,
+    ) => void;
     runAction: (
         action: ResourceAction,
         context: Omit<ActionContext, "values" | "instance"> & {
@@ -83,11 +105,73 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
         });
     };
     const closeAt = (index: number) => {
-        panels.slice(index).forEach((p) => dirty.current.delete(p.key));
+        panels.slice(index).forEach((p) => {
+            dirty.current.delete(p.key);
+            cached.current.delete(p.key);
+        });
         navigate(
             { search: panelSearch(location.search, panels.slice(0, index)) },
             { replace: true },
         );
+    };
+    const openFlow: Workbench["openFlow"] = (id, options) => {
+        if (panels.length >= 8) {
+            toast.error("Bitte schließe zunächst ein Formular.");
+            return;
+        }
+        const panel = flowPanel(
+            getFlow(id),
+            { id, step: 0, records: {}, parent: options?.parent },
+            crypto.randomUUID(),
+            options?.presentation ?? presentation,
+        );
+        navigate({ search: panelSearch(location.search, [...panels, panel]) });
+    };
+    const moveFlow = (index: number, state: NonNullable<PanelLink["flow"]>) => {
+        const current = panels[index];
+        dirty.current.delete(current.key);
+        cached.current.delete(current.key);
+        const next = flowPanel(
+            getFlow(state.id),
+            state,
+            current.key,
+            current.presentation,
+        );
+        navigate(
+            {
+                search: panelSearch(location.search, [
+                    ...panels.slice(0, index),
+                    next,
+                ]),
+            },
+            { replace: true },
+        );
+    };
+    const openRelation: Workbench["openRelation"] = (relation, parent, row) => {
+        const resource = getResource(relation.resource);
+        const options = row ? relation.editForm : relation.createForm;
+        const flow = !row && (relation.createForm?.flow ?? resource.createFlow);
+        if (flow) {
+            openFlow(flow, { parent, presentation: options?.presentation });
+            return;
+        }
+        openForm({
+            resource,
+            mode: row ? "edit" : "create",
+            row,
+            ...options,
+            context:
+                options?.binding === "none"
+                    ? undefined
+                    : {
+                          ...parent,
+                          field: relation.field,
+                          mode:
+                              options?.binding === "prefill"
+                                  ? "prefill"
+                                  : "locked",
+                      },
+        });
     };
     const runAction: Workbench["runAction"] = (definition, context) => {
         if (
@@ -103,6 +187,8 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
         const instance: ResourceInstance = {
             reload,
             openForm,
+            openFlow,
+            openRelation,
             navigate,
             ...context.instance,
         };
@@ -166,22 +252,90 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
         if (!panel) return tail;
         return (
             <FormLayer
-                key={panel.key}
+                key={`${panel.key}:${panel.flow?.step ?? "form"}`}
                 panel={panel}
                 cached={cached.current.get(panel.key)}
                 onClose={() => closeAt(index)}
                 onDirtyChange={(value) => dirty.current.set(panel.key, value)}
                 stacked={index < panels.length - 1 || !!tail}
                 nested={layer(index + 1)}
+                flow={
+                    panel.flow
+                        ? {
+                              label: getFlow(panel.flow.id).label,
+                              steps: getFlow(panel.flow.id).steps.map(
+                                  (s) => s.label,
+                              ),
+                              index: panel.flow.step,
+                              onBack:
+                                  panel.flow.step > 0
+                                      ? () =>
+                                            moveFlow(index, {
+                                                ...panel.flow!,
+                                                step: panel.flow!.step - 1,
+                                            })
+                                      : undefined,
+                              onSaved: (row) => {
+                                  const definition = getFlow(panel.flow!.id);
+                                  const next = advanceFlow(
+                                      definition,
+                                      panel.flow!,
+                                      row,
+                                  );
+                                  dirty.current.delete(panel.key);
+                                  if (next.step < definition.steps.length)
+                                      moveFlow(index, next);
+                                  else {
+                                      const target = definition.completion
+                                          ? next.records[
+                                                definition.completion.navigateTo
+                                            ]
+                                          : undefined;
+                                      // Nested flows return to the parent form; root flows may open a detail page.
+                                      if (target && index === 0)
+                                          navigate(
+                                              `/${target.resource}/${target.id}`,
+                                              { replace: true },
+                                          );
+                                      else closeAt(index);
+                                  }
+                              },
+                          }
+                        : undefined
+                }
             />
         );
     };
     return (
         <Context.Provider
-            value={{ openForm, runAction, presentation, setPresentation }}
+            value={{
+                openForm,
+                openFlow,
+                openRelation,
+                runAction,
+                presentation,
+                setPresentation,
+            }}
         >
             {children}
-            {layer(0)}
+            <Suspense
+                fallback={
+                    <Overlay
+                        open
+                        title="Formular wird geladen"
+                        onClose={() =>
+                            panels.length
+                                ? closeAt(panels.length - 1)
+                                : setAction(null)
+                        }
+                        presentation={panels.at(-1)?.presentation ?? "dialog"}
+                    >
+                        <Loading />
+                    </Overlay>
+                }
+            >
+                {layer(0)}
+            </Suspense>
             {dataRouter && <NavigationGuard dirty={dirty} />}
         </Context.Provider>
     );

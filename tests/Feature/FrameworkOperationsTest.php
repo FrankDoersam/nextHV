@@ -92,4 +92,25 @@ class FrameworkOperationsTest extends TestCase
         $this->actingAs(User::factory()->create())->get($url)->assertForbidden();
         $this->get(str_replace('signature=', 'signature=x', $url))->assertForbidden();
     }
+
+    public function test_contract_workspace_selects_the_latest_effective_condition_and_supports_faceted_search(): void
+    {
+        $unit = Unit::factory()->create();
+        $contract = Contract::create(['code' => 'WORKSPACE-1', 'unit_id' => $unit->id, 'starts_on' => '2025-01-01']);
+        RentCondition::create(['contract_id' => $contract->id, 'effective_from' => '2025-01-01', 'base_rent' => 700]);
+        $current = RentCondition::create(['contract_id' => $contract->id, 'effective_from' => '2026-01-01', 'base_rent' => 800, 'service_charge' => 100]);
+        RentCondition::create(['contract_id' => $contract->id, 'effective_from' => '2027-01-01', 'base_rent' => 990]);
+        $other = Contract::create(['code' => 'WORKSPACE-2', 'unit_id' => $unit->id, 'starts_on' => '2025-01-01']);
+        RentCondition::create(['contract_id' => $other->id, 'effective_from' => '2026-10-01', 'base_rent' => 5000]);
+
+        $this->postJson('/api/v1/rent-conditions/search', ['search' => [
+            'limit' => 10,
+            'filters' => [['field' => 'contract_id', 'value' => $contract->id], ['field' => 'effective_from', 'operator' => '<=', 'value' => '2026-11-13']],
+            'sorts' => [['field' => 'effective_from', 'direction' => 'desc']],
+        ]])->assertOk()->assertJsonPath('total', 2)->assertJsonPath('data.0.id', $current->id)->assertJsonPath('data.0.monthly_total', 900);
+
+        $this->postJson('/api/v1/contracts/search', ['search' => [
+            'filters' => [['field' => 'status', 'operator' => 'in', 'value' => ['draft', 'active']]],
+        ]])->assertOk()->assertJsonPath('total', 2);
+    }
 }

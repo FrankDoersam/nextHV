@@ -88,7 +88,40 @@ export interface ResourceDefinition {
     deletionCheck?: boolean;
     actions: ResourceAction[];
     supportsClone?: boolean;
+    createFlow?: string;
     relations?: RelationDefinition[];
+}
+/** The same capabilities apply to full-page grids and embedded relations. */
+export interface CollectionOptions {
+    virtualized?: boolean | "auto";
+    searchable?: boolean;
+    filterable?: boolean;
+    groupable?: boolean;
+    pagination?: boolean;
+    rowSelection?:
+        false | "single" | "multiple" | ((row: RecordData) => boolean);
+    doubleClickEdit?: boolean;
+    syncWithLocation?: boolean;
+    resizable?: boolean;
+    pinnable?: boolean;
+    columnChooser?: boolean;
+    densityToggle?: boolean;
+    exportable?: boolean;
+    refreshable?: boolean;
+    presentationToggle?: boolean;
+    toolbar?: boolean;
+    /** false disables all record actions; an array allows only those action IDs. */
+    actions?: false | string[];
+    detailLink?: boolean;
+    create?: boolean;
+}
+export interface RelationFormOptions {
+    presentation?: Presentation;
+    reduced?: boolean;
+    wizard?: boolean;
+    /** locked is the default. prefill remains editable; none carries no context. */
+    binding?: "locked" | "prefill" | "none";
+    flow?: string | false;
 }
 export interface RelationDefinition {
     resource: string;
@@ -96,6 +129,10 @@ export interface RelationDefinition {
     field: string;
     countRelation?: string;
     description?: string;
+    collection?: CollectionOptions;
+    editorCollection?: CollectionOptions;
+    createForm?: RelationFormOptions;
+    editForm?: Omit<RelationFormOptions, "flow">;
 }
 export interface FormRequest {
     resource: ResourceDefinition;
@@ -105,12 +142,29 @@ export interface FormRequest {
     presentation?: Presentation;
     wizard?: boolean;
     reduced?: boolean;
-    context?: { resource: string; id: number; field: string };
-    onSaved?: (row: RecordData) => void;
+    context?: {
+        resource: string;
+        id: number;
+        field: string;
+        mode?: "locked" | "prefill";
+    };
+    onSaved?: (row: RecordData) => void | Promise<unknown>;
 }
 export interface ResourceInstance {
     reload: () => Promise<unknown>;
     openForm: (request: FormRequest) => void;
+    openFlow?: (
+        id: string,
+        options?: {
+            parent?: import("./forms/flow").RecordReference;
+            presentation?: Presentation;
+        },
+    ) => void;
+    openRelation?: (
+        relation: RelationDefinition,
+        parent: import("./forms/flow").RecordReference,
+        row?: RecordData,
+    ) => void;
     navigate: (path: string) => void;
     form?: UseFormReturn<Values>;
     formResource?: ResourceDefinition;

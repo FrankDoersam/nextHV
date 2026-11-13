@@ -19,6 +19,10 @@ export const date = (value: unknown) => {
           }).format(parsed);
 };
 export const labels: Record<string, string> = {
+    month_end: "Monatsende",
+    quarter_end: "Quartalsende",
+    year_end: "Jahresende",
+    any: "vereinbarten Tag",
     active: "Aktiv",
     archived: "Archiviert",
     draft: "Entwurf",

@@ -9,12 +9,19 @@ export function NavigationGuard({
     dirty: MutableRefObject<Map<string, boolean>>;
 }) {
     const blocker = useBlocker(({ currentLocation, nextLocation }) => {
-        const next = new Set(readPanels(nextLocation.search).map((p) => p.key));
+        const next = new Map(
+            readPanels(nextLocation.search).map((p) => [p.key, p]),
+        );
         return readPanels(currentLocation.search).some(
             (p) =>
                 dirty.current.get(p.key) &&
                 (currentLocation.pathname !== nextLocation.pathname ||
-                    !next.has(p.key)),
+                    !next.has(p.key) ||
+                    next.get(p.key)?.resource !== p.resource ||
+                    next.get(p.key)?.id !== p.id ||
+                    next.get(p.key)?.flow?.step !== p.flow?.step ||
+                    JSON.stringify(next.get(p.key)?.context) !==
+                        JSON.stringify(p.context)),
         );
     });
     if (blocker.state !== "blocked") return null;

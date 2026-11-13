@@ -1,139 +1,170 @@
-import {
-    DetailList,
-    DynamicList,
-    ListRow,
-    SectionCard,
-    WelcomeBanner,
-} from "@/components/blocks/content";
-import { PageHeader, Split, Stack } from "@/components/blocks/layout";
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useOverview } from "@/framework/data/hooks";
+import { PageHeader, Stack } from "@/components/blocks/layout";
+import { LazyTabs } from "@/components/blocks/lazy-tabs";
+import { SectionCard } from "@/components/blocks/content";
+import { WorkspaceColumns } from "@/components/blocks/workspace-card";
+import {
+    AgendaCard,
+    DashboardControls,
+    DashboardMetric,
+    PreviewNotice,
+    RevenueCard,
+} from "@/components/blocks/dashboard-blocks";
 import { ResourceCollection } from "@/framework/tables/resource-collection";
 import { useWorkbench } from "@/framework/workbench";
+import { useAuth } from "@/framework/auth";
 import { OverviewMetrics } from "@/modules/properties/property-overview";
 import { properties } from "@/modules/registry";
-import { ArrowRight, Plus } from "lucide-react";
-import { useNavigate } from "react-router";
+import {
+    monthlyPreview,
+    agendaPreview,
+} from "@/modules/dashboard/preview-data";
+import { money } from "@/lib/format";
 export default function DashboardPage() {
     const navigate = useNavigate();
     const workbench = useWorkbench();
-    const metrics = useOverview();
+    const { user } = useAuth();
+    const [period, setPeriod] = useState("month");
+    const [widgets, setWidgets] = useState<Record<string, boolean>>({
+        Finanzen: true,
+        Tagesplan: true,
+        Kennzahlen: true,
+    });
     return (
         <Stack>
             <PageHeader
-                eyebrow="Dein Portfolio"
-                title="Ein klarer Blick auf deine Immobilien."
-                description="Was läuft, was ansteht und wo du als Nächstes ansetzen kannst."
+                title={`Willkommen, ${user?.name.split(" ")[0] ?? "zurück"}.`}
+                description="Dein Bestand, deine Menschen und das, was heute zählt."
                 actions={
-                    <Button
-                        onClick={() =>
-                            workbench.openForm({
-                                resource: properties,
-                                mode: "create",
-                                wizard: true,
-                            })
-                        }
-                    >
-                        <Plus />
-                        Objekt anlegen
-                    </Button>
+                    <>
+                        <DashboardControls
+                            period={period}
+                            onPeriod={setPeriod}
+                            widgets={widgets}
+                            onWidget={(key, value) =>
+                                setWidgets((w) => ({ ...w, [key]: value }))
+                            }
+                        />
+                        <Button
+                            onClick={() =>
+                                workbench.openForm({
+                                    resource: properties,
+                                    mode: "create",
+                                    wizard: true,
+                                })
+                            }
+                        >
+                            <Plus /> Objekt anlegen
+                        </Button>
+                    </>
                 }
             />
-            <OverviewMetrics />
-            <WelcomeBanner
-                title="Zusammenhänge statt einzelner Datensätze."
-                description="Objekte, Einheiten, Geschäftspartner und Verträge greifen ineinander. Neue Konditionen ergänzen die Historie, ohne bisherige Vereinbarungen zu überschreiben."
-                action={
-                    <Button
-                        variant="outline"
-                        onClick={() => navigate("/contracts")}
-                    >
-                        Verträge öffnen
-                        <ArrowRight />
-                    </Button>
-                }
-            />
-            <Split
-                main={
-                    <SectionCard
-                        title="Deine Objekte"
-                        description="Portfolio verwalten und direkt in die Objektdetails einsteigen."
-                    >
-                        <ResourceCollection resource={properties} compact />
-                    </SectionCard>
-                }
-                aside={
-                    <Stack>
-                        <SectionCard title="Heute im Blick">
-                            <DetailList
-                                items={[
-                                    {
-                                        label: "Objekte",
-                                        value:
-                                            metrics.data?.data.properties ??
-                                            "—",
-                                    },
-                                    {
-                                        label: "Einheiten ohne laufenden Vertrag",
-                                        value: metrics.data?.data.vacant ?? "—",
-                                    },
-                                    {
-                                        label: "Instandhaltung",
-                                        value:
-                                            metrics.data?.data.maintenance ??
-                                            "—",
-                                    },
-                                    {
-                                        label: "Objektprüfungen dieses Jahr",
-                                        value:
-                                            metrics.data?.data
-                                                .inspections_this_year ?? "—",
-                                    },
-                                    {
-                                        label: "Überfällige Prüfungen",
-                                        value:
-                                            metrics.data?.data
-                                                .overdue_inspections ?? "—",
-                                    },
-                                ]}
-                            />
-                        </SectionCard>
-                        <SectionCard title="Schnellzugriff">
-                            <DynamicList
-                                items={[
-                                    {
-                                        id: "business-partners",
-                                        title: "Geschäftspartner",
-                                        description:
-                                            "Mieter, Eigentümer und Dienstleister",
-                                    },
-                                    {
-                                        id: "contracts",
-                                        title: "Verträge",
-                                        description:
-                                            "Laufzeiten, Beteiligte und Konditionen",
-                                    },
-                                    {
-                                        id: "termination-notices",
-                                        title: "Kündigungen",
-                                        description:
-                                            "Eingänge und bestätigte Termine",
-                                    },
-                                ]}
-                                searchText={(r) => r.title}
-                                getKey={(r) => r.id}
-                                renderItem={(r) => (
-                                    <ListRow
-                                        title={r.title}
-                                        description={r.description}
-                                        onClick={() => navigate("/" + r.id)}
-                                        trailing={<ArrowRight size={15} />}
-                                    />
+            <LazyTabs
+                urlKey="dashboard"
+                tabs={[
+                    {
+                        id: "overview",
+                        label: "Übersicht",
+                        render: () => (
+                            <Stack>
+                                <PreviewNotice />
+                                <WorkspaceColumns>
+                                    {widgets.Finanzen && (
+                                        <RevenueCard
+                                            bars={monthlyPreview}
+                                            period={period}
+                                            onOpen={() =>
+                                                navigate("/contracts")
+                                            }
+                                        />
+                                    )}
+                                    {widgets.Tagesplan && (
+                                        <AgendaCard
+                                            entries={agendaPreview}
+                                            onOpen={() =>
+                                                navigate("/properties")
+                                            }
+                                        />
+                                    )}
+                                </WorkspaceColumns>
+                                {widgets.Kennzahlen && (
+                                    <WorkspaceColumns variant="metrics">
+                                        <DashboardMetric
+                                            title="Offene Forderungen"
+                                            value="8.250 €"
+                                            change="6 Vorgänge · 2 überfällig · Beispiel"
+                                            footer="Zahlungsübersicht · Vorschau"
+                                            bars={monthlyPreview.map((d) => ({
+                                                ...d,
+                                                value: Math.round(d.value / 7),
+                                            }))}
+                                            formatValue={money}
+                                        />
+                                        <DashboardMetric
+                                            title="Vermietungsquote"
+                                            value="92 %"
+                                            change="46 von 50 Einheiten · Beispiel"
+                                            footer="Belegung · Vorschau"
+                                            bars={monthlyPreview.map(
+                                                (d, i) => ({
+                                                    ...d,
+                                                    value: 80 + i,
+                                                }),
+                                            )}
+                                            formatValue={(v) => `${v} %`}
+                                        />
+                                        <DashboardMetric
+                                            title="Instandhaltung"
+                                            value="12"
+                                            change="Offene Vorgänge · Beispiel"
+                                            footer="4 in Bearbeitung · Vorschau"
+                                            bars={monthlyPreview.map(
+                                                (d, i) => ({
+                                                    ...d,
+                                                    value: 2 + i,
+                                                }),
+                                            )}
+                                        />
+                                        <DashboardMetric
+                                            title="Liquidität"
+                                            value="214.380 €"
+                                            change="Verfügbare Mittel · Beispiel"
+                                            footer="Kontenübersicht · Vorschau"
+                                            bars={monthlyPreview.map((d) => ({
+                                                ...d,
+                                                value: d.value * 4,
+                                            }))}
+                                            formatValue={money}
+                                        />
+                                    </WorkspaceColumns>
                                 )}
-                            />
-                        </SectionCard>
-                    </Stack>
-                }
+                            </Stack>
+                        ),
+                    },
+                    {
+                        id: "portfolio",
+                        label: "Bestand",
+                        render: () => (
+                            <Stack>
+                                <OverviewMetrics />
+                                <SectionCard
+                                    title="Objekte im Bestand"
+                                    description="Aktuelle Daten aus deiner Verwaltung"
+                                >
+                                    <ResourceCollection
+                                        resource={properties}
+                                        compact
+                                        rowSelection={false}
+                                        exportable={false}
+                                    />
+                                </SectionCard>
+                            </Stack>
+                        ),
+                    },
+                ]}
             />
         </Stack>
     );

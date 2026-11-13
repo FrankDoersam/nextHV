@@ -129,7 +129,13 @@ describe("CRUD interactions", () => {
         const user = userEvent.setup();
         wrap(<OpenForm wizard />);
         await user.click(screen.getByRole("button", { name: "Öffnen" }));
-        await user.click(screen.getByRole("button", { name: "Weiter" }));
+        await user.click(
+            await screen.findByRole(
+                "button",
+                { name: "Weiter" },
+                { timeout: 5000 },
+            ),
+        );
         expect(
             await screen.findAllByText("Dieses Feld ist erforderlich."),
         ).toHaveLength(2);
@@ -141,13 +147,25 @@ describe("CRUD interactions", () => {
             screen.getByLabelText("Bezeichnung", { exact: false }),
             "Testobjekt",
         );
-        await user.click(screen.getByRole("button", { name: "Weiter" }));
+        await user.click(
+            await screen.findByRole(
+                "button",
+                { name: "Weiter" },
+                { timeout: 5000 },
+            ),
+        );
         await user.type(screen.getByLabelText("Ort", { exact: false }), "Bonn");
         await user.click(screen.getByRole("button", { name: "Zurück" }));
         expect(screen.getByLabelText("Nummer", { exact: false })).toHaveValue(
             "P3",
         );
-        await user.click(screen.getByRole("button", { name: "Weiter" }));
+        await user.click(
+            await screen.findByRole(
+                "button",
+                { name: "Weiter" },
+                { timeout: 5000 },
+            ),
+        );
         await user.click(screen.getByRole("button", { name: "Speichern" }));
         await waitFor(() => expect(dataProvider.save).toHaveBeenCalledTimes(1));
         expect(dataProvider.save).toHaveBeenCalledWith(
@@ -155,13 +173,17 @@ describe("CRUD interactions", () => {
             { code: "P3", name: "Testobjekt", city: "Bonn" },
             undefined,
         );
-    });
+    }, 10000);
     it("requires an explicit discard of dirty forms", async () => {
         const user = userEvent.setup();
         wrap(<OpenForm />);
         await user.click(screen.getByRole("button", { name: "Öffnen" }));
         await user.type(
-            screen.getByLabelText("Nummer", { exact: false }),
+            await screen.findByLabelText(
+                "Nummer",
+                { exact: false },
+                { timeout: 5000 },
+            ),
             "changed",
         );
         await user.click(screen.getByRole("button", { name: "Abbrechen" }));
@@ -191,6 +213,7 @@ describe("CRUD interactions", () => {
             expect(dataProvider.list).toHaveBeenLastCalledWith(
                 resource,
                 expect.objectContaining({ query: "Linden", page: 1 }),
+                expect.any(AbortSignal),
             ),
         );
     });

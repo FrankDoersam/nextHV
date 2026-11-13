@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense } from "react";
 import { Overlay } from "@/components/blocks/overlay";
-import { DetailList, ErrorState, Loading } from "@/components/blocks/content";
+import { DetailList, Loading } from "@/components/blocks/content";
 import { Button } from "@/components/ui/button";
-import { Download, FileText } from "lucide-react";
+export { safeDocumentUrl } from "./data/documents";
+const PdfViewer = lazy(() => import("@/components/blocks/pdf-viewer"));
 import type { Values } from "./types";
 export type ActionUIResult =
     | {
@@ -62,85 +63,6 @@ export function actionResult(response: unknown): ActionUIResult | undefined {
         "Unbekanntes Action-Ergebnis. Bitte den Rückgabevertrag prüfen.",
     );
 }
-export function safeDocumentUrl(url: string) {
-    const parsed = new URL(url, window.location.origin);
-    if (
-        parsed.origin !== window.location.origin ||
-        !parsed.pathname.startsWith("/api/")
-    )
-        throw new Error("Dokumentquelle ist nicht freigegeben.");
-    return parsed.href;
-}
-function PDFPreview({
-    result,
-}: {
-    result: Extract<ActionUIResult, { type: "document" }>;
-}) {
-    const [url, setUrl] = useState<string>();
-    const [error, setError] = useState<unknown>();
-    useEffect(() => {
-        let objectUrl: string | undefined;
-        const controller = new AbortController();
-        void (async () => {
-            try {
-                const response = await fetch(safeDocumentUrl(result.url), {
-                    credentials: "same-origin",
-                    signal: controller.signal,
-                    headers: { Accept: "application/pdf" },
-                });
-                if (!response.ok)
-                    throw new Error(
-                        "Dokument konnte nicht geladen werden. Bitte den Bericht erneut erstellen.",
-                    );
-                if (
-                    !response.headers
-                        .get("Content-Type")
-                        ?.startsWith("application/pdf")
-                )
-                    throw new Error("Die Antwort ist kein PDF-Dokument.");
-                const blob = await response.blob();
-                if (controller.signal.aborted) return;
-                objectUrl = URL.createObjectURL(blob);
-                setUrl(objectUrl);
-            } catch (e) {
-                if (!controller.signal.aborted) setError(e);
-            }
-        })();
-        return () => {
-            controller.abort();
-            if (objectUrl) URL.revokeObjectURL(objectUrl);
-        };
-    }, [result.url]);
-    if (error) return <ErrorState error={error} />;
-    if (!url) return <Loading />;
-    return (
-        <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span className="flex items-center gap-2">
-                    <FileText className="size-4" />
-                    {result.name}
-                </span>
-                <a
-                    href={url}
-                    download={result.name}
-                    className="inline-flex items-center gap-2 font-medium text-primary"
-                >
-                    <Download className="size-4" />
-                    PDF herunterladen
-                </a>
-            </div>
-            <iframe
-                src={url}
-                title={result.title}
-                className="h-[65dvh] w-full rounded-lg border bg-muted"
-            />
-            <p className="text-xs text-muted-foreground">
-                Falls dein Browser keine Vorschau unterstützt, lade das PDF
-                herunter.
-            </p>
-        </div>
-    );
-}
 export function ActionResultOverlay({
     result,
     onClose,
@@ -163,7 +85,13 @@ export function ActionResultOverlay({
             footer={<Button onClick={onClose}>Schließen</Button>}
         >
             {result.type === "document" ? (
-                <PDFPreview result={result} />
+                <Suspense fallback={<Loading />}>
+                    <PdfViewer
+                        url={result.url}
+                        name={result.name}
+                        title={result.title}
+                    />
+                </Suspense>
             ) : (
                 <DetailList items={result.items} />
             )}

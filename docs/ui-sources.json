@@ -162,5 +162,13 @@
     {
         "file": "resources/js/components/reui/alert.tsx",
         "source": "https://reui.io/r/base-nova/alert.json"
+    },
+    {
+        "file": "resources/js/components/ui/avatar.tsx",
+        "source": "https://ui.shadcn.com/r/styles/base-nova/avatar.json"
+    },
+    {
+        "file": "resources/js/components/reui/frame.tsx",
+        "source": "https://reui.io/r/base-nova/frame.json"
     }
 ]

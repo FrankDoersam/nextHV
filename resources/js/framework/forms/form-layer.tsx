@@ -7,6 +7,7 @@ import { dataProvider } from "../data/provider";
 import type { FormRequest } from "../types";
 import type { PanelLink } from "../navigation/panels";
 import { ResourceEditor } from "./resource-editor";
+import type { FlowControls } from "./flow";
 export function FormLayer({
     panel,
     cached,
@@ -14,6 +15,7 @@ export function FormLayer({
     onDirtyChange,
     nested,
     stacked,
+    flow,
 }: {
     panel: PanelLink;
     cached?: FormRequest;
@@ -21,6 +23,7 @@ export function FormLayer({
     onDirtyChange: (value: boolean) => void;
     nested?: ReactNode;
     stacked: boolean;
+    flow?: FlowControls;
 }) {
     let resource: FormRequest["resource"] | undefined;
     try {
@@ -29,7 +32,7 @@ export function FormLayer({
         /* Bad deep links render a recoverable state. */
     }
     const hydration = useQuery({
-        queryKey: ["panel", panel.resource, panel.id, panel.context],
+        queryKey: ["panel", panel.key, panel.resource, panel.id, panel.context],
         enabled: !!resource,
         queryFn: async () => {
             if (panel.context) {
@@ -45,12 +48,23 @@ export function FormLayer({
                     panel.context.id,
                 );
             }
-            return panel.mode === "edit"
-                ? (cached?.row ??
+            const row =
+                panel.mode === "edit"
+                    ? (cached?.row ??
                       (await dataProvider.one(resource!, panel.id!)))
-                : null;
+                    : null;
+            if (
+                row &&
+                panel.context &&
+                Number(row[panel.context.field]) !== panel.context.id
+            )
+                throw new Error(
+                    "Dieser Datensatz gehört nicht zum übergeordneten Bezug.",
+                );
+            return row;
         },
         staleTime: Infinity,
+        gcTime: 0,
     });
     if (!resource || hydration.error || hydration.isPending)
         return (
@@ -97,6 +111,7 @@ export function FormLayer({
             onDirtyChange={onDirtyChange}
             nested={nested}
             stacked={stacked}
+            flow={flow}
         />
     );
 }

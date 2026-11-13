@@ -7,11 +7,16 @@ export function useResourceList(
     resource: ResourceDefinition,
     params: ListParams = {},
     enabled = true,
+    retainPrevious = false,
 ) {
     return useQuery({
         enabled,
         queryKey: [...resourceKey(resource.name), "list", params],
-        queryFn: () => dataProvider.list(resource, params),
+        queryFn: ({ signal }) => dataProvider.list(resource, params, signal),
+        placeholderData: retainPrevious
+            ? (previous, query) =>
+                  query?.queryKey[1] === resource.name ? previous : undefined
+            : undefined,
     });
 }
 export function useResource(resource: ResourceDefinition, id: number) {

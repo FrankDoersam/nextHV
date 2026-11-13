@@ -12,7 +12,7 @@ export interface GridState {
     pagination: PaginationState;
     sorting: SortingState;
     columnVisibility: ColumnVisibilityState;
-    filters: Record<string, string>;
+    filters: Record<string, string[]>;
     group: string;
     dense: boolean;
 }
@@ -59,13 +59,23 @@ export function readGridState(
                   .slice(0, 3)
             : [],
         filters: Object.fromEntries(
-            (resource.filters ?? []).flatMap((f) =>
-                rawFilters &&
-                typeof rawFilters === "object" &&
-                f.options.some((o) => o.value === rawFilters[f.field])
-                    ? [[f.field, rawFilters[f.field]]]
-                    : [],
-            ),
+            (resource.filters ?? []).flatMap((f) => {
+                const raw =
+                    rawFilters && typeof rawFilters === "object"
+                        ? rawFilters[f.field]
+                        : undefined;
+                const values = [
+                    ...new Set(
+                        (Array.isArray(raw)
+                            ? raw
+                            : typeof raw === "string"
+                              ? [raw]
+                              : []
+                        ).filter((v) => f.options.some((o) => o.value === v)),
+                    ),
+                ];
+                return values.length ? [[f.field, values]] : [];
+            }),
         ),
         columnVisibility: Object.fromEntries(
             rawColumns && typeof rawColumns === "object"

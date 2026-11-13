@@ -41,32 +41,32 @@
 }
 :root {
     --radius: 0.625rem;
-    --background: #f9fafb;
-    --foreground: #1d2927;
+    --background: #faf9f7;
+    --foreground: #242320;
     --card: #fff;
-    --card-foreground: #1d2927;
+    --card-foreground: #242320;
     --popover: #fff;
-    --popover-foreground: #1d2927;
-    --primary: #0b695b;
+    --popover-foreground: #242320;
+    --primary: #242320;
     --primary-foreground: #fff;
-    --secondary: #edf1f0;
-    --secondary-foreground: #23423c;
-    --muted: #f2f4f3;
-    --muted-foreground: #75817d;
-    --accent: #edf5f1;
-    --accent-foreground: #0b695b;
+    --secondary: #efeeea;
+    --secondary-foreground: #383630;
+    --muted: #eeede8;
+    --muted-foreground: #77756e;
+    --accent: #efeee9;
+    --accent-foreground: #242320;
     --destructive: #c43d3d;
     --destructive-foreground: #fff;
-    --border: #e5eae7;
-    --input: #dce3df;
-    --ring: #4d9a89;
-    --success: #0b695b;
+    --border: #e5e3dc;
+    --input: #dddad2;
+    --ring: #9b968a;
+    --success: #22765a;
     --success-foreground: #fff;
     --warning: #a66a17;
     --warning-foreground: #fff;
     --info: #346fb5;
     --info-foreground: #fff;
-    --invert: #1d2927;
+    --invert: #242320;
     --invert-foreground: #fff;
 }
 @layer base {
@@ -86,16 +86,16 @@
         font: inherit;
     }
     ::selection {
-        background: #bce0d2;
-        color: #123c30;
+        background: #e1ddd4;
+        color: #242320;
     }
 }
 @layer components {
     .nav-item {
-        @apply flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground;
+        @apply flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground;
     }
     .nav-item-active {
-        @apply bg-primary/8 text-primary hover:bg-primary/8 hover:text-primary;
+        @apply bg-card text-foreground shadow-xs hover:bg-card hover:text-foreground;
     }
 }
 /* Nested dialogs stay mounted; Base UI owns focus trapping and modal semantics. */
@@ -116,4 +116,16 @@
     .crud-dialog {
         transition: none;
     }
+}
+
+.chart-forecast {
+    background-image: repeating-linear-gradient(
+        135deg,
+        transparent,
+        transparent 3px,
+        rgb(120 113 108 / 0.3) 3px,
+        rgb(120 113 108 / 0.3) 4px
+    );
+    background-color: transparent;
+    border: 1px solid var(--border);
 }

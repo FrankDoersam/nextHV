@@ -164,7 +164,7 @@ describe("navigation and results", () => {
             resource,
         );
         expect(state.pagination).toEqual({ pageIndex: 2, pageSize: 50 });
-        expect(state.filters).toEqual({ status: "active" });
+        expect(state.filters).toEqual({ status: ["active"] });
         expect(state.columnVisibility).toEqual({ city: false });
         const url = writeGridState(new URLSearchParams("panels=[]"), state);
         expect(url.get("panels")).toBe("[]");
@@ -463,5 +463,91 @@ describe("standard fields", () => {
         expect(
             screen.getByText("2 Hinweise benötigen deine Aufmerksamkeit"),
         ).toBeVisible();
+    });
+});
+
+describe("relation capabilities and server facets", () => {
+    it("turns off collection affordances independently and keeps the unpaged query bounded", async () => {
+        const router = mount(
+            <ResourceCollection
+                resource={resource}
+                compact
+                searchable={false}
+                filterable={false}
+                groupable={false}
+                pagination={false}
+                rowSelection={false}
+                actions={false}
+                create={false}
+                columnChooser={false}
+                densityToggle={false}
+                exportable={false}
+                refreshable={false}
+                presentationToggle={false}
+                detailLink={false}
+            />,
+            '/properties?q=ignored&filters={"status":["active"]}&group=city',
+        );
+        expect(await screen.findByText("Lindenhöfe")).toBeVisible();
+        expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+        expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole("button", {
+                name: /Hinzufügen|Spalten|Aktionen|Aktualisieren|Nächste Seite/,
+            }),
+        ).not.toBeInTheDocument();
+        const params = vi.mocked(dataProvider.list).mock.calls.at(-1)![1];
+        expect(params).toEqual(
+            expect.objectContaining({
+                page: 1,
+                limit: 100,
+                query: "",
+                filters: [],
+            }),
+        );
+        await userEvent.dblClick(screen.getByText("Berlin"));
+        expect(
+            new URLSearchParams(router.state.location.search).has("panels"),
+        ).toBe(false);
+    });
+    it("sends REUI multi-choice filters to the server and restores them from the URL", async () => {
+        const router = mount(
+            <ResourceCollection
+                resource={{
+                    ...resource,
+                    filters: [
+                        {
+                            field: "status",
+                            label: "Status",
+                            options: [
+                                { value: "active", label: "Aktiv" },
+                                { value: "archived", label: "Archiviert" },
+                            ],
+                        },
+                    ],
+                }}
+            />,
+        );
+        const user = userEvent.setup();
+        await screen.findByText("Lindenhöfe");
+        await user.click(screen.getByRole("button", { name: "Status" }));
+        await user.click(screen.getByRole("button", { name: "Aktiv" }));
+        await user.click(screen.getByRole("button", { name: "Archiviert" }));
+        await waitFor(() =>
+            expect(
+                vi.mocked(dataProvider.list).mock.calls.at(-1)![1]?.filters,
+            ).toContainEqual({
+                field: "status",
+                operator: "in",
+                value: ["active", "archived"],
+            }),
+        );
+        expect(
+            JSON.parse(
+                new URLSearchParams(router.state.location.search).get(
+                    "filters",
+                )!,
+            ),
+        ).toEqual({ status: ["active", "archived"] });
     });
 });

@@ -303,7 +303,7 @@ return ActionResponse::data(['ui' => [
 
 Das ist eine Formularänderung, keine heimliche Speicherung. Ohne Formular meldet der Dispatcher einen Fehler. `formResource` muss bei einem fremden Elternformular explizit mitgegeben werden; `ResourceEditor` erledigt dies für seine Relationslisten.
 
-Für PDF-Ergebnisse erzeugt das Backend eine zehn Minuten gültige relative signierte URL, gebunden an den aktuellen Benutzer. Der Abruf prüft erneut Authentifizierung, Policy, Signatur und Benutzer-ID. Die Antwort ist `application/pdf`, `private, no-store` und `nosniff`. Das Frontend akzeptiert nur dieselbe Origin unter `/api/`, prüft den MIME-Typ, lädt mit Sitzung und gibt erzeugte Blob-URLs nach dem Schließen frei. Benutzer ohne eingebettete PDF-Unterstützung können die Datei herunterladen.
+Für PDF-Ergebnisse erzeugt das Backend eine zehn Minuten gültige relative signierte URL, gebunden an den aktuellen Benutzer. Der Abruf prüft erneut Authentifizierung, Policy, Signatur und Benutzer-ID. Die Antwort ist `application/pdf`, `private, no-store` und `nosniff`. Das Frontend akzeptiert nur dieselbe Origin unter `/api/`, prüft den MIME-Typ, lädt mit Sitzung und gibt erzeugte Blob-URLs nach dem Schließen frei. Die Darstellung übernimmt der React-PDF-Viewer; ein Download ist zusätzlich möglich.
 
 ## 10. Zusammengesetzte und berechnete API-Felder
 
@@ -384,9 +384,9 @@ npm run build
 
 Featuretests decken unter anderem Auth, Seeder, Verträge, Historie, Dokumentenschutz, Versionskonflikte, Bestätigung, deaktivierte Permissions sowie neu Löschblockaden, konstante Vorprüfungsabfragen, Klondefaults, virtuelle schreibgeschützte Felder und den PDF-Abruf ab. React-Tests prüfen Wizard/Dirty-State, echte REUI-Tabellen, URL-Zustand, Deep-Link-Hydrierung, Browser-Zurück, geschachtelte gesperrte Relationsformulare, Currency-Parsing, Mehrfachauswahl, Datumsformat und mehrteilige Alerts.
 
-Die bestehende Playwright-Suite wurde für die neue Oberfläche erweitert. Ein echter Browserlauf ist in der lokalen Erstellungsumgebung durch die Browser-Sandbox blockiert; visuelle Abnahme, PDF-Einbettung und responsive Details müssen zusätzlich im Zielbrowser geprüft werden. Die Komponententests ersetzen keine pixelgenaue Browserabnahme.
+Die bestehende Playwright-Suite wurde für die neue Oberfläche erweitert. Ein echter Browserlauf ist in der lokalen Erstellungsumgebung durch die Browser-Sandbox blockiert; visuelle Abnahme, Canvas-PDFs und responsive Details müssen zusätzlich im Zielbrowser geprüft werden. Die Komponententests ersetzen keine pixelgenaue Browserabnahme.
 
-Keine vollständige Buchhaltung, Zahlungsabstimmung, Mandantentrennung, ausgebautes Rollenmodell, automatische rechtliche Fristbewertung oder persistierte gemeinsame Tabellenansichten. REUI unterstützt weitere Grid-Modi wie Virtualisierung, Tree Rows und Inline Editing; sie sind nicht automatisch Bestandteil des hier freigegebenen CRUD-Wrappers. Gerade Inline-Mutationen brauchen dieselben Vertrags- und Versionsregeln wie die Formulare.
+Keine vollständige Buchhaltung, Zahlungsabstimmung, Mandantentrennung, ausgebautes Rollenmodell, automatische rechtliche Fristbewertung oder persistierte gemeinsame Tabellenansichten. REUI unterstützt weitere Grid-Modi wie Tree Rows und Inline Editing; diese sind nicht automatisch Bestandteil des hier freigegebenen CRUD-Wrappers. Zeilenvirtualisierung gehört seit dem in Abschnitt 18 beschriebenen Ausbau dazu. Gerade Inline-Mutationen brauchen dieselben Vertrags- und Versionsregeln wie die Formulare.
 
 ## 15. Quellen und UI-Herkunft
 
@@ -400,3 +400,152 @@ Keine vollständige Buchhaltung, Zahlungsabstimmung, Mandantentrennung, ausgebau
 - [Registry-Nachweise der übernommenen Komponenten](ui-sources.json)
 
 Öffentliche REUI-/shadcn-Quellen werden über die Registry-Nachweise dokumentiert. Kostenpflichtige SaaS-Blöcke wurden nicht kopiert. App-Layouts, Fachdefinitionen und Wrapper sind eigene Kompositionen auf diesen Komponenten.
+
+## 16. Deklarative Formularabläufe und Relationsfähigkeiten
+
+Dieser Ausbau folgt auf `c8311c8`. Ein gesperrter Vertragsbezug gehört zur Framework-Konfiguration. Seiten, Edit-Karten und geschachtelte Dialoge benutzen dieselbe `RelationDefinition` und denselben `RelationCollection`-Renderer.
+
+```tsx
+const relation: RelationDefinition = {
+    resource: "rent-conditions",
+    label: "Konditionen",
+    field: "contract_id",
+    countRelation: "conditions",
+    collection: {
+        pagination: false,
+        rowSelection: false,
+        detailLink: false,
+        searchable: true,
+    },
+    editorCollection: {
+        searchable: false,
+        filterable: false,
+        groupable: false,
+        columnChooser: false,
+        densityToggle: false,
+        exportable: false,
+        refreshable: false,
+    },
+    createForm: { binding: "locked", presentation: "sheet" },
+    editForm: { binding: "locked", presentation: "dialog" },
+};
+
+<RelationCollection
+    relation={relation}
+    parent={{ resource: "contracts", id: contract.id }}
+    surface="editor"
+    onSaved={refreshParent}
+/>;
+
+// Derselbe Einstieg funktioniert aus einer Karte, Toolbar oder Fachaktion:
+workbench.openRelation(relation, { resource: "contracts", id: contract.id });
+```
+
+`collection` gilt für alle Oberflächen; `editorCollection` überschreibt einzelne Optionen im Editor. `createForm` und `editForm` bestimmen unabhängig Darstellung, reduzierte Felder und Wizard. Ohne feste Darstellung gilt die zentrale Sheet-/Dialog-Auswahl. `binding: "locked"` ist der Standard: Vorbelegung, sichtbarer Sperrhinweis und erzwungener Bezug beim Speichern. `prefill` trägt den Bezug editierbar ein; `none` übernimmt keinen Bezug. Die zugrunde liegende Liste bleibt weiterhin auf den übergeordneten Datensatz gefiltert. Fachlich unveränderbare Backend-Felder bleiben auch bei `prefill` unveränderbar.
+
+Bei einem Edit-Direktlink lädt das Framework den Datensatz und prüft, ob sein Fremdschlüssel zum angegebenen Elternbezug passt. Diese Prüfung ist eine Konsistenzprüfung der UI; Backend-Validierung, Authentifizierung und vorhandene Versionskontrolle gelten weiterhin. Sie ersetzt keine Berechtigungs- oder Organisationsprüfung.
+
+### Fähigkeiten einer Collection
+
+| Option                                                                              | Verhalten                                                                                                                                         |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `searchable`, `filterable`, `groupable`                                             | Suche, Mehrfachfilter, Gruppierung jeweils aktivieren; deaktivierte Funktionen wenden auch entsprechende URL-Werte nicht an                       |
+| `pagination`                                                                        | Seitennavigation ein-/ausblenden; ohne Paging höchstens 100 Einträge, Gesamtzahl und Grenze bleiben sichtbar                                      |
+| `rowSelection`                                                                      | `false`, `single`, `multiple` oder Prädikat pro Datensatz                                                                                         |
+| `actions`                                                                           | Alle registrierten Actions, `false` für keine oder eine Allowlist wie `["edit", "inspect"]`; gilt für Zeilen, Auswahl und Doppelklick-Bearbeitung |
+| `create`, `detailLink`, `doubleClickEdit`                                           | Hinzufügen, Titel-Link und Doppelklick unabhängig schalten                                                                                        |
+| `columnChooser`, `densityToggle`, `exportable`, `refreshable`, `presentationToggle` | Werkzeugschalter unabhängig konfigurieren                                                                                                         |
+| `toolbar`                                                                           | Gesamte Werkzeugleiste ein-/ausblenden; Fähigkeiten bleiben separat konfigurierbar                                                                |
+| `resizable`, `pinnable`                                                             | Spaltenbreiten und Fixierung steuern                                                                                                              |
+| `virtualized`                                                                       | `"auto"` ab 50 geladenen Zeilen, `true` oder `false`; gruppierte Seiten verwenden ihre einzelnen Gruppen-Tabellen                                 |
+| `syncWithLocation`, `urlKey`                                                        | URL-Synchronisation und isolierter Namensraum für mehrere Tabellen                                                                                |
+
+CSV exportiert die aktuelle Seite bzw. Auswahl, nicht stillschweigend den gesamten Datenbestand. Paging aus bedeutet bewusst keinen unbegrenzten Download. Für umfangreiche Historien kann dieselbe Relation Paging aktivieren.
+
+### Mehrere gespeicherte Schritte als Flow
+
+`framework/forms/flow.ts` definiert das Ablaufmodell; Fachdefinitionen liegen im jeweiligen Modul und werden in `modules/flows.ts` registriert. `modules/contracts/contract-flow.ts` demonstriert einen echten Ablauf:
+
+1. Vertragsentwurf speichern; optional die aktuelle Einheit als gesperrten Elternbezug übernehmen.
+2. Einen Geschäftspartner als Vertragsbeteiligten zuordnen.
+3. Erste Kondition anlegen; anschließend die Vertragsdetailseite öffnen.
+
+Der Vertrag bleibt Entwurf. Die vorhandene Aktivierungs-Action prüft die fachlichen Voraussetzungen separat. Ein vorhandener Geschäftspartner kann im Relation-Picker gesucht werden; seine Schnellerfassung ist ebenfalls ein verschachteltes Formular.
+
+```tsx
+const flow: FormFlowDefinition = {
+    id: "new-contract",
+    label: "Neuen Mietvertrag vorbereiten",
+    steps: [
+        { id: "contract", label: "Vertrag", resource: "contracts" },
+        {
+            id: "condition",
+            label: "Erste Kondition",
+            resource: "rent-conditions",
+            binding: {
+                field: "contract_id",
+                source: "contract",
+                resource: "contracts",
+                mode: "locked",
+            },
+        },
+    ],
+    completion: { navigateTo: "contract" },
+};
+
+workbench.openFlow("new-contract", {
+    parent: { resource: "units", id: unit.id },
+    presentation: "sheet",
+});
+// In einer Fachaktion auch über context.instance.openFlow?.(...).
+```
+
+`source` referenziert einen gespeicherten Schritt oder `parent`. Darstellung, Wizard und reduzierte Erfassung sind pro Schritt konfigurierbar. `ResourceDefinition.createFlow` startet den Flow beim Anlegen aus einer Collection; `RelationDefinition.createForm.flow` kann ihn relationsspezifisch überschreiben oder mit `false` für eine einfache Erfassung deaktivieren.
+
+- Vorwärts validiert und speichert den aktuellen Schritt. Fehler halten den Ablauf an.
+- Zurück öffnet den bereits gespeicherten Datensatz zum Bearbeiten; es entsteht kein zweiter Vertragsentwurf. Ungespeicherte Änderungen erfordern eine Verwerfentscheidung.
+- Der URL-Zustand enthält nur Flow-ID, Schritt, Ressourcennamen und gespeicherte IDs. Eingaben, Notizen und Ausweisdaten werden nicht serialisiert. Ungültige oder übersprungene Schritte werden abgewiesen.
+- Nach Browser-Reload werden Bezüge und Datensätze neu geladen. Ein verlassenes Formular verwirft seinen Hydrierungscache; das Zurückkehren verwendet den aktuellen Stand.
+- Oberste Flows können nach Abschluss zu einem gespeicherten Datensatz navigieren. Geschachtelte Flows schließen sich und kehren zum Elternformular zurück. Ressourcen- und KPI-Queries werden invalidiert.
+- Ein Flow ist **keine Transaktion über mehrere HTTP-Aufrufe**: gespeicherte Zwischenschritte bleiben beim Abbruch erhalten. Die Oberfläche weist darauf hin. Automatische Kompensation, beliebige Verzweigungen, Freigabestufen und persistierte serverseitige Workflow-Instanzen sind nicht implementiert.
+
+## 17. Vertragsakte, Dashboard und gemeinsame Gestaltung
+
+`/contracts/:id` rendert eine eigene `contract-detail-page.tsx`. Die Seite komponiert Komponenten ohne lokale Styles. Die Übersicht enthält aktuelle monatliche Kondition, Kaution, Vertragsbeginn, Kündigungsfrist, Laufzeit, Beteiligte, nächste Aktionen und Notizen. Die aktuelle Kondition wird serverseitig nach Vertrag und `effective_from <= heute` gefiltert und absteigend sortiert; zukünftige Konditionen verfälschen die Übersicht nicht. Die Datumsgrenze verwendet Europe/Berlin.
+
+Beteiligte, Konditionen, Kündigungen sowie aus- und eingehende Vertragsverknüpfungen besitzen eigene Tabs. `LazyTabs` synchronisiert den aktiven Tab mit der URL und mountet nur den aktiven Inhalt. Die Übersicht lädt eine begrenzte Kontaktzusammenfassung und die aktuelle Kondition; vollständige Relationslisten laden erst beim Tabwechsel. Tab-Counts stammen aus den API-Aggregaten. `openRelation` übernimmt den Vertragsbezug auch bei den Schnellaktionen der Übersicht.
+
+Die Gestaltung orientiert sich an der bereitgestellten Referenz: warme neutrale Flächen, schwarze Hauptaktionen, kompakte gruppierte Navigation, ruhige Typografie, dünne Trennlinien und weiße Inhalte in REUI-Frames. Zentrale Farbwerte liegen in `resources/css/app.css`. `WorkspaceCard`, `WorkspaceColumns`, `PersonAvatar`, `PeopleGroup`, `BarChart` und die Dashboard-Blöcke sind wiederverwendbare Komponenten. `Avatar`, `AvatarGroup` und `Frame` stammen aus den dokumentierten öffentlichen Base-Nova-Registries. Avatar-Gruppen unterstützen Bilder, Initialen, Größen und einen Überlaufzähler.
+
+Das Dashboard enthält bewusst gekennzeichnete **Beispieldaten** für Finanzen, Termine, Aufgaben und Mini-Kennzahlen. Zeitraum, Miete/Eingänge, Widget-Auswahl und Aufgaben-Checkboxen bedienen die lokale Vorschau; es werden keine fiktiven Zahlungsvorgänge gespeichert. Der Tab „Bestand“ lädt echte Kennzahlen und Objekte. Die Command-Palette (`Ctrl/⌘ K`) sucht in den registrierten, sichtbaren Bereichen; eine globale Datensatzsuche ist weiterhin ein eigener zukünftiger Ausbau.
+
+## 18. PDF-Viewer und Grid-Performance
+
+### PDF
+
+Installiert: `react-pdf` 11 mit passender `pdfjs-dist` 6.3.289. React-PDF ist die React-Integration für die Rendering-Engine **Mozilla PDF.js**. Unter den recherchierten PDF-Viewer-Projekten besitzt PDF.js die größte GitHub-Star-Zahl; React-PDF selbst ist nicht mit dem PDF-Erzeuger `@react-pdf/renderer` zu verwechseln.
+
+```tsx
+const PdfViewer = lazy(() => import("@/components/blocks/pdf-viewer"));
+<Suspense fallback={<Loading />}>
+    <PdfViewer url="/api/v1/…" name="Objektbericht.pdf" title="Objektbericht" />
+</Suspense>;
+```
+
+Der Viewer bietet eine helle Seitenfläche, Textauswahl, Links, Seitennummer und Vor/Zurück, Zoom von 25–250 %, Breitenanpassung, Drehung und Download. Tastatur in der fokussierten Seitenansicht: Pfeile links/rechts und `+`/`-`. Es wird jeweils eine Seite gerendert. Zoom ist relativ zur verfügbaren Seitenbreite. PDF-Ergebnisse aus Actions und hinterlegte PDF-Ausweise verwenden denselben Viewer.
+
+Worker, CMaps, WASM-Module und Standardschriften werden lokal mit Vite ausgeliefert; kein CDN erhält Dokumente. Der PDF-Code wird erst beim Öffnen geladen. Abrufe sind auf dieselbe Origin unter `/api/` beschränkt, verwenden Sitzung und AbortSignal, prüfen den MIME-Typ und geben Blob-URLs beim Wechsel/Schließen frei. Fehler sind wiederholbar; passwortgeschützte Dateien können heruntergeladen werden. Pixelgenaues Canvas-Rendering bleibt Bestandteil der Browserabnahme.
+
+### Grid
+
+- Öffentliche REUI-DataGrid-Primitives einschließlich Spaltenfilter und virtueller Tabelle; keine kopierten kostenpflichtigen Pro-Blöcke.
+- Suche mit Debounce; abgelöste HTTP-Anfragen werden über TanStack Query und `AbortSignal` abgebrochen.
+- Bereits geladene Zeilen bleiben bei Paging/Filterwechsel sichtbar. Die Ansicht zeigt einen Ladeindikator und deaktiviert veraltete Auswahl-/Zeilenaktionen bis zur neuen Antwort. Initiales Laden verwendet REUI-Skeletons.
+- Mehrfachfilter mit durchsuchbaren Optionen und ausgewählten Werten; serverseitiger `in`-Filter. Frühere skalare Filter-URLs bleiben lesbar und werden normalisiert.
+- Zeilenfenster ab 50 Datensätzen, konfigurierbar. Die API-Seitengröße bleibt auf 100 beschränkt. Stabile leere Daten und über Referenzen aktualisierte Action-Instanzen verhindern unnötigen Neuaufbau bzw. veraltete Formularbezüge.
+- Fixierter Tabellenkopf, eigene Scrollfläche und Pagination im Footer. Sortierung, Filter, Suche, Paging, Gruppierung und Sichtbarkeit bleiben URL-basiert; Spaltenbreite und Fixierung sind weiterhin Sitzungszustand.
+- Form-Layer und Action-Dialoge werden zusätzlich bei Bedarf geladen; PDF-Rendering bleibt ein eigenes Lazy-Modul.
+
+Ergänzte Regressionstests prüfen gespeicherte Flow-Schritte und Zurückbearbeitung ohne Duplikate, URL-Bereinigung, abgeschaltete Relationsfunktionen, Mehrfachfilter, PDF-Bedienung und Aufräumen sowie die serverseitige Auswahl der gültigen Kondition. Die Playwright-Suite wurde auf Canvas-PDFs und die neue Vertragsakte angepasst; ein erfolgreicher Browserlauf wird damit nicht behauptet.
+
+Zusätzliche Primärquellen: [REUI Frame](https://reui.io/docs/components/base/frame), [REUI DataGrid-Beispiele](https://reui.io/components/data-grid), [Base-Nova Avatar](https://ui.shadcn.com/docs/components/base/avatar), [React-PDF](https://github.com/wojtekmaj/react-pdf), [PDF.js](https://github.com/mozilla/pdf.js).

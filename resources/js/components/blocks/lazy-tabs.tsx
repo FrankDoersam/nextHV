@@ -1,5 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
+import { useSearchParams } from "react-router";
 export interface LazyTab {
     id: string;
     label: string;
@@ -9,13 +10,27 @@ export interface LazyTab {
 export function LazyTabs({
     tabs,
     initial = "overview",
+    urlKey = "tab",
 }: {
     tabs: LazyTab[];
     initial?: string;
+    urlKey?: string;
 }) {
-    const [active, setActive] = useState(initial);
+    const [params, setParams] = useSearchParams();
+    const selected = params.get(urlKey) ?? initial;
+    const active = tabs.some((t) => t.id === selected) ? selected : initial;
     return (
-        <Tabs value={active} onValueChange={(v) => setActive(String(v))}>
+        <Tabs
+            value={active}
+            onValueChange={(v) =>
+                setParams((current) => {
+                    const next = new URLSearchParams(current);
+                    if (String(v) === initial) next.delete(urlKey);
+                    else next.set(urlKey, String(v));
+                    return next;
+                })
+            }
+        >
             <div className="overflow-x-auto border-b">
                 <TabsList variant="line" className="h-12 min-w-max gap-4">
                     {tabs.map((tab) => (

@@ -10,6 +10,7 @@ import { Inline, PageHeader, Stack } from "@/components/blocks/layout";
 import { LazyTabs, type LazyTab } from "@/components/blocks/lazy-tabs";
 import { Button } from "@/components/ui/button";
 import { useResource } from "@/framework/data/hooks";
+import { RelationCollection } from "@/framework/tables/relation-collection";
 import { RowActions } from "@/framework/tables/resource-collection";
 import type { RecordData, ResourceDefinition } from "@/framework/types";
 import { useWorkbench } from "@/framework/workbench";
@@ -59,12 +60,9 @@ export default function DetailPage({
                 ? Number(record[relation.countRelation + "_count"])
                 : undefined,
             render: () => (
-                <RelationPanel
-                    resource={relation.resource}
-                    title={relation.label}
-                    filters={[{ field: relation.field, value: record.id }]}
-                    defaults={{ [relation.field]: record.id }}
-                    description={relation.description}
+                <RelationCollection
+                    relation={relation}
+                    parent={{ resource: resource.name, id: record.id }}
                 />
             ),
         });

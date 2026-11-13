@@ -11,7 +11,7 @@ import {
     ShieldCheck,
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Brand } from "./layout";
+import { Brand } from "./brand";
 export function AuthScreen({
     onLogin,
 }: {

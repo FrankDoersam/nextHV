@@ -30,10 +30,16 @@ export function searchPayload(
     };
 }
 export const dataProvider = {
-    list: (resource: ResourceDefinition, params: ListParams = {}) =>
+    list: (
+        resource: ResourceDefinition,
+        params: ListParams = {},
+        signal?: AbortSignal,
+    ) =>
         request<PageResult>(
             `/api/v1/${resource.name}/search`,
             searchPayload(resource, params),
+            "POST",
+            signal,
         ),
     async one(resource: ResourceDefinition, id: number) {
         const result = await this.list(resource, {

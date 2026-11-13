@@ -8,6 +8,7 @@ import { Loading, EmptyState } from "@/components/blocks/content";
 import { ErrorBoundary } from "@/components/blocks/error-boundary";
 const Dashboard = lazy(() => import("@/pages/dashboard-page"));
 const ResourcePage = lazy(() => import("@/pages/resource-page"));
+const ContractDetailPage = lazy(() => import("@/pages/contract-detail-page"));
 const DetailPage = lazy(() => import("@/pages/detail-page"));
 const ComponentsPage = lazy(() => import("@/pages/components-page"));
 export default function Application() {
@@ -43,10 +44,14 @@ export default function Application() {
                                     <Route
                                         path={`/${r.name}/:id`}
                                         element={
-                                            <DetailPage
-                                                key={r.name}
-                                                resource={r}
-                                            />
+                                            r.name === "contracts" ? (
+                                                <ContractDetailPage />
+                                            ) : (
+                                                <DetailPage
+                                                    key={r.name}
+                                                    resource={r}
+                                                />
+                                            )
                                         }
                                     />
                                 </React.Fragment>

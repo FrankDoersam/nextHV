@@ -11,6 +11,8 @@ import {
     dataGridFeatures,
     type DataGridFeatures,
 } from "@/components/reui/data-grid/data-grid";
+import { DataGridColumnFilter } from "@/components/reui/data-grid/data-grid-column-filter";
+import { DataGridTableVirtual } from "@/components/reui/data-grid/data-grid-table-virtual";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
 import { DataGridColumnVisibility } from "@/components/reui/data-grid/data-grid-column-visibility";
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
@@ -57,14 +59,20 @@ import { useDebounced, useReload, useResourceList } from "../data/hooks";
 import { can } from "../permissions";
 import type {
     Filter,
+    CollectionOptions,
+    RelationFormOptions,
     RecordData,
     ResourceDefinition,
     ResourceInstance,
     Values,
 } from "../types";
 import { useWorkbench } from "../workbench";
+const EMPTY_ROWS: RecordData[] = [];
 const i18n = {
     labels: {
+        filterSelectedCount: (count: number) => `${count} ausgewählt`,
+        filterNoResults: "Keine passenden Optionen",
+        filterClear: "Filter zurücksetzen",
         selectAll: "Alle Zeilen dieser Seite auswählen",
         selectRow: "Zeile auswählen",
         empty: "Keine Einträge gefunden",
@@ -93,20 +101,25 @@ export function RowActions({
     row,
     instance,
     exclude = [],
+    allowed,
 }: {
     resource: ResourceDefinition;
     row: RecordData;
     instance?: Partial<ResourceInstance>;
     exclude?: string[];
+    allowed?: false | string[];
 }) {
     const workbench = useWorkbench();
     const actions = resource.actions.filter(
         (a) =>
+            allowed !== false &&
+            (!allowed || allowed.includes(a.id)) &&
             !exclude.includes(a.id) &&
             a.location !== "toolbar" &&
             a.visible(row) &&
             can(resource.name, a.id, row),
     );
+    if (!actions.length) return null;
     return (
         <DropdownMenu>
             <DropdownMenuTrigger
@@ -155,6 +168,7 @@ export function ResourceCollection({
     formResource,
     context,
     searchable = true,
+    virtualized = "auto",
     pagination: paging = true,
     rowSelection = "multiple",
     doubleClickEdit = true,
@@ -162,6 +176,19 @@ export function ResourceCollection({
     urlKey,
     resizable = true,
     pinnable = true,
+    filterable = !compact,
+    groupable = !compact,
+    columnChooser = true,
+    densityToggle = true,
+    exportable = true,
+    refreshable = true,
+    presentationToggle = compact,
+    toolbar = true,
+    actions,
+    detailLink = true,
+    create: creatable = true,
+    createForm,
+    editForm,
 }: {
     resource: ResourceDefinition;
     fixedFilters?: Filter[];
@@ -171,17 +198,10 @@ export function ResourceCollection({
     form?: UseFormReturn<Values>;
     formResource?: ResourceDefinition;
     context?: import("../types").FormRequest["context"];
-    searchable?: boolean;
-    /** false hides controls and requests a bounded 100-row collection. */
-    pagination?: boolean;
-    rowSelection?:
-        false | "single" | "multiple" | ((row: RecordData) => boolean);
-    doubleClickEdit?: boolean;
-    syncWithLocation?: boolean;
     urlKey?: string;
-    resizable?: boolean;
-    pinnable?: boolean;
-}) {
+    createForm?: RelationFormOptions;
+    editForm?: Omit<RelationFormOptions, "flow">;
+} & CollectionOptions) {
     const navigate = useNavigate();
     const workbench = useWorkbench();
     const reload = useReload();
@@ -204,7 +224,8 @@ export function ResourceCollection({
         group,
         dense,
     } = state;
-    const query = useDebounced(search);
+    const query = useDebounced(searchable ? search : "");
+    const effectiveGroup = groupable ? group : "none";
     const setSorting = (
         value: import("@tanstack/react-table").Updater<SortingState>,
     ) => update("sorting", value, true);
@@ -214,27 +235,32 @@ export function ResourceCollection({
     const [selection, setSelection] = useState<RowSelectionState>({});
     const apiFilters = [
         ...fixedFilters,
-        ...Object.entries(filters)
-            .filter(([, v]) => v !== "all")
-            .map(([field, value]) => ({ field, value })),
+        ...Object.entries(filterable ? filters : {})
+            .filter(([, v]) => v.length > 0)
+            .map(([field, value]) => ({ field, operator: "in", value })),
     ];
     const sort = [
-        ...(group !== "none"
-            ? [{ field: group, direction: "asc" as const }]
+        ...(effectiveGroup !== "none"
+            ? [{ field: effectiveGroup, direction: "asc" as const }]
             : []),
         ...sorting.map((s) => ({
             field: s.id,
             direction: s.desc ? ("desc" as const) : ("asc" as const),
         })),
     ];
-    const result = useResourceList(resource, {
-        query,
-        page: paging ? pagination.pageIndex + 1 : 1,
-        limit: paging ? pagination.pageSize : 100,
-        filters: apiFilters,
-        sort: sort.length ? sort : undefined,
-    });
-    const rows = result.data?.data ?? [];
+    const result = useResourceList(
+        resource,
+        {
+            query,
+            page: paging ? pagination.pageIndex + 1 : 1,
+            limit: paging ? pagination.pageSize : 100,
+            filters: apiFilters,
+            sort: sort.length ? sort : undefined,
+        },
+        true,
+        true,
+    );
+    const rows = result.data?.data ?? EMPTY_ROWS;
     useEffect(() => {
         if (paging && !result.isFetching && result.data && query === search) {
             const lastIndex = Math.max(
@@ -276,30 +302,74 @@ export function ResourceCollection({
             await onSaved?.();
         },
     };
-    const create = () =>
+    const instanceRef = useRef(instance);
+    const boundContext = (options?: RelationFormOptions) =>
+        options?.binding === "none"
+            ? undefined
+            : context
+              ? {
+                    ...context,
+                    mode:
+                        options?.binding === "prefill"
+                            ? ("prefill" as const)
+                            : ("locked" as const),
+                }
+              : undefined;
+    const openEdit = (row: RecordData) =>
+        workbench.openForm({
+            resource,
+            mode: "edit",
+            row,
+            ...editForm,
+            context: boundContext(editForm),
+            onSaved,
+        });
+    instance.openForm = (request) =>
+        workbench.openForm({
+            ...request,
+            ...editForm,
+            context: boundContext(editForm),
+            onSaved,
+        });
+    instanceRef.current = instance;
+    const liveInstance = useMemo<Partial<ResourceInstance>>(
+        () => ({
+            reload: () => instanceRef.current.reload!(),
+            openForm: (request) => instanceRef.current.openForm!(request),
+            refreshForm: () => instanceRef.current.refreshForm!(),
+            get form() {
+                return instanceRef.current.form;
+            },
+            get formResource() {
+                return instanceRef.current.formResource;
+            },
+            get table() {
+                return instanceRef.current.table;
+            },
+        }),
+        [],
+    );
+    const create = () => {
+        const flow = createForm?.flow ?? resource.createFlow;
+        if (flow) {
+            workbench.openFlow(flow, {
+                parent: context
+                    ? { resource: context.resource, id: context.id }
+                    : undefined,
+                presentation: createForm?.presentation,
+            });
+            return;
+        }
         workbench.openForm({
             resource,
             mode: "create",
             defaults,
-            context:
-                context ??
-                (() => {
-                    const field = resource.fields.find(
-                        (f) =>
-                            f.kind === "relation" &&
-                            typeof defaults?.[f.name] === "number",
-                    );
-                    return field
-                        ? {
-                              resource: field.resource!,
-                              field: field.name,
-                              id: Number(defaults![field.name]),
-                          }
-                        : undefined;
-                })(),
+            context: boundContext(createForm),
             onSaved,
             wizard: !compact && !!resource.groups,
+            ...createForm,
         });
+    };
     const columns = useMemo<ColumnDef<DataGridFeatures, RecordData>[]>(
         () => [
             ...(rowSelection
@@ -341,7 +411,7 @@ export function ResourceCollection({
                         RecordData
                     >;
                 }) =>
-                    c.field === resource.titleField ? (
+                    c.field === resource.titleField && detailLink ? (
                         <button
                             className="font-medium text-foreground hover:text-primary"
                             onClick={() =>
@@ -354,22 +424,37 @@ export function ResourceCollection({
                         formatCell(c, row.original)
                     ),
             })),
-            {
-                id: "actions",
-                header: "",
-                cell: ({ row }) => (
-                    <RowActions
-                        resource={resource}
-                        row={row.original}
-                        instance={instance}
-                    />
-                ),
-                size: 48,
-                enableSorting: false,
-                enableHiding: false,
-            },
+            ...(resource.filters ?? [])
+                .filter(
+                    (f) => !resource.columns.some((c) => c.field === f.field),
+                )
+                .map((f) => ({
+                    id: f.field,
+                    accessorFn: (row: RecordData) => row[f.field],
+                    enableHiding: false,
+                    enableSorting: false,
+                })),
+            ...(actions !== false
+                ? [
+                      {
+                          id: "actions",
+                          header: "",
+                          cell: ({ row }) => (
+                              <RowActions
+                                  resource={resource}
+                                  row={row.original}
+                                  instance={liveInstance}
+                                  allowed={actions}
+                              />
+                          ),
+                          size: 48,
+                          enableSorting: false,
+                          enableHiding: false,
+                      } as ColumnDef<DataGridFeatures, RecordData>,
+                  ]
+                : []),
         ],
-        [resource, navigate, form, onSaved, rowSelection],
+        [resource, navigate, rowSelection, actions, detailLink],
     );
     const table = useTable({
         features: dataGridFeatures,
@@ -378,19 +463,54 @@ export function ResourceCollection({
         getRowId: (row) => String(row.id),
         manualPagination: true,
         manualSorting: true,
+        manualFiltering: true,
         rowCount: result.data?.total ?? 0,
         state: {
             pagination: paging ? pagination : { pageIndex: 0, pageSize: 100 },
             sorting,
             rowSelection: selection,
-            columnVisibility,
+            columnVisibility: {
+                ...Object.fromEntries(
+                    (resource.filters ?? [])
+                        .filter(
+                            (f) =>
+                                !resource.columns.some(
+                                    (c) => c.field === f.field,
+                                ),
+                        )
+                        .map((f) => [f.field, false]),
+                ),
+                ...columnVisibility,
+            },
+            columnFilters: Object.entries(filterable ? filters : {}).map(
+                ([id, value]) => ({ id, value }),
+            ),
         },
+        onColumnFiltersChange: (value) =>
+            update(
+                "filters",
+                (previous) => {
+                    const prior = Object.entries(previous).map(
+                        ([id, value]) => ({ id, value }),
+                    );
+                    const next =
+                        typeof value === "function" ? value(prior) : value;
+                    return Object.fromEntries(
+                        next
+                            .filter(
+                                (f) => Array.isArray(f.value) && f.value.length,
+                            )
+                            .map((f) => [f.id, f.value as string[]]),
+                    );
+                },
+                true,
+            ),
         onColumnVisibilityChange: setColumnVisibility,
         onPaginationChange: (value) => update("pagination", value),
         onSortingChange: setSorting,
         onRowSelectionChange: setSelection,
         enableRowSelection:
-            rowSelection === false
+            rowSelection === false || result.isPlaceholderData
                 ? false
                 : typeof rowSelection === "function"
                   ? (row) => rowSelection(row.original)
@@ -405,6 +525,8 @@ export function ResourceCollection({
     );
     const bulk = resource.actions.filter(
         (a) =>
+            actions !== false &&
+            (!actions || actions.includes(a.id)) &&
             (a.bulk || selectedRows.length === 1) &&
             a.location !== "row" &&
             selectedRows.every(
@@ -412,10 +534,10 @@ export function ResourceCollection({
             ),
     );
     const grouped =
-        group === "none"
+        effectiveGroup === "none"
             ? null
             : rows.reduce<Record<string, RecordData[]>>((groups, row) => {
-                  const key = String(row[group] ?? "—");
+                  const key = String(row[effectiveGroup] ?? "—");
                   (groups[key] ??= []).push(row);
                   return groups;
               }, {});
@@ -424,9 +546,10 @@ export function ResourceCollection({
             table={table}
             recordCount={result.data?.total ?? 0}
             isLoading={result.isPending}
+            loadingMode="skeleton"
             i18n={i18n}
             tableLayout={{
-                columnsVisibility: true,
+                columnsVisibility: columnChooser,
                 columnsResizable: resizable,
                 columnsPinnable: pinnable,
                 columnsMovable: true,
@@ -436,13 +559,17 @@ export function ResourceCollection({
             }}
         >
             <div
+                aria-busy={result.isFetching}
                 className={cn(
-                    "flex min-h-0 flex-col gap-4",
+                    "relative flex min-h-0 flex-col gap-3",
                     compact ? "" : "h-full",
                 )}
                 onDoubleClick={(event) => {
                     if (
                         !doubleClickEdit ||
+                        actions === false ||
+                        (actions && !actions.includes("edit")) ||
+                        result.isPlaceholderData ||
                         (event.target as HTMLElement).closest(
                             "button,a,input,[role=checkbox],[role=menuitem]",
                         )
@@ -452,185 +579,191 @@ export function ResourceCollection({
                         .closest("tr[data-row-id]")
                         ?.getAttribute("data-row-id");
                     const row = rows.find((r) => String(r.id) === id);
-                    if (row && can(resource.name, "edit", row))
-                        workbench.openForm({
-                            resource,
-                            mode: "edit",
-                            row,
-                            context,
-                            onSaved,
-                        });
+                    if (row && can(resource.name, "edit", row)) openEdit(row);
                 }}
             >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    {searchable && (
-                        <div className="relative min-w-48 flex-1 sm:max-w-80">
-                            <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
-                            <Input
-                                value={search}
-                                onChange={(e) => {
-                                    update("search", e.target.value, true);
-                                }}
-                                className="h-9 bg-background pl-9 pr-9"
-                                aria-label={`${resource.label} durchsuchen`}
-                                placeholder={`${resource.label} durchsuchen …`}
-                            />
-                            {search && (
+                {result.isFetching && !result.isPending && (
+                    <div
+                        role="status"
+                        className="absolute inset-x-0 -top-2 h-0.5 overflow-hidden bg-muted"
+                    >
+                        <div className="h-full w-full animate-pulse bg-primary/40" />
+                        <span className="sr-only">
+                            Daten werden aktualisiert
+                        </span>
+                    </div>
+                )}
+                {toolbar && (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        {searchable && (
+                            <div className="relative min-w-48 flex-1 sm:max-w-80">
+                                <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
+                                <Input
+                                    value={search}
+                                    onChange={(e) => {
+                                        update("search", e.target.value, true);
+                                    }}
+                                    className="h-9 bg-background pl-9 pr-9"
+                                    aria-label={`${resource.label} durchsuchen`}
+                                    placeholder={`${resource.label} durchsuchen …`}
+                                />
+                                {search && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon-xs"
+                                        className="absolute right-1.5 top-1.5"
+                                        aria-label="Suche leeren"
+                                        onClick={() =>
+                                            update("search", "", true)
+                                        }
+                                    >
+                                        <X />
+                                    </Button>
+                                )}
+                            </div>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                            {presentationToggle && <PresentationToggle />}
+                            {columnChooser && (
+                                <DataGridColumnVisibility
+                                    table={table}
+                                    trigger={
+                                        <Button variant="outline">
+                                            <Columns3 />
+                                            Spalten
+                                        </Button>
+                                    }
+                                />
+                            )}
+                            {densityToggle && (
                                 <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    className="absolute right-1.5 top-1.5"
-                                    aria-label="Suche leeren"
-                                    onClick={() => update("search", "", true)}
+                                    variant="outline"
+                                    size="icon"
+                                    aria-label="Zeilendichte umschalten"
+                                    aria-pressed={dense}
+                                    onClick={() => update("dense", !dense)}
                                 >
-                                    <X />
+                                    <Rows3 />
                                 </Button>
                             )}
-                        </div>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                        {compact && <PresentationToggle />}
-                        <DataGridColumnVisibility
-                            table={table}
-                            trigger={
-                                <Button variant="outline">
-                                    <Columns3 />
-                                    Spalten
+                            {exportable && (
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    aria-label={
+                                        selectedRows.length
+                                            ? "Auswahl als CSV exportieren"
+                                            : "Aktuelle Seite als CSV exportieren"
+                                    }
+                                    disabled={
+                                        !rows.length || result.isPlaceholderData
+                                    }
+                                    onClick={() =>
+                                        exportRows(
+                                            selectedRows.length
+                                                ? selectedRows
+                                                : rows,
+                                            resource.columns.filter(
+                                                (c) =>
+                                                    columnVisibility[
+                                                        c.field
+                                                    ] !== false,
+                                            ),
+                                            resource.name,
+                                        )
+                                    }
+                                >
+                                    <Download />
                                 </Button>
-                            }
-                        />
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            aria-label="Zeilendichte umschalten"
-                            aria-pressed={dense}
-                            onClick={() => update("dense", !dense)}
-                        >
-                            <Rows3 />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            aria-label={
-                                selectedRows.length
-                                    ? "Auswahl als CSV exportieren"
-                                    : "Aktuelle Seite als CSV exportieren"
-                            }
-                            disabled={!rows.length}
-                            onClick={() =>
-                                exportRows(
-                                    selectedRows.length ? selectedRows : rows,
-                                    resource.columns.filter(
-                                        (c) =>
-                                            columnVisibility[c.field] !== false,
-                                    ),
-                                    resource.name,
-                                )
-                            }
-                        >
-                            <Download />
-                        </Button>
-                        {!compact &&
-                            resource.filters?.map((filter) => (
+                            )}
+                            {filterable &&
+                                resource.filters?.map((filter) =>
+                                    table.getColumn(filter.field) ? (
+                                        <DataGridColumnFilter
+                                            key={filter.field}
+                                            column={table.getColumn(
+                                                filter.field,
+                                            )}
+                                            title={filter.label}
+                                            options={filter.options}
+                                        />
+                                    ) : null,
+                                )}
+                            {filterable && Object.keys(filters).length > 0 && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => update("filters", {}, true)}
+                                >
+                                    <X /> Filter zurücksetzen
+                                </Button>
+                            )}
+                            {groupable && resource.groupBy && (
                                 <Select
-                                    key={filter.field}
-                                    value={filters[filter.field] ?? "all"}
+                                    value={group}
                                     onValueChange={(v) => {
-                                        update(
-                                            "filters",
-                                            (f) => ({
-                                                ...f,
-                                                [filter.field]: String(v),
-                                            }),
-                                            true,
-                                        );
+                                        update("group", String(v), true);
                                     }}
                                 >
-                                    <SelectTrigger aria-label={filter.label}>
+                                    <SelectTrigger aria-label="Gruppierung">
+                                        <ListFilter />
                                         <SelectValue>
                                             {(v) =>
-                                                v === "all"
-                                                    ? filter.label
-                                                    : label(v)
+                                                v === "none"
+                                                    ? "Gruppieren"
+                                                    : resource.groupBy?.find(
+                                                          (g) => g.value === v,
+                                                      )?.label
                                             }
                                         </SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">
-                                            Alle
+                                        <SelectItem value="none">
+                                            Keine Gruppierung
                                         </SelectItem>
-                                        {filter.options.map((o) => (
+                                        {resource.groupBy.map((g) => (
                                             <SelectItem
-                                                key={o.value}
-                                                value={o.value}
+                                                key={g.value}
+                                                value={g.value}
                                             >
-                                                {o.label}
+                                                {g.label}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                            ))}
-                        {!compact && resource.groupBy && (
-                            <Select
-                                value={group}
-                                onValueChange={(v) => {
-                                    update("group", String(v), true);
-                                }}
-                            >
-                                <SelectTrigger aria-label="Gruppierung">
-                                    <ListFilter />
-                                    <SelectValue>
-                                        {(v) =>
-                                            v === "none"
-                                                ? "Gruppieren"
-                                                : resource.groupBy?.find(
-                                                      (g) => g.value === v,
-                                                  )?.label
+                            )}
+                            {refreshable && (
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => result.refetch()}
+                                    aria-label="Aktualisieren"
+                                >
+                                    <RefreshCw
+                                        className={
+                                            result.isFetching
+                                                ? "animate-spin"
+                                                : ""
                                         }
-                                    </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">
-                                        Keine Gruppierung
-                                    </SelectItem>
-                                    {resource.groupBy.map((g) => (
-                                        <SelectItem
-                                            key={g.value}
-                                            value={g.value}
-                                        >
-                                            {g.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        )}
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => result.refetch()}
-                            aria-label="Aktualisieren"
-                        >
-                            <RefreshCw
-                                className={
-                                    result.isFetching ? "animate-spin" : ""
-                                }
-                            />
-                        </Button>
-                        {can(resource.name, "create") && (
-                            <Button
-                                onClick={create}
-                                size={compact ? "sm" : "default"}
-                            >
-                                <Plus />
-                                {compact
-                                    ? "Hinzufügen"
-                                    : `${resource.singular} anlegen`}
-                            </Button>
-                        )}
+                                    />
+                                </Button>
+                            )}
+                            {creatable && can(resource.name, "create") && (
+                                <Button
+                                    onClick={create}
+                                    size={compact ? "sm" : "default"}
+                                >
+                                    <Plus />
+                                    {compact
+                                        ? "Hinzufügen"
+                                        : `${resource.singular} anlegen`}
+                                </Button>
+                            )}
+                        </div>
                     </div>
-                </div>
-                {selectedRows.length > 0 && (
+                )}
+                {selectedRows.length > 0 && !result.isPlaceholderData && (
                     <div className="flex flex-wrap items-center gap-2 rounded-lg bg-primary/5 px-3 py-2">
                         <span className="mr-auto text-xs font-medium">
                             {selectedRows.length} ausgewählt
@@ -668,8 +801,11 @@ export function ResourceCollection({
                 ) : (
                     <>
                         <div
+                            inert={result.isPlaceholderData}
                             className={cn(
                                 "min-h-0",
+                                result.isPlaceholderData &&
+                                    "pointer-events-none opacity-60",
                                 compact
                                     ? "max-h-[32rem] overflow-auto"
                                     : "flex-1 overflow-hidden",
@@ -714,14 +850,27 @@ export function ResourceCollection({
                                 <DataGridContainer
                                     className={compact ? "" : "h-full"}
                                 >
-                                    <DataGridScrollArea
-                                        className={
-                                            compact ? "max-h-[30rem]" : "h-full"
-                                        }
-                                        orientation="both"
-                                    >
-                                        <DataGridTable />
-                                    </DataGridScrollArea>
+                                    {(virtualized === true ||
+                                        (virtualized === "auto" &&
+                                            rows.length >= 50)) &&
+                                    !result.isPending ? (
+                                        <DataGridTableVirtual
+                                            height={compact ? 480 : "100%"}
+                                            estimateSize={dense ? 36 : 44}
+                                            overscan={8}
+                                        />
+                                    ) : (
+                                        <DataGridScrollArea
+                                            className={
+                                                compact
+                                                    ? "max-h-[30rem]"
+                                                    : "h-full"
+                                            }
+                                            orientation="both"
+                                        >
+                                            <DataGridTable />
+                                        </DataGridScrollArea>
+                                    )}
                                 </DataGridContainer>
                             )}
                         </div>

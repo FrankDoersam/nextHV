@@ -12,7 +12,6 @@ import {
     StepperTrigger,
 } from "@/components/reui/stepper";
 import { Button } from "@/components/ui/button";
-import { getResource } from "@/modules/registry";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ChevronLeft, ChevronRight, Save, Link, RefreshCw } from "lucide-react";
 import { useEffect, useId, useState, type ReactNode } from "react";
@@ -21,7 +20,9 @@ import { toast } from "sonner";
 import { useReload } from "../data/hooks";
 import { ApiError } from "../data/http";
 import { dataProvider, normalizeValidationErrors } from "../data/provider";
-import { ResourceCollection, RowActions } from "../tables/resource-collection";
+import { RowActions } from "../tables/resource-collection";
+import { RelationCollection } from "../tables/relation-collection";
+import type { FlowControls } from "./flow";
 import type { FormRequest, Values } from "../types";
 import { initialValues, schemaFor } from "./schema";
 export function ResourceEditor({
@@ -30,12 +31,14 @@ export function ResourceEditor({
     onDirtyChange,
     nested,
     stacked,
+    flow,
 }: {
     request: FormRequest;
     onClose: () => void;
     onDirtyChange?: (dirty: boolean) => void;
     nested?: ReactNode;
     stacked?: boolean;
+    flow?: FlowControls;
 }) {
     const formId = useId();
     const { resource, row } = request;
@@ -54,6 +57,7 @@ export function ResourceEditor({
     const [step, setStep] = useState(0);
     const [error, setError] = useState<unknown>();
     const [discard, setDiscard] = useState(false);
+    const [pendingBack, setPendingBack] = useState(false);
     const [version, setVersion] = useState(row);
     const reload = useReload();
     const dirty = form.formState.isDirty;
@@ -105,7 +109,7 @@ export function ResourceEditor({
         try {
             const attributes = {
                 ...values,
-                ...(request.context
+                ...(request.context && request.context.mode !== "prefill"
                     ? { [request.context.field]: request.context.id }
                     : {}),
             };
@@ -114,10 +118,14 @@ export function ResourceEditor({
                 attributes,
                 version,
             );
+            setVersion(saved);
+            form.reset(initialValues(resource.fields, saved));
+            onDirtyChange?.(false);
             await reload();
-            request.onSaved?.(saved);
+            await request.onSaved?.(saved);
             toast.success(`${resource.singular} gespeichert`);
-            onClose();
+            if (flow) flow.onSaved(saved);
+            else onClose();
         } catch (e) {
             setError(e);
             if (e instanceof ApiError) {
@@ -217,17 +225,33 @@ export function ResourceEditor({
     const discardDialog = (
         <Overlay
             open={discard}
-            onClose={() => setDiscard(false)}
+            onClose={() => {
+                setDiscard(false);
+                setPendingBack(false);
+            }}
             title="Änderungen verwerfen?"
             description="Deine Eingaben wurden noch nicht gespeichert."
             presentation="dialog"
             size="compact"
             footer={
                 <>
-                    <Button variant="outline" onClick={() => setDiscard(false)}>
+                    <Button
+                        variant="outline"
+                        onClick={() => {
+                            setDiscard(false);
+                            setPendingBack(false);
+                        }}
+                    >
                         Weiter bearbeiten
                     </Button>
-                    <Button variant="destructive" onClick={onClose}>
+                    <Button
+                        variant="destructive"
+                        onClick={() => {
+                            onDirtyChange?.(false);
+                            if (pendingBack) flow?.onBack?.();
+                            else onClose();
+                        }}
+                    >
                         Änderungen verwerfen
                     </Button>
                 </>
@@ -257,15 +281,44 @@ export function ResourceEditor({
                     : resource.description
             }
             presentation={request.presentation}
-            header={navigation}
+            header={
+                flow ? (
+                    <div className="space-y-3">
+                        <p className="text-xs font-medium">{flow.label}</p>
+                        <Stepper value={flow.index + 1}>
+                            <StepperNav>
+                                {flow.steps.map((label, index) => (
+                                    <StepperItem key={label} step={index + 1}>
+                                        <StepperIndicator>
+                                            {index + 1}
+                                        </StepperIndicator>
+                                        <StepperTitle>{label}</StepperTitle>
+                                        {index < flow.steps.length - 1 && (
+                                            <StepperSeparator />
+                                        )}
+                                    </StepperItem>
+                                ))}
+                            </StepperNav>
+                        </Stepper>
+                        <p className="text-xs text-muted-foreground">
+                            Jeder Schritt wird gespeichert. Beim Abbrechen
+                            bleiben gespeicherte Datensätze erhalten.
+                        </p>
+                    </div>
+                ) : (
+                    navigation
+                )
+            }
             footer={
                 <>
                     <OverlayFooterHint>
-                        {request.wizard
-                            ? `Schritt ${step + 1} von ${groups.length}`
-                            : dirty
-                              ? "Ungespeicherte Änderungen"
-                              : "Änderungen mit Speichern übernehmen"}
+                        {flow
+                            ? `Schritt ${flow.index + 1} von ${flow.steps.length}`
+                            : request.wizard
+                              ? `Schritt ${step + 1} von ${groups.length}`
+                              : dirty
+                                ? "Ungespeicherte Änderungen"
+                                : "Änderungen mit Speichern übernehmen"}
                     </OverlayFooterHint>
                     <Button
                         type="button"
@@ -286,6 +339,21 @@ export function ResourceEditor({
                             Zurück
                         </Button>
                     )}
+                    {flow?.onBack && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={busy}
+                            onClick={() => {
+                                if (dirty) {
+                                    setPendingBack(true);
+                                    setDiscard(true);
+                                } else flow.onBack?.();
+                            }}
+                        >
+                            <ChevronLeft /> Zurück
+                        </Button>
+                    )}
                     {request.wizard && step < groups.length - 1 ? (
                         <Button type="button" onClick={next}>
                             Weiter
@@ -294,7 +362,13 @@ export function ResourceEditor({
                     ) : (
                         <Button type="submit" form={formId} disabled={busy}>
                             <Save />
-                            {busy ? "Wird gespeichert …" : "Speichern"}
+                            {busy
+                                ? "Wird gespeichert …"
+                                : flow
+                                  ? flow.index < flow.steps.length - 1
+                                      ? "Speichern & weiter"
+                                      : "Ablauf abschließen"
+                                  : "Speichern"}
                         </Button>
                     )}
                 </>
@@ -345,7 +419,10 @@ export function ResourceEditor({
                                                     key={f.name}
                                                     definition={
                                                         request.context
-                                                            ?.field === f.name
+                                                            ?.field ===
+                                                            f.name &&
+                                                        request.context.mode !==
+                                                            "prefill"
                                                             ? {
                                                                   ...f,
                                                                   disabled: true,
@@ -364,29 +441,17 @@ export function ResourceEditor({
                     </form>
                 </FormProvider>
                 {row &&
+                    !flow &&
                     resource.relations?.map((relation) => (
-                        <SectionCard
+                        <RelationCollection
                             key={relation.resource + relation.field}
-                            title={relation.label}
-                            description={relation.description}
-                        >
-                            <ResourceCollection
-                                resource={getResource(relation.resource)}
-                                fixedFilters={[
-                                    { field: relation.field, value: row.id },
-                                ]}
-                                defaults={{ [relation.field]: row.id }}
-                                context={{
-                                    resource: resource.name,
-                                    id: row.id,
-                                    field: relation.field,
-                                }}
-                                compact
-                                onSaved={refresh}
-                                form={form}
-                                formResource={resource}
-                            />
-                        </SectionCard>
+                            relation={relation}
+                            parent={{ resource: resource.name, id: row.id }}
+                            surface="editor"
+                            onSaved={refresh}
+                            form={form}
+                            formResource={resource}
+                        />
                     ))}
             </Stack>
         </Overlay>

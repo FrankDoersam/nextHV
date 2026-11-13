@@ -12,7 +12,7 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     await page.getByRole("button", { name: "Anmelden", exact: true }).click();
     await expect(
         page.getByRole("heading", {
-            name: "Ein klarer Blick auf deine Immobilien.",
+            name: "Willkommen, Browser.",
         }),
     ).toBeVisible();
     await page.getByRole("link", { name: "Objekte", exact: true }).click();
@@ -90,9 +90,12 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     await page
         .getByRole("button", { name: "Objektbericht als PDF", exact: true })
         .click();
-    await expect(
-        page.locator('iframe[title="Objektbericht · Browser Test Objekt"]'),
-    ).toHaveAttribute("src", /^blob:/);
+    await expect(page.locator(".react-pdf__Page canvas")).toBeVisible();
+    await page.getByRole("button", { name: "Vergrößern", exact: true }).click();
+    await expect(page.getByText("125 %", { exact: true })).toBeVisible();
+    await page
+        .getByRole("button", { name: "An Breite anpassen", exact: true })
+        .click();
     await page
         .getByRole("button", { name: "Schließen", exact: true })
         .last()
@@ -116,6 +119,22 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
         .getByRole("button", { name: "Schließen", exact: true })
         .last()
         .click();
+    await page.getByRole("link", { name: "Verträge", exact: true }).click();
+    await page.getByRole("button", { name: "MV-001-01", exact: true }).click();
+    await expect(
+        page.getByRole("heading", { name: "MV-001-01", exact: true }),
+    ).toBeVisible();
+    await page.getByRole("tab", { name: /Konditionen/ }).click();
+    await expect(page).toHaveURL(/tab=rent-conditions/);
+    await page.getByRole("button", { name: "Hinzufügen", exact: true }).click();
+    await expect(
+        page.getByRole("combobox", { name: /Vertrag/ }),
+    ).toBeDisabled();
+    await page.reload();
+    await expect(
+        page.getByRole("combobox", { name: /Vertrag/ }),
+    ).toBeDisabled();
+    await page.getByRole("button", { name: "Abbrechen", exact: true }).click();
     expect(errors).toEqual([]);
     await page.getByRole("button", { name: "Abmelden", exact: true }).click();
     await expect(

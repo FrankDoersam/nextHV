@@ -1,13 +1,16 @@
-import { ErrorState, SectionCard } from "@/components/blocks/content";
+import { ErrorState, SectionCard, Loading } from "@/components/blocks/content";
 import { Button } from "@/components/ui/button";
 import { useReload } from "@/framework/data/hooks";
 import { request } from "@/framework/data/http";
 import type { RecordData } from "@/framework/types";
-import { Download, FileCheck, Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import { Download, Eye, FileCheck, Upload } from "lucide-react";
+import { lazy, Suspense, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Overlay } from "@/components/blocks/overlay";
+const PdfViewer = lazy(() => import("@/components/blocks/pdf-viewer"));
 export default function DocumentFile({ record }: { record: RecordData }) {
     const input = useRef<HTMLInputElement>(null);
+    const [preview, setPreview] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<unknown>();
     const reload = useReload();
@@ -56,6 +59,11 @@ export default function DocumentFile({ record }: { record: RecordData }) {
                     <Upload />
                     {busy ? "Wird gespeichert …" : "Datei hochladen"}
                 </Button>
+                {record.mime_type === "application/pdf" && (
+                    <Button variant="outline" onClick={() => setPreview(true)}>
+                        <Eye /> Vorschau
+                    </Button>
+                )}
                 {!!record.size && (
                     <Button
                         variant="outline"
@@ -71,6 +79,22 @@ export default function DocumentFile({ record }: { record: RecordData }) {
                 )}
             </div>
             {!!error && <ErrorState error={error} />}
+            {preview && (
+                <Overlay
+                    open
+                    onClose={() => setPreview(false)}
+                    title="Dokumentvorschau"
+                    presentation="dialog"
+                    size="wide"
+                >
+                    <Suspense fallback={<Loading />}>
+                        <PdfViewer
+                            url={`/api/v1/identity-documents/${record.id}/file`}
+                            name={`Nachweis-${record.id}.pdf`}
+                        />
+                    </Suspense>
+                </Overlay>
+            )}
         </SectionCard>
     );
 }

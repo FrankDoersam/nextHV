@@ -26,6 +26,7 @@ export async function request<T>(
     path: string,
     body?: unknown,
     method = body === undefined ? "GET" : "POST",
+    signal?: AbortSignal,
 ): Promise<T> {
     const token = document.cookie
         .split("; ")
@@ -40,6 +41,7 @@ export async function request<T>(
         headers["Content-Type"] = "application/json";
     const response = await fetch(path, {
         method,
+        signal,
         credentials: "same-origin",
         headers,
         body:

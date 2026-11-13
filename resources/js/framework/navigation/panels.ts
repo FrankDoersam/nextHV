@@ -1,4 +1,6 @@
 import type { FormRequest, Presentation } from "../types";
+import { flowPanel, type FlowState } from "../forms/flow";
+import { getFlow } from "@/modules/flows";
 export interface PanelLink {
     key: string;
     resource: string;
@@ -8,6 +10,7 @@ export interface PanelLink {
     wizard?: boolean;
     reduced?: boolean;
     context?: FormRequest["context"];
+    flow?: FlowState;
 }
 export function readPanels(search: string): PanelLink[] {
     try {
@@ -43,24 +46,36 @@ export function readPanels(search: string): PanelLink[] {
                 keys.add(v.key);
                 return true;
             })
-            .map((v) => ({
-                key: v.key,
-                resource: v.resource,
-                mode: v.mode,
-                presentation: v.presentation,
-                ...(v.mode === "edit" ? { id: v.id } : {}),
-                ...(v.wizard === true ? { wizard: true } : {}),
-                ...(v.reduced === true ? { reduced: true } : {}),
-                ...(v.context
-                    ? {
-                          context: {
-                              resource: v.context.resource,
-                              id: v.context.id,
-                              field: v.context.field,
-                          },
-                      }
-                    : {}),
-            }));
+            .map((v) =>
+                v.flow
+                    ? flowPanel(
+                          getFlow(v.flow.id),
+                          v.flow,
+                          v.key,
+                          v.presentation,
+                      )
+                    : {
+                          key: v.key,
+                          resource: v.resource,
+                          mode: v.mode,
+                          presentation: v.presentation,
+                          ...(v.mode === "edit" ? { id: v.id } : {}),
+                          ...(v.wizard === true ? { wizard: true } : {}),
+                          ...(v.reduced === true ? { reduced: true } : {}),
+                          ...(v.context
+                              ? {
+                                    context: {
+                                        resource: v.context.resource,
+                                        id: v.context.id,
+                                        field: v.context.field,
+                                        ...(v.context.mode === "prefill"
+                                            ? { mode: "prefill" as const }
+                                            : {}),
+                                    },
+                                }
+                              : {}),
+                      },
+            );
     } catch {
         return [];
     }
