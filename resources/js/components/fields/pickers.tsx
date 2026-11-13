@@ -7,193 +7,44 @@ import {
 } from "@/components/reui/time-picker";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-    Command,
-    CommandEmpty,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-    useDebounced,
-    useResource,
-    useResourceList,
-} from "@/framework/data/hooks";
-import type { Filter } from "@/framework/types";
-import { useWorkbench } from "@/framework/workbench";
-import { getResource } from "@/modules/registry";
 import { format, parseISO, isValid } from "date-fns";
 import { de } from "date-fns/locale";
-import { CalendarIcon, Check, ChevronsUpDown, Plus } from "lucide-react";
-import { useState } from "react";
-export function RelationPicker({
-    id,
-    resource: resourceName,
-    value,
-    onChange,
-    labelField,
-    filters,
-    disabled,
-    ...aria
-}: {
+import { CalendarIcon } from "lucide-react";
+import { useState, type AriaAttributes } from "react";
+export { RelationPicker } from "./entity-picker";
+interface DatePickerProps extends AriaAttributes {
     id?: string;
-    resource: string;
     value: unknown;
-    onChange: (value: number | null) => void;
-    labelField?: string;
-    filters?: Filter[];
+    onChange: (value: string | null) => void;
     disabled?: boolean;
-    "aria-invalid"?: boolean;
-    "aria-describedby"?: string;
-}) {
-    const resource = getResource(resourceName);
-    const [open, setOpen] = useState(false);
-    const [search, setSearch] = useState("");
-    const query = useDebounced(search);
-    const selected = useResource(resource, Number(value) || 0);
-    const result = useResourceList(
-        resource,
-        { query, limit: 10, filters },
-        open,
-    );
-    const workbench = useWorkbench();
-    const titleField = labelField ?? resource.titleField;
-    return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger
-                render={
-                    <Button
-                        id={id}
-                        {...aria}
-                        type="button"
-                        variant="outline"
-                        disabled={disabled}
-                        role="combobox"
-                        aria-expanded={open}
-                        className="h-9 w-full justify-between bg-background font-normal"
-                    />
-                }
-            >
-                {value
-                    ? selected.data
-                        ? String(selected.data[titleField])
-                        : selected.error
-                          ? "Datensatz nicht verfügbar"
-                          : "Wird geladen …"
-                    : "Suchen und auswählen …"}
-                <ChevronsUpDown className="ml-2 size-4 opacity-50" />
-            </PopoverTrigger>
-            <PopoverContent
-                className="w-[min(360px,calc(100vw-2rem))] p-0"
-                align="start"
-            >
-                <Command shouldFilter={false}>
-                    <CommandInput
-                        placeholder={`${resource.label} suchen …`}
-                        value={search}
-                        onValueChange={setSearch}
-                    />
-                    <CommandList>
-                        {result.isFetching ? (
-                            <p className="p-3 text-xs text-muted-foreground">
-                                Wird gesucht …
-                            </p>
-                        ) : result.isError ? (
-                            <p
-                                role="alert"
-                                className="p-3 text-xs text-destructive"
-                            >
-                                Suche fehlgeschlagen. Bitte erneut versuchen.
-                            </p>
-                        ) : (
-                            <CommandEmpty>Keine Ergebnisse</CommandEmpty>
-                        )}
-                        {result.data?.data.map((row) => (
-                            <CommandItem
-                                key={row.id}
-                                value={String(row.id)}
-                                onSelect={() => {
-                                    onChange(row.id);
-                                    setOpen(false);
-                                }}
-                            >
-                                <Check
-                                    className={
-                                        Number(value) === row.id
-                                            ? "opacity-100"
-                                            : "opacity-0"
-                                    }
-                                />
-                                <span>{String(row[titleField])}</span>
-                                {!!row.code && (
-                                    <span className="ml-auto text-xs text-muted-foreground">
-                                        {String(row.code)}
-                                    </span>
-                                )}
-                            </CommandItem>
-                        ))}
-                    </CommandList>
-                    <div className="flex gap-2 border-t p-2">
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                                setOpen(false);
-                                workbench.openForm({
-                                    resource,
-                                    mode: "create",
-                                    reduced: true,
-                                    presentation: "dialog",
-                                    onSaved: (row) => onChange(row.id),
-                                });
-                            }}
-                        >
-                            <Plus />
-                            {resource.singular} anlegen
-                        </Button>
-                        {!!value && (
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => {
-                                    onChange(null);
-                                    setOpen(false);
-                                }}
-                            >
-                                Leeren
-                            </Button>
-                        )}
-                    </div>
-                </Command>
-            </PopoverContent>
-        </Popover>
-    );
+    clearable?: boolean;
+    minDate?: string;
+    maxDate?: string;
 }
+const parsedDate = (value: unknown) => {
+    const parsed = value ? parseISO(String(value)) : undefined;
+    return parsed && isValid(parsed) ? parsed : undefined;
+};
 export function DatePicker({
     id,
     value,
     onChange,
     disabled,
+    clearable = true,
+    minDate,
+    maxDate,
     ...aria
-}: {
-    id?: string;
-    value: unknown;
-    onChange: (value: string | null) => void;
-    disabled?: boolean;
-    "aria-invalid"?: boolean;
-    "aria-describedby"?: string;
-}) {
+}: DatePickerProps) {
     const [open, setOpen] = useState(false);
-    const parsed = value ? parseISO(String(value)) : undefined;
-    const selected = parsed && isValid(parsed) ? parsed : undefined;
+    const selected = parsedDate(value);
+    const minimum = parsedDate(minDate),
+        maximum = parsedDate(maxDate);
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger
@@ -216,25 +67,34 @@ export function DatePicker({
                     mode="single"
                     locale={de}
                     selected={selected}
-                    onSelect={(d) => {
-                        onChange(d ? format(d, "yyyy-MM-dd") : null);
+                    required={!clearable}
+                    disabled={[
+                        ...(minimum ? [{ before: minimum }] : []),
+                        ...(maximum ? [{ after: maximum }] : []),
+                    ]}
+                    onSelect={(date: Date | undefined) => {
+                        if (date || clearable)
+                            onChange(date ? format(date, "yyyy-MM-dd") : null);
                         setOpen(false);
                     }}
                     captionLayout="dropdown"
-                    startMonth={new Date(1920, 0)}
-                    endMonth={new Date(2100, 11)}
-                    defaultMonth={selected}
+                    startMonth={minimum ?? new Date(1920, 0)}
+                    endMonth={maximum ?? new Date(2100, 11)}
+                    defaultMonth={selected ?? minimum}
                 />
-                <Button
-                    variant="ghost"
-                    type="button"
-                    onClick={() => {
-                        onChange(null);
-                        setOpen(false);
-                    }}
-                >
-                    Datum entfernen
-                </Button>
+                {clearable && (
+                    <Button
+                        variant="ghost"
+                        type="button"
+                        disabled={!selected}
+                        onClick={() => {
+                            onChange(null);
+                            setOpen(false);
+                        }}
+                    >
+                        Datum entfernen
+                    </Button>
+                )}
             </PopoverContent>
         </Popover>
     );
@@ -244,21 +104,30 @@ export function MonthPicker({
     value,
     onChange,
     disabled,
+    clearable = true,
+    minDate,
+    maxDate,
     ...aria
-}: {
-    id?: string;
-    value: unknown;
-    onChange: (value: string | null) => void;
-    disabled?: boolean;
-    "aria-invalid"?: boolean;
-    "aria-describedby"?: string;
-}) {
+}: DatePickerProps) {
     const [open, setOpen] = useState(false);
     const [year, setYear] = useState(
         Number(String(value ?? "").slice(0, 4)) || new Date().getFullYear(),
     );
+    const minimum = minDate?.slice(0, 7),
+        maximum = maxDate?.slice(0, 7);
+    const valid = /^\d{4}-(0[1-9]|1[0-2])$/.test(String(value));
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover
+            open={open}
+            onOpenChange={(next) => {
+                setOpen(next);
+                if (next)
+                    setYear(
+                        Number(String(value ?? minDate ?? "").slice(0, 4)) ||
+                            new Date().getFullYear(),
+                    );
+            }}
+        >
             <PopoverTrigger
                 render={
                     <Button
@@ -272,7 +141,7 @@ export function MonthPicker({
                 }
             >
                 <CalendarIcon />
-                {value && /^\d{4}-(0[1-9]|1[0-2])$/.test(String(value))
+                {valid
                     ? format(parseISO(String(value) + "-01"), "MMMM yyyy", {
                           locale: de,
                       })
@@ -282,40 +151,52 @@ export function MonthPicker({
                 <Input
                     type="number"
                     aria-label="Jahr"
-                    min={1900}
-                    max={2100}
+                    min={Number(minimum?.slice(0, 4)) || 1900}
+                    max={Number(maximum?.slice(0, 4)) || 2100}
                     value={year}
-                    onChange={(e) => setYear(Number(e.target.value))}
+                    onChange={(event) => setYear(Number(event.target.value))}
                 />
                 <div className="grid grid-cols-3 gap-1">
-                    {Array.from({ length: 12 }, (_, m) => (
-                        <Button
-                            type="button"
-                            key={m}
-                            variant="ghost"
-                            onClick={() => {
-                                onChange(
-                                    `${year}-${String(m + 1).padStart(2, "0")}`,
-                                );
-                                setOpen(false);
-                            }}
-                        >
-                            {format(new Date(year, m, 1), "MMM", {
-                                locale: de,
-                            })}
-                        </Button>
-                    ))}
+                    {Array.from({ length: 12 }, (_, month) => {
+                        const key = `${year}-${String(month + 1).padStart(2, "0")}`;
+                        return (
+                            <Button
+                                type="button"
+                                key={month}
+                                variant={value === key ? "secondary" : "ghost"}
+                                aria-pressed={value === key}
+                                disabled={
+                                    !Number.isInteger(year) ||
+                                    year < 1900 ||
+                                    year > 2100 ||
+                                    !!(minimum && key < minimum) ||
+                                    !!(maximum && key > maximum)
+                                }
+                                onClick={() => {
+                                    onChange(key);
+                                    setOpen(false);
+                                }}
+                            >
+                                {format(new Date(2000, month, 1), "MMM", {
+                                    locale: de,
+                                })}
+                            </Button>
+                        );
+                    })}
                 </div>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => {
-                        onChange(null);
-                        setOpen(false);
-                    }}
-                >
-                    Entfernen
-                </Button>
+                {clearable && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        disabled={!value}
+                        onClick={() => {
+                            onChange(null);
+                            setOpen(false);
+                        }}
+                    >
+                        Entfernen
+                    </Button>
+                )}
             </PopoverContent>
         </Popover>
     );
@@ -325,16 +206,12 @@ export function RangePicker({
     value,
     onChange,
     month = false,
-    disabled,
-    ...aria
-}: {
-    id?: string;
-    value: unknown;
+    minDate,
+    maxDate,
+    ...props
+}: Omit<DatePickerProps, "onChange"> & {
     onChange: (value: unknown) => void;
     month?: boolean;
-    disabled?: boolean;
-    "aria-invalid"?: boolean;
-    "aria-describedby"?: string;
 }) {
     const range = (value ?? {}) as { from?: string; to?: string };
     const Picker = month ? MonthPicker : DatePicker;
@@ -348,10 +225,15 @@ export function RangePicker({
                     Von
                 </label>
                 <Picker
-                    disabled={disabled}
-                    {...aria}
+                    {...props}
                     id={id}
                     value={range.from}
+                    minDate={minDate}
+                    maxDate={
+                        range.to && (!maxDate || range.to < maxDate)
+                            ? range.to
+                            : maxDate
+                    }
                     onChange={(from) => onChange({ ...range, from })}
                 />
             </div>
@@ -363,10 +245,15 @@ export function RangePicker({
                     Bis
                 </label>
                 <Picker
-                    disabled={disabled}
-                    {...aria}
+                    {...props}
                     id={`${id}-to`}
                     value={range.to}
+                    maxDate={maxDate}
+                    minDate={
+                        range.from && (!minDate || range.from > minDate)
+                            ? range.from
+                            : minDate
+                    }
                     onChange={(to) => onChange({ ...range, to })}
                 />
             </div>

@@ -34,7 +34,7 @@ export function BaseField({
     return (
         <div className={cn("space-y-2", wide && "sm:col-span-2")}>
             <div className="flex min-h-5 items-center gap-1.5">
-                <Label htmlFor={id}>
+                <Label htmlFor={id} id={`${id}-label`}>
                     {label}
                     {required && (
                         <span aria-hidden className="text-destructive">

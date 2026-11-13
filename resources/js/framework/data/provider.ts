@@ -71,7 +71,14 @@ export const dataProvider = {
                         attributes,
                     },
                 ],
-                response: {},
+                response: {
+                    ...(resource.includes
+                        ? { includes: resource.includes }
+                        : {}),
+                    ...(resource.aggregates
+                        ? { aggregates: resource.aggregates }
+                        : {}),
+                },
             },
         );
         return result.records[0];

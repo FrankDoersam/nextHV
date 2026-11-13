@@ -25,6 +25,8 @@ export const select = (
     name,
     label,
     kind: "select",
+    required: true,
+    clearable: false,
     options: opts(values),
     group,
     default: values[0],

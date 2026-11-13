@@ -559,6 +559,7 @@ export function ResourceCollection({
             }}
         >
             <div
+                data-slot="resource-collection"
                 aria-busy={result.isFetching}
                 className={cn(
                     "relative flex min-h-0 flex-col gap-3",

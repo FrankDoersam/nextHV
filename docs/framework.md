@@ -1,13 +1,13 @@
 # nextHV · Framework- und Fachmodell-Handbuch
 
-Dieses Dokument beschreibt den Basiscommit `a34d08f3907b8955160ae271797b88accc1b83f0` und dessen vorliegenden Folgecommit. Es ist die Anleitung zum Bauen weiterer CRUD-Fachmodule. Die bestehenden öffentlichen REUI-Komponenten bleiben die UI-Grundlage; Refine und Filament dienen als Architekturvorbilder, werden nicht zusätzlich als Laufzeit installiert.
+Dieses Dokument beschreibt den aktuellen Framework-Stand einschließlich Formular-Flows, Vertragsakte, direkter Feldmutationen und Screenshot-Workflow. Es ist die Anleitung zum Bauen weiterer CRUD-Fachmodule. Die bestehenden öffentlichen REUI-Komponenten bleiben die UI-Grundlage; Refine und Filament dienen als Architekturvorbilder, werden nicht zusätzlich als Laufzeit installiert.
 
 ## 1. Einstieg und Betriebsmodell
 
 - Laravel 13 + `lomkit/laravel-rest-api` 3, Sanctum-Session, Scramble/OpenAPI.
 - React 19, React Router 7, TanStack Query, TanStack Table 9, React Hook Form, Zod.
 - REUI Base Nova, Base UI, Tailwind 4; gemeinsame Farben und Abstände in `resources/css/app.css` und zentralen Komponenten.
-- PHP 8.3+, Composer 2, Node 22.12+; CI verwendet Node 24/PHP 8.3. SQLite für lokale Entwicklung und Tests.
+- PHP 8.3+, Composer 2, Node 22.12+; CI verwendet Node 24/PHP 8.5. SQLite für lokale Entwicklung und Tests.
 - `setasign/tfpdf` erzeugt Unicode-PDFs; keine externe PDF-Website und kein HTML-Renderer erforderlich.
 
 Installation und Admin-Anlage stehen im [README](../README.md). Für ein bestehendes Checkout nach diesem Update:
@@ -31,23 +31,23 @@ Der wiederholbare Seeder erzeugt auf leerer Datenbank 10 Objekte mit je 5 Einhei
 
 ## 2. Architektur und Verantwortlichkeiten
 
-| Ebene                 | Ort                                                          | Aufgabe                                                                                       |
-| --------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| Datenmodell           | `app/Models`, `database/migrations`                          | Tabellen, Fremdschlüssel, Indizes, Casts, explizite Relationen                                |
-| Fachaktionen          | `app/Domain/Property/Actions`, `app/Domain/Contract/Actions` | Fachliche Änderungen, Klonen, Vertragsregeln, Kennzahlen, PDF-Erstellung                      |
-| Integrität            | `app/Observers`                                              | Regeln auch bei Modelländerungen außerhalb eines einzelnen REST-Endpunkts                     |
-| REST-Schema           | `app/Rest/Resources`                                         | Felder, Regeln, Relationen, Versionen, Actions, berechnete Werte                              |
-| REST-Actions          | `app/Rest/Actions`                                           | Autorisierung, Einzel-/Bulk-Ziel, Bestätigung, Übergabe an Fachaktionen, Ergebnisvertrag      |
-| Zusätzliche Endpunkte | `app/Http/Controllers`                                       | Login, private Dokumente, Clone-Defaults, Löschvorprüfung, PDF-Abruf                          |
-| UI-Primitives         | `resources/js/components/ui`                                 | Offizielle Base-UI-/shadcn-Bausteine                                                          |
-| REUI                  | `resources/js/components/reui`                               | Öffentliche REUI-Quellen, einschließlich DataGrid, Stepper, TimePicker, NumberField und Alert |
-| App-Blöcke            | `resources/js/components/blocks`                             | AppShell, Cards, Listen, KPIs, Overlay, Layout, Auth, LazyTabs                                |
-| Formularfelder        | `resources/js/components/fields`                             | BaseField, ResourceField, CurrencyField, MultiSelect, Picker                                  |
-| CRUD-Laufzeit         | `resources/js/framework`                                     | Provider, Hooks, Form-Engine, Workbench, Actions, Navigation, Tabellen                        |
-| Fachkonfiguration     | `resources/js/modules`                                       | Ressourcen, Felder, Spalten, Relationslisten, fachliche UI-Actions                            |
-| Seiten                | `resources/js/pages`                                         | Zusammensetzung der Komponenten ohne eigene Styles                                            |
+| Ebene                 | Ort                                                          | Aufgabe                                                                                         |
+| --------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| Datenmodell           | `app/Models`, `database/migrations`                          | Tabellen, Fremdschlüssel, Indizes, Casts, explizite Relationen                                  |
+| Fachaktionen          | `app/Domain/Property/Actions`, `app/Domain/Contract/Actions` | Fachliche Änderungen, Klonen, Vertragsregeln, Kennzahlen, PDF-Erstellung                        |
+| Integrität            | `app/Observers`                                              | Regeln auch bei Modelländerungen außerhalb eines einzelnen REST-Endpunkts                       |
+| REST-Schema           | `app/Rest/Resources`                                         | Felder, Regeln, Relationen, Versionen, Actions, berechnete Werte                                |
+| REST-Actions          | `app/Rest/Actions`                                           | Autorisierung, Einzel-/Bulk-Ziel, Bestätigung, Übergabe an Fachaktionen, Ergebnisvertrag        |
+| Zusätzliche Endpunkte | `app/Http/Controllers`                                       | Login, private Dokumente, Clone-Defaults, Löschvorprüfung, PDF-Abruf                            |
+| UI-Primitives         | `resources/js/components/ui`                                 | Offizielle Base-UI-/shadcn-Bausteine                                                            |
+| REUI                  | `resources/js/components/reui`                               | Öffentliche REUI-Quellen, einschließlich DataGrid, Stepper, TimePicker, NumberField und Alert   |
+| App-Blöcke            | `resources/js/components/blocks`                             | AppShell, Cards, Listen, KPIs, Overlay, Layout, Auth, LazyTabs                                  |
+| Formularfelder        | `resources/js/components/fields`                             | BaseField, ResourceField, CurrencyField, ChoicePicker, EntityPicker, CheckboxList, Datumspicker |
+| CRUD-Laufzeit         | `resources/js/framework`                                     | Provider, Hooks, Form-Engine, Workbench, Actions, Navigation, Tabellen                          |
+| Fachkonfiguration     | `resources/js/modules`                                       | Ressourcen, Felder, Spalten, Relationslisten, fachliche UI-Actions                              |
+| Seiten                | `resources/js/pages`                                         | Zusammensetzung der Komponenten ohne eigene Styles                                              |
 
-Der Ablauf einer Änderung lautet: Formular → Datenprovider → REST-Resource → Fachaktion/Observer → Model → API-Antwort → Cache-Invalidierung → UI. Darstellung, API-Protokoll und Fachregeln haben jeweils einen eindeutigen Ort.
+Der Ablauf einer Änderung lautet: Formular → Datenprovider → REST-Resource → Fachaktion/Observer → Model → projizierte API-Antwort → betroffene Cache-Zeile und Detail → UI. Darstellung, API-Protokoll und Fachregeln haben jeweils einen eindeutigen Ort.
 
 ## 3. Fachmodell aus dem Basiscommit
 
@@ -115,19 +115,19 @@ Die Registrierung erzeugt Menüeinträge, Listen-, Detail- und Formularansichten
 
 Jedes `ResourceField` verwendet `BaseField`: Label, Pflichtkennzeichnung, I-Icon mit Popover, Beschreibung, Sperrhinweis, Fehlerzuordnung und optionalen Zähler. IDs und `aria-describedby` verbinden Hinweise mit dem Eingabeelement. Text- und Zahlenfelder benutzen die vorhandenen Primitives; Select, Dialog, Popover und Fokussteuerung stammen aus Base UI.
 
-| `kind`                      | Verhalten                                                                                                |
-| --------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `text`, `email`             | Kontrollierte Eingabe, Mindest-/Maximallänge, E-Mail-Prüfung                                             |
-| `textarea`                  | Mehrzeilig, `rows`, Live-Zeichenzähler, `minLength`, `maxLength`                                         |
-| `number`                    | Numerischer Formwert, `min`, `max`, `step`                                                               |
-| `currency`                  | REUI NumberField mit deutscher Betragsdarstellung, `EUR`, numerischem Formwert und zwei Nachkommastellen |
-| `select`                    | Einzelauswahl aus `options`                                                                              |
-| `multiselect`               | Suchbare Mehrfachauswahl, Auswahlzähler, Leeren                                                          |
-| `checkbox`                  | Einzelner boolescher Wert                                                                                |
-| `checkbox-group`            | Mehrere Optionen als Checkboxliste, Array-Wert                                                           |
-| `relation`                  | Serverseitige Suche mit Debouncing, vorhandene Auswahl laden, reduzierte Neuanlage, Auswahl übernehmen   |
-| `date`, `month`, `time`     | Kalender-/Monats-/Zeitpicker                                                                             |
-| `date-range`, `month-range` | Beginn/Ende, vollständige und chronologische Bereichsvalidierung                                         |
+| `kind`                             | Verhalten                                                                                                |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `text`, `email`                    | Kontrollierte Eingabe, Mindest-/Maximallänge, E-Mail-Prüfung                                             |
+| `textarea`                         | Mehrzeilig, `rows`, Live-Zeichenzähler, `minLength`, `maxLength`                                         |
+| `number`                           | Numerischer Formwert, `min`, `max`, `step`                                                               |
+| `currency`                         | REUI NumberField mit deutscher Betragsdarstellung, `EUR`, numerischem Formwert und zwei Nachkommastellen |
+| `select`                           | Suchbare Einzel-/Mehrfachauswahl (`multiple`) aus `options`                                              |
+| `multiselect`                      | Suchbare Mehrfachauswahl, einzeilige Titel, optionales Leeren                                            |
+| `checkbox`                         | Einzelner boolescher Wert                                                                                |
+| `checkbox-group`, `checkbox-cards` | Dynamische Listen/Karten, Suche, Select-all, deaktivierte Optionen, Auswahlgrenze und Array-Wert         |
+| `relation`                         | Serverseitige Suche/Filter, Einzel-/Mehrfachauswahl, Titel/Subtext, abschaltbare Neuanlage               |
+| `date`, `month`, `time`            | Kalender-/Monats-/Zeitpicker                                                                             |
+| `date-range`, `month-range`        | Beginn/Ende, vollständige und chronologische Bereichsvalidierung                                         |
 
 Gemeinsame Props: `required`, `nullable`, `default`, `description`, `help`, `placeholder`, `disabled`, `lockedReason`, `readonlyOnEdit`, `writeOnly`, `group`, `reduced`, `validate(value, values)`.
 
@@ -303,7 +303,7 @@ return ActionResponse::data(['ui' => [
 
 Das ist eine Formularänderung, keine heimliche Speicherung. Ohne Formular meldet der Dispatcher einen Fehler. `formResource` muss bei einem fremden Elternformular explizit mitgegeben werden; `ResourceEditor` erledigt dies für seine Relationslisten.
 
-Für PDF-Ergebnisse erzeugt das Backend eine zehn Minuten gültige relative signierte URL, gebunden an den aktuellen Benutzer. Der Abruf prüft erneut Authentifizierung, Policy, Signatur und Benutzer-ID. Die Antwort ist `application/pdf`, `private, no-store` und `nosniff`. Das Frontend akzeptiert nur dieselbe Origin unter `/api/`, prüft den MIME-Typ, lädt mit Sitzung und gibt erzeugte Blob-URLs nach dem Schließen frei. Die Darstellung übernimmt der React-PDF-Viewer; ein Download ist zusätzlich möglich.
+Für PDF-Ergebnisse erzeugt das Backend eine zehn Minuten gültige relative signierte URL, gebunden an den aktuellen Benutzer. Der Abruf prüft erneut Authentifizierung, Policy, Signatur und Benutzer-ID. Die Antwort ist `application/pdf`, `private, no-store` und `nosniff`. Das Frontend akzeptiert nur dieselbe Origin unter `/api/`, prüft den MIME-Typ, lädt mit Sitzung und gibt erzeugte Blob-URLs nach dem Schließen frei. Die Darstellung übernimmt der browsernative PDF-Viewer innerhalb einer React-Komponente; Öffnen in neuem Tab und Download sind zusätzlich möglich.
 
 ## 10. Zusammengesetzte und berechnete API-Felder
 
@@ -384,7 +384,7 @@ npm run build
 
 Featuretests decken unter anderem Auth, Seeder, Verträge, Historie, Dokumentenschutz, Versionskonflikte, Bestätigung, deaktivierte Permissions sowie neu Löschblockaden, konstante Vorprüfungsabfragen, Klondefaults, virtuelle schreibgeschützte Felder und den PDF-Abruf ab. React-Tests prüfen Wizard/Dirty-State, echte REUI-Tabellen, URL-Zustand, Deep-Link-Hydrierung, Browser-Zurück, geschachtelte gesperrte Relationsformulare, Currency-Parsing, Mehrfachauswahl, Datumsformat und mehrteilige Alerts.
 
-Die bestehende Playwright-Suite wurde für die neue Oberfläche erweitert. Ein echter Browserlauf ist in der lokalen Erstellungsumgebung durch die Browser-Sandbox blockiert; visuelle Abnahme, Canvas-PDFs und responsive Details müssen zusätzlich im Zielbrowser geprüft werden. Die Komponententests ersetzen keine pixelgenaue Browserabnahme.
+Die bestehende Playwright-Suite wurde für die neue Oberfläche erweitert. Ein echter Browserlauf ist in der lokalen Erstellungsumgebung durch die Browser-Sandbox blockiert; visuelle Abnahme, browsernative PDF-Einbettung und responsive Details müssen zusätzlich im Zielbrowser geprüft werden. Die Komponententests ersetzen keine pixelgenaue Browserabnahme.
 
 Keine vollständige Buchhaltung, Zahlungsabstimmung, Mandantentrennung, ausgebautes Rollenmodell, automatische rechtliche Fristbewertung oder persistierte gemeinsame Tabellenansichten. REUI unterstützt weitere Grid-Modi wie Tree Rows und Inline Editing; diese sind nicht automatisch Bestandteil des hier freigegebenen CRUD-Wrappers. Zeilenvirtualisierung gehört seit dem in Abschnitt 18 beschriebenen Ausbau dazu. Gerade Inline-Mutationen brauchen dieselben Vertrags- und Versionsregeln wie die Formulare.
 
@@ -523,7 +523,7 @@ Das Dashboard enthält bewusst gekennzeichnete **Beispieldaten** für Finanzen, 
 
 ### PDF
 
-Installiert: `react-pdf` 11 mit passender `pdfjs-dist` 6.3.289. React-PDF ist die React-Integration für die Rendering-Engine **Mozilla PDF.js**. Unter den recherchierten PDF-Viewer-Projekten besitzt PDF.js die größte GitHub-Star-Zahl; React-PDF selbst ist nicht mit dem PDF-Erzeuger `@react-pdf/renderer` zu verwechseln.
+Die React-Komponente `PdfViewer` nutzt den eingebauten PDF-Viewer des Browsers über ein `<object>`. **Keine zusätzliche PDF-Abhängigkeit:** `react-pdf`, `pdfjs-dist` und `vite-plugin-static-copy` wurden entfernt. Damit entfallen Renderer, Worker, CMaps, WASM und Fonts im Frontend-Build. Der bestehende Backend-Generator `setasign/tfpdf` bleibt für Objektberichte erforderlich.
 
 ```tsx
 const PdfViewer = lazy(() => import("@/components/blocks/pdf-viewer"));
@@ -532,9 +532,9 @@ const PdfViewer = lazy(() => import("@/components/blocks/pdf-viewer"));
 </Suspense>;
 ```
 
-Der Viewer bietet eine helle Seitenfläche, Textauswahl, Links, Seitennummer und Vor/Zurück, Zoom von 25–250 %, Breitenanpassung, Drehung und Download. Tastatur in der fokussierten Seitenansicht: Pfeile links/rechts und `+`/`-`. Es wird jeweils eine Seite gerendert. Zoom ist relativ zur verfügbaren Seitenbreite. PDF-Ergebnisse aus Actions und hinterlegte PDF-Ausweise verwenden denselben Viewer.
+Die React-Hülle bietet eine helle Fläche, Ladezustand, wiederholbare Fehler, Dateiname, „Öffnen“ und Download. **Zoom, Druck, Suche und Seitennavigation hängen vom PDF-Viewer des jeweiligen Browsers ab**; die Anwendung verspricht keine eigenen Canvas-Bedienelemente mehr. Unterstützt der Browser keine Einbettung, gibt es einen Download-Fallback. Action-Ergebnisse und hinterlegte PDF-Ausweise verwenden dieselbe Komponente.
 
-Worker, CMaps, WASM-Module und Standardschriften werden lokal mit Vite ausgeliefert; kein CDN erhält Dokumente. Der PDF-Code wird erst beim Öffnen geladen. Abrufe sind auf dieselbe Origin unter `/api/` beschränkt, verwenden Sitzung und AbortSignal, prüfen den MIME-Typ und geben Blob-URLs beim Wechsel/Schließen frei. Fehler sind wiederholbar; passwortgeschützte Dateien können heruntergeladen werden. Pixelgenaues Canvas-Rendering bleibt Bestandteil der Browserabnahme.
+Der Abruf bleibt authentifiziert auf derselben Origin unter `/api/`, prüft den PDF-MIME-Typ und verwendet ein AbortSignal. Blob-URLs werden beim Dokumentwechsel/Schließen freigegeben. Kein externer PDF-Dienst erhält Dokumente. Die Komponente wird erst beim Öffnen geladen.
 
 ### Grid
 
@@ -544,8 +544,99 @@ Worker, CMaps, WASM-Module und Standardschriften werden lokal mit Vite ausgelief
 - Mehrfachfilter mit durchsuchbaren Optionen und ausgewählten Werten; serverseitiger `in`-Filter. Frühere skalare Filter-URLs bleiben lesbar und werden normalisiert.
 - Zeilenfenster ab 50 Datensätzen, konfigurierbar. Die API-Seitengröße bleibt auf 100 beschränkt. Stabile leere Daten und über Referenzen aktualisierte Action-Instanzen verhindern unnötigen Neuaufbau bzw. veraltete Formularbezüge.
 - Fixierter Tabellenkopf, eigene Scrollfläche und Pagination im Footer. Sortierung, Filter, Suche, Paging, Gruppierung und Sichtbarkeit bleiben URL-basiert; Spaltenbreite und Fixierung sind weiterhin Sitzungszustand.
-- Form-Layer und Action-Dialoge werden zusätzlich bei Bedarf geladen; PDF-Rendering bleibt ein eigenes Lazy-Modul.
+- Form-Layer und Action-Dialoge werden zusätzlich bei Bedarf geladen; die PDF-Einbettung bleibt ein eigenes Lazy-Modul.
 
-Ergänzte Regressionstests prüfen gespeicherte Flow-Schritte und Zurückbearbeitung ohne Duplikate, URL-Bereinigung, abgeschaltete Relationsfunktionen, Mehrfachfilter, PDF-Bedienung und Aufräumen sowie die serverseitige Auswahl der gültigen Kondition. Die Playwright-Suite wurde auf Canvas-PDFs und die neue Vertragsakte angepasst; ein erfolgreicher Browserlauf wird damit nicht behauptet.
+Ergänzte Regressionstests prüfen gespeicherte Flow-Schritte und Zurückbearbeitung ohne Duplikate, URL-Bereinigung, abgeschaltete Relationsfunktionen, Mehrfachfilter, PDF-Bedienung und Aufräumen sowie die serverseitige Auswahl der gültigen Kondition. Die Playwright-Suite wurde auf browsernative PDF-Einbettung und die neue Vertragsakte angepasst; ein erfolgreicher Browserlauf wird damit nicht behauptet.
 
-Zusätzliche Primärquellen: [REUI Frame](https://reui.io/docs/components/base/frame), [REUI DataGrid-Beispiele](https://reui.io/components/data-grid), [Base-Nova Avatar](https://ui.shadcn.com/docs/components/base/avatar), [React-PDF](https://github.com/wojtekmaj/react-pdf), [PDF.js](https://github.com/mozilla/pdf.js).
+Zusätzliche Primärquellen: [REUI Frame](https://reui.io/docs/components/base/frame), [REUI DataGrid-Beispiele](https://reui.io/components/data-grid), [Base-Nova Avatar](https://ui.shadcn.com/docs/components/base/avatar), [Base UI Combobox](https://base-ui.com/react/components/combobox), [REUI Checkbox](https://reui.io/components/checkbox).
+
+## 19. Suchbare Auswahlfelder und Datumsgrenzen
+
+`ChoicePicker` kapselt die bereits installierte Base-UI-Combobox und die Base-Nova-InputGroup. `RelationPicker` in `entity-picker.tsx` ergänzt nur den Datenprovider und die Neuanlage. Keine zweite Select-/Suchbibliothek wurde installiert. `MultiSelect` bleibt ein Kompatibilitätswrapper.
+
+| Prop                              | Vertrag                                                                                                  |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `multiple`                        | Einzelwert oder Array; auch bei `kind: "select"` und `kind: "relation"`                                  |
+| `clearable`                       | Löschsymbol/-aktion sichtbar; die Formularpflicht bleibt separat durch `required` definiert              |
+| `creatable`                       | Nur Entity-Picker: reduzierte Neuanlage aktivieren/deaktivieren; prüft zusätzlich den Permission-Adapter |
+| `filters`                         | Lomkit-Filter im Backend-Suchrequest; AND mit Suchtext, keine rein lokale Filterung                      |
+| `displayText(row)` / `labelField` | Titel der Entity; Standard ist `resource.titleField`                                                     |
+| `secondaryText(row)`              | Zusatztext ausschließlich im geöffneten Dropdown; standardmäßig eine abweichende Nummer                  |
+| `maxSelected`                     | Auswahlgrenze; Entity-Picker höchstens 100, passend zum API-Seitenlimit                                  |
+| `options`                         | Statische Werte mit `value`, `label`, optional `description`, `icon`, `badge`, `disabled`                |
+| `placeholder`, `disabled`         | Platzhalter und vollständige Eingabesicherung                                                            |
+
+```ts
+{
+    name: "contract_ids", label: "Verträge", kind: "relation",
+    resource: "contracts", multiple: true, clearable: true, creatable: false,
+    maxSelected: 10,
+    filters: [{ field: "status", value: "active" }],
+    displayText: (row) => String(row.code),
+    secondaryText: (row) => `${row.starts_on ?? "—"} · ${row.status}`,
+}
+```
+
+Das Beispiel ist eine **Felddefinition für einen passenden Array-Endpunkt**. Die vorhandenen skalaren `contract_id`-/`unit_id`-Fremdschlüssel bleiben skalar. Mehrfachauswahl erzeugt keine m:n-Persistierung und darf dort nicht einfach eingeschaltet werden. Der Backend-Endpunkt muss Array und Relation explizit unterstützen/validieren. Suchfilter sind Auswahlhilfe, keine Autorisierung oder serverseitige Mutationsregel. Organisationsgrenzen und aktivierte Permission-Adapter bleiben wie vereinbart einem späteren Ausbau vorbehalten.
+
+Tab fokussiert das Suchfeld; Tippen startet direkt die Suche, ohne einen weiteren Klick. Nach dem Schließen stehen ausschließlich Titel im Eingabefeld. Mehrfachwerte werden als einzeilige, abgeschnittene Liste dargestellt; das Feld wächst nicht. Beim Wiederöffnen bleiben die tatsächlichen Werte selektiert. Der Löschbereich reserviert bei `clearable: true` dauerhaft seinen Platz. Mehrfach-Entities werden über **einen gebündelten ID-Filter** geladen, nicht über eine Anfrage je Auswahl. Suchergebnisse werden mit Debounce und AbortSignal geladen. Eine Neuanlage wird vor Übernahme gegen denselben Backend-Filter geprüft.
+
+```ts
+{ name: "starts_on", label: "Beginn", kind: "date", required: true,
+  clearable: false, minDate: "2026-01-01", maxDate: "2027-12-31" }
+{ name: "period", label: "Zeitraum", kind: "date-range", clearable: true,
+  minDate: "2026-01-01", maxDate: "2026-12-31" }
+```
+
+`minDate`/`maxDate` sind inklusive ISO-Grenzen, gelten im Kalender **und** in der gemeinsamen Validierung. Monatspicker verwenden `YYYY-MM` bzw. den Monatsanteil einer ISO-Datumsgrenze. Bei Bereichen begrenzen Beginn/Ende einander. Ein vollständig geleerter optionaler Bereich ist gültig; ein halb ausgefüllter Bereich nicht. Anzeige bleibt `dd.MM.yyyy`, Übertragung ISO. `clearable: false` unterdrückt Leeren und Abwahl desselben Kalendertags; es verhindert keine programmgesteuerten Defaults.
+
+## 20. Key-Value-Liste und geschäftliche Checkbox-Komponenten
+
+`EditableKeyValueList` ist ein eigener Framework-Block auf den vorhandenen REUI/Base-Nova-Primitives. Layout, Feldrenderer und Mutation liegen zentral, nicht in Pages. Standardmäßig ist jede Property nur lesbar. Erst `editable` erlaubt die Bearbeitung, zusätzlich zu `disabled`, `readonlyOnEdit` und dem vorhandenen `edit`-Permission-Adapter.
+
+```tsx
+<EditableKeyValueList
+    resource={contracts}
+    record={record}
+    properties={[
+        { name: "deposit_status", editable: true },
+        { name: "payment_day", editable: (row) => row.status === "draft" },
+        { name: "notes", editable: true },
+    ]}
+/>
+```
+
+Ein Klick öffnet genau ein Feld mit dem üblichen `BaseField`, Zod und Laravel-Fehlerrückgaben. Speichern sendet nur diese Property plus `updated_at` als Versionsprüfung. Abbrechen/Escape verwirft den lokalen Entwurf. Bei `422` bleibt die Eingabe bestehen, bei `409` kann der aktuelle Stand geladen werden; kein stilles Überschreiben. Schreibgeschützte Ausweisnummern werden niemals angezeigt. `render(value, record)` erlaubt eigene Lesedarstellung. Die **Vertragsakte / Übersicht / Vertragsverwaltung** demonstriert diese Komponente mit echten Mutationen.
+
+`CheckboxList` unterstützt dynamische Optionen mit Titel, Beschreibung, Icon, Badge, gesperrten Einträgen, `layout: "list" | "cards"`, `searchable`, `selectAll` und `maxSelected`. „Alle sichtbaren“ betrifft nur die gefilterten und aktivierten Optionen; andere und gesperrte Auswahlen bleiben erhalten. Teil-Auswahl wird indeterminiert dargestellt. `kind: "checkbox-group"` und `kind: "checkbox-cards"` verwenden denselben Renderer. Für große Datenbestände ist der Entity-Picker geeigneter als Hunderte Checkboxen.
+
+`BooleanPropertyList` verbindet mehrere vorhandene boolesche Model-Properties mit Checkbox-Karten und speichert die geänderten Properties unmittelbar, versionsgeprüft und ohne optimistische Erfolgsmeldung. Beispiel: **Einheit / Übersicht / Ausstattung direkt ändern** (`has_balcony`, `barrier_free`). Während einer Speicherung sind weitere Klicks gesperrt; Fehler lassen den bestätigten Serverstand bestehen. Das ist keine neue JSON-Ausstattungsspalte.
+
+Sinnvolle Business-Bausteine sind damit abgedeckt: boolesche Einzelwerte, kleine Auswahlgruppen, erklärende Auswahlkarten, große durchsuchbare Relationslisten und einzelne Änderungen in einer Key-Value-Liste. Prüf-/Freigabe-Workflows mit eigener Fachlogik gehören weiterhin in Actions. Die Komponentenseite zeigt die Varianten interaktiv.
+
+## 21. Standardmutation: nur die betroffene Tabellenzeile
+
+Alle Edit-Sheets, Dialoge und direkten Feldänderungen verwenden `useSaveRecord`. Der Datenprovider fordert über Lomkits `response.includes`/`response.aggregates` die vollständige Projektion der **gespeicherten Zeile** an. Dazu gehören Beziehungen, Counts und berechnete API-Werte.
+
+Nach erfolgreichem Speichern werden laufende Requests derselben Ressource abgebrochen und `patchRecord` ersetzt ausschließlich diese ID in vorhandenen Listen, Detail- und Panel-Caches. Unveränderte Zeilen behalten ihre Objektreferenz; Auswahl, Scrollposition und aktuelle Seite bleiben bestehen. Kein pauschaler Reload aller Ressourcentabellen. Fehler verändern keinen Cache.
+
+Bei Änderung eines sortierten/gefilterten Werts bleibt die Zeile bis zum nächsten bewussten Aktualisieren, Seitenwechsel oder erneuten Aufruf an ihrer bisherigen Position. Die betroffenen Listen sind als veraltet markiert und werden dann serverseitig neu geordnet/gefiltert. Das verhindert ein überraschendes Verschwinden während der Bearbeitung. Erstellen invalidiert die Listen **der betroffenen Ressource**, weil sich deren Anzahl und Seitengrenzen ändern. Löschen/Bulk-/Fachaktionen behalten ihre explizite Reload-Strategie.
+
+Bereits im Cache vorhandene Fremdschlüssel-Eltern werden gezielt als einzelne Datensätze nachgeladen und gepatcht, z. B. der Vertrag nach einer neuen Kondition. Ein fehlgeschlagener optionaler Elternrefresh macht eine bereits erfolgreiche Speicherung nicht rückgängig; der Cache wird dann als veraltet markiert. Im geöffneten Elternformular ergänzt `onSaved` den bestehenden Refresh mit `keepDirtyValues`. Kennzahlen werden als veraltet markiert und bei erneutem Aufruf oder explizitem Refresh neu geladen.
+
+## 22. GitHub Action für echte Screenshots
+
+`.github/workflows/screenshots.yml` läuft bei Push auf `main` oder manuell über **Actions → Workspace screenshots → Run workflow**. Eine isolierte SQLite-Datenbank wird migriert, mit `PropertySeeder` befüllt und mit dem ausschließlich für Tests vorgesehenen Benutzer versehen. Keine Produktionszugänge oder echten Mieterunterlagen sind erforderlich.
+
+`npm run screenshots` startet Playwright mit Chromium, 1440 × 1000 Viewport, deutscher Locale, Europe/Berlin, hellem Modus und reduzierter Bewegung. Es wartet auf die tatsächlichen Ansichten, Schriftarten und Ladezustände und erstellt:
+
+1. `01-dashboard.png`
+2. `02-vertraege-tabelle.png` (Suche nach `MV-001`)
+3. `03-vertrag-detail.png`
+4. `04-vertrag-anlegen.png`
+
+Das Artefakt **workspace-screenshots** enthält die PNG-Dateien und bleibt 14 Tage verfügbar. Bei einem Browser-/App-Fehler wird `screenshot-diagnostics` mit Trace und Fehlerausgabe für 7 Tage hochgeladen. Fehler beim Start eines GitHub-Runners können dagegen keine Artefakte erzeugen.
+
+Lokal nach der im README beschriebenen Testdatenbank-Vorbereitung: `npm run screenshots`. Ein vorhandener Browser kann optional mit `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/pfad/zu/chromium` verwendet werden. Der normale CI-Workflow testet weiterhin Anwendung/API und den vollständigen Browserablauf; die Screenshot-Suite ist separat.
+
+Regressionstests decken Tastatursuche, Mehrfachauswahl/Vorauswahl, Backend-Filter, abgesicherte Datumsgrenzen, explizite Nullwerte, Checkbox-Auswahl, einzelne Cache-Zeilen, Inline-Validierung/Fehler und die projizierte Mutation über die echte Laravel-API ab. Ein fehlgeschlagener Browserstart ist keine erfolgreiche visuelle Abnahme.

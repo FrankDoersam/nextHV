@@ -21,6 +21,7 @@ export type FieldKind =
     | "select"
     | "multiselect"
     | "checkbox-group"
+    | "checkbox-cards"
     | "checkbox"
     | "relation"
     | "date"
@@ -35,9 +36,26 @@ export interface FieldDefinition {
     required?: boolean;
     nullable?: boolean;
     default?: unknown;
-    options?: { value: string; label: string }[];
+    options?: {
+        value: string;
+        label: string;
+        description?: string;
+        icon?: ReactNode;
+        badge?: string;
+        disabled?: boolean;
+    }[];
     resource?: string;
     labelField?: string;
+    displayText?: (row: RecordData) => string;
+    secondaryText?: (row: RecordData) => string;
+    multiple?: boolean;
+    clearable?: boolean;
+    creatable?: boolean;
+    maxSelected?: number;
+    searchable?: boolean;
+    selectAll?: boolean;
+    minDate?: string;
+    maxDate?: string;
     filters?: Filter[];
     min?: number;
     max?: number;

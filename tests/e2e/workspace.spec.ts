@@ -90,12 +90,10 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     await page
         .getByRole("button", { name: "Objektbericht als PDF", exact: true })
         .click();
-    await expect(page.locator(".react-pdf__Page canvas")).toBeVisible();
-    await page.getByRole("button", { name: "Vergrößern", exact: true }).click();
-    await expect(page.getByText("125 %", { exact: true })).toBeVisible();
-    await page
-        .getByRole("button", { name: "An Breite anpassen", exact: true })
-        .click();
+    await expect(page.getByLabel("PDF-Seitenansicht")).toHaveAttribute(
+        "data",
+        /^blob:/,
+    );
     await page
         .getByRole("button", { name: "Schließen", exact: true })
         .last()

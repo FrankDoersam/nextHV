@@ -170,5 +170,20 @@
     {
         "file": "resources/js/components/reui/frame.tsx",
         "source": "https://reui.io/r/base-nova/frame.json"
+    },
+    {
+        "file": "resources/js/components/fields/choice-picker.tsx",
+        "source": "https://base-ui.com/react/components/combobox",
+        "note": "Eigene Business-Komposition auf Base UI und vorhandener Base-Nova InputGroup; öffentliche REUI Combobox-Muster."
+    },
+    {
+        "file": "resources/js/components/fields/checkbox-list.tsx",
+        "source": "https://reui.io/components/checkbox",
+        "note": "Eigene dynamische Listen/Karten auf vorhandener Base-Nova Checkbox; kein kopierter Pro-Block."
+    },
+    {
+        "file": "resources/js/framework/forms/editable-key-value-list.tsx",
+        "source": "https://reui.io/blocks/application/form",
+        "note": "Eigenes Property-Editor-Konzept mit RHF/Provider; nur öffentliche Muster analysiert, kein kostenpflichtiger Quellcode übernommen."
     }
 ]

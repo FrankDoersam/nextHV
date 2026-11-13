@@ -1,3 +1,4 @@
+import { BooleanPropertyList } from "@/framework/forms/editable-key-value-list";
 import {
     DetailList,
     EmptyState,
@@ -217,6 +218,15 @@ function GenericOverview({
                                 value: String(record.number_last_four ?? "—"),
                             },
                         ]}
+                    />
+                </SectionCard>
+            )}
+            {resource.name === "units" && (
+                <SectionCard title="Ausstattung direkt ändern">
+                    <BooleanPropertyList
+                        resource={resource}
+                        record={record}
+                        names={["has_balcony", "barrier_free"]}
                     />
                 </SectionCard>
             )}

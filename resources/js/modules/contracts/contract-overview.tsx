@@ -1,3 +1,4 @@
+import { EditableKeyValueList } from "@/framework/forms/editable-key-value-list";
 import { Link } from "react-router";
 import {
     ArrowUpRight,
@@ -290,10 +291,27 @@ export default function ContractOverview({ record }: { record: RecordData }) {
                     </div>
                 </WorkspaceCard>
             </WorkspaceColumns>
-            <WorkspaceCard title="Notizen">
-                <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
-                    {String(record.notes || "Noch keine Notizen hinterlegt.")}
-                </p>
+            <WorkspaceCard
+                title="Vertragsverwaltung"
+                footer={
+                    <span>
+                        Direkt bearbeiten · jede Änderung wird einzeln
+                        gespeichert
+                    </span>
+                }
+            >
+                <EditableKeyValueList
+                    resource={contracts}
+                    record={record}
+                    properties={[
+                        { name: "deposit_status", editable: true },
+                        {
+                            name: "payment_day",
+                            editable: (row) => row.status === "draft",
+                        },
+                        { name: "notes", editable: true },
+                    ]}
+                />
             </WorkspaceCard>
         </Stack>
     );

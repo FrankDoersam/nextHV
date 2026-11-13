@@ -1,12 +1,5 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { FieldDefinition, Values } from "@/framework/types";
 import { useId } from "react";
@@ -20,7 +13,8 @@ import {
 } from "./pickers";
 import { BaseField } from "./base-field";
 import { CurrencyField } from "./currency-field";
-import { MultiSelect } from "./multi-select";
+import { ChoicePicker } from "./choice-picker";
+import { CheckboxList } from "./checkbox-list";
 export function ResourceField({
     definition: d,
     editing = false,
@@ -62,14 +56,37 @@ export function ResourceField({
                                 resource={d.resource!}
                                 labelField={d.labelField}
                                 filters={d.filters}
+                                multiple={d.multiple}
+                                clearable={d.clearable}
+                                creatable={d.creatable}
+                                displayText={d.displayText}
+                                secondaryText={d.secondaryText}
+                                maxSelected={d.maxSelected}
+                                placeholder={d.placeholder}
+                                inputRef={field.ref}
+                                onBlur={field.onBlur}
                             />
                         );
                         break;
                     case "date":
-                        input = <DatePicker {...picker} />;
+                        input = (
+                            <DatePicker
+                                {...picker}
+                                clearable={d.clearable}
+                                minDate={d.minDate}
+                                maxDate={d.maxDate}
+                            />
+                        );
                         break;
                     case "month":
-                        input = <MonthPicker {...picker} />;
+                        input = (
+                            <MonthPicker
+                                {...picker}
+                                clearable={d.clearable}
+                                minDate={d.minDate}
+                                maxDate={d.maxDate}
+                            />
+                        );
                         break;
                     case "time":
                         input = <TimeField {...picker} />;
@@ -80,47 +97,44 @@ export function ResourceField({
                             <RangePicker
                                 {...picker}
                                 month={d.kind === "month-range"}
+                                clearable={d.clearable}
+                                minDate={d.minDate}
+                                maxDate={d.maxDate}
                             />
                         );
                         break;
                     case "select":
-                        input = (
-                            <Select
-                                value={String(field.value ?? "")}
-                                onValueChange={field.onChange}
-                                disabled={disabled}
-                                items={d.options}
-                            >
-                                <SelectTrigger
-                                    {...common}
-                                    className="h-9 w-full bg-background"
-                                >
-                                    <SelectValue
-                                        placeholder={
-                                            d.placeholder ?? "Bitte auswählen"
-                                        }
-                                    />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {d.options?.map((o) => (
-                                        <SelectItem
-                                            key={o.value}
-                                            value={o.value}
-                                        >
-                                            {o.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        );
-                        break;
                     case "multiselect":
-                    case "checkbox-group":
                         input = (
-                            <MultiSelect
+                            <ChoicePicker
                                 {...picker}
                                 options={d.options}
-                                checkboxes={d.kind === "checkbox-group"}
+                                multiple={
+                                    d.kind === "multiselect" || d.multiple
+                                }
+                                clearable={d.clearable}
+                                maxSelected={d.maxSelected}
+                                placeholder={d.placeholder}
+                                inputRef={field.ref}
+                                onBlur={field.onBlur}
+                            />
+                        );
+                        break;
+                    case "checkbox-group":
+                    case "checkbox-cards":
+                        input = (
+                            <CheckboxList
+                                {...picker}
+                                aria-labelledby={`${id}-label`}
+                                options={d.options}
+                                layout={
+                                    d.kind === "checkbox-cards"
+                                        ? "cards"
+                                        : "list"
+                                }
+                                searchable={d.searchable}
+                                selectAll={d.selectAll}
+                                maxSelected={d.maxSelected}
                             />
                         );
                         break;
@@ -221,7 +235,9 @@ export function ResourceField({
                         lockedReason={d.lockedReason}
                         error={fieldState.error?.message}
                         wide={
-                            d.kind === "textarea" || d.kind === "checkbox-group"
+                            d.kind === "textarea" ||
+                            d.kind === "checkbox-group" ||
+                            d.kind === "checkbox-cards"
                         }
                         counter={counter}
                     >

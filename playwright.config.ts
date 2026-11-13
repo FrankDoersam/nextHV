@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
     testDir: "tests/e2e",
+    testIgnore: "screenshots.spec.ts",
     fullyParallel: false,
     workers: 1,
     use: {
@@ -8,6 +9,9 @@ export default defineConfig({
         ...devices["Desktop Chrome"],
         screenshot: "only-on-failure",
         trace: "retain-on-failure",
+        launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+            ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }
+            : undefined,
     },
     webServer: {
         command: "php artisan serve --host=127.0.0.1 --port=8000",

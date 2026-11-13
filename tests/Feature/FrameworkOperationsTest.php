@@ -23,6 +23,18 @@ class FrameworkOperationsTest extends TestCase
         $this->actingAs(User::factory()->create());
     }
 
+    public function test_mutation_projects_the_updated_row_with_relations_counts_and_computed_values(): void
+    {
+        $property = Property::factory()->create(['street' => 'Parkstraße', 'house_number' => '5', 'postal_code' => '10115', 'city' => 'Berlin']);
+        Unit::factory()->create(['property_id' => $property->id]);
+
+        $this->postJson('/api/v1/properties/mutate', [
+            'mutate' => [['operation' => 'update', 'key' => $property->id, 'version' => $property->updated_at->toISOString(), 'attributes' => ['name' => 'Neuer Name']]],
+            'response' => ['includes' => [['relation' => 'units']], 'aggregates' => [['relation' => 'units', 'type' => 'count']]],
+        ])->assertOk()->assertJsonPath('records.0.name', 'Neuer Name')->assertJsonPath('records.0.full_address', 'Parkstraße 5, 10115 Berlin')->assertJsonPath('records.0.units_count', 1)->assertJsonCount(1, 'records.0.units');
+        $this->assertDatabaseHas('properties', ['id' => $property->id, 'name' => 'Neuer Name']);
+    }
+
     public function test_preflight_reports_every_blocker_with_one_projection_query(): void
     {
         $active = Property::factory()->create();

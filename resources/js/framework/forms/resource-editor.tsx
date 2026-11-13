@@ -17,7 +17,7 @@ import { ChevronLeft, ChevronRight, Save, Link, RefreshCw } from "lucide-react";
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { useReload } from "../data/hooks";
+import { useReload, useSaveRecord } from "../data/hooks";
 import { ApiError } from "../data/http";
 import { dataProvider, normalizeValidationErrors } from "../data/provider";
 import { RowActions } from "../tables/resource-collection";
@@ -60,6 +60,7 @@ export function ResourceEditor({
     const [pendingBack, setPendingBack] = useState(false);
     const [version, setVersion] = useState(row);
     const reload = useReload();
+    const saveRecord = useSaveRecord(resource);
     const dirty = form.formState.isDirty;
     const busy = form.formState.isSubmitting;
     useEffect(() => {
@@ -113,15 +114,10 @@ export function ResourceEditor({
                     ? { [request.context.field]: request.context.id }
                     : {}),
             };
-            const saved = await dataProvider.save(
-                resource,
-                attributes,
-                version,
-            );
+            const saved = await saveRecord(attributes, version);
             setVersion(saved);
             form.reset(initialValues(resource.fields, saved));
             onDirtyChange?.(false);
-            await reload();
             await request.onSaved?.(saved);
             toast.success(`${resource.singular} gespeichert`);
             if (flow) flow.onSaved(saved);

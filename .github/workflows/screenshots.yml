@@ -1,0 +1,64 @@
+name: Workspace screenshots
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: screenshots-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ${{ github.workspace }}/database/e2e.sqlite
+      E2E_PASSWORD: local-e2e-password-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          extensions: mbstring, pdo_sqlite, fileinfo, intl, bcmath
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: npm ci
+      - name: Prepare isolated screenshot database
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          touch database/e2e.sqlite
+          php artisan migrate --force
+          php artisan db:seed --class=PropertySeeder --force
+          php tests/e2e/seed.php
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run screenshots
+      - name: Publish screenshots
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: workspace-screenshots
+          path: screenshots/*.png
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish browser diagnostics
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: screenshot-diagnostics
+          path: test-results
+          retention-days: 7
+      - name: Link captures
+        if: success()
+        run: |
+          echo '## nextHV · Screenshots' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Artifact: **workspace-screenshots** — Dashboard, Vertragsliste, Vertragsdetail, Vertrag anlegen.' >> "$GITHUB_STEP_SUMMARY"
+          echo '1440 × 1000 px · Chromium · nur isolierte Demo-Daten, keine Produktionszugänge.' >> "$GITHUB_STEP_SUMMARY"

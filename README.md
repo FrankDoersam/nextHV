@@ -6,7 +6,7 @@ Das vollständige Entwicklerhandbuch einschließlich der Funktionen aus Basis- u
 
 ## Lokal starten
 
-Voraussetzungen: PHP **8.3+**, Composer 2, Node **22.12+** (CI: Node 24), SQLite oder eine konfigurierte relationale Datenbank. Benötigte PHP-Erweiterungen: Laravel-Standard einschließlich PDO, passendem Datenbanktreiber, mbstring, fileinfo und OpenSSL.
+Voraussetzungen: PHP **8.3+**, Composer 2, Node **22.12+** (CI: Node 24/PHP 8.5), SQLite oder eine konfigurierte relationale Datenbank. Benötigte PHP-Erweiterungen: Laravel-Standard einschließlich PDO, passendem Datenbanktreiber, mbstring, fileinfo und OpenSSL.
 
 ```bash
 composer install
@@ -101,6 +101,10 @@ Eine `ResourceDefinition` beschreibt Felder, Gruppen, Spalten, Suchfilter, Grupp
 
 - Tabellen: serverseitige Suche, Filter, Sortierung und Pagination, auswählbare Spalten, Zeilenauswahl und explizit freigegebene Bulk-Actions. Gruppierung betrifft die aktuell geladene Seite und ist entsprechend beschriftet; sie lädt nicht unbemerkt den gesamten Bestand.
 - Formulare: React Hook Form + Zod, serverseitige Fehler an Feldern, Wizard mit Schrittkontrolle und Zurück-Navigation, Warnung bei ungespeicherten Änderungen, Reload bei Versionskonflikten.
+- Suchbare Select-/Entity-Picker: `multiple`, `clearable`, Backend-Filter, anpassbare Titel/Subtexte und abschaltbare Neuanlage. Datumspicker mit ISO-Minimum/Maximum.
+- Key-Value-Liste mit einzelnen versionsgeprüften Mutationen; Checkbox-Listen/-Karten und direkte boolesche Änderungen. Editieren aktualisiert standardmäßig nur die betroffene Cache-Zeile.
+- PDF-Anzeige über den Browser in einer React-Komponente, ohne zusätzliche PDF-Frontendbibliotheken. Geschützter Abruf und Download bleiben erhalten.
+
 - Relationspicker: Datenbanksuche mit Debouncing, Anzeigen bestehender Auswahl, reduzierte Neuanlage im verschachtelten Dialog und automatische Übernahme.
 - Relationslisten im Bearbeitungsformular: Suche, Anlegen und Zeilenactions. Änderungen invalidieren die betroffenen Ansichten; Formular-Refresh erhält ungespeicherte Werte.
 - Sheet/Dialog ist über die Workbench wählbar und kann pro Aufruf überschrieben werden. Cards besitzen einen Action-Slot oben rechts. `DynamicList` unterstützt Suchprop, eigene Zeilenrenderer, Empty-State und Actions.
@@ -202,9 +206,12 @@ php tests/e2e/seed.php
 npm run build
 npx playwright install chromium
 npm run test:e2e
+npm run screenshots
 ```
 
 `tests/e2e/seed.php` verweigert andere Umgebungen und Datenbanknamen. Sein Zugang ist ausschließlich für diese isolierte Testdatenbank. Für reale Daten den normalen Admin-Befehl verwenden.
+
+Der separate Workflow **Workspace screenshots** erzeugt bei Push auf `main` oder manuell vier echte PNG-Aufnahmen (Dashboard, Vertragsliste, Vertragsakte, Anlage-Flow). Artefakt: `workspace-screenshots`, Aufbewahrung 14 Tage. Details und sämtliche Framework-Props: [docs/framework.md](docs/framework.md).
 
 ## Grundlagen und UI-Quellen
 

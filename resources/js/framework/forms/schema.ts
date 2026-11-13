@@ -14,15 +14,28 @@ export function schemaFor(fields: FieldDefinition[]) {
     return z.record(z.string(), z.unknown()).superRefine((values, ctx) => {
         for (const field of fields) {
             const value = values[field.name];
+            const multiple =
+                field.multiple ||
+                ["multiselect", "checkbox-group", "checkbox-cards"].includes(
+                    field.kind ?? "",
+                );
+            const range =
+                field.kind?.endsWith("-range") &&
+                value &&
+                typeof value === "object"
+                    ? (value as { from?: string; to?: string })
+                    : undefined;
             const empty =
                 value == null ||
                 value === "" ||
-                (Array.isArray(value) && value.length === 0);
+                (Array.isArray(value) && value.length === 0) ||
+                !!(range && !range.from && !range.to);
             let error: string | undefined;
             if (field.required && empty)
                 error = "Dieses Feld ist erforderlich.";
             if (!empty) {
                 if (
+                    !multiple &&
                     ["number", "currency", "relation"].includes(
                         field.kind ?? "",
                     )
@@ -40,6 +53,28 @@ export function schemaFor(fields: FieldDefinition[]) {
                     )
                         error = "Höchstens zwei Nachkommastellen.";
                 }
+                if (multiple && !Array.isArray(value))
+                    error = "Bitte eine Mehrfachauswahl übergeben.";
+                if (multiple && Array.isArray(value)) {
+                    if (new Set(value).size !== value.length)
+                        error =
+                            "Jeder Eintrag darf nur einmal ausgewählt werden.";
+                    if (field.maxSelected && value.length > field.maxSelected)
+                        error = `Höchstens ${field.maxSelected} Einträge auswählen.`;
+                    if (
+                        field.kind === "relation" &&
+                        !value.every((id) => Number.isInteger(id) && id > 0)
+                    )
+                        error = "Bitte gültige Datensätze auswählen.";
+                }
+                if (!multiple && Array.isArray(value) && field.options)
+                    error = "Bitte genau einen Eintrag auswählen.";
+                if (
+                    !multiple &&
+                    field.kind === "relation" &&
+                    (!Number.isInteger(value) || Number(value) <= 0)
+                )
+                    error = "Bitte einen gültigen Datensatz auswählen.";
                 if (field.minLength && String(value).length < field.minLength)
                     error = `Mindestens ${field.minLength} Zeichen.`;
                 if (field.maxLength && String(value).length > field.maxLength)
@@ -82,6 +117,34 @@ export function schemaFor(fields: FieldDefinition[]) {
                     else if (r.from! > r.to!)
                         error = "Das Ende muss nach dem Beginn liegen.";
                 }
+                if (
+                    ["date", "month", "date-range", "month-range"].includes(
+                        field.kind ?? "",
+                    )
+                ) {
+                    const month = field.kind?.startsWith("month");
+                    const min = month
+                        ? field.minDate?.slice(0, 7)
+                        : field.minDate;
+                    const max = month
+                        ? field.maxDate?.slice(0, 7)
+                        : field.maxDate;
+                    const dates = range ? [range.from, range.to] : [value];
+                    if (
+                        min &&
+                        dates.some(
+                            (date) => typeof date === "string" && date < min,
+                        )
+                    )
+                        error = `Frühestens ${min}.`;
+                    if (
+                        max &&
+                        dates.some(
+                            (date) => typeof date === "string" && date > max,
+                        )
+                    )
+                        error = `Spätestens ${max}.`;
+                }
                 error ??= field.validate?.(value, values);
             }
             if (error)
@@ -102,16 +165,23 @@ export function initialValues(
         fields.map((f) => {
             let value = f.writeOnly
                 ? undefined
-                : (defaults?.[f.name] ??
-                  row?.[f.name] ??
-                  f.default ??
-                  (["multiselect", "checkbox-group"].includes(f.kind ?? "")
-                      ? []
-                      : f.kind === "checkbox"
-                        ? false
-                        : f.nullable
-                          ? null
-                          : ""));
+                : defaults?.[f.name] !== undefined
+                  ? defaults[f.name]
+                  : row?.[f.name] !== undefined
+                    ? row[f.name]
+                    : (f.default ??
+                      (f.multiple ||
+                      [
+                          "multiselect",
+                          "checkbox-group",
+                          "checkbox-cards",
+                      ].includes(f.kind ?? "")
+                          ? []
+                          : f.kind === "checkbox"
+                            ? false
+                            : f.nullable
+                              ? null
+                              : ""));
             if (f.kind === "date" && typeof value === "string")
                 value = value.slice(0, 10);
             return [f.name, value];
