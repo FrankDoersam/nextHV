@@ -19,6 +19,7 @@ export const contracts: ResourceDefinition = {
     description:
         "Entwurf anlegen, Mieter zuordnen und Konditionen erfassen. Anschließend aktivieren.",
     icon: FileText,
+    navigationGroup: "Vermietung",
     titleField: "code",
     groups: [
         { id: "general", label: "Vertragsgrundlagen" },

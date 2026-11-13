@@ -1,6 +1,6 @@
 import { ErrorState, SectionCard } from "@/components/blocks/content";
 import { FieldGrid, Stack } from "@/components/blocks/layout";
-import { Overlay } from "@/components/blocks/overlay";
+import { Overlay, OverlayFooterHint } from "@/components/blocks/overlay";
 import { ResourceField } from "@/components/fields/field";
 import {
     Stepper,
@@ -14,22 +14,28 @@ import {
 import { Button } from "@/components/ui/button";
 import { getResource } from "@/modules/registry";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ChevronLeft, ChevronRight, Save } from "lucide-react";
-import { useEffect, useId, useState } from "react";
+import { ChevronLeft, ChevronRight, Save, Link, RefreshCw } from "lucide-react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useReload } from "../data/hooks";
 import { ApiError } from "../data/http";
 import { dataProvider, normalizeValidationErrors } from "../data/provider";
-import { ResourceCollection } from "../tables/resource-collection";
+import { ResourceCollection, RowActions } from "../tables/resource-collection";
 import type { FormRequest, Values } from "../types";
 import { initialValues, schemaFor } from "./schema";
 export function ResourceEditor({
     request,
     onClose,
+    onDirtyChange,
+    nested,
+    stacked,
 }: {
     request: FormRequest;
     onClose: () => void;
+    onDirtyChange?: (dirty: boolean) => void;
+    nested?: ReactNode;
+    stacked?: boolean;
 }) {
     const formId = useId();
     const { resource, row } = request;
@@ -43,6 +49,7 @@ export function ResourceEditor({
         defaultValues: initialValues(resource.fields, row, request.defaults),
         resolver: zodResolver(schemaFor(fields)),
         shouldUnregister: false,
+        mode: "onBlur",
     });
     const [step, setStep] = useState(0);
     const [error, setError] = useState<unknown>();
@@ -50,6 +57,10 @@ export function ResourceEditor({
     const [version, setVersion] = useState(row);
     const reload = useReload();
     const dirty = form.formState.isDirty;
+    const busy = form.formState.isSubmitting;
+    useEffect(() => {
+        onDirtyChange?.(dirty);
+    }, [dirty, onDirtyChange]);
     useEffect(() => {
         const warn = (e: BeforeUnloadEvent) => {
             if (dirty) {
@@ -60,227 +71,324 @@ export function ResourceEditor({
         window.addEventListener("beforeunload", warn);
         return () => window.removeEventListener("beforeunload", warn);
     }, [dirty]);
-    const close = () => (dirty ? setDiscard(true) : onClose());
+    const close = () => {
+        if (!busy) {
+            if (dirty) setDiscard(true);
+            else onClose();
+        }
+    };
     const refresh = async () => {
         if (!row) return;
         const latest = await dataProvider.one(resource, row.id);
         setVersion(latest);
-        form.reset(initialValues(resource.fields, latest), {
-            keepDirtyValues: true,
-        });
+        form.reset(
+            initialValues(
+                resource.fields,
+                latest,
+                request.context
+                    ? { [request.context.field]: request.context.id }
+                    : undefined,
+            ),
+            { keepDirtyValues: true },
+        );
     };
-    const save = form.handleSubmit(
-        async (values) => {
-            setError(undefined);
-            try {
-                const saved = await dataProvider.save(
-                    resource,
-                    values,
-                    version,
-                );
-                await reload();
-                request.onSaved?.(saved);
-                toast.success(`${resource.singular} gespeichert`);
-                onClose();
-            } catch (e) {
-                setError(e);
-                if (e instanceof ApiError) {
-                    const errors = normalizeValidationErrors(e.errors);
-                    for (const [name, message] of Object.entries(errors))
-                        form.setError(name, { message });
-                    const index = groups.findIndex((g) =>
-                        fields.some((f) => f.group === g.id && errors[f.name]),
-                    );
-                    if (index >= 0) setStep(index);
-                }
-            }
-        },
-        (errors) => {
-            const index = groups.findIndex((g) =>
-                fields.some(
-                    (f) => (f.group ?? "general") === g.id && errors[f.name],
-                ),
+    const errorStep = (errors: Record<string, unknown>) => {
+        const index = groups.findIndex((g) =>
+            fields.some(
+                (f) => (f.group ?? "general") === g.id && errors[f.name],
+            ),
+        );
+        if (index >= 0) setStep(index);
+    };
+    const save = form.handleSubmit(async (values) => {
+        setError(undefined);
+        try {
+            const attributes = {
+                ...values,
+                ...(request.context
+                    ? { [request.context.field]: request.context.id }
+                    : {}),
+            };
+            const saved = await dataProvider.save(
+                resource,
+                attributes,
+                version,
             );
-            if (index >= 0) setStep(index);
-        },
-    );
+            await reload();
+            request.onSaved?.(saved);
+            toast.success(`${resource.singular} gespeichert`);
+            onClose();
+        } catch (e) {
+            setError(e);
+            if (e instanceof ApiError) {
+                const errors = normalizeValidationErrors(e.errors);
+                for (const [name, message] of Object.entries(errors))
+                    form.setError(name, { message });
+                errorStep(errors);
+            }
+        }
+    }, errorStep);
     const next = async () => {
         if (
             await form.trigger(
                 fields
                     .filter((f) => (f.group ?? "general") === groups[step].id)
                     .map((f) => f.name),
+                { shouldFocus: true },
             )
         )
             setStep(step + 1);
     };
-    return (
-        <>
-            <Overlay
-                open
-                onClose={close}
-                title={`${resource.singular} ${row ? "bearbeiten" : "anlegen"}`}
-                description={
-                    request.reduced
-                        ? "Schnellerfassung · weitere Angaben später ergänzen"
-                        : resource.description
-                }
-                presentation={request.presentation}
-                footer={
-                    <>
-                        <Button type="button" variant="outline" onClick={close}>
-                            Abbrechen
-                        </Button>
-                        {request.wizard && step > 0 && (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setStep(step - 1)}
-                            >
-                                <ChevronLeft />
-                                Zurück
-                            </Button>
-                        )}
-                        {request.wizard && step < groups.length - 1 ? (
-                            <Button type="button" onClick={next}>
-                                Weiter
-                                <ChevronRight />
-                            </Button>
-                        ) : (
-                            <Button
-                                type="submit"
-                                form={formId}
-                                disabled={form.formState.isSubmitting}
-                            >
-                                <Save />
-                                {form.formState.isSubmitting
-                                    ? "Wird gespeichert …"
-                                    : "Speichern"}
-                            </Button>
-                        )}
-                    </>
-                }
-            >
-                <Stack>
-                    {!!error && (
-                        <ErrorState
-                            error={
-                                error instanceof ApiError &&
-                                error.status === 409
-                                    ? new Error(
-                                          "Der Datensatz wurde zwischenzeitlich geändert. Neu laden, Änderungen prüfen und erneut speichern.",
-                                      )
-                                    : error
-                            }
-                            retry={
-                                error instanceof ApiError &&
-                                error.status === 409
-                                    ? refresh
-                                    : undefined
-                            }
-                        />
-                    )}
-                    {request.wizard && (
-                        <Stepper value={step + 1}>
-                            <StepperNav>
-                                {groups.map((g, i) => (
-                                    <StepperItem key={g.id} step={i + 1}>
-                                        <StepperTrigger
-                                            type="button"
-                                            disabled={i > step}
-                                            onClick={() => setStep(i)}
-                                        >
-                                            <StepperIndicator>
-                                                {i + 1}
-                                            </StepperIndicator>
-                                            <StepperTitle>
-                                                {g.label}
-                                            </StepperTitle>
-                                        </StepperTrigger>
-                                        {i < groups.length - 1 && (
-                                            <StepperSeparator />
-                                        )}
-                                    </StepperItem>
-                                ))}
-                            </StepperNav>
-                        </Stepper>
-                    )}
-                    <FormProvider {...form}>
-                        <form id={formId} onSubmit={save} className="space-y-6">
-                            {groups.map((g, i) => (
-                                <section
-                                    key={g.id}
-                                    hidden={request.wizard && step !== i}
-                                >
-                                    <SectionCard
-                                        title={g.label}
-                                        description={g.description}
-                                    >
-                                        <FieldGrid>
-                                            {fields
-                                                .filter(
-                                                    (f) =>
-                                                        (f.group ??
-                                                            "general") === g.id,
-                                                )
-                                                .map((f) => (
-                                                    <ResourceField
-                                                        key={f.name}
-                                                        definition={f}
-                                                        editing={!!row}
-                                                    />
-                                                ))}
-                                        </FieldGrid>
-                                    </SectionCard>
-                                </section>
-                            ))}
-                        </form>
-                    </FormProvider>
-                    {row &&
-                        resource.relations?.map((relation) => (
-                            <SectionCard
-                                key={relation.resource + relation.field}
-                                title={relation.label}
-                                description={relation.description}
-                            >
-                                <ResourceCollection
-                                    resource={getResource(relation.resource)}
-                                    fixedFilters={[
-                                        {
-                                            field: relation.field,
-                                            value: row.id,
-                                        },
-                                    ]}
-                                    defaults={{ [relation.field]: row.id }}
-                                    compact
-                                    onSaved={refresh}
-                                    form={form}
-                                />
-                            </SectionCard>
-                        ))}
-                </Stack>
-            </Overlay>
-            <Overlay
-                open={discard}
-                onClose={() => setDiscard(false)}
-                title="Änderungen verwerfen?"
-                presentation="dialog"
-                footer={
+    const navigation = request.wizard ? (
+        <Stepper value={step + 1}>
+            <StepperNav className="min-w-max">
+                {groups.map((g, i) => (
+                    <StepperItem key={g.id} step={i + 1}>
+                        <StepperTrigger
+                            type="button"
+                            disabled={i > step || busy}
+                            onClick={() => setStep(i)}
+                        >
+                            <StepperIndicator>{i + 1}</StepperIndicator>
+                            <StepperTitle>{g.label}</StepperTitle>
+                        </StepperTrigger>
+                        {i < groups.length - 1 && <StepperSeparator />}
+                    </StepperItem>
+                ))}
+            </StepperNav>
+        </Stepper>
+    ) : (
+        <div className="flex items-center justify-between gap-2">
+            <span className="text-xs text-muted-foreground">
+                {row
+                    ? String(row[resource.titleField] ?? `#${row.id}`)
+                    : request.context
+                      ? "Bezug aus dem übergeordneten Datensatz"
+                      : "Neuer Datensatz"}
+            </span>
+            <div className="flex gap-1">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Direktlink kopieren"
+                    onClick={() =>
+                        navigator.clipboard
+                            .writeText(window.location.href)
+                            .then(
+                                () => toast.success("Direktlink kopiert"),
+                                () =>
+                                    toast.error(
+                                        "Direktlink konnte nicht kopiert werden.",
+                                    ),
+                            )
+                    }
+                >
+                    <Link />
+                </Button>
+                {row && (
                     <>
                         <Button
-                            variant="outline"
-                            onClick={() => setDiscard(false)}
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            disabled={busy}
+                            aria-label="Formular aktualisieren"
+                            onClick={() => refresh().catch(setError)}
                         >
-                            Weiter bearbeiten
+                            <RefreshCw />
                         </Button>
-                        <Button variant="destructive" onClick={onClose}>
-                            Verwerfen
-                        </Button>
+                        <RowActions
+                            resource={resource}
+                            row={version!}
+                            instance={{
+                                form,
+                                formResource: resource,
+                                refreshForm: refresh,
+                                reload,
+                            }}
+                            exclude={["edit", "delete"]}
+                        />
                     </>
-                }
-            >
-                <p>Die ungespeicherten Änderungen gehen verloren.</p>
-            </Overlay>
-        </>
+                )}
+            </div>
+        </div>
+    );
+    const discardDialog = (
+        <Overlay
+            open={discard}
+            onClose={() => setDiscard(false)}
+            title="Änderungen verwerfen?"
+            description="Deine Eingaben wurden noch nicht gespeichert."
+            presentation="dialog"
+            size="compact"
+            footer={
+                <>
+                    <Button variant="outline" onClick={() => setDiscard(false)}>
+                        Weiter bearbeiten
+                    </Button>
+                    <Button variant="destructive" onClick={onClose}>
+                        Änderungen verwerfen
+                    </Button>
+                </>
+            }
+        >
+            <p className="text-sm leading-6">
+                Die ungespeicherten Änderungen dieses Formulars gehen verloren.
+            </p>
+        </Overlay>
+    );
+    return (
+        <Overlay
+            open
+            onClose={close}
+            busy={busy}
+            stacked={stacked || discard}
+            nested={
+                <>
+                    {nested}
+                    {discardDialog}
+                </>
+            }
+            title={`${resource.singular} ${row ? "bearbeiten" : "anlegen"}`}
+            description={
+                request.reduced
+                    ? "Schnellerfassung · weitere Angaben später ergänzen"
+                    : resource.description
+            }
+            presentation={request.presentation}
+            header={navigation}
+            footer={
+                <>
+                    <OverlayFooterHint>
+                        {request.wizard
+                            ? `Schritt ${step + 1} von ${groups.length}`
+                            : dirty
+                              ? "Ungespeicherte Änderungen"
+                              : "Änderungen mit Speichern übernehmen"}
+                    </OverlayFooterHint>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={busy}
+                        onClick={close}
+                    >
+                        Abbrechen
+                    </Button>
+                    {request.wizard && step > 0 && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={busy}
+                            onClick={() => setStep(step - 1)}
+                        >
+                            <ChevronLeft />
+                            Zurück
+                        </Button>
+                    )}
+                    {request.wizard && step < groups.length - 1 ? (
+                        <Button type="button" onClick={next}>
+                            Weiter
+                            <ChevronRight />
+                        </Button>
+                    ) : (
+                        <Button type="submit" form={formId} disabled={busy}>
+                            <Save />
+                            {busy ? "Wird gespeichert …" : "Speichern"}
+                        </Button>
+                    )}
+                </>
+            }
+        >
+            <Stack>
+                {!!error && (
+                    <ErrorState
+                        error={
+                            error instanceof ApiError && error.status === 409
+                                ? new Error(
+                                      "Der Datensatz wurde zwischenzeitlich geändert. Neu laden, Änderungen prüfen und erneut speichern.",
+                                  )
+                                : error
+                        }
+                        retry={
+                            error instanceof ApiError && error.status === 409
+                                ? refresh
+                                : undefined
+                        }
+                    />
+                )}
+                <FormProvider {...form}>
+                    <form
+                        id={formId}
+                        onSubmit={save}
+                        className="space-y-6"
+                        noValidate
+                    >
+                        {groups.map((g, i) => (
+                            <section
+                                key={g.id}
+                                hidden={request.wizard && step !== i}
+                            >
+                                <SectionCard
+                                    title={g.label}
+                                    description={g.description}
+                                >
+                                    <FieldGrid>
+                                        {fields
+                                            .filter(
+                                                (f) =>
+                                                    (f.group ?? "general") ===
+                                                    g.id,
+                                            )
+                                            .map((f) => (
+                                                <ResourceField
+                                                    key={f.name}
+                                                    definition={
+                                                        request.context
+                                                            ?.field === f.name
+                                                            ? {
+                                                                  ...f,
+                                                                  disabled: true,
+                                                                  lockedReason:
+                                                                      "Durch den aktuellen Datensatz vorgegeben.",
+                                                              }
+                                                            : f
+                                                    }
+                                                    editing={!!row}
+                                                />
+                                            ))}
+                                    </FieldGrid>
+                                </SectionCard>
+                            </section>
+                        ))}
+                    </form>
+                </FormProvider>
+                {row &&
+                    resource.relations?.map((relation) => (
+                        <SectionCard
+                            key={relation.resource + relation.field}
+                            title={relation.label}
+                            description={relation.description}
+                        >
+                            <ResourceCollection
+                                resource={getResource(relation.resource)}
+                                fixedFilters={[
+                                    { field: relation.field, value: row.id },
+                                ]}
+                                defaults={{ [relation.field]: row.id }}
+                                context={{
+                                    resource: resource.name,
+                                    id: row.id,
+                                    field: relation.field,
+                                }}
+                                compact
+                                onSaved={refresh}
+                                form={form}
+                                formResource={resource}
+                            />
+                        </SectionCard>
+                    ))}
+            </Stack>
+        </Overlay>
     );
 }

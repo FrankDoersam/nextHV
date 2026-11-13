@@ -54,7 +54,10 @@ export function AppShell({
                     </p>
                 </div>
             </div>
-            <nav aria-label="Hauptnavigation" className="flex-1 space-y-1 px-3">
+            <nav
+                aria-label="Hauptnavigation"
+                className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3"
+            >
                 <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[.16em] text-muted-foreground">
                     Arbeitsbereich
                 </p>
@@ -69,23 +72,50 @@ export function AppShell({
                     <Building2 size={17} />
                     Übersicht
                 </NavLink>
-                {resources
-                    .filter(
-                        (r) => r.navigation !== false && can(r.name, "list"),
-                    )
-                    .map((r) => (
-                        <NavLink
-                            onClick={() => setMobile(false)}
-                            key={r.name}
-                            to={`/${r.name}`}
-                            className={({ isActive }) =>
-                                cn("nav-item", isActive && "nav-item-active")
-                            }
-                        >
-                            <r.icon size={17} />
-                            {r.label}
-                        </NavLink>
-                    ))}
+                {Array.from(
+                    new Set(
+                        resources
+                            .filter(
+                                (r) =>
+                                    r.navigation !== false &&
+                                    can(r.name, "list"),
+                            )
+                            .map((r) => r.navigationGroup ?? "Verwaltung"),
+                    ),
+                ).map((group) => (
+                    <details key={group} open className="group py-2">
+                        <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                            {group}
+                            <ChevronRight className="size-3 transition-transform group-open:rotate-90" />
+                        </summary>
+                        <div className="ml-3 space-y-1 border-l pl-2">
+                            {resources
+                                .filter(
+                                    (r) =>
+                                        r.navigation !== false &&
+                                        can(r.name, "list") &&
+                                        (r.navigationGroup ?? "Verwaltung") ===
+                                            group,
+                                )
+                                .map((r) => (
+                                    <NavLink
+                                        onClick={() => setMobile(false)}
+                                        key={r.name}
+                                        to={`/${r.name}`}
+                                        className={({ isActive }) =>
+                                            cn(
+                                                "nav-item",
+                                                isActive && "nav-item-active",
+                                            )
+                                        }
+                                    >
+                                        <r.icon size={17} />
+                                        {r.label}
+                                    </NavLink>
+                                ))}
+                        </div>
+                    </details>
+                ))}
                 <NavLink
                     onClick={() => setMobile(false)}
                     to="/components"
@@ -183,7 +213,16 @@ export function AppShell({
                         nextHV Workspace
                     </div>
                 </header>
-                <main className="mx-auto max-w-[1600px] space-y-6 p-5 pb-16 lg:p-9">
+                <main
+                    className={cn(
+                        "mx-auto max-w-[1800px] p-5 lg:p-7",
+                        resources.some(
+                            (r) => location.pathname === `/${r.name}`,
+                        )
+                            ? "h-[calc(100dvh-4rem)] min-h-0 overflow-hidden"
+                            : "space-y-6 pb-16",
+                    )}
+                >
                     {children}
                 </main>
             </div>
@@ -242,5 +281,13 @@ export function FieldGrid({ children }: { children: ReactNode }) {
 export function Muted({ children }: { children: ReactNode }) {
     return (
         <p className="text-sm leading-6 text-muted-foreground">{children}</p>
+    );
+}
+
+export function CollectionPage({ children }: { children: ReactNode }) {
+    return (
+        <div className="flex h-full min-h-0 flex-col gap-5 [&>div:not(:last-child)]:shrink-0">
+            {children}
+        </div>
     );
 }

@@ -19,6 +19,8 @@ export type FieldKind =
     | "number"
     | "currency"
     | "select"
+    | "multiselect"
+    | "checkbox-group"
     | "checkbox"
     | "relation"
     | "date"
@@ -41,6 +43,14 @@ export interface FieldDefinition {
     max?: number;
     step?: number;
     maxLength?: number;
+    minLength?: number;
+    help?: string;
+    placeholder?: string;
+    disabled?: boolean;
+    lockedReason?: string;
+    rows?: number;
+    currency?: string;
+    locale?: string;
     group?: string;
     description?: string;
     readonlyOnEdit?: boolean;
@@ -74,6 +84,8 @@ export interface ResourceDefinition {
     includes?: { relation: string; includes?: { relation: string }[] }[];
     aggregates?: { relation: string; type: string; field?: string }[];
     navigation?: boolean;
+    navigationGroup?: string;
+    deletionCheck?: boolean;
     actions: ResourceAction[];
     supportsClone?: boolean;
     relations?: RelationDefinition[];
@@ -93,6 +105,7 @@ export interface FormRequest {
     presentation?: Presentation;
     wizard?: boolean;
     reduced?: boolean;
+    context?: { resource: string; id: number; field: string };
     onSaved?: (row: RecordData) => void;
 }
 export interface ResourceInstance {
@@ -100,6 +113,7 @@ export interface ResourceInstance {
     openForm: (request: FormRequest) => void;
     navigate: (path: string) => void;
     form?: UseFormReturn<Values>;
+    formResource?: ResourceDefinition;
     refreshForm?: () => Promise<void>;
     table?: unknown;
 }

@@ -18,13 +18,20 @@ import { date, label, money, number } from "@/lib/format";
 import { units } from "@/modules/registry";
 import { Building2, CalendarCheck, DoorOpen, Plus } from "lucide-react";
 import { useNavigate } from "react-router";
-export function OverviewMetrics({ propertyId }: { propertyId?: number }) {
+export function OverviewMetrics({
+    propertyId,
+    compact = false,
+}: {
+    propertyId?: number;
+    compact?: boolean;
+}) {
     const overview = useOverview(propertyId);
     if (overview.isPending) return <Loading rows={1} />;
     if (overview.error) return <ErrorState error={overview.error} />;
     const m = overview.data!.data;
     return (
         <MetricGrid
+            compact={compact}
             items={[
                 {
                     label: "Monatliche Grundmiete",
@@ -83,6 +90,11 @@ export default function PropertyOverview({
                                         resource: units,
                                         mode: "create",
                                         defaults: { property_id: property.id },
+                                        context: {
+                                            resource: "properties",
+                                            id: property.id,
+                                            field: "property_id",
+                                        },
                                         reduced: true,
                                     })
                                 }

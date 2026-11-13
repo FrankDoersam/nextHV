@@ -28,7 +28,7 @@ import {
 import type { Filter } from "@/framework/types";
 import { useWorkbench } from "@/framework/workbench";
 import { getResource } from "@/modules/registry";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { de } from "date-fns/locale";
 import { CalendarIcon, Check, ChevronsUpDown, Plus } from "lucide-react";
 import { useState } from "react";
@@ -40,6 +40,7 @@ export function RelationPicker({
     labelField,
     filters,
     disabled,
+    ...aria
 }: {
     id?: string;
     resource: string;
@@ -48,6 +49,8 @@ export function RelationPicker({
     labelField?: string;
     filters?: Filter[];
     disabled?: boolean;
+    "aria-invalid"?: boolean;
+    "aria-describedby"?: string;
 }) {
     const resource = getResource(resourceName);
     const [open, setOpen] = useState(false);
@@ -67,19 +70,22 @@ export function RelationPicker({
                 render={
                     <Button
                         id={id}
+                        {...aria}
                         type="button"
                         variant="outline"
                         disabled={disabled}
                         role="combobox"
                         aria-expanded={open}
-                        className="w-full justify-between font-normal"
+                        className="h-9 w-full justify-between bg-background font-normal"
                     />
                 }
             >
                 {value
                     ? selected.data
                         ? String(selected.data[titleField])
-                        : "Wird geladen …"
+                        : selected.error
+                          ? "Datensatz nicht verfügbar"
+                          : "Wird geladen …"
                     : "Suchen und auswählen …"}
                 <ChevronsUpDown className="ml-2 size-4 opacity-50" />
             </PopoverTrigger>
@@ -176,23 +182,28 @@ export function DatePicker({
     value,
     onChange,
     disabled,
+    ...aria
 }: {
     id?: string;
     value: unknown;
     onChange: (value: string | null) => void;
     disabled?: boolean;
+    "aria-invalid"?: boolean;
+    "aria-describedby"?: string;
 }) {
     const [open, setOpen] = useState(false);
-    const selected = value ? parseISO(String(value)) : undefined;
+    const parsed = value ? parseISO(String(value)) : undefined;
+    const selected = parsed && isValid(parsed) ? parsed : undefined;
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger
                 render={
                     <Button
                         id={id}
+                        {...aria}
                         type="button"
                         variant="outline"
-                        className="w-full justify-start font-normal"
+                        className="h-9 w-full justify-start bg-background font-normal"
                         disabled={disabled}
                     />
                 }
@@ -232,10 +243,15 @@ export function MonthPicker({
     id,
     value,
     onChange,
+    disabled,
+    ...aria
 }: {
     id?: string;
     value: unknown;
     onChange: (value: string | null) => void;
+    disabled?: boolean;
+    "aria-invalid"?: boolean;
+    "aria-describedby"?: string;
 }) {
     const [open, setOpen] = useState(false);
     const [year, setYear] = useState(
@@ -247,14 +263,16 @@ export function MonthPicker({
                 render={
                     <Button
                         id={id}
+                        {...aria}
+                        disabled={disabled}
                         type="button"
                         variant="outline"
-                        className="w-full justify-start font-normal"
+                        className="h-9 w-full justify-start bg-background font-normal"
                     />
                 }
             >
                 <CalendarIcon />
-                {value
+                {value && /^\d{4}-(0[1-9]|1[0-2])$/.test(String(value))
                     ? format(parseISO(String(value) + "-01"), "MMMM yyyy", {
                           locale: de,
                       })
@@ -307,31 +325,47 @@ export function RangePicker({
     value,
     onChange,
     month = false,
+    disabled,
+    ...aria
 }: {
     id?: string;
     value: unknown;
     onChange: (value: unknown) => void;
     month?: boolean;
+    disabled?: boolean;
+    "aria-invalid"?: boolean;
+    "aria-describedby"?: string;
 }) {
     const range = (value ?? {}) as { from?: string; to?: string };
     const Picker = month ? MonthPicker : DatePicker;
     return (
         <div className="grid grid-cols-2 gap-3">
             <div>
-                <span className="mb-1 block text-xs text-muted-foreground">
+                <label
+                    htmlFor={id}
+                    className="mb-1 block text-xs text-muted-foreground"
+                >
                     Von
-                </span>
+                </label>
                 <Picker
+                    disabled={disabled}
+                    {...aria}
                     id={id}
                     value={range.from}
                     onChange={(from) => onChange({ ...range, from })}
                 />
             </div>
             <div>
-                <span className="mb-1 block text-xs text-muted-foreground">
+                <label
+                    htmlFor={`${id}-to`}
+                    className="mb-1 block text-xs text-muted-foreground"
+                >
                     Bis
-                </span>
+                </label>
                 <Picker
+                    disabled={disabled}
+                    {...aria}
+                    id={`${id}-to`}
                     value={range.to}
                     onChange={(to) => onChange({ ...range, to })}
                 />
@@ -343,10 +377,15 @@ export function TimeField({
     id,
     value,
     onChange,
+    disabled,
+    ...aria
 }: {
     id?: string;
     value: unknown;
     onChange: (value: string | null) => void;
+    disabled?: boolean;
+    "aria-invalid"?: boolean;
+    "aria-describedby"?: string;
 }) {
     return (
         <TimePicker
@@ -354,9 +393,10 @@ export function TimeField({
             value={value ? String(value) : null}
             onValueChange={onChange}
             hourCycle={24}
+            disabled={disabled}
         >
             <div className="flex gap-2">
-                <TimePickerInput />
+                <TimePickerInput {...aria} />
                 <TimePickerTrigger />
             </div>
             <TimePickerContent>

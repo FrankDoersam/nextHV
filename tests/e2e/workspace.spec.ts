@@ -58,6 +58,64 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     await expect(
         page.getByRole("button", { name: "Browser Test Objekt", exact: true }),
     ).toBeVisible();
+    // URL state, the wider sheet, and browser reload use the real application.
+    await expect(page).toHaveURL(/q=/);
+    const pagination = await page
+        .locator('[data-slot="data-grid-pagination"]')
+        .boundingBox();
+    expect(pagination).not.toBeNull();
+    expect(pagination!.y + pagination!.height).toBeLessThanOrEqual(
+        page.viewportSize()!.height,
+    );
+    await page.getByRole("cell", { name: code, exact: true }).dblclick();
+    await expect(
+        page.getByRole("heading", { name: "Objekt bearbeiten", exact: true }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/panels=/);
+    const sheet = page.locator('[data-slot="sheet-content"]');
+    expect((await sheet.boundingBox())!.width).toBeGreaterThan(600);
+    await page.reload();
+    await expect(page.getByLabel("Bezeichnung", { exact: false })).toHaveValue(
+        "Browser Test Objekt",
+    );
+    await page
+        .getByRole("button", {
+            name: "Aktionen für Browser Test Objekt",
+            exact: true,
+        })
+        .click();
+    await page
+        .getByRole("menuitem", { name: "Objektbericht als PDF", exact: true })
+        .click();
+    await page
+        .getByRole("button", { name: "Objektbericht als PDF", exact: true })
+        .click();
+    await expect(
+        page.locator('iframe[title="Objektbericht · Browser Test Objekt"]'),
+    ).toHaveAttribute("src", /^blob:/);
+    await page
+        .getByRole("button", { name: "Schließen", exact: true })
+        .last()
+        .click();
+    await page.getByRole("button", { name: "Abbrechen", exact: true }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page
+        .getByRole("checkbox", { name: "Zeile auswählen", exact: true })
+        .click();
+    await page.getByRole("button", { name: "Löschen", exact: true }).click();
+    await expect(
+        page.getByRole("heading", {
+            name: "Löschen nicht möglich",
+            exact: true,
+        }),
+    ).toBeVisible();
+    await expect(
+        page.getByText("Das Objekt ist aktiv. Bitte zuerst archivieren."),
+    ).toBeVisible();
+    await page
+        .getByRole("button", { name: "Schließen", exact: true })
+        .last()
+        .click();
     expect(errors).toEqual([]);
     await page.getByRole("button", { name: "Abmelden", exact: true }).click();
     await expect(

@@ -8,6 +8,7 @@ export const identities: ResourceDefinition = {
     description:
         "Mehrere Nachweise pro Geschäftspartner. Nummern und Dateien werden verschlüsselt gespeichert.",
     icon: IdCard,
+    navigationGroup: "Dokumente",
     titleField: "title",
     navigation: false,
     fields: [

@@ -16,6 +16,7 @@ export const conditions: ResourceDefinition = {
     description:
         "Zeitliche Fortschreibung: ältere Konditionen bleiben erhalten, der neueste gültige Stichtag wird verwendet.",
     icon: WalletCards,
+    navigationGroup: "Vermietung",
     titleField: "effective_from",
     navigation: false,
     fields: [
@@ -31,6 +32,12 @@ export const conditions: ResourceDefinition = {
         text("reason", "Anlass"),
     ],
     columns: [
+        {
+            field: "monthly_total",
+            label: "Monatlich brutto",
+            kind: "currency",
+            sortable: false,
+        },
         col("effective_from", "Gültig ab", "date"),
         col("base_rent", "Grundmiete", "currency"),
         col("service_charge", "Nebenkosten", "currency"),

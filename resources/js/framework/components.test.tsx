@@ -31,6 +31,7 @@ global.ResizeObserver = class {
     disconnect() {}
 };
 Element.prototype.scrollIntoView = vi.fn();
+Element.prototype.getAnimations = vi.fn(() => []);
 const resource: ResourceDefinition = {
     name: "properties",
     label: "Objekte",

@@ -98,3 +98,22 @@
         @apply bg-primary/8 text-primary hover:bg-primary/8 hover:text-primary;
     }
 }
+/* Nested dialogs stay mounted; Base UI owns focus trapping and modal semantics. */
+.crud-sheet {
+    transform-origin: right center;
+}
+.crud-sheet[data-stacked] {
+    transform: translateX(-2rem) scale(0.97);
+    border-radius: 1rem;
+    filter: brightness(0.96);
+}
+.crud-dialog[data-stacked] {
+    scale: 0.97;
+    filter: brightness(0.96);
+}
+@media (prefers-reduced-motion: reduce) {
+    .crud-sheet,
+    .crud-dialog {
+        transition: none;
+    }
+}

@@ -2,14 +2,19 @@
 
 namespace App\Rest\Resources;
 
+use App\Domain\Property\Actions\CheckPropertyDeletion;
 use App\Domain\Property\Enums\ManagementType;
 use App\Domain\Property\Enums\PropertyStatus;
 use App\Domain\Property\Enums\PropertyType;
 use App\Models\Property;
 use App\Rest\Actions\ArchiveProperties;
 use App\Rest\Actions\CloneProperty;
+use App\Rest\Actions\CreatePropertyReport;
+use App\Rest\Actions\InspectProperty;
 use App\Rest\Metrics\PropertyOverview;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
+use Lomkit\Rest\Confirmation\Confirmation;
 use Lomkit\Rest\Fields\Date;
 use Lomkit\Rest\Fields\DateTime;
 use Lomkit\Rest\Fields\Enum;
@@ -29,6 +34,7 @@ class PropertyResource extends Resource
     public function fields(): array
     {
         return [
+            Text::make('full_address')->virtual()->readonly()->requires(['street', 'house_number', 'postal_code', 'city'])->resolveUsing(fn (Property $property) => $property->street.' '.$property->house_number.', '.$property->postal_code.' '.$property->city),
             ID::make('id'), Text::make('code')->searchable()->rules('max:40', Contextual::rule(fn (MutationContext $m) => Rule::unique('properties', 'code')->ignore($m->key)))->creationRules('required')->updateRules('filled'),
             Text::make('name')->searchable()->rules('max:160')->creationRules('required')->updateRules('filled'),
             Enum::make('type', PropertyType::class), Enum::make('management_type', ManagementType::class), Enum::make('status', PropertyStatus::class),
@@ -49,11 +55,18 @@ class PropertyResource extends Resource
 
     public function actions(): array
     {
-        return [CloneProperty::class, ArchiveProperties::class];
+        return [CloneProperty::class, ArchiveProperties::class, InspectProperty::class, CreatePropertyReport::class];
     }
 
     public function metrics(): array
     {
         return [PropertyOverview::class];
+    }
+
+    public function destroyConfirmation(Collection $models): ?Confirmation
+    {
+        app(CheckPropertyDeletion::class)->assertAllowed($models);
+
+        return parent::destroyConfirmation($models);
     }
 }

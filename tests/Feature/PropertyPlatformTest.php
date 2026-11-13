@@ -121,7 +121,7 @@ class PropertyPlatformTest extends TestCase
 
     public function test_empty_property_delete_requires_signed_confirmation(): void
     {
-        $p = Property::factory()->create();
+        $p = Property::factory()->create(['status' => 'archived']);
         $body = ['resources' => [$p->id]];
         $this->deleteJson('/api/v1/properties', [...$body, 'confirmation' => 'invalid'])->assertStatus(428);
         $this->confirmed('/api/v1/properties/destroy', $body)->assertOk();
@@ -131,7 +131,7 @@ class PropertyPlatformTest extends TestCase
     public function test_property_with_units_cannot_be_deleted(): void
     {
         $u = Unit::factory()->create();
-        $this->confirmed('/api/v1/properties/destroy', ['resources' => [$u->property_id]])->assertUnprocessable();
+        $this->deleteJson('/api/v1/properties', ['resources' => [$u->property_id]])->assertUnprocessable();
         $this->assertNotSoftDeleted($u->property);
     }
 

@@ -1,3 +1,4 @@
+import { InspectPropertyAction, PropertyReportAction } from "./inspect-action";
 import { DeleteAction, EditAction } from "@/framework/actions";
 import type { ResourceDefinition } from "@/framework/types";
 import {
@@ -17,6 +18,7 @@ export const properties: ResourceDefinition = {
     singular: "Objekt",
     description: "Stammdaten, Verwaltung und Einheiten eines Objekts.",
     icon: Building2,
+    navigationGroup: "Stammdaten",
     titleField: "name",
     supportsClone: true,
     groups: [
@@ -79,7 +81,7 @@ export const properties: ResourceDefinition = {
     columns: [
         col("code", "Nr."),
         col("name", "Objekt"),
-        col("city", "Standort"),
+        { field: "full_address", label: "Adresse", sortable: false },
         col("type", "Nutzung", "badge"),
         col("units_count", "Einheiten", "number"),
         col("status", "Status", "badge"),
@@ -101,7 +103,10 @@ export const properties: ResourceDefinition = {
             options: opts(["residential", "commercial", "mixed"]),
         },
     ],
+    deletionCheck: true,
     actions: [
+        new InspectPropertyAction(),
+        new PropertyReportAction(),
         new EditAction(),
         new CloneAction(true),
         new ArchiveAction(),

@@ -20,6 +20,7 @@ class RentConditionResource extends Resource
     public function fields(): array
     {
         return [
+            Currency::make('monthly_total')->virtual()->readonly()->requires(['base_rent', 'service_charge', 'heating_cost', 'vat_rate'])->resolveUsing(fn (RentCondition $condition) => round(($condition->base_rent + $condition->service_charge + $condition->heating_cost) * (1 + $condition->vat_rate / 100), 2)),
             ID::make('id'),
             Integer::make('contract_id')->rules(Rule::exists('contracts', 'id')->whereNull('deleted_at'))->creationRules('required')->updatable(false),
             Date::make('effective_from')->creationRules('required'),

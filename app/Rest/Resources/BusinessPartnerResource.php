@@ -19,6 +19,7 @@ class BusinessPartnerResource extends Resource
     public function fields(): array
     {
         return [
+            Text::make('full_name')->virtual()->readonly()->requires(['first_name', 'last_name', 'company_name', 'kind', 'display_name'])->resolveUsing(fn (BusinessPartner $partner) => $partner->kind === 'company' ? ($partner->company_name ?: $partner->display_name) : (trim($partner->first_name.' '.$partner->last_name) ?: $partner->display_name)),
             ID::make('id'),
             Text::make('code')->searchable()->rules('max:40', Contextual::rule(fn (MutationContext $m) => Rule::unique('business_partners', 'code')->ignore($m->key)))->creationRules('required')->updateRules('filled'),
             Text::make('kind')->rules('in:person,company'),

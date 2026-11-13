@@ -11,12 +11,42 @@ import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 const fields: FieldDefinition[] = [
     {
+        name: "memo",
+        label: "Notiz mit Zeichenanzeige",
+        kind: "textarea",
+        minLength: 10,
+        maxLength: 300,
+        help: "Die Zeichenlimits werden im gemeinsamen Schema geprüft.",
+        description: "Mindestens 10 und höchstens 300 Zeichen.",
+    },
+    {
+        name: "features",
+        label: "Ausstattung",
+        kind: "multiselect",
+        options: [
+            { value: "lift", label: "Aufzug" },
+            { value: "garden", label: "Garten" },
+            { value: "parking", label: "Stellplatz" },
+        ],
+        description: "Mehrere Optionen auswählen und durchsuchen.",
+    },
+    {
+        name: "channels",
+        label: "Kontaktwege",
+        kind: "checkbox-group",
+        options: [
+            { value: "email", label: "E-Mail" },
+            { value: "post", label: "Post" },
+        ],
+    },
+    {
         name: "currency",
         label: "Currency · EUR",
         kind: "currency",
         required: true,
         default: 1250.5,
         min: 0,
+        help: "Deutsche Betragseingabe mit EUR. Die API erhält eine Zahl, keinen formatierten Text.",
     },
     {
         name: "relation",

@@ -17,6 +17,7 @@ export const terminations: ResourceDefinition = {
     description:
         "Eingang dokumentieren. Die Bestätigung setzt erst nach ausdrücklicher Bestätigung das Vertragsende.",
     icon: FileX2,
+    navigationGroup: "Vermietung",
     titleField: "reason",
     fields: [
         {

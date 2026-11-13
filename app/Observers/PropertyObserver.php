@@ -2,15 +2,14 @@
 
 namespace App\Observers;
 
+use App\Domain\Property\Actions\CheckPropertyDeletion;
 use App\Models\Property;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\Collection;
 
 class PropertyObserver
 {
     public function deleting(Property $property): void
     {
-        if ($property->units()->exists()) {
-            throw ValidationException::withMessages(['property' => 'Objekte mit Einheiten können nicht gelöscht werden. Bitte archivieren.']);
-        }
+        app(CheckPropertyDeletion::class)->assertAllowed(new Collection([$property]));
     }
 }

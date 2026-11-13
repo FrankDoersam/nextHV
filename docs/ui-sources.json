@@ -154,5 +154,13 @@
     {
         "file": "resources/js/components/ui/spinner.tsx",
         "source": "https://ui.shadcn.com/r/styles/base-nova/spinner.json"
+    },
+    {
+        "file": "resources/js/components/reui/number-field.tsx",
+        "source": "https://reui.io/r/base-nova/number-field.json"
+    },
+    {
+        "file": "resources/js/components/reui/alert.tsx",
+        "source": "https://reui.io/r/base-nova/alert.json"
     }
 ]

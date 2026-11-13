@@ -14,7 +14,10 @@ export function schemaFor(fields: FieldDefinition[]) {
     return z.record(z.string(), z.unknown()).superRefine((values, ctx) => {
         for (const field of fields) {
             const value = values[field.name];
-            const empty = value == null || value === "";
+            const empty =
+                value == null ||
+                value === "" ||
+                (Array.isArray(value) && value.length === 0);
             let error: string | undefined;
             if (field.required && empty)
                 error = "Dieses Feld ist erforderlich.";
@@ -37,6 +40,8 @@ export function schemaFor(fields: FieldDefinition[]) {
                     )
                         error = "Höchstens zwei Nachkommastellen.";
                 }
+                if (field.minLength && String(value).length < field.minLength)
+                    error = `Mindestens ${field.minLength} Zeichen.`;
                 if (field.maxLength && String(value).length > field.maxLength)
                     error = `Höchstens ${field.maxLength} Zeichen.`;
                 if (
@@ -46,7 +51,11 @@ export function schemaFor(fields: FieldDefinition[]) {
                     error = "Bitte eine gültige E-Mail-Adresse eingeben.";
                 if (
                     field.options &&
-                    !field.options.some((o) => o.value === value)
+                    !(Array.isArray(value)
+                        ? value.every((v) =>
+                              field.options!.some((o) => o.value === v),
+                          )
+                        : field.options.some((o) => o.value === value))
                 )
                     error = "Bitte einen gültigen Eintrag auswählen.";
                 if (field.kind === "date" && !validDate(value))
@@ -96,7 +105,13 @@ export function initialValues(
                 : (defaults?.[f.name] ??
                   row?.[f.name] ??
                   f.default ??
-                  (f.kind === "checkbox" ? false : f.nullable ? null : ""));
+                  (["multiselect", "checkbox-group"].includes(f.kind ?? "")
+                      ? []
+                      : f.kind === "checkbox"
+                        ? false
+                        : f.nullable
+                          ? null
+                          : ""));
             if (f.kind === "date" && typeof value === "string")
                 value = value.slice(0, 10);
             return [f.name, value];

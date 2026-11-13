@@ -16,6 +16,7 @@ export const partners: ResourceDefinition = {
     description:
         "Personen und Unternehmen mit Rollen, Vertragsbezügen und separaten Ausweisen.",
     icon: Users,
+    navigationGroup: "Stammdaten",
     titleField: "display_name",
     groups: [
         { id: "general", label: "Geschäftspartner" },
@@ -44,6 +45,7 @@ export const partners: ResourceDefinition = {
         notes,
     ],
     columns: [
+        { field: "full_name", label: "Vollständiger Name", sortable: false },
         col("code", "Nr."),
         col("display_name", "Geschäftspartner"),
         col("kind", "Typ", "badge"),

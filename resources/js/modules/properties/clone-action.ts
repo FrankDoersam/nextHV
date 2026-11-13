@@ -1,3 +1,4 @@
+import { request } from "@/framework/data/http";
 import { ResourceAction } from "@/framework/actions";
 import { dataProvider } from "@/framework/data/provider";
 import type { ActionContext, FieldDefinition } from "@/framework/types";
@@ -23,6 +24,12 @@ export class CloneAction extends ResourceAction {
                 kind: "checkbox",
                 default: true,
             });
+    }
+    async prepare({ resource, rows }: ActionContext) {
+        const response = await request<{
+            data: import("@/framework/types").Values;
+        }>(`/api/v1/${resource.name}/${rows[0].id}/clone-defaults`);
+        return { defaults: response.data };
     }
     async execute(
         { rows, resource, values }: ActionContext,

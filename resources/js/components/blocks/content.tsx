@@ -1,3 +1,10 @@
+import {
+    Alert,
+    AlertTitle,
+    AlertDescription,
+    AlertAction,
+} from "@/components/reui/alert";
+import { ApiError } from "@/framework/data/http";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,23 +33,30 @@ export function SectionCard({
     actions,
     children,
     flush = false,
+    grow = false,
 }: {
     title: string;
     description?: string;
     actions?: ReactNode;
     children: ReactNode;
     flush?: boolean;
+    grow?: boolean;
 }) {
     return (
-        <Card>
-            <CardHeader>
+        <Card className={grow ? "min-h-0 flex-1 overflow-hidden" : undefined}>
+            <CardHeader className="shrink-0">
                 <CardTitle>{title}</CardTitle>
                 {description && (
                     <CardDescription>{description}</CardDescription>
                 )}
                 {actions && <CardAction>{actions}</CardAction>}
             </CardHeader>
-            <CardContent className={flush ? "p-0" : undefined}>
+            <CardContent
+                className={cn(
+                    flush && "p-0",
+                    grow && "flex min-h-0 flex-1 flex-col",
+                )}
+            >
                 {children}
             </CardContent>
         </Card>
@@ -106,39 +120,59 @@ export function ErrorState({
     error: unknown;
     retry?: () => void;
 }) {
+    const messages = [
+        ...new Set(
+            error instanceof ApiError && Object.keys(error.errors).length
+                ? Object.values(error.errors).flat()
+                : [error instanceof Error ? error.message : String(error)],
+        ),
+    ];
     return (
-        <div
-            role="alert"
-            className="rounded-xl border border-destructive/20 bg-destructive/5 p-5"
-        >
-            <div className="flex items-center gap-2 font-medium text-destructive">
-                <TriangleAlert size={18} />
-                Das hat nicht geklappt
-            </div>
-            <p className="mt-2 text-sm">
-                {error instanceof Error ? error.message : String(error)}
-            </p>
+        <Alert variant="destructive" className="items-start py-4">
+            <TriangleAlert />
+            <AlertTitle className="line-clamp-none">
+                {messages.length > 1
+                    ? `${messages.length} Hinweise benötigen deine Aufmerksamkeit`
+                    : "Bitte prüfe diese Angabe"}
+            </AlertTitle>
+            <AlertDescription>
+                <ul className="space-y-1.5 break-words">
+                    {messages.map((message, i) => (
+                        <li key={i}>{message}</li>
+                    ))}
+                </ul>
+            </AlertDescription>
             {retry && (
-                <Button variant="outline" className="mt-4" onClick={retry}>
-                    <RefreshCw />
-                    Erneut versuchen
-                </Button>
+                <AlertAction>
+                    <Button variant="outline" size="sm" onClick={retry}>
+                        <RefreshCw />
+                        Erneut versuchen
+                    </Button>
+                </AlertAction>
             )}
-        </div>
+        </Alert>
     );
 }
+
 export function MetricGrid({
     items,
+    compact = false,
 }: {
+    compact?: boolean;
     items: { label: string; value: string; hint?: string; accent?: boolean }[];
 }) {
     return (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div
+            className={cn(
+                "grid gap-4 sm:grid-cols-2 xl:grid-cols-4",
+                compact && "max-h-44 overflow-y-auto sm:max-h-none",
+            )}
+        >
             {items.map((item) => (
                 <Card
                     key={item.label}
                     className={cn(
-                        "gap-2",
+                        compact ? "gap-1 py-3" : "gap-2",
                         item.accent && "border-primary/20 bg-primary/5",
                     )}
                 >
@@ -154,7 +188,12 @@ export function MetricGrid({
                                 size={15}
                             />
                         </div>
-                        <div className="mt-3 text-[28px] font-semibold tracking-tight tabular-nums">
+                        <div
+                            className={cn(
+                                "font-semibold tracking-tight tabular-nums",
+                                compact ? "mt-1 text-xl" : "mt-3 text-[28px]",
+                            )}
+                        >
                             {item.value}
                         </div>
                         {item.hint && (

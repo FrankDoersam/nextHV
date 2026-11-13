@@ -1,6 +1,5 @@
 import React, { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router";
-import { toast } from "sonner";
 import { useAuth } from "@/framework/auth";
 import { WorkbenchProvider } from "@/framework/workbench";
 import { resources } from "@/modules/registry";

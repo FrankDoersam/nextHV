@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\IdentityFileController;
+use App\Http\Controllers\PropertyOperationsController;
 use App\Rest\Controllers\BusinessPartnerController;
 use App\Rest\Controllers\ContractController;
 use App\Rest\Controllers\ContractLinkController;
@@ -15,6 +16,10 @@ use Illuminate\Support\Facades\Route;
 use Lomkit\Rest\Facades\Rest;
 
 Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(function () {
+    Route::post('properties/deletion-check', [PropertyOperationsController::class, 'deletionCheck']);
+    Route::get('properties/{property}/clone-defaults', [PropertyOperationsController::class, 'propertyCloneDefaults']);
+    Route::get('units/{unit}/clone-defaults', [PropertyOperationsController::class, 'unitCloneDefaults']);
+    Route::get('properties/{property}/report', [PropertyOperationsController::class, 'report'])->middleware('signed:relative')->name('properties.report');
     Rest::resource('properties', PropertyController::class);
     Rest::resource('contract-links', ContractLinkController::class);
     Rest::resource('termination-notices', TerminationNoticeController::class);

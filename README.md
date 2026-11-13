@@ -2,6 +2,8 @@
 
 Hausverwaltung mit Laravel 13, Laravel REST API 3, React 19 und einer wiederverwendbaren CRUD-Oberfläche auf REUI / Base UI. Objekte und physische Einheiten sind von Geschäftspartnern, Verträgen und zeitlichen Konditionen getrennt.
 
+Das vollständige Entwicklerhandbuch einschließlich der Funktionen aus Basis- und Folgecommit steht in [docs/framework.md](docs/framework.md). Dort sind auch Erweiterungsbeispiele, Action-Rückgaben, Direktlinks, Tabellen-Props und die priorisierte Weiterentwicklung dokumentiert.
+
 ## Lokal starten
 
 Voraussetzungen: PHP **8.3+**, Composer 2, Node **22.12+** (CI: Node 24), SQLite oder eine konfigurierte relationale Datenbank. Benötigte PHP-Erweiterungen: Laravel-Standard einschließlich PDO, passendem Datenbanktreiber, mbstring, fileinfo und OpenSSL.
@@ -68,7 +70,7 @@ Beim Duplizieren werden nur Objekt-/Einheitenstammdaten kopiert. Verträge, Bete
 - Servervalidierung zusätzlich zur Formularvalidierung, inkl. Laufzeiten, Duplikaten und Hauptansprechpartnern.
 - Optimistische Versionsprüfung bei CRUD-Updates: `updated_at` wird als `version` übertragen; bei Konflikt antwortet die API mit `409`.
 - Löschen und verbindliche Actions verlangen den signierten Bestätigungstoken der API (`428` → Bestätigung → erneute Anfrage).
-- Objekte mit Einheiten, Einheiten mit Vertragsgeschichte und aktivierte Verträge werden nicht einfach gelöscht. Stammdatentabellen verwenden Soft Deletes; es gibt in dieser Oberfläche noch keinen Papierkorb.
+- Aktive Objekte sowie Objekte mit Einheiten (auch gelöschten), Einheiten mit Vertragsgeschichte und aktivierte Verträge werden nicht einfach gelöscht. Stammdatentabellen verwenden Soft Deletes; es gibt in dieser Oberfläche noch keinen Papierkorb.
 - Ausweisnummern sind schreibbar, aber nicht lesbar über die API. Nur die letzten vier Zeichen werden angezeigt. Dateien liegen verschlüsselt auf dem privaten Disk; Download nur authentifiziert, ohne Browsercache. Upload: PDF/JPEG/PNG bis 10 MB.
 
 ## Architektur
@@ -84,7 +86,7 @@ Beim Duplizieren werden nur Objekt-/Einheitenstammdaten kopiert. Verträge, Bete
 | `app/Rest/Actions`                                         | REST-Actions mit Zielmenge, Bulk-Limit, Transaktion und Bestätigung                         |
 | `app/Policies`, `app/Contracts`, `app/Support/Permissions` | Vorbereiteter, abschaltbarer Permission-Adapter                                             |
 | `resources/js/components/ui`                               | Offizielle Base-UI-/shadcn-Primitives                                                       |
-| `resources/js/components/reui`                             | Offizielle REUI DataGrid-, Stepper- und TimePicker-Komponenten                              |
+| `resources/js/components/reui`                             | Offizielle REUI DataGrid-, Stepper-, TimePicker-, NumberField- und Alert-Komponenten        |
 | `resources/js/components/blocks`                           | Zentrale AppShell, AuthScreen, Cards, Lists, KPIs, Layout, LazyTabs, Sheet/Dialog           |
 | `resources/js/components/fields`                           | Zentrale Currency-, Relations-, Datum-, Monat-, Zeitraum- und Zeitfelder                    |
 | `resources/js/framework`                                   | Datenprovider, Auth, Actions, Form-Engine, Tabellen, Workbench, Permissions                 |

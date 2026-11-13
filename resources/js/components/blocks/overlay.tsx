@@ -12,8 +12,11 @@ import {
     SheetHeader,
     SheetTitle,
 } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { X, Layers } from "lucide-react";
 import type { Presentation } from "@/framework/types";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 export function Overlay({
     open,
     onClose,
@@ -22,6 +25,11 @@ export function Overlay({
     children,
     presentation = "sheet",
     footer,
+    header,
+    nested,
+    stacked = false,
+    busy = false,
+    size = "form",
 }: {
     open: boolean;
     onClose: () => void;
@@ -30,46 +38,120 @@ export function Overlay({
     children: ReactNode;
     presentation?: Presentation;
     footer?: ReactNode;
+    header?: ReactNode;
+    nested?: ReactNode;
+    stacked?: boolean;
+    busy?: boolean;
+    size?: "form" | "compact" | "wide";
 }) {
+    const close = () => {
+        if (!busy) onClose();
+    };
+    const headClass =
+        "relative shrink-0 gap-2 border-b bg-card px-6 py-5 pr-16 sm:px-8 sm:pr-16";
+    const closeButton = (
+        <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            disabled={busy}
+            onClick={close}
+            aria-label="Schließen"
+            className="absolute right-4 top-4"
+        >
+            <X />
+        </Button>
+    );
     const body = (
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-muted/15 px-6 py-6 sm:px-8">
             {children}
         </div>
     );
+    const accessory = header && (
+        <div className="shrink-0 overflow-x-auto border-b bg-card px-6 py-4 sm:px-8">
+            {header}
+        </div>
+    );
     const bottom = footer && (
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t bg-muted/30 px-6 py-4">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t bg-card px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8">
             {footer}
         </div>
     );
+    const caption = description ?? "";
     if (presentation === "dialog")
         return (
-            <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-                <DialogContent className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
-                    <DialogHeader className="shrink-0 border-b px-6 py-5">
-                        <DialogTitle>{title}</DialogTitle>
-                        <DialogDescription>
-                            {description ??
-                                "Änderungen werden mit Speichern übernommen."}
+            <Dialog open={open} onOpenChange={(v) => !v && close()}>
+                <DialogContent
+                    showCloseButton={false}
+                    data-stacked={stacked || undefined}
+                    className={cn(
+                        "crud-dialog flex max-h-[92dvh] flex-col gap-0 overflow-hidden p-0 shadow-2xl",
+                        size === "compact"
+                            ? "sm:max-w-lg"
+                            : size === "wide"
+                              ? "sm:max-w-5xl"
+                              : "sm:max-w-3xl",
+                    )}
+                >
+                    <DialogHeader className={headClass}>
+                        <DialogTitle className="text-lg leading-6 font-semibold">
+                            {title}
+                        </DialogTitle>
+                        <DialogDescription
+                            className={
+                                caption
+                                    ? "max-w-xl text-sm leading-5"
+                                    : "sr-only"
+                            }
+                        >
+                            {caption || title}
                         </DialogDescription>
+                        {closeButton}
                     </DialogHeader>
+                    {accessory}
                     {body}
                     {bottom}
+                    {nested}
                 </DialogContent>
             </Dialog>
         );
     return (
-        <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-            <SheetContent className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
-                <SheetHeader className="shrink-0 border-b px-6 py-5">
-                    <SheetTitle>{title}</SheetTitle>
-                    <SheetDescription>
-                        {description ??
-                            "Änderungen werden mit Speichern übernommen."}
+        <Sheet open={open} onOpenChange={(v) => !v && close()}>
+            <SheetContent
+                showCloseButton={false}
+                data-stacked={stacked || undefined}
+                className={cn(
+                    "crud-sheet flex flex-col gap-0 overflow-hidden p-0 shadow-2xl data-[side=right]:w-full data-[side=right]:sm:max-w-[min(48rem,calc(100vw-3rem))]",
+                    size === "wide" &&
+                        "data-[side=right]:sm:max-w-[min(64rem,calc(100vw-3rem))]",
+                )}
+            >
+                <SheetHeader className={headClass}>
+                    <SheetTitle className="text-lg font-semibold">
+                        {title}
+                    </SheetTitle>
+                    <SheetDescription
+                        className={
+                            caption ? "max-w-xl text-sm leading-5" : "sr-only"
+                        }
+                    >
+                        {caption || title}
                     </SheetDescription>
+                    {closeButton}
                 </SheetHeader>
+                {accessory}
                 {body}
                 {bottom}
+                {nested}
             </SheetContent>
         </Sheet>
+    );
+}
+export function OverlayFooterHint({ children }: { children: ReactNode }) {
+    return (
+        <span className="mr-auto flex items-center gap-2 text-xs text-muted-foreground">
+            <Layers className="size-3.5" />
+            {children}
+        </span>
     );
 }

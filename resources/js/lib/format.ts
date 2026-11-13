@@ -7,12 +7,17 @@ export const number = (value: unknown, digits = 0) =>
     new Intl.NumberFormat("de-DE", { maximumFractionDigits: digits }).format(
         Number(value ?? 0),
     );
-export const date = (value: unknown) =>
-    value
-        ? new Intl.DateTimeFormat("de-DE").format(
-              new Date(String(value).slice(0, 10) + "T12:00:00"),
-          )
-        : "—";
+export const date = (value: unknown) => {
+    if (!value) return "—";
+    const parsed = new Date(String(value).slice(0, 10) + "T12:00:00");
+    return Number.isNaN(parsed.getTime())
+        ? "—"
+        : new Intl.DateTimeFormat("de-DE", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+          }).format(parsed);
+};
 export const labels: Record<string, string> = {
     active: "Aktiv",
     archived: "Archiviert",

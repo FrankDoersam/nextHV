@@ -1,6 +1,5 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -19,17 +18,19 @@ import {
     RelationPicker,
     TimeField,
 } from "./pickers";
+import { BaseField } from "./base-field";
+import { CurrencyField } from "./currency-field";
+import { MultiSelect } from "./multi-select";
 export function ResourceField({
-    definition,
+    definition: d,
     editing = false,
 }: {
     definition: FieldDefinition;
     editing?: boolean;
 }) {
     const { control } = useFormContext<Values>();
-    const d = definition;
     const id = useId();
-    const disabled = editing && d.readonlyOnEdit;
+    const disabled = d.disabled || (editing && d.readonlyOnEdit);
     return (
         <Controller
             name={d.name}
@@ -39,57 +40,46 @@ export function ResourceField({
                     id,
                     disabled,
                     "aria-invalid": !!fieldState.error,
-                    "aria-describedby": `${id}-help ${id}-error`,
+                    "aria-describedby": [
+                        d.description || d.lockedReason ? `${id}-help` : "",
+                        fieldState.error ? `${id}-error` : "",
+                    ]
+                        .filter(Boolean)
+                        .join(" "),
+                    "aria-required": d.required,
+                };
+                const picker = {
+                    ...common,
+                    value: field.value,
+                    onChange: field.onChange,
                 };
                 let input;
                 switch (d.kind) {
                     case "relation":
                         input = (
                             <RelationPicker
-                                {...common}
+                                {...picker}
                                 resource={d.resource!}
-                                value={field.value}
-                                onChange={field.onChange}
                                 labelField={d.labelField}
                                 filters={d.filters}
                             />
                         );
                         break;
                     case "date":
-                        input = (
-                            <DatePicker
-                                {...common}
-                                value={field.value}
-                                onChange={field.onChange}
-                            />
-                        );
+                        input = <DatePicker {...picker} />;
                         break;
                     case "month":
-                        input = (
-                            <MonthPicker
-                                id={id}
-                                value={field.value}
-                                onChange={field.onChange}
-                            />
-                        );
+                        input = <MonthPicker {...picker} />;
+                        break;
+                    case "time":
+                        input = <TimeField {...picker} />;
                         break;
                     case "date-range":
                     case "month-range":
                         input = (
                             <RangePicker
-                                id={id}
-                                value={field.value}
-                                onChange={field.onChange}
+                                {...picker}
                                 month={d.kind === "month-range"}
-                            />
-                        );
-                        break;
-                    case "time":
-                        input = (
-                            <TimeField
-                                id={id}
-                                value={field.value}
-                                onChange={field.onChange}
                             />
                         );
                         break;
@@ -101,8 +91,15 @@ export function ResourceField({
                                 disabled={disabled}
                                 items={d.options}
                             >
-                                <SelectTrigger {...common} className="w-full">
-                                    <SelectValue placeholder="Bitte auswählen" />
+                                <SelectTrigger
+                                    {...common}
+                                    className="h-9 w-full bg-background"
+                                >
+                                    <SelectValue
+                                        placeholder={
+                                            d.placeholder ?? "Bitte auswählen"
+                                        }
+                                    />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {d.options?.map((o) => (
@@ -117,12 +114,24 @@ export function ResourceField({
                             </Select>
                         );
                         break;
+                    case "multiselect":
+                    case "checkbox-group":
+                        input = (
+                            <MultiSelect
+                                {...picker}
+                                options={d.options}
+                                checkboxes={d.kind === "checkbox-group"}
+                            />
+                        );
+                        break;
                     case "checkbox":
                         input = (
                             <Checkbox
                                 {...common}
                                 checked={!!field.value}
                                 onCheckedChange={field.onChange}
+                                onBlur={field.onBlur}
+                                ref={field.ref}
                             />
                         );
                         break;
@@ -130,55 +139,56 @@ export function ResourceField({
                         input = (
                             <Textarea
                                 {...common}
+                                ref={field.ref}
                                 value={String(field.value ?? "")}
                                 onChange={field.onChange}
                                 onBlur={field.onBlur}
-                                rows={4}
+                                rows={d.rows ?? 4}
+                                minLength={d.minLength}
                                 maxLength={d.maxLength}
+                                placeholder={d.placeholder}
+                                className="min-h-28 bg-background"
                             />
                         );
                         break;
                     case "currency":
+                        input = (
+                            <CurrencyField
+                                {...picker}
+                                ref={field.ref}
+                                onBlur={field.onBlur}
+                                min={d.min}
+                                max={d.max}
+                                currency={d.currency}
+                                locale={d.locale}
+                            />
+                        );
+                        break;
                     case "number":
                         input = (
-                            <div className="relative">
-                                <Input
-                                    {...common}
-                                    ref={field.ref}
-                                    type="number"
-                                    inputMode="decimal"
-                                    step={
-                                        d.kind === "currency"
-                                            ? "0.01"
-                                            : (d.step ?? "any")
-                                    }
-                                    min={d.min}
-                                    max={d.max}
-                                    value={
-                                        field.value == null
-                                            ? ""
-                                            : String(field.value)
-                                    }
-                                    onChange={(e) =>
-                                        field.onChange(
-                                            e.target.value === ""
-                                                ? null
-                                                : Number(e.target.value),
-                                        )
-                                    }
-                                    onBlur={field.onBlur}
-                                    className={
-                                        d.kind === "currency"
-                                            ? "pr-14"
-                                            : undefined
-                                    }
-                                />
-                                {d.kind === "currency" && (
-                                    <span className="pointer-events-none absolute right-3 top-2.5 text-xs text-muted-foreground">
-                                        EUR
-                                    </span>
-                                )}
-                            </div>
+                            <Input
+                                {...common}
+                                ref={field.ref}
+                                type="number"
+                                inputMode="decimal"
+                                step={d.step ?? "any"}
+                                min={d.min}
+                                max={d.max}
+                                value={
+                                    field.value == null
+                                        ? ""
+                                        : String(field.value)
+                                }
+                                onChange={(e) =>
+                                    field.onChange(
+                                        e.target.value === ""
+                                            ? null
+                                            : Number(e.target.value),
+                                    )
+                                }
+                                onBlur={field.onBlur}
+                                className="h-9 bg-background"
+                            />
                         );
                         break;
                     default:
@@ -191,42 +201,32 @@ export function ResourceField({
                                 onChange={field.onChange}
                                 onBlur={field.onBlur}
                                 maxLength={d.maxLength}
+                                minLength={d.minLength}
+                                placeholder={d.placeholder}
+                                className="h-9 bg-background"
                             />
                         );
                 }
+                const counter =
+                    d.kind === "textarea"
+                        ? `${String(field.value ?? "").length}${d.maxLength ? ` / ${d.maxLength}` : ""} Zeichen${d.minLength ? ` · min. ${d.minLength}` : ""}`
+                        : undefined;
                 return (
-                    <div
-                        className={
-                            d.kind === "textarea"
-                                ? "space-y-2 sm:col-span-2"
-                                : "space-y-2"
+                    <BaseField
+                        id={id}
+                        label={d.label}
+                        required={d.required}
+                        help={d.help}
+                        description={d.description}
+                        lockedReason={d.lockedReason}
+                        error={fieldState.error?.message}
+                        wide={
+                            d.kind === "textarea" || d.kind === "checkbox-group"
                         }
+                        counter={counter}
                     >
-                        <Label htmlFor={id}>
-                            {d.label}
-                            {d.required && (
-                                <span className="text-destructive">*</span>
-                            )}
-                        </Label>
                         {input}
-                        {d.description && (
-                            <p
-                                id={`${id}-help`}
-                                className="text-[11px] leading-5 text-muted-foreground"
-                            >
-                                {d.description}
-                            </p>
-                        )}
-                        {fieldState.error && (
-                            <p
-                                id={`${id}-error`}
-                                role="alert"
-                                className="text-xs text-destructive"
-                            >
-                                {fieldState.error.message}
-                            </p>
-                        )}
-                    </div>
+                    </BaseField>
                 );
             }}
         />

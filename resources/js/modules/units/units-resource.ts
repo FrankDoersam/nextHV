@@ -18,6 +18,7 @@ export const units: ResourceDefinition = {
     description:
         "Physische Einheit. Mietdaten und Kaution werden über Verträge verwaltet.",
     icon: DoorOpen,
+    navigationGroup: "Stammdaten",
     titleField: "name",
     supportsClone: true,
     groups: [
