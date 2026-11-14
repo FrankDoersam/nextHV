@@ -17,12 +17,16 @@ export function searchPayload(
     resource: ResourceDefinition,
     params: ListParams = {},
 ) {
+    // A unique tie-breaker keeps equal dates/statuses deterministic across pages.
+    const sorts = params.sort ?? [];
     return {
         search: {
             page: params.page ?? 1,
             limit: params.limit ?? 25,
             filters: params.filters ?? [],
-            sorts: params.sort ?? [{ field: "id", direction: "desc" }],
+            sorts: sorts.some((sort) => sort.field === "id")
+                ? sorts
+                : [...sorts, { field: "id", direction: "desc" }],
             ...(params.query ? { text: { value: params.query } } : {}),
             ...(resource.includes ? { includes: resource.includes } : {}),
             ...(resource.aggregates ? { aggregates: resource.aggregates } : {}),

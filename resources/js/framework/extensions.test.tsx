@@ -719,4 +719,54 @@ describe("relation capabilities and server facets", () => {
             ).columnVisibility,
         ).toEqual({ city: true });
     });
+    it("explains an empty grouped search and clears only user criteria while preserving relation scope", async () => {
+        vi.mocked(dataProvider.list).mockImplementation(
+            async (_resource, params) => {
+                const filtered =
+                    !!params?.query ||
+                    params?.filters?.some(
+                        (filter) =>
+                            "field" in filter && filter.field === "status",
+                    );
+                return {
+                    data: filtered ? [] : rows,
+                    total: filtered ? 0 : 1,
+                    current_page: 1,
+                    last_page: 1,
+                };
+            },
+        );
+        const router = mount(
+            <ResourceCollection
+                resource={resource}
+                fixedFilters={[{ field: "property_id", value: 7 }]}
+            />,
+            '/properties?q=missing&filters={"status":"active"}&group=city&columns={"city":false}',
+        );
+        expect(
+            await screen.findByRole("heading", { name: "Keine Treffer" }),
+        ).toBeVisible();
+        await userEvent.click(
+            screen.getByRole("button", {
+                name: "Suche und Filter zurücksetzen",
+            }),
+        );
+        expect(await screen.findByText("Lindenhöfe")).toBeVisible();
+        const state = readGridState(
+            new URLSearchParams(router.state.location.search),
+            resource,
+        );
+        expect(state.search).toBe("");
+        expect(state.filters).toEqual({});
+        expect(state.group).toBe("city");
+        expect(state.columnVisibility).toEqual({ city: false });
+        expect(dataProvider.list).toHaveBeenLastCalledWith(
+            resource,
+            expect.objectContaining({
+                query: "",
+                filters: [{ field: "property_id", value: 7 }],
+            }),
+            expect.anything(),
+        );
+    });
 });

@@ -7,7 +7,11 @@ import { exportRows } from "./export";
 import { cn } from "@/lib/utils";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { Download, X } from "lucide-react";
-import { ErrorState, StatusBadge } from "@/components/blocks/content";
+import {
+    EmptyState,
+    ErrorState,
+    StatusBadge,
+} from "@/components/blocks/content";
 import {
     DataGrid,
     DataGridContainer,
@@ -157,7 +161,7 @@ export function ResourceCollection({
         (compact
             ? `${resource.name}.${fixedFilters.map((f) => ("field" in f ? `${f.field}-${f.value}` : "relation")).join(".")}.`
             : "");
-    const { state, update } = useGridState(resource, {
+    const { state, update, clearQuery } = useGridState(resource, {
         sync: syncWithLocation,
         prefix,
         pageSize: compact ? 10 : 25,
@@ -172,6 +176,9 @@ export function ResourceCollection({
         dense,
     } = state;
     const query = useDebounced(searchable ? search : "");
+    const hasQuery =
+        !!(searchable && search.trim()) ||
+        (filterable && Object.keys(filters).length > 0);
     const effectiveGroup = groupable ? group : "none";
     const setSorting = (
         value: import("@tanstack/react-table").Updater<SortingState>,
@@ -717,7 +724,41 @@ export function ResourceCollection({
                                     : "flex-1 overflow-hidden",
                             )}
                         >
-                            {grouped ? (
+                            {!result.isPending && rows.length === 0 ? (
+                                <EmptyState
+                                    title={
+                                        hasQuery
+                                            ? "Keine Treffer"
+                                            : "Noch keine Einträge"
+                                    }
+                                    description={
+                                        hasQuery
+                                            ? "Für diese Suche und Filter wurden keine passenden Datensätze gefunden."
+                                            : "In diesem Bereich sind noch keine Datensätze vorhanden."
+                                    }
+                                    action={
+                                        hasQuery ? (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={clearQuery}
+                                            >
+                                                Suche und Filter zurücksetzen
+                                            </Button>
+                                        ) : !toolbar &&
+                                          creatable &&
+                                          can(resource.name, "create") ? (
+                                            <Button
+                                                type="button"
+                                                onClick={create}
+                                            >
+                                                <Plus />
+                                                {resource.singular} anlegen
+                                            </Button>
+                                        ) : undefined
+                                    }
+                                />
+                            ) : grouped ? (
                                 <div className="h-full space-y-4 overflow-auto">
                                     {Object.entries(grouped).map(
                                         ([key, items]) => (

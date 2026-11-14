@@ -134,6 +134,30 @@ export function useGridState(
         readGridState(new URLSearchParams(), resource, "", pageSize),
     );
     const state = sync ? readGridState(url, resource, prefix, pageSize) : local;
+    function commit(
+        change: (current: GridState) => GridState,
+        replace = false,
+    ) {
+        if (sync)
+            setUrl(
+                (prev) =>
+                    writeGridState(
+                        prev,
+                        change(readGridState(prev, resource, prefix, pageSize)),
+                        prefix,
+                    ),
+                { replace },
+            );
+        else setLocal(change);
+    }
+    function clearQuery() {
+        commit((current) => ({
+            ...current,
+            search: "",
+            filters: {},
+            pagination: { ...current.pagination, pageIndex: 0 },
+        }));
+    }
     function update<K extends keyof GridState>(
         key: K,
         value: Updater<GridState[K]>,
@@ -149,17 +173,7 @@ export function useGridState(
                 ? { pagination: { ...current.pagination, pageIndex: 0 } }
                 : {}),
         });
-        if (sync)
-            setUrl(
-                (prev) =>
-                    writeGridState(
-                        prev,
-                        change(readGridState(prev, resource, prefix, pageSize)),
-                        prefix,
-                    ),
-                { replace: key === "search" },
-            );
-        else setLocal(change);
+        commit(change, key === "search");
     }
-    return { state, update };
+    return { state, update, clearQuery };
 }

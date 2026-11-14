@@ -1,12 +1,14 @@
-import { Check } from "lucide-react";
+import { Check, Info } from "lucide-react";
 import {
     Stepper,
     StepperIndicator,
     StepperItem,
     StepperNav,
+    StepperSeparator,
 } from "@/components/reui/stepper";
 import { cn } from "@/lib/utils";
-/** Responsive wizard rail, composed from the installed REUI Stepper. */
+
+/** Horizontal progress for the fixed overlay header, shared by forms and saved flows. */
 export function WizardProgress({
     steps,
     active,
@@ -22,85 +24,62 @@ export function WizardProgress({
     onSelect?: (index: number) => void;
     busy?: boolean;
 }) {
+    const hint = description ?? steps[active]?.description;
     return (
         <nav
             aria-label={label ?? "Erfassungsschritte"}
-            className="flex h-full flex-col gap-5"
+            className="@container/wizard min-w-0 space-y-3"
         >
-            <p className="hidden text-[11px] font-semibold uppercase tracking-wider text-muted-foreground @min-[40rem]/overlay:block">
-                {label ?? "Erfassung"}
-            </p>
             <Stepper
-                orientation="vertical"
                 role="group"
                 aria-orientation={undefined}
                 aria-label={`Schritt ${active + 1} von ${steps.length}`}
                 value={active + 1}
-                indicators={{ completed: <Check className="size-4" /> }}
+                indicators={{ completed: <Check className="size-3.5" /> }}
             >
-                <StepperNav className="flex w-full items-stretch gap-2 data-[orientation=vertical]:flex-row @min-[40rem]/overlay:gap-0 @min-[40rem]/overlay:data-[orientation=vertical]:flex-col">
+                <StepperNav className="items-start gap-3">
                     {steps.map((step, index) => {
                         const current = index === active;
+                        const completed = index < active;
                         const content = (
                             <>
-                                <span className="relative flex shrink-0 flex-col items-center">
-                                    <StepperIndicator className="size-8 rounded-full border bg-card text-xs font-semibold text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:ring-4 data-[state=active]:ring-primary/10 data-[state=completed]:border-primary/20 data-[state=completed]:bg-accent data-[state=completed]:text-primary">
+                                <span className="flex w-full items-center gap-3">
+                                    <StepperIndicator className="size-7 border border-border bg-card font-semibold text-muted-foreground data-[state=active]:border-primary data-[state=active]:ring-4 data-[state=active]:ring-primary/10 data-[state=completed]:border-primary/20 data-[state=completed]:bg-primary/10 data-[state=completed]:text-primary">
                                         {index + 1}
                                     </StepperIndicator>
                                     {index < steps.length - 1 && (
-                                        <span
-                                            aria-hidden
+                                        <StepperSeparator
                                             className={cn(
-                                                "absolute top-10 h-12 hidden w-px bg-border @min-[40rem]/overlay:block",
-                                                index < active &&
-                                                    "bg-primary/30",
+                                                "m-0 h-px rounded-none bg-border",
+                                                completed && "bg-primary/40",
                                             )}
                                         />
                                     )}
                                 </span>
                                 <span
                                     className={cn(
-                                        "min-w-0 pt-1.5 text-left",
-                                        !current &&
-                                            "hidden @min-[40rem]/overlay:block",
+                                        "line-clamp-2 text-left text-xs leading-5 font-medium",
+                                        current
+                                            ? "text-primary"
+                                            : completed
+                                              ? "text-foreground"
+                                              : "text-muted-foreground",
                                     )}
                                 >
-                                    <span
-                                        className={cn(
-                                            "block text-xs leading-5 font-medium",
-                                            current
-                                                ? "text-primary"
-                                                : "text-muted-foreground",
-                                        )}
-                                    >
-                                        {step.label}
-                                    </span>
-                                    <span className="mt-1 hidden text-[11px] leading-4 text-muted-foreground @min-[40rem]/overlay:block">
-                                        {index < active
-                                            ? "Abgeschlossen"
-                                            : current
-                                              ? "Aktueller Schritt"
-                                              : "Ausstehend"}
-                                    </span>
+                                    {step.label}
                                 </span>
                             </>
                         );
                         const classes =
-                            "relative flex w-full min-w-0 items-start gap-3 rounded-md outline-offset-4 @min-[40rem]/overlay:min-h-24";
+                            "flex w-full min-w-0 flex-col items-start gap-2 rounded-md outline-offset-4";
                         return (
                             <StepperItem
                                 key={step.id}
                                 step={index + 1}
                                 aria-current={current ? "step" : undefined}
-                                className={cn(
-                                    "min-w-0 items-stretch",
-                                    current
-                                        ? "flex-1 not-last:flex-1"
-                                        : "flex-none not-last:flex-none",
-                                    "@min-[40rem]/overlay:flex-none @min-[40rem]/overlay:not-last:flex-none",
-                                )}
+                                className="min-w-0 flex-1 items-start"
                             >
-                                {onSelect && index < active ? (
+                                {onSelect && completed ? (
                                     <button
                                         type="button"
                                         disabled={busy}
@@ -114,16 +93,22 @@ export function WizardProgress({
                                         {content}
                                     </button>
                                 ) : (
-                                    <div className={classes}>{content}</div>
+                                    <div
+                                        className={classes}
+                                        aria-label={`${step.label}: ${current ? "aktueller Schritt" : completed ? "abgeschlossen" : "ausstehend"}`}
+                                    >
+                                        {content}
+                                    </div>
                                 )}
                             </StepperItem>
                         );
                     })}
                 </StepperNav>
             </Stepper>
-            {(description || steps[active]?.description) && (
-                <p className="mt-auto hidden border-t pt-4 text-xs leading-5 text-muted-foreground @min-[40rem]/overlay:block">
-                    {description ?? steps[active]?.description}
+            {hint && (
+                <p className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+                    <Info aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+                    {hint}
                 </p>
             )}
         </nav>

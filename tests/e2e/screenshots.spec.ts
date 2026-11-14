@@ -180,10 +180,28 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     const wizardSteps = page.locator('[data-slot="stepper-item"]');
     const firstStep = await wizardSteps.nth(0).boundingBox();
     const secondStep = await wizardSteps.nth(1).boundingBox();
-    expect(secondStep!.y).toBeGreaterThanOrEqual(
-        firstStep!.y + firstStep!.height - 1,
+    expect(secondStep!.x).toBeGreaterThanOrEqual(
+        firstStep!.x + firstStep!.width - 1,
     );
-    expect(Math.abs(secondStep!.x - firstStep!.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(secondStep!.y - firstStep!.y)).toBeLessThanOrEqual(1);
+    const wizardHeader = page.locator('[data-slot="overlay-header-content"]');
+    await expect(
+        wizardHeader.locator('[data-slot="stepper-item"]'),
+    ).toHaveCount(3);
+    const headerBox = await wizardHeader.boundingBox();
+    const body = page.locator('[data-slot="overlay-body"]');
+    const bodyBox = await body.boundingBox();
+    expect(bodyBox!.y).toBeGreaterThanOrEqual(
+        headerBox!.y + headerBox!.height - 1,
+    );
+    expect(bodyBox!.width).toBeGreaterThanOrEqual(headerBox!.width - 1);
+    await body.evaluate((element) => {
+        element.scrollTop = element.scrollHeight;
+    });
+    expect((await wizardHeader.boundingBox())!.y).toEqual(headerBox!.y);
+    await body.evaluate((element) => {
+        element.scrollTop = 0;
+    });
     await capture("04-vertrag-anlegen");
     await page.setViewportSize({ width: 390, height: 844 });
     const mobileFirstStep = await wizardSteps.nth(0).boundingBox();
@@ -199,6 +217,18 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     ).toBeLessThanOrEqual(1);
     await capture("11-wizard-mobil");
     await page.setViewportSize({ width: 1440, height: 1000 });
+    const dialogUrl = new URL(page.url());
+    const panels = JSON.parse(dialogUrl.searchParams.get("panels")!);
+    panels[0].presentation = "dialog";
+    dialogUrl.searchParams.set("panels", JSON.stringify(panels));
+    await page.goto(dialogUrl.toString());
+    await expect(page.locator('[data-slot="dialog-content"]')).toBeVisible();
+    await expect(
+        page.locator(
+            '[data-slot="overlay-header-content"] [data-slot="stepper-item"]',
+        ),
+    ).toHaveCount(3);
+    await capture("12-wizard-dialog");
 
     await page.getByRole("button", { name: "Abbrechen", exact: true }).click();
 
@@ -238,5 +268,22 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         ),
     ).toBeLessThanOrEqual(1);
     await checkPageWidth();
+    await page.getByRole("button", { name: "Abbrechen", exact: true }).click();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto("/contracts?q=Nicht-vorhandener-Vertrag&group=status");
+    await expect(
+        page.getByRole("heading", { name: "Keine Treffer" }),
+    ).toBeVisible();
+    await capture("13-grid-keine-treffer");
+    await page
+        .getByRole("button", { name: "Suche und Filter zurücksetzen" })
+        .click();
+    await expect(
+        page.getByRole("heading", { name: "Keine Treffer" }),
+    ).toHaveCount(0);
+    await expect(page).toHaveURL(/group=status/);
+    await expect(
+        page.getByRole("textbox", { name: "Verträge durchsuchen" }),
+    ).toHaveValue("");
     expect(errors).toEqual([]);
 });

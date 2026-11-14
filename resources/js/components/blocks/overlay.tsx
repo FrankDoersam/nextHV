@@ -92,7 +92,10 @@ export function Overlay({
         </div>
     );
     const accessory = header && (
-        <div className="min-w-0 shrink-0 border-b bg-card px-5 py-3 sm:px-6">
+        <div
+            data-slot="overlay-header-content"
+            className="min-w-0 shrink-0 border-b bg-muted/20 px-5 py-4 sm:px-6"
+        >
             {header}
         </div>
     );

@@ -1,7 +1,8 @@
 import { FormActionScope } from "./form-action-scope";
 import { Badge } from "@/components/ui/badge";
 import { label } from "@/lib/format";
-import { ErrorState, SectionCard } from "@/components/blocks/content";
+import { ErrorState } from "@/components/blocks/content";
+import { FormSection } from "@/components/blocks/form-section";
 import { FieldGrid, Stack } from "@/components/blocks/layout";
 import { Overlay } from "@/components/blocks/overlay";
 import { ResourceField } from "@/components/fields/field";
@@ -311,7 +312,7 @@ export function ResourceEditor({
                 </>
             }
             presentation={request.presentation}
-            sidebar={
+            header={
                 flow ? (
                     <WizardProgress
                         label={flow.label}
@@ -320,7 +321,7 @@ export function ResourceEditor({
                             label,
                         }))}
                         active={flow.index}
-                        description="Jeder Schritt wird gespeichert. Beim Abbrechen bleiben gespeicherte Datensätze erhalten."
+                        description="Schrittweise gespeichert. Abbrechen behält bereits gespeicherte Datensätze."
                     />
                 ) : request.wizard ? (
                     <WizardProgress
@@ -419,45 +420,41 @@ export function ResourceEditor({
                             noValidate
                         >
                             {groups.map((g, i) => (
-                                <section
+                                <FormSection
                                     key={g.id}
                                     hidden={request.wizard && step !== i}
+                                    title={g.label}
+                                    description={g.description}
                                 >
-                                    <SectionCard
-                                        title={g.label}
-                                        description={g.description}
-                                    >
-                                        <FieldGrid>
-                                            {fields
-                                                .filter(
-                                                    (f) =>
-                                                        (f.group ??
-                                                            "general") === g.id,
-                                                )
-                                                .map((f) => (
-                                                    <ResourceField
-                                                        key={f.name}
-                                                        definition={
-                                                            request.context
-                                                                ?.field ===
-                                                                f.name &&
-                                                            request.context
-                                                                .mode !==
-                                                                "prefill"
-                                                                ? {
-                                                                      ...f,
-                                                                      disabled: true,
-                                                                      lockedReason:
-                                                                          "Durch den aktuellen Datensatz vorgegeben.",
-                                                                  }
-                                                                : f
-                                                        }
-                                                        editing={!!row}
-                                                    />
-                                                ))}
-                                        </FieldGrid>
-                                    </SectionCard>
-                                </section>
+                                    <FieldGrid>
+                                        {fields
+                                            .filter(
+                                                (f) =>
+                                                    (f.group ?? "general") ===
+                                                    g.id,
+                                            )
+                                            .map((f) => (
+                                                <ResourceField
+                                                    key={f.name}
+                                                    definition={
+                                                        request.context
+                                                            ?.field ===
+                                                            f.name &&
+                                                        request.context.mode !==
+                                                            "prefill"
+                                                            ? {
+                                                                  ...f,
+                                                                  disabled: true,
+                                                                  lockedReason:
+                                                                      "Durch den aktuellen Datensatz vorgegeben.",
+                                                              }
+                                                            : f
+                                                    }
+                                                    editing={!!row}
+                                                />
+                                            ))}
+                                    </FieldGrid>
+                                </FormSection>
                             ))}
                         </form>
                     </FormProvider>

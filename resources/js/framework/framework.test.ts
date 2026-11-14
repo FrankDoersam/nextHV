@@ -108,4 +108,20 @@ describe("resource contracts", () => {
             }).date,
         ).toBe("2026-01-01");
     });
+    it("adds a unique pagination tie-breaker without changing the requested primary order", () => {
+        const resource = { name: "contracts" } as ResourceDefinition;
+        expect(
+            searchPayload(resource, {
+                sort: [{ field: "status", direction: "asc" }],
+            }).search.sorts,
+        ).toEqual([
+            { field: "status", direction: "asc" },
+            { field: "id", direction: "desc" },
+        ]);
+        expect(
+            searchPayload(resource, {
+                sort: [{ field: "id", direction: "asc" }],
+            }).search.sorts,
+        ).toEqual([{ field: "id", direction: "asc" }]);
+    });
 });
