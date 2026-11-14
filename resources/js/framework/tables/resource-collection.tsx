@@ -969,17 +969,6 @@ export function ResourceCollection({
                             {resource.label} werden geladen.
                         </span>
                     )}
-                    {result.isFetching && !result.isPending && (
-                        <div
-                            role="status"
-                            className="absolute inset-x-0 -top-2 h-0.5 overflow-hidden bg-muted"
-                        >
-                            <div className="h-full w-full animate-pulse bg-primary/40" />
-                            <span className="sr-only">
-                                Daten werden aktualisiert
-                            </span>
-                        </div>
-                    )}
                     {summary && resource.summary && (
                         <CollectionKpis
                             definition={resource.summary}
@@ -1025,6 +1014,16 @@ export function ResourceCollection({
                                 ) : (
                                     renderToolbar()
                                 )}
+                            </div>
+                        )}
+                        {result.isFetching && !result.isPending && (
+                            <div
+                                data-slot="collection-table-progress"
+                                role="status"
+                                aria-label="Tabellendaten werden aktualisiert"
+                                className="relative h-0.5 shrink-0 overflow-hidden rounded bg-muted"
+                            >
+                                <div className="h-full w-full animate-pulse bg-primary/40" />
                             </div>
                         )}
                         {result.error ? (
