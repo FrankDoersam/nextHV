@@ -2943,7 +2943,7 @@ function DataGridTableBodyRows<TData extends object>({
 
         return (
             <>
-                {Array.from({ length: pagination.pageSize }).map(
+                {Array.from({ length: Math.min(pagination.pageSize, 16) }).map(
                     (_, rowIndex) => (
                         <DataGridTableBodyRowSkeleton key={rowIndex}>
                             {[

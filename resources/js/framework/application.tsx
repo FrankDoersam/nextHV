@@ -1,9 +1,10 @@
 import React, { Suspense, lazy } from "react";
-import { Routes, Route } from "react-router";
+import { Routes, Route, useLocation } from "react-router";
 import { useAuth } from "@/framework/auth";
 import { WorkbenchProvider } from "@/framework/workbench";
 import { resources } from "@/modules/registry";
 import { AppShell } from "@/components/blocks/layout";
+import { CollectionLoading } from "@/components/blocks/collection-loading";
 import { Loading, EmptyState } from "@/components/blocks/content";
 import { ErrorBoundary } from "@/components/blocks/error-boundary";
 const Dashboard = lazy(() => import("@/pages/dashboard-page"));
@@ -12,6 +13,10 @@ const ContractDetailPage = lazy(() => import("@/pages/contract-detail-page"));
 const DetailPage = lazy(() => import("@/pages/detail-page"));
 const ComponentsPage = lazy(() => import("@/pages/components-page"));
 export default function Application() {
+    const location = useLocation();
+    const loadingResource = resources.find(
+        (resource) => location.pathname === "/" + resource.name,
+    );
     const { user, logout } = useAuth();
     return (
         <WorkbenchProvider>
@@ -27,7 +32,15 @@ export default function Application() {
                 }
             >
                 <ErrorBoundary>
-                    <Suspense fallback={<Loading />}>
+                    <Suspense
+                        fallback={
+                            loadingResource ? (
+                                <CollectionLoading resource={loadingResource} />
+                            ) : (
+                                <Loading />
+                            )
+                        }
+                    >
                         <Routes>
                             <Route path="/" element={<Dashboard />} />
                             {resources.map((r) => (

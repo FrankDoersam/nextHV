@@ -1,4 +1,3 @@
-import { PresentationToggle } from "@/framework/presentation-toggle";
 import { SectionCard } from "@/components/blocks/content";
 import { PageHeader, CollectionPage } from "@/components/blocks/layout";
 import { ResourceCollection } from "@/framework/tables/resource-collection";
@@ -10,15 +9,7 @@ export default function ResourcePage({
 }) {
     return (
         <CollectionPage>
-            <PageHeader
-                eyebrow="Verwaltung"
-                title={resource.label}
-                actions={
-                    resource.presentationToggle !== false ? (
-                        <PresentationToggle />
-                    ) : undefined
-                }
-            />
+            <PageHeader eyebrow="Verwaltung" title={resource.label} />
             <SectionCard grow>
                 <ResourceCollection resource={resource} />
             </SectionCard>

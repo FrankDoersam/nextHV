@@ -527,7 +527,6 @@ describe("relation capabilities and server facets", () => {
                 columnChooser={false}
                 exportable={false}
                 refreshable={false}
-                presentationToggle={false}
                 detailLink={false}
             />,
             '/properties?q=ignored&filters={"status":["active"]}&group=city',
@@ -752,7 +751,9 @@ describe("relation capabilities and server facets", () => {
                 name: "Suche und Filter zurücksetzen",
             }),
         );
-        expect(await screen.findByText("Lindenhöfe")).toBeVisible();
+        await waitFor(() =>
+            expect(screen.getByText("Lindenhöfe")).toBeVisible(),
+        );
         const state = readGridState(
             new URLSearchParams(router.state.location.search),
             resource,

@@ -32,7 +32,12 @@ export function BaseField({
     children: ReactNode;
 }) {
     return (
-        <div className={cn("min-w-0 space-y-2", wide && "col-span-full")}>
+        <div
+            className={cn(
+                "flex min-w-0 flex-col gap-2",
+                wide && "col-span-full",
+            )}
+        >
             <div className="flex min-h-5 items-center gap-1.5">
                 <Label htmlFor={id} id={`${id}-label`}>
                     {label}
@@ -68,7 +73,9 @@ export function BaseField({
                     />
                 )}
             </div>
-            {children}
+            <div data-slot="field-control" className="min-w-0">
+                {children}
+            </div>
             {(description || lockedReason || counter) && (
                 <div className="flex items-start justify-between gap-3 text-xs leading-5 text-muted-foreground">
                     <p id={`${id}-help`}>{lockedReason ?? description}</p>

@@ -3,6 +3,8 @@
 namespace App\Rest\Resources;
 
 use App\Models\BusinessPartner;
+use App\Rest\Filters\ExpressionFilter;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
 use Lomkit\Rest\Fields\Date;
 use Lomkit\Rest\Fields\DateTime;
@@ -19,7 +21,12 @@ class BusinessPartnerResource extends Resource
     public function fields(): array
     {
         return [
-            Text::make('full_name')->virtual()->readonly()->requires(['first_name', 'last_name', 'company_name', 'kind', 'display_name'])->resolveUsing(fn (BusinessPartner $partner) => $partner->kind === 'company' ? ($partner->company_name ?: $partner->display_name) : (trim($partner->first_name.' '.$partner->last_name) ?: $partner->display_name)),
+            Text::make('full_name')->filterUsing(new ExpressionFilter(function (Builder $query): string {
+                $column = fn (string $name): string => ExpressionFilter::column($query, $name);
+                $person = 'TRIM('.ExpressionFilter::concat($query, ['COALESCE('.$column('first_name').", '')", "' '", 'COALESCE('.$column('last_name').", '')"]).')';
+
+                return 'CASE WHEN '.$column('kind')." = 'company' THEN COALESCE(NULLIF(".$column('company_name').", ''), ".$column('display_name').') ELSE COALESCE(NULLIF('.$person.", ''), ".$column('display_name').') END';
+            }))->virtual()->readonly()->requires(['first_name', 'last_name', 'company_name', 'kind', 'display_name'])->resolveUsing(fn (BusinessPartner $partner) => $partner->kind === 'company' ? ($partner->company_name ?: $partner->display_name) : (trim($partner->first_name.' '.$partner->last_name) ?: $partner->display_name)),
             ID::make('id'),
             Text::make('code')->searchable()->rules('max:40', Contextual::rule(fn (MutationContext $m) => Rule::unique('business_partners', 'code')->ignore($m->key)))->creationRules('required')->updateRules('filled'),
             Text::make('kind')->rules('in:person,company'),

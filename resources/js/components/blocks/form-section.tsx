@@ -1,12 +1,12 @@
 import { DetailCard } from "./key-value-card";
 import type { ReactNode } from "react";
 
-/** Lightweight semantic form grouping; cards remain available for independent content. */
+/** Shared card anatomy is the default; plain fieldsets remain an explicit option. */
 export function FormSection({
     title,
     description,
     hidden,
-    variant = "plain",
+    variant = "card",
     children,
 }: {
     title: string;

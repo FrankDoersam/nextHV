@@ -33,6 +33,7 @@ export const resources: ResourceDefinition[] = [
     parties,
     links,
 ];
+for (const resource of resources) resource.bulkActions ??= ["delete"];
 export function getResource(name: string) {
     const resource = resources.find((r) => r.name === name);
     if (!resource) throw new Error(`Unbekannte Ressource: ${name}`);

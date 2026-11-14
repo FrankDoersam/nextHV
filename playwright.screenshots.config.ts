@@ -4,7 +4,7 @@ export default defineConfig({
     ...base,
     testMatch: "screenshots.spec.ts",
     testIgnore: [],
-    timeout: 60_000,
+    timeout: 90_000,
     use: {
         ...base.use,
         viewport: { width: 1440, height: 1000 },

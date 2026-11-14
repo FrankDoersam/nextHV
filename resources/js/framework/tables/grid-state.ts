@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import type {
     ColumnVisibilityState,
@@ -7,7 +7,11 @@ import type {
     Updater,
 } from "@tanstack/react-table";
 import type { ResourceDefinition } from "../types";
-import { sanitizeGridFilters, type GridFilters } from "./filter-rules";
+import {
+    columnFilters,
+    sanitizeGridFilters,
+    type GridFilters,
+} from "./filter-rules";
 export interface GridState {
     search: string;
     pagination: PaginationState;
@@ -72,7 +76,7 @@ export function readGridState(
                   .map((s) => ({ id: s.id, desc: !!s.desc }))
                   .slice(0, 3)
             : [],
-        filters: sanitizeGridFilters(rawFilters, resource.filters),
+        filters: sanitizeGridFilters(rawFilters, columnFilters(resource)),
         columnVisibility: {
             ...defaultColumnVisibility(resource),
             ...Object.fromEntries(
@@ -133,7 +137,10 @@ export function useGridState(
     const [local, setLocal] = useState(() =>
         readGridState(new URLSearchParams(), resource, "", pageSize),
     );
-    const state = sync ? readGridState(url, resource, prefix, pageSize) : local;
+    const state = useMemo(
+        () => (sync ? readGridState(url, resource, prefix, pageSize) : local),
+        [sync, url, resource, prefix, pageSize, local],
+    );
     function commit(
         change: (current: GridState) => GridState,
         replace = false,

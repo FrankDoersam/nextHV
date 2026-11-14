@@ -1,8 +1,8 @@
 import { lazy, Suspense } from "react";
-import { Link, useParams } from "react-router";
-import { ArrowLeft, Pencil, RefreshCw } from "lucide-react";
-import { Inline, PageHeader, Stack } from "@/components/blocks/layout";
-import { ErrorState, Loading, StatusBadge } from "@/components/blocks/content";
+import { useParams } from "react-router";
+import { Pencil, RefreshCw } from "lucide-react";
+import { DetailPageLayout, PageHeader } from "@/components/blocks/layout";
+import { ErrorState, Loading } from "@/components/blocks/content";
 import { LazyTabs } from "@/components/blocks/lazy-tabs";
 import { Button } from "@/components/ui/button";
 import { useResource } from "@/framework/data/hooks";
@@ -26,19 +26,7 @@ export default function ContractDetailPage() {
     const record = result.data!;
     const parent = { resource: contracts.name, id: record.id };
     return (
-        <Stack>
-            <Inline>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    nativeButton={false}
-                    role="link"
-                    render={<Link to="/contracts" />}
-                >
-                    <ArrowLeft /> Verträge
-                </Button>
-                <StatusBadge value={record.status} />
-            </Inline>
+        <DetailPageLayout>
             <PageHeader
                 eyebrow="Vertragsakte"
                 title={String(record.code)}
@@ -116,6 +104,6 @@ export default function ContractDetailPage() {
                     ]}
                 />
             </Suspense>
-        </Stack>
+        </DetailPageLayout>
     );
 }

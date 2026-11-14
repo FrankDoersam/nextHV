@@ -12,6 +12,7 @@ use App\Rest\Actions\ArchiveProperties;
 use App\Rest\Actions\CloneProperty;
 use App\Rest\Actions\CreatePropertyReport;
 use App\Rest\Actions\InspectProperty;
+use App\Rest\Filters\ExpressionFilter;
 use App\Rest\Metrics\CollectionSummary;
 use App\Rest\Metrics\PropertyOverview;
 use Illuminate\Database\Eloquent\Builder;
@@ -37,7 +38,8 @@ class PropertyResource extends Resource
     public function fields(): array
     {
         return [
-            Text::make('full_address')->virtual()->readonly()->requires(['street', 'house_number', 'postal_code', 'city'])->resolveUsing(fn (Property $property) => $property->street.' '.$property->house_number.', '.$property->postal_code.' '.$property->city),
+            Text::make('full_address')->filterUsing(new ExpressionFilter(fn (Builder $query): string => ExpressionFilter::concat($query, [ExpressionFilter::column($query, 'street'), "' '", ExpressionFilter::column($query, 'house_number'), "', '", ExpressionFilter::column($query, 'postal_code'), "' '", ExpressionFilter::column($query, 'city')])))->virtual()->readonly()->requires(['street', 'house_number', 'postal_code', 'city'])->resolveUsing(fn (Property $property) => $property->street.' '.$property->house_number.', '.$property->postal_code.' '.$property->city),
+            Integer::make('unit_count')->virtual()->readonly()->selectable(false)->filterable(['=', '!=', '>', '>=', '<', '<='])->filterUsing(fn (Builder $query, string $operator, mixed $value) => $query->has('units', $operator, (int) $value)),
             ID::make('id'), Text::make('code')->searchable()->rules('max:40', Contextual::rule(fn (MutationContext $m) => Rule::unique('properties', 'code')->ignore($m->key)))->creationRules('required')->updateRules('filled'),
             Text::make('name')->searchable()->rules('max:160')->creationRules('required')->updateRules('filled'),
             Enum::make('type', PropertyType::class), Enum::make('management_type', ManagementType::class), Enum::make('status', PropertyStatus::class),

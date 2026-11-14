@@ -4,6 +4,8 @@ namespace App\Rest\Resources;
 
 use App\Models\RentCondition;
 use App\Rest\Fields\Currency;
+use App\Rest\Filters\ExpressionFilter;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
 use Lomkit\Rest\Fields\Date;
 use Lomkit\Rest\Fields\DateTime;
@@ -20,7 +22,11 @@ class RentConditionResource extends Resource
     public function fields(): array
     {
         return [
-            Currency::make('monthly_total')->virtual()->readonly()->requires(['base_rent', 'service_charge', 'heating_cost', 'vat_rate'])->resolveUsing(fn (RentCondition $condition) => round(($condition->base_rent + $condition->service_charge + $condition->heating_cost) * (1 + $condition->vat_rate / 100), 2)),
+            Currency::make('monthly_total')->filterUsing(new ExpressionFilter(function (Builder $query): string {
+                $column = fn (string $name): string => ExpressionFilter::column($query, $name);
+
+                return 'CAST(ROUND(('.$column('base_rent').' + '.$column('service_charge').' + '.$column('heating_cost').') * (1 + '.$column('vat_rate').' / 100.0), 2) AS DECIMAL(20, 2))';
+            }))->virtual()->readonly()->requires(['base_rent', 'service_charge', 'heating_cost', 'vat_rate'])->resolveUsing(fn (RentCondition $condition) => round(($condition->base_rent + $condition->service_charge + $condition->heating_cost) * (1 + $condition->vat_rate / 100), 2)),
             ID::make('id'),
             Integer::make('contract_id')->rules(Rule::exists('contracts', 'id')->whereNull('deleted_at'))->creationRules('required')->updatable(false),
             Date::make('effective_from')->creationRules('required'),

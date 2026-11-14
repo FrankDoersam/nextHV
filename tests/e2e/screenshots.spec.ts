@@ -16,7 +16,9 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     const checkTabLayout = async () => {
         const tabs = await page.getByRole("tablist").boundingBox();
         const panel = await page.getByRole("tabpanel").boundingBox();
-        const main = await page.getByRole("main").boundingBox();
+        const main = (await page.locator('[data-slot="detail-layout"]').count())
+            ? await page.locator('[data-slot="detail-layout"]').boundingBox()
+            : await page.getByRole("main").boundingBox();
         expect(tabs).not.toBeNull();
         expect(panel).not.toBeNull();
         expect(panel!.y).toBeGreaterThanOrEqual(tabs!.y + tabs!.height);
@@ -138,14 +140,14 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     const bulkBar = page.getByRole("region", { name: "Auswahlaktionen" });
     await expect(bulkBar).toBeVisible();
     await capture("07-bulk-auswahl");
-    await bulkBar
-        .getByRole("button", { name: "Bearbeiten", exact: true })
-        .click();
     await expect(
-        page.getByRole("heading", { name: "Bearbeiten", exact: true }),
+        bulkBar.getByRole("button", { name: "Bearbeiten", exact: true }),
+    ).toHaveCount(0);
+    await bulkBar.getByRole("button", { name: "Löschen", exact: true }).click();
+    await expect(
+        page.getByRole("heading", { name: "Löschen", exact: true }),
     ).toBeVisible();
-    await page.getByRole("checkbox", { name: "Kautionsstatus ändern" }).click();
-    await capture("08-bulk-bearbeiten");
+    await capture("08-bulk-loeschen");
     await page.getByRole("button", { name: "Abbrechen", exact: true }).click();
     await bulkBar.getByRole("button", { name: "Auswahl aufheben" }).click();
 
@@ -153,9 +155,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(
         page.getByRole("heading", { name: "MV-001-01", exact: true }),
     ).toBeVisible();
-    await expect(
-        page.getByText("Vertragsverwaltung", { exact: true }),
-    ).toBeVisible();
+    await expect(page.locator('[data-slot="detail-layout"]')).toBeVisible();
     await checkTabLayout();
     await expect(
         page.getByRole("link", { name: "Demo Müller 1", exact: true }),
@@ -297,9 +297,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(detailUrl);
-    await expect(
-        page.getByText("Vertragsverwaltung", { exact: true }),
-    ).toBeVisible();
+    await expect(page.locator('[data-slot="detail-layout"]')).toBeVisible();
     await checkTabLayout();
     await page.getByRole("button", { name: "Bearbeiten", exact: true }).click();
     await expect(
@@ -351,5 +349,94 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await page.setViewportSize({ width: 390, height: 844 });
     await checkPageWidth();
     await capture("16-komponenten-mobil");
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    // Hold an actual first search so the skeleton is inspected, not a transient empty grid.
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+        release = resolve;
+    });
+    await page.route("**/api/v1/units/search", async (route) => {
+        await gate;
+        await route.continue();
+    });
+    await page.goto("/units");
+    await expect(
+        page.getByRole("status", { name: "Tabelle wird geladen", exact: true }),
+    ).toBeVisible();
+    const skeletons = page.locator('[data-slot="grid-cell-skeleton"]');
+    await expect(skeletons.first()).toBeAttached();
+    const skeleton = await skeletons.first().boundingBox();
+    expect(skeleton!.height).toBeGreaterThanOrEqual(20);
+    await capture("17-grid-loading");
+    release();
+    await expect(
+        page.getByRole("status", { name: "Tabelle wird geladen", exact: true }),
+    ).toHaveCount(0);
+    await page.unrouteAll({ behavior: "wait" });
+    await expect(
+        page.getByRole("button", { name: "Sheet", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+        page.getByRole("button", { name: "Dialog", exact: true }),
+    ).toHaveCount(0);
+    const filter = await page
+        .getByRole("combobox", { name: "Filter hinzufügen" })
+        .boundingBox();
+    const group = await page
+        .getByRole("combobox", { name: "Gruppierung" })
+        .boundingBox();
+    expect(Math.abs(filter!.height - group!.height)).toBeLessThanOrEqual(1);
+    const titleColumn = await page
+        .getByRole("columnheader")
+        .filter({ hasText: /^Einheit/ })
+        .boundingBox();
+    const statusColumn = await page
+        .getByRole("columnheader")
+        .filter({ hasText: /^Zustand/ })
+        .boundingBox();
+    expect(statusColumn!.width).toBeLessThan(titleColumn!.width);
+    await capture("18-einheiten-spalten");
+    await page.goto("/identity-documents");
+    await page
+        .getByRole("button", { name: "Browser-Nachweis", exact: true })
+        .click();
+    await expect(
+        page.getByRole("heading", { name: "Browser-Nachweis", exact: true }),
+    ).toBeVisible();
+    await capture("19-ausweis-detail");
+    await page.getByRole("button", { name: "Bearbeiten", exact: true }).click();
+    for (const presentation of ["sheet", "dialog"]) {
+        if (presentation === "dialog") {
+            const url = new URL(page.url());
+            const panels = JSON.parse(url.searchParams.get("panels")!);
+            panels[0].presentation = presentation;
+            url.searchParams.set("panels", JSON.stringify(panels));
+            await page.goto(url.toString());
+        }
+        const editor = page.getByRole("dialog");
+        await expect(
+            editor.getByRole("heading", { name: "Ausweis bearbeiten" }),
+        ).toBeVisible();
+        const nextDate = editor.getByRole("button", {
+            name: "Geprüft am",
+            exact: true,
+        });
+        await nextDate.scrollIntoViewIfNeeded();
+        const before = await nextDate.boundingBox();
+        await editor
+            .getByRole("button", { name: "Gültig bis", exact: true })
+            .click();
+        await expect(
+            page.locator('[data-slot="popover-content"]'),
+        ).toBeVisible();
+        const after = await nextDate.boundingBox();
+        expect(Math.abs(after!.y - before!.y)).toBeLessThanOrEqual(1);
+        await capture(
+            presentation === "sheet"
+                ? "20-date-picker-sheet"
+                : "21-date-picker-dialog",
+        );
+        await page.keyboard.press("Escape");
+    }
     expect(errors).toEqual([]);
 });

@@ -1,9 +1,11 @@
+import { GridCellSkeleton } from "@/components/blocks/collection-loading";
+import { resolveColumnLayout } from "./column-layout";
+import { useLayoutEffect } from "react";
 import { CollectionKpis } from "@/components/blocks/collection-kpis";
 import { useCollectionSummary } from "../data/hooks";
 import { BulkActionBar } from "@/components/blocks/bulk-action-bar";
 import { ActionMenu, ActionButtons } from "../action-controls";
 import type { ActionPlacement } from "../actions";
-import { PresentationToggle } from "../presentation-toggle";
 import { useGridState, defaultColumnVisibility } from "./grid-state";
 import { exportRows } from "./export";
 import { cn } from "@/lib/utils";
@@ -22,7 +24,7 @@ import {
 } from "@/components/reui/data-grid/data-grid";
 import { ChoicePicker } from "@/components/fields/choice-picker";
 import { ResourceFilters } from "./resource-filters";
-import { compileGridFilters } from "./filter-rules";
+import { columnFilters, compileGridFilters } from "./filter-rules";
 import { DataGridTableVirtual } from "@/components/reui/data-grid/data-grid-table-virtual";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
@@ -135,7 +137,6 @@ export function ResourceCollection({
     columnChooser = true,
     exportable = true,
     refreshable = true,
-    presentationToggle = false,
     toolbar = true,
     summary = !compact,
     actions,
@@ -178,6 +179,38 @@ export function ResourceCollection({
         group,
         dense,
     } = state;
+    const viewport = useRef<HTMLDivElement>(null);
+    const [width, setWidth] = useState(0);
+    useLayoutEffect(() => {
+        const node = viewport.current;
+        if (!node) return;
+        let frame = 0;
+        const measure = () =>
+            setWidth((previous) => {
+                const next = Math.round(node.clientWidth);
+                return next === previous ? previous : next;
+            });
+        measure();
+        const observer = new ResizeObserver(() => {
+            cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(measure);
+        });
+        observer.observe(node);
+        return () => {
+            observer.disconnect();
+            cancelAnimationFrame(frame);
+        };
+    }, []);
+    const sizing = useMemo(
+        () =>
+            resolveColumnLayout(
+                resource,
+                width,
+                columnVisibility,
+                (rowSelection ? 44 : 0) + (actions !== false ? 44 : 0),
+            ),
+        [resource, width, columnVisibility, rowSelection, actions],
+    );
     const query = useDebounced(searchable ? search : "");
     const hasQuery =
         !!(searchable && search.trim()) ||
@@ -190,9 +223,13 @@ export function ResourceCollection({
         value: import("@tanstack/react-table").Updater<ColumnVisibilityState>,
     ) => update("columnVisibility", value);
     const [selection, setSelection] = useState<RowSelectionState>({});
+    const filterDefinitions = useMemo(
+        () => columnFilters(resource),
+        [resource],
+    );
     const apiFilters = [
         ...fixedFilters,
-        ...compileGridFilters(filterable ? filters : {}),
+        ...compileGridFilters(filterable ? filters : {}, filterDefinitions),
     ];
     const sort = [
         ...(effectiveGroup !== "none"
@@ -344,6 +381,16 @@ export function ResourceCollection({
                               <DataGridTableRowSelect row={row} />
                           ),
                           size: 44,
+                          minSize: 44,
+                          maxSize: 44,
+                          meta: {
+                              skeleton: (
+                                  <GridCellSkeleton
+                                      dense={dense}
+                                      kind="selection"
+                                  />
+                              ),
+                          },
                           enableResizing: false,
                           enablePinning: false,
                           enableSorting: false,
@@ -354,9 +401,14 @@ export function ResourceCollection({
             ...resource.columns.map((c) => ({
                 id: c.field,
                 accessorFn: (row: RecordData) => row[c.field],
-                meta: { headerTitle: c.label },
-                size: c.kind === "badge" ? 190 : 160,
-                minSize: 100,
+                ...sizing[c.field],
+                meta: {
+                    headerTitle: c.label,
+                    skeleton: <GridCellSkeleton dense={dense} kind={c.kind} />,
+                    cellClassName: ["currency", "number"].includes(c.kind ?? "")
+                        ? "text-right tabular-nums"
+                        : undefined,
+                },
                 header: ({
                     column,
                 }: {
@@ -384,7 +436,12 @@ export function ResourceCollection({
                 }) =>
                     c.field === resource.titleField && detailLink ? (
                         <button
-                            className="font-medium text-foreground hover:text-primary"
+                            className="block max-w-full truncate text-left font-medium text-foreground hover:text-primary"
+                            title={
+                                typeof row.original[c.field] === "string"
+                                    ? String(row.original[c.field])
+                                    : undefined
+                            }
                             onClick={() =>
                                 navigate(`/${resource.name}/${row.original.id}`)
                             }
@@ -395,7 +452,7 @@ export function ResourceCollection({
                         formatCell(c, row.original)
                     ),
             })),
-            ...(resource.filters ?? [])
+            ...filterDefinitions
                 .filter(
                     (f) => !resource.columns.some((c) => c.field === f.field),
                 )
@@ -418,10 +475,18 @@ export function ResourceCollection({
                                   allowed={actions}
                               />
                           ),
-                          size: 64,
-                          minSize: 64,
-                          maxSize: 64,
-                          meta: { cellClassName: "text-right" },
+                          size: 44,
+                          minSize: 44,
+                          maxSize: 44,
+                          meta: {
+                              cellClassName: "text-right",
+                              skeleton: (
+                                  <GridCellSkeleton
+                                      dense={dense}
+                                      kind="actions"
+                                  />
+                              ),
+                          },
                           enableResizing: false,
                           enablePinning: false,
                           enableSorting: false,
@@ -430,7 +495,17 @@ export function ResourceCollection({
                   ]
                 : []),
         ],
-        [resource, navigate, rowSelection, actions, detailLink, columnChooser],
+        [
+            resource,
+            navigate,
+            rowSelection,
+            actions,
+            detailLink,
+            columnChooser,
+            sizing,
+            dense,
+            filterDefinitions,
+        ],
     );
     const table = useTable({
         initialState: {
@@ -450,7 +525,7 @@ export function ResourceCollection({
             rowSelection: selection,
             columnVisibility: {
                 ...Object.fromEntries(
-                    (resource.filters ?? [])
+                    filterDefinitions
                         .filter(
                             (f) =>
                                 !resource.columns.some(
@@ -508,12 +583,12 @@ export function ResourceCollection({
             selection[String(r.id)] &&
             (typeof rowSelection !== "function" || rowSelection(r)),
     );
-    const bulk = resource.actions.filter(
+    const tableActions = resource.actions.filter(
         (action) =>
             actions !== false && (!actions || actions.includes(action.id)),
     );
     const grouped =
-        effectiveGroup === "none"
+        effectiveGroup === "none" || result.isPending
             ? null
             : rows.reduce<Record<string, RecordData[]>>((groups, row) => {
                   const key = String(row[effectiveGroup] ?? "—");
@@ -550,11 +625,9 @@ export function ResourceCollection({
             )}
             {filterTrigger}
             <div className="flex flex-1 flex-wrap items-center gap-2">
-                {presentationToggle && <PresentationToggle />}
                 {groupable && resource.groupBy && (
                     <ChoicePicker
                         presentation="menu"
-                        size="sm"
                         triggerIcon={<ListFilter />}
                         aria-label="Gruppierung"
                         placeholder="Gruppieren"
@@ -574,7 +647,7 @@ export function ResourceCollection({
                 )}
                 <div className="ml-auto flex items-center gap-2">
                     <ActionButtons
-                        actions={bulk}
+                        actions={tableActions}
                         target={{ resource, rows: [], instance }}
                         placement="table"
                     />
@@ -653,6 +726,7 @@ export function ResourceCollection({
             }}
         >
             <div
+                ref={viewport}
                 data-slot="resource-collection"
                 aria-busy={result.isFetching}
                 className={cn(
@@ -677,6 +751,15 @@ export function ResourceCollection({
                     if (row && can(resource.name, "edit", row)) openEdit(row);
                 }}
             >
+                {result.isPending && (
+                    <span
+                        role="status"
+                        aria-label="Tabelle wird geladen"
+                        className="sr-only"
+                    >
+                        {resource.label} werden geladen.
+                    </span>
+                )}
                 {result.isFetching && !result.isPending && (
                     <div
                         role="status"
@@ -700,9 +783,9 @@ export function ResourceCollection({
                 )}
                 {toolbar && (
                     <div className="space-y-3">
-                        {filterable && !!resource.filters?.length ? (
+                        {filterable && !!filterDefinitions.length ? (
                             <ResourceFilters
-                                definitions={resource.filters}
+                                definitions={filterDefinitions}
                                 value={filters}
                                 onChange={(next) =>
                                     update("filters", next, true)
@@ -720,7 +803,12 @@ export function ResourceCollection({
                         onClear={() => setSelection({})}
                     >
                         <ActionButtons
-                            actions={bulk}
+                            actions={tableActions.filter((action) =>
+                                resource.bulkActions === false
+                                    ? false
+                                    : !resource.bulkActions ||
+                                      resource.bulkActions.includes(action.id),
+                            )}
                             target={{ resource, rows: selectedRows, instance }}
                             placement="bulk"
                             inverse

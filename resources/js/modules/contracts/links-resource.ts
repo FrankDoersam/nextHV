@@ -40,6 +40,7 @@ export const links: ResourceDefinition = {
         },
         {
             field: "related_contract.code",
+            filter: { field: "relatedContract.code" },
             label: "Verknüpfter Vertrag",
             sortable: false,
             render: (r) =>

@@ -1,6 +1,6 @@
 import { PropertyNameActions } from "./name-actions";
 import { InspectPropertyAction, PropertyReportAction } from "./inspect-action";
-import { BulkEditAction, DeleteAction, EditAction } from "@/framework/actions";
+import { DeleteAction, EditAction } from "@/framework/actions";
 import type { ResourceDefinition } from "@/framework/types";
 import {
     code,
@@ -41,12 +41,7 @@ export const properties: ResourceDefinition = {
             },
         ],
     },
-    bulkEditable: [
-        "manager_name",
-        "manager_email",
-        "manager_phone",
-        "next_inspection_on",
-    ],
+    bulkActions: ["delete"],
     groups: [
         { id: "general", label: "Objekt" },
         { id: "address", label: "Adresse" },
@@ -113,7 +108,14 @@ export const properties: ResourceDefinition = {
         col("name", "Objekt"),
         { field: "full_address", label: "Adresse", sortable: false },
         col("type", "Nutzung", "badge"),
-        col("units_count", "Einheiten", "number"),
+        {
+            ...col("units_count", "Einheiten", "number"),
+            sortable: false,
+            filter: {
+                field: "unit_count",
+                operators: ["=", "!=", ">", ">=", "<", "<="],
+            },
+        },
         col("status", "Status", "badge"),
     ],
     aggregates: [{ relation: "units", type: "count" }],
@@ -135,7 +137,6 @@ export const properties: ResourceDefinition = {
     ],
     deletionCheck: true,
     actions: [
-        new BulkEditAction(),
         new InspectPropertyAction(),
         new PropertyReportAction(),
         new EditAction(),

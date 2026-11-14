@@ -1,4 +1,4 @@
-import { BulkEditAction, DeleteAction, EditAction } from "@/framework/actions";
+import { DeleteAction, EditAction } from "@/framework/actions";
 import type { ResourceDefinition } from "@/framework/types";
 import {
     code,
@@ -29,8 +29,7 @@ export const contracts: ResourceDefinition = {
     icon: FileText,
     navigationGroup: "Vermietung",
     titleField: "code",
-    presentationToggle: false,
-    bulkEditable: ["deposit_status", "notes"],
+    bulkActions: ["delete"],
     createFlow: "new-contract",
     summary: {
         metric: "summary",
@@ -199,7 +198,6 @@ export const contracts: ResourceDefinition = {
         },
     ],
     actions: [
-        new BulkEditAction(),
         new EditAction(),
         new ActivateContractAction(),
         new DeleteAction(),

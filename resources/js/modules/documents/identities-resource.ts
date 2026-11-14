@@ -48,5 +48,6 @@ export const identities: ResourceDefinition = {
         col("expires_on", "Gültig bis", "date"),
         col("verified_on", "Geprüft am", "date"),
     ],
+    includes: [{ relation: "businessPartner" }],
     actions: crud(),
 };

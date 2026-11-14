@@ -158,7 +158,7 @@ Tabellenspalten mit `kind: "date"` werden zentral als **dd.MM.yyyy** dargestellt
 
 ## 6. Sheet, Dialog, Wizard und Direktlinks
 
-- Formular-Sheets bis 56rem breit, auf Desktop eingerückt und abgerundet, mobil bildschirmbreit. `size: "wide"` erlaubt bis 64rem.
+- Formular-Sheets bis 48rem breit, auf Desktop eingerückt und abgerundet, mobil bildschirmbreit. `size: "wide"` erlaubt bis 64rem.
 - Fester Header mit Icon, Titel, optionalem Badge/Subtext sowie Werkzeugen rechts; eigener scrollbarer Inhalt und fester Footer. Wizard-Schritte stehen immer horizontal im festen Kopfbereich unter dem Titel, auch auf mobilen Ansichten. Der Formularinhalt nutzt die volle Breite.
 - Dialoggrößen `compact`, `form`, `wide`; kompakt für Bestätigungen, breit für PDF-Vorschauen.
 - Speichern/Weiter rechts, Abbrechen daneben, Zurück links. Im Wizard steht kein zusätzlicher Schritttext im Footer. Schließen, Escape und Abbrechen durchlaufen denselben Dirty-Check; laufendes Speichern blockiert Schließen.
@@ -168,7 +168,7 @@ Tabellenspalten mit `kind: "date"` werden zentral als **dd.MM.yyyy** dargestellt
 - In der URL stehen Ressource, Modus, ID, Darstellungsart und Relationskontext. Ungespeicherte Formularinhalte, Ausweisnummern und Callbacks werden nicht serialisiert.
 - Browser-Zurück/Navigation fragt bei ungespeicherten Formularen nach. Für Reload/Tab-Schließen wird der native Browserhinweis verwendet.
 - Bis zu acht verschachtelte Formulare. Eltern bleiben gemountet und rücken visuell zurück; Base UI übernimmt Fokus und Modalverhalten. Reduzierte Bewegung wird berücksichtigt.
-- Sheet/Dialog lässt sich im Listing und in Relationslisten wählen und mit `presentation` pro Aufruf überschreiben.
+- Keine Sheet-/Dialog-Umschalter in Listen oder Relationslisten. Die Oberfläche wird über `presentation` im Formularaufruf bzw. `createForm`/`editForm` konfiguriert; Direktlinks behalten diese Wahl.
 
 ```ts
 workbench.openForm({
@@ -440,24 +440,24 @@ const relation: RelationDefinition = {
 workbench.openRelation(relation, { resource: "contracts", id: contract.id });
 ```
 
-`collection` gilt für alle Oberflächen; `editorCollection` überschreibt einzelne Optionen im Editor. `createForm` und `editForm` bestimmen unabhängig Darstellung, reduzierte Felder und Wizard. Ohne feste Darstellung gilt die zentrale Sheet-/Dialog-Auswahl. `binding: "locked"` ist der Standard: Vorbelegung, sichtbarer Sperrhinweis und erzwungener Bezug beim Speichern. `prefill` trägt den Bezug editierbar ein; `none` übernimmt keinen Bezug. Die zugrunde liegende Liste bleibt weiterhin auf den übergeordneten Datensatz gefiltert. Fachlich unveränderbare Backend-Felder bleiben auch bei `prefill` unveränderbar.
+`collection` gilt für alle Oberflächen; `editorCollection` überschreibt einzelne Optionen im Editor. `createForm` und `editForm` bestimmen unabhängig Darstellung, reduzierte Felder und Wizard. Ohne feste Darstellung gilt der zentrale Sheet-Standard. `binding: "locked"` ist der Standard: Vorbelegung, sichtbarer Sperrhinweis und erzwungener Bezug beim Speichern. `prefill` trägt den Bezug editierbar ein; `none` übernimmt keinen Bezug. Die zugrunde liegende Liste bleibt weiterhin auf den übergeordneten Datensatz gefiltert. Fachlich unveränderbare Backend-Felder bleiben auch bei `prefill` unveränderbar.
 
 Bei einem Edit-Direktlink lädt das Framework den Datensatz und prüft, ob sein Fremdschlüssel zum angegebenen Elternbezug passt. Diese Prüfung ist eine Konsistenzprüfung der UI; Backend-Validierung, Authentifizierung und vorhandene Versionskontrolle gelten weiterhin. Sie ersetzt keine Berechtigungs- oder Organisationsprüfung.
 
 ### Fähigkeiten einer Collection
 
-| Option                                                             | Verhalten                                                                                                                                         |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `searchable`, `filterable`, `groupable`                            | Suche, Mehrfachfilter, Gruppierung jeweils aktivieren; deaktivierte Funktionen wenden auch entsprechende URL-Werte nicht an                       |
-| `pagination`                                                       | Seitennavigation ein-/ausblenden; ohne Paging höchstens 100 Einträge, Gesamtzahl und Grenze bleiben sichtbar                                      |
-| `rowSelection`                                                     | `false`, `single`, `multiple` oder Prädikat pro Datensatz                                                                                         |
-| `actions`                                                          | Alle registrierten Actions, `false` für keine oder eine Allowlist wie `["edit", "inspect"]`; gilt für Zeilen, Auswahl und Doppelklick-Bearbeitung |
-| `create`, `detailLink`, `doubleClickEdit`                          | Hinzufügen, Titel-Link und Doppelklick unabhängig schalten                                                                                        |
-| `columnChooser`, `exportable`, `refreshable`, `presentationToggle` | Spaltenmenü im Tabellenkopf und übrige Werkzeuge unabhängig konfigurieren                                                                         |
-| `toolbar`                                                          | Gesamte Werkzeugleiste ein-/ausblenden; Fähigkeiten bleiben separat konfigurierbar                                                                |
-| `resizable`, `pinnable`                                            | Spaltenbreiten und Fixierung steuern                                                                                                              |
-| `virtualized`                                                      | `"auto"` ab 50 geladenen Zeilen, `true` oder `false`; gruppierte Seiten verwenden ihre einzelnen Gruppen-Tabellen                                 |
-| `syncWithLocation`, `urlKey`                                       | URL-Synchronisation und isolierter Namensraum für mehrere Tabellen                                                                                |
+| Option                                       | Verhalten                                                                                                                                         |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `searchable`, `filterable`, `groupable`      | Suche, Mehrfachfilter, Gruppierung jeweils aktivieren; deaktivierte Funktionen wenden auch entsprechende URL-Werte nicht an                       |
+| `pagination`                                 | Seitennavigation ein-/ausblenden; ohne Paging höchstens 100 Einträge, Gesamtzahl und Grenze bleiben sichtbar                                      |
+| `rowSelection`                               | `false`, `single`, `multiple` oder Prädikat pro Datensatz                                                                                         |
+| `actions`                                    | Alle registrierten Actions, `false` für keine oder eine Allowlist wie `["edit", "inspect"]`; gilt für Zeilen, Auswahl und Doppelklick-Bearbeitung |
+| `create`, `detailLink`, `doubleClickEdit`    | Hinzufügen, Titel-Link und Doppelklick unabhängig schalten                                                                                        |
+| `columnChooser`, `exportable`, `refreshable` | Spaltenmenü im Tabellenkopf und übrige Werkzeuge unabhängig konfigurieren                                                                         |
+| `toolbar`                                    | Gesamte Werkzeugleiste ein-/ausblenden; Fähigkeiten bleiben separat konfigurierbar                                                                |
+| `resizable`, `pinnable`                      | Spaltenbreiten und Fixierung steuern                                                                                                              |
+| `virtualized`                                | `"auto"` ab 50 geladenen Zeilen, `true` oder `false`; gruppierte Seiten verwenden ihre einzelnen Gruppen-Tabellen                                 |
+| `syncWithLocation`, `urlKey`                 | URL-Synchronisation und isolierter Namensraum für mehrere Tabellen                                                                                |
 
 CSV exportiert die aktuelle Seite bzw. Auswahl, nicht stillschweigend den gesamten Datenbestand. Paging aus bedeutet bewusst keinen unbegrenzten Download. Für umfangreiche Historien kann dieselbe Relation Paging aktivieren.
 
@@ -514,7 +514,7 @@ workbench.openFlow("new-contract", {
 
 Beteiligte, Konditionen, Kündigungen sowie aus- und eingehende Vertragsverknüpfungen besitzen eigene Tabs. `LazyTabs` synchronisiert den aktiven Tab mit der URL und mountet nur den aktiven Inhalt. Die Übersicht lädt eine begrenzte Kontaktzusammenfassung und die aktuelle Kondition; vollständige Relationslisten laden erst beim Tabwechsel. Tab-Counts stammen aus den API-Aggregaten. `openRelation` übernimmt den Vertragsbezug auch bei den Schnellaktionen der Übersicht.
 
-Die Gestaltung orientiert sich an der bereitgestellten Referenz: warme neutrale Flächen, schwarze Hauptaktionen, kompakte gruppierte Navigation, ruhige Typografie, dünne Trennlinien und weiße Inhalte in REUI-Frames. Zentrale Farbwerte liegen in `resources/css/app.css`. `WorkspaceCard`, `WorkspaceColumns`, `PersonAvatar`, `PeopleGroup`, `BarChart` und die Dashboard-Blöcke sind wiederverwendbare Komponenten. `Avatar`, `AvatarGroup` und `Frame` stammen aus den dokumentierten öffentlichen Base-Nova-Registries. Avatar-Gruppen unterstützen Bilder, Initialen, Größen und einen Überlaufzähler.
+Die Gestaltung orientiert sich an der bereitgestellten Referenz: kühle neutrale Flächen, blaue Hauptaktionen, kompakte gruppierte Navigation, ruhige Typografie, dünne Trennlinien und weiße Inhalte in REUI-Frames. Zentrale Farbwerte liegen in `resources/css/app.css`. `WorkspaceCard`, `WorkspaceColumns`, `PersonAvatar`, `PeopleGroup`, `BarChart` und die Dashboard-Blöcke sind wiederverwendbare Komponenten. `Avatar`, `AvatarGroup` und `Frame` stammen aus den dokumentierten öffentlichen Base-Nova-Registries. Avatar-Gruppen unterstützen Bilder, Initialen, Größen und einen Überlaufzähler.
 
 Das Dashboard enthält bewusst gekennzeichnete **Beispieldaten** für Finanzen, Termine, Aufgaben und Mini-Kennzahlen. Zeitraum, Miete/Eingänge, Widget-Auswahl und Aufgaben-Checkboxen bedienen die lokale Vorschau; es werden keine fiktiven Zahlungsvorgänge gespeichert. Der Tab „Bestand“ lädt echte Kennzahlen und Objekte. Die Command-Palette (`Ctrl/⌘ K`) sucht in den registrierten, sichtbaren Bereichen; eine globale Datensatzsuche ist weiterhin ein eigener zukünftiger Ausbau.
 
@@ -636,8 +636,20 @@ Bereits im Cache vorhandene Fremdschlüssel-Eltern werden gezielt als einzelne D
 5. `05-vertrag-bearbeiten.png` (Detailseite → Bearbeiten, mit geladenen Formularwerten)
 6. `06-grid-filter.png`
 7. `07-bulk-auswahl.png` (schwebende Auswahlleiste)
-8. `08-bulk-bearbeiten.png` (explizite Feldauswahl)
+8. `08-bulk-loeschen.png` (Löschbestätigung ohne Bearbeitungsaktion)
 9. `09-feldaktionen.png` (Objektformular mit Untermenü im Textfeld)
+10. `10-relationsfilter.png`
+11. `11-wizard-mobil.png`
+12. `12-wizard-dialog.png`
+13. `13-grid-keine-treffer.png`
+14. `14-sheet-zahlung.png`
+15. `15-komponenten-rich.png`
+16. `16-komponenten-mobil.png`
+17. `17-grid-loading.png` (kontrolliert verzögerte echte API-Antwort)
+18. `18-einheiten-spalten.png`
+19. `19-ausweis-detail.png`
+20. `20-date-picker-sheet.png`
+21. `21-date-picker-dialog.png`
 
 Die Suite prüft außerdem, dass der aktive Tab-Inhalt unterhalb der Tab-Leiste die verfügbare Breite nutzt, kein horizontaler Seitenüberlauf entsteht und die Vertragsansicht samt Edit-Sheet bei 390 px funktioniert. Der Zeitraum muss vor dem ersten Öffnen „Dieser Monat“ anzeigen.
 
@@ -651,16 +663,16 @@ Regressionstests decken Tastatursuche, Mehrfachauswahl/Vorauswahl, Backend-Filte
 
 Die Auswertung der echten CI-Aufnahmen zeigte vier gemeinsame Ursachen: falsche Orientierungsselektoren in `Tabs`, fehlende übersetzte Initialwerte im Zeitraum-Select, eine überladene Tabellen-Toolbar sowie uneinheitliche Wizard-Komposition. Die Korrekturen liegen in Komponenten, nicht in Seitenstyles.
 
-| Bereich             | Standard und Erweiterungspunkt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Theme / AppShell    | Kühle neutrale Flächen, weiße Inhaltskarten, Blau für aktive Navigation, Aktionen und Diagramm-Hervorhebung. Farben einschließlich Sidebar zentral in `resources/css/app.css`. Kompakte einzeilige Marke ohne weiße Logokarte; Suche in Sidebar und per Strg/⌘ K. Kein zusätzlicher Suchbutton rechts im Header.                                                                                                                                                                                              |
-| Tabs / LazyTabs     | Das `orientation`-Prop wird an Base UI weitergegeben. Selektoren verwenden dessen tatsächliches `data-orientation`. Horizontale Tabs stehen über dem Inhalt; vertikale Tabs daneben. Die Tab-Leiste darf innerhalb ihrer eigenen Breite scrollen; Panels bleiben `min-width: 0`. Aktiver Unterstrich, Zähler und Tastaturfokus zentral. URL und verzögertes Laden unverändert.                                                                                                                                |
-| Karten / Kennzahlen | `WorkspaceCard` übernimmt lesbare Kopf- und Fußzeilen sowie umbrechende Actions. `WorkspaceColumns` besitzt begrenzte Grid-Spalten und `min-width: 0`. Ein einzelner sichtbarer Baustein belegt die volle Breite.                                                                                                                                                                                                                                                                                             |
-| Dashboard           | Der Zeitraum verwendet denselben durchsuchbaren `ChoicePicker` im Menümodus wie Gruppierung und Filter. Bereits vor dem Öffnen erscheinen übersetzte Labels. Monats-/Quartalsauswahl passt Betrag, Titel und Balkenauswahl an. Die Demo-Kennzeichnung bleibt sichtbar.                                                                                                                                                                                                                                        |
-| Balkendiagramm      | Gemeinsame gerundete Skala, dezente Hilfslinien, Planlinie und Blau-Hervorhebung. Mini-Diagramme zeigen ersten und letzten Monat außerhalb der schmalen Balkenspalten, ohne abgeschnittene Monatslabels. Tastaturfokus liefert dieselben Werte wie Hover.                                                                                                                                                                                                                                                     |
-| Tabellen-Toolbar    | Gemeinsame, bei Platzmangel umbrechende Zeile: Suche → Filter hinzufügen / aktive Filter-Chips → kompakte Gruppierung; rechts Ressourcen-Actions → Export → Aktualisieren → Anlegen. Keine separaten Buttons „Spalten“ oder „Zeilendichte“. `columnChooser` steuert das Spalten-Untermenü in den Tabellenköpfen. `densityToggle` entfällt; die bestehende `dense`-URL-Einstellung bleibt lesbar. Auswahl und Zeilenaktionen haben feste, nicht skalierbare Spaltenbreiten; Badge-Spalten bekommen mehr Platz. |
-| Overlay / FieldGrid | Sheet, Dialog, Header, scrollender Inhalt und Footer teilen dieselben Abstände. Standard-Sheets bis 56 rem, auf Desktop eingerückt und abgerundet. Das Feldraster richtet sich per Container Query nach seiner eigenen Breite; breite Felder belegen `col-span-full` und erzeugen bei schmalen Formularen keine zusätzliche Spalte.                                                                                                                                                                           |
-| WizardProgress      | Eine gemeinsame Komposition auf REUI-Stepper für Formulargruppen und gespeicherte Multi-Entity-Flows. Eine horizontale Schrittnavigation im festen Header mit Nummer bzw. Haken, Verbindungslinien, sichtbaren Labels und blauem aktivem Schritt; auch mobil im Kopf. Nur bereits erreichbare Formulargruppen sind anklickbar. Persistierte Flows behalten ihre vorhandene Zurück-/Speicherlogik; der Fortschritt springt nicht über notwendige Mutationen hinweg.                                            |
+| Bereich             | Standard und Erweiterungspunkt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Theme / AppShell    | Kühle neutrale Flächen, weiße Inhaltskarten, Blau für aktive Navigation, Aktionen und Diagramm-Hervorhebung. Farben einschließlich Sidebar zentral in `resources/css/app.css`. Kompakte einzeilige Marke ohne weiße Logokarte; Suche in Sidebar und per Strg/⌘ K. Kein zusätzlicher Suchbutton rechts im Header.                                                                                                                                                                                                                                                                              |
+| Tabs / LazyTabs     | Das `orientation`-Prop wird an Base UI weitergegeben. Selektoren verwenden dessen tatsächliches `data-orientation`. Horizontale Tabs stehen über dem Inhalt; vertikale Tabs daneben. Die Tab-Leiste darf innerhalb ihrer eigenen Breite scrollen; Panels bleiben `min-width: 0`. Aktiver Unterstrich, Zähler und Tastaturfokus zentral. URL und verzögertes Laden unverändert.                                                                                                                                                                                                                |
+| Karten / Kennzahlen | `WorkspaceCard` übernimmt lesbare Kopf- und Fußzeilen sowie umbrechende Actions. `WorkspaceColumns` besitzt begrenzte Grid-Spalten und `min-width: 0`. Ein einzelner sichtbarer Baustein belegt die volle Breite.                                                                                                                                                                                                                                                                                                                                                                             |
+| Dashboard           | Der Zeitraum verwendet denselben durchsuchbaren `ChoicePicker` im Menümodus wie Gruppierung und Filter. Bereits vor dem Öffnen erscheinen übersetzte Labels. Monats-/Quartalsauswahl passt Betrag, Titel und Balkenauswahl an. Die Demo-Kennzeichnung bleibt sichtbar.                                                                                                                                                                                                                                                                                                                        |
+| Balkendiagramm      | Gemeinsame gerundete Skala, dezente Hilfslinien, Planlinie und Blau-Hervorhebung. Mini-Diagramme zeigen ersten und letzten Monat außerhalb der schmalen Balkenspalten, ohne abgeschnittene Monatslabels. Tastaturfokus liefert dieselben Werte wie Hover.                                                                                                                                                                                                                                                                                                                                     |
+| Tabellen-Toolbar    | Gemeinsame, bei Platzmangel umbrechende Zeile: Suche → Filter hinzufügen / aktive Filter-Chips → kompakte Gruppierung; rechts Ressourcen-Actions → Export → Aktualisieren → Anlegen. Keine separaten Buttons „Spalten“ oder „Zeilendichte“. `columnChooser` steuert das Spalten-Untermenü in den Tabellenköpfen. `densityToggle` entfällt; die bestehende `dense`-URL-Einstellung bleibt lesbar. Auswahl und Zeilenaktionen haben feste, nicht skalierbare Spaltenbreiten; Status-, Zahlen- und Badge-Spalten bleiben kompakt, Namen und Adressen erhalten flexiblen Platz nach Abschnitt 33. |
+| Overlay / FieldGrid | Sheet, Dialog, Header, scrollender Inhalt und Footer teilen dieselben Abstände. Standard-Sheets bis 48 rem, auf Desktop eingerückt und abgerundet. Das Feldraster richtet sich per Container Query nach seiner eigenen Breite; breite Felder belegen `col-span-full` und erzeugen bei schmalen Formularen keine zusätzliche Spalte.                                                                                                                                                                                                                                                           |
+| WizardProgress      | Eine gemeinsame Komposition auf REUI-Stepper für Formulargruppen und gespeicherte Multi-Entity-Flows. Eine horizontale Schrittnavigation im festen Header mit Nummer bzw. Haken, Verbindungslinien, sichtbaren Labels und blauem aktivem Schritt; auch mobil im Kopf. Nur bereits erreichbare Formulargruppen sind anklickbar. Persistierte Flows behalten ihre vorhandene Zurück-/Speicherlogik; der Fortschritt springt nicht über notwendige Mutationen hinweg.                                                                                                                            |
 
 API-Projektionen verwenden bei Includes und Aggregaten snake_case: `business_partner`, `related_contract`, `incoming_links_count`. Eloquent-Relationsnamen in Suchanfragen bleiben camelCase. Die Vertragsansichten verwenden die tatsächlichen Antwortschlüssel, damit Kontakte, Verknüpfungen und Zähler sichtbar werden.
 
@@ -670,7 +682,7 @@ Orientierung an den öffentlichen [REUI-Data-Grid-Kompositionen](https://reui.io
 
 Die öffentlichen [REUI-Filters](https://reui.io/docs/components/base/filters) und [Wizard-Kompositionen](https://reui.io/blocks/application/wizard/wizard-1) dienen als Interaktionsvorbild. Die Umsetzung besteht aus den bereits installierten REUI-/Base-UI-Primitives. Es wird kein lizenzpflichtiger Pro-Block eingebunden und kein neues Paket benötigt.
 
-`ResourceFilters` wird automatisch aus `resource.filters` aufgebaut. „Filter“ öffnet eine durchsuchbare Feldauswahl. Pro Feld entsteht ein Chip mit Feldname, **ist / ist nicht**, durchsuchbarer Mehrfachauswahl und Entfernen. Ein kompakter Reset-Iconbutton erscheint nur bei vorhandenen Filtern und nennt die Filteranzahl in Tooltip/Accessible Name. Er entfernt sämtliche Filter und Entwürfe; Suchtext, Sortierung und Spalten bleiben erhalten. Einzelne Filter lassen sich weiterhin am jeweiligen Chip entfernen. Unvollständige Chips sind nur lokale Entwürfe und erzeugen keinen Serverfilter. Nach Auswahl des ersten Werts bleibt das Menü offen, auch während die URL asynchron aktualisiert wird. Ein Feld kann nur einmal vorkommen; mehrere Werte werden innerhalb dieses Feldes als Menge behandelt, verschiedene Felder per AND kombiniert.
+`ResourceFilters` wird aus allen freigegebenen `resource.columns` aufgebaut; Feldtypen und Optionen kommen aus `resource.fields`. `column.filter` passt einen Filter an oder schaltet ihn ab; `resource.filters` ergänzt zusätzliche Felder bzw. überschreibt automatisch abgeleitete Definitionen. „Filter“ öffnet eine durchsuchbare Feldauswahl. Pro Feld entsteht ein Chip mit Feldname, **ist / ist nicht**, durchsuchbarer Mehrfachauswahl und Entfernen. Ein kompakter Reset-Iconbutton erscheint nur bei vorhandenen Filtern und nennt die Filteranzahl in Tooltip/Accessible Name. Er entfernt sämtliche Filter und Entwürfe; Suchtext, Sortierung und Spalten bleiben erhalten. Einzelne Filter lassen sich weiterhin am jeweiligen Chip entfernen. Unvollständige Chips sind nur lokale Entwürfe und erzeugen keinen Serverfilter. Nach Auswahl des ersten Werts bleibt das Menü offen, auch während die URL asynchron aktualisiert wird. Ein Feld kann nur einmal vorkommen; mehrere Werte werden innerhalb dieses Feldes als Menge behandelt, verschiedene Felder per AND kombiniert.
 
 ```ts
 filters: [
@@ -687,7 +699,7 @@ filters: [
 ];
 ```
 
-Die Felder und Werte müssen zum tatsächlichen REST-Resource passen. Das Beispiel beschreibt die Konfiguration; es erweitert nicht automatisch das Backend-Enum. Der Builder unterstützt diskrete Optionsfelder sowie Textfilter (`kind: "text"`) mit „ist gleich“ / „ist nicht“, auch auf freigegebenen Relationspfaden wie `unit.name`. Text wird erst per Enter oder Anwenden-Icon übernommen; Tippen allein löst keine Anfrage aus. Datums-, Betragsbereiche und verschachtelte OR-Gruppen bleiben bewusst separate Erweiterungen, statt einen unvollständigen generischen Query-Editor vorzutäuschen.
+Die Felder und Werte müssen zum tatsächlichen REST-Resource passen. Das Beispiel beschreibt die Konfiguration; es erweitert nicht automatisch das Backend-Enum. Der Builder unterstützt diskrete Optionsfelder sowie Textfilter (`kind: "text"`) mit „ist gleich“ / „ist nicht“, auch auf freigegebenen Relationspfaden wie `unit.name`. Text wird erst per Enter oder Anwenden-Icon übernommen; Tippen allein löst keine Anfrage aus. Zahlen-, Betrags- und Datumsbereiche sowie Leerwertfilter sind implementiert (Abschnitt 33). Verschachtelte OR-Gruppen sind weiterhin kein Bestandteil des Builders.
 
 ```json
 { "status": { "operator": "not in", "values": ["draft", "ended"] } }
@@ -833,14 +845,15 @@ Für Datenbankänderungen weiterhin den Provider oder die Backend-Action aufrufe
 
 `BulkActionBar` sitzt zentriert über dem Tabellenfooter, mit abgerundeter dunkler Fläche, Auswahlzahl, Actions und Aufheben-Button. Sie bleibt innerhalb der Collection; kleine Viewports dürfen umbrechen. Auswahl bleibt auf die aktuelle geladene Seite begrenzt und wird bei Wechsel von Suche/Sortierung/Filter/Seite zurückgesetzt.
 
-Die Mehrfachbearbeitung ist eine einzige wiederverwendbare Action:
+In allen aktuell registrierten Fachmodulen ist ausschließlich `bulkActions: ["delete"]` freigegeben. Mehrfachbearbeitung ist dort entfernt. Die generische `BulkEditAction` bleibt als explizite Framework-Erweiterung verfügbar; ein neues Modul kann sie bei fachlichem Bedarf so aktivieren:
 
 ```ts
+bulkActions: ["bulk-edit", "delete"],
 bulkEditable: ["manager_name", "manager_email", "manager_phone", "next_inspection_on"],
 actions: [new BulkEditAction(), /* weitere Actions */],
 ```
 
-Objekte demonstrieren Verwaltungsdaten, Verträge `deposit_status` und `notes`. Im Dialog muss jedes zu ändernde Feld ausdrücklich aktiviert werden. Nicht aktivierte Felder bleiben unberührt; ein aktiviertes optionales Feld darf bewusst geleert werden. Ohne Auswahl ist der Ausführen-Button gesperrt. Schreibgeschützte, deaktivierte und Write-only-Felder werden ausgeschlossen.
+Die bisherigen Objekt-/Vertragsbeispiele sind deaktiviert. Im Dialog muss jedes zu ändernde Feld ausdrücklich aktiviert werden. Nicht aktivierte Felder bleiben unberührt; ein aktiviertes optionales Feld darf bewusst geleert werden. Ohne Auswahl ist der Ausführen-Button gesperrt. Schreibgeschützte, deaktivierte und Write-only-Felder werden ausgeschlossen.
 
 `saveMany` sendet **eine native REST-Mutation** mit ID/Version je Zeile. Es gibt keinen separaten Bulk-Controller und keinen Loop einzelner HTTP-Requests. REST-Validierung, Versionsprüfung und Transaktion gelten für die ganze Auswahl. Fehler oder ein Konflikt lassen alle Datensätze unverändert. `bulkEditable` steuert das Produktangebot der UI; die REST-Resource und Policies bleiben die Sicherheitsgrenze.
 
@@ -1009,7 +1022,7 @@ Statische `options` verwenden dieselben Eigenschaften: `label` als erste Zeile, 
 
 ```ts
 editor: {
-    sectionStyle: "card", // "plain" bleibt der Standard
+    sectionStyle: "card", // Standard; "plain" ist ausdrücklich optional
     tabs: [
         { id: "general", label: "Grunddaten", groups: ["general", "term"] },
         { id: "finance", label: "Zahlung", groups: ["finance"], summary: paymentSummary },
@@ -1023,7 +1036,7 @@ Der Vertrag demonstriert diese Konfiguration. `Overlay.tabs` erzeugt die Unterst
 
 Felder bleiben beim Wechsel registriert, Dirty-Werte erhalten. Ein Serverfehler öffnet den Tab der ersten fehlerhaften Gruppe. Der bestehende Speicherweg, Dirty-Check, Sperrbezüge und geschachtelte Sheets bleiben gleich. Relationslisten werden erst beim Öffnen eines Tabs mit `relations: true` gemountet; ihre eigenen Collection-Props gelten weiter.
 
-`DetailCard` verwendet REUI `Frame`, `FrameHeader` und `FramePanel`: dezenter Titelbereich, abgesetzter weißer Inhalt, optionale Actions rechts. `KeyValueCard` bietet `summary` (kompakte Formsumme) und `framed` (Detailkarte). Einträge besitzen `id`, `label`, `value`, optional `description`, `emphasis`, `separator`. Diese Karten sind rein darstellend; direkte Property-Mutationen bleiben Aufgabe der vorhandenen `EditableKeyValueList`.
+`WorkspaceCard`, `SectionCard`, `FormSection` und `DetailCard` teilen `ContentCard` auf REUI `Frame`, `FrameHeader` und `FramePanel`: dezenter Titelbereich, abgesetzter weißer Inhalt, optionale Actions rechts. `KeyValueCard` bietet `summary` (kompakte Formsumme) und `framed` (Detailkarte). Einträge besitzen `id`, `label`, `value`, optional `description`, `emphasis`, `separator`. Diese Karten sind rein darstellend; direkte Property-Mutationen bleiben Aufgabe der vorhandenen `EditableKeyValueList`.
 
 `editor.summary` oder `editor.tabs[].summary` erhält mit `items(values, record)` die aktuellen Formularwerte. `FormSummary` abonniert sie isoliert; Änderungen führen nicht zu API-Aufrufen oder einer Neudarstellung der ganzen Tabelle. Konditionen zeigen Grundmiete, Neben-/Heizkosten, Umsatzsteuer und monatlichen Gesamtbetrag. Speichern und endgültige Berechnung bleiben im Backend.
 
@@ -1065,3 +1078,73 @@ Nach einer Standardmutation werden aktive Kennzahlen der Resource gezielt invali
 ### Nachweise
 
 PHP-Tests prüfen Auth, Filterfreigaben, Textsuche kombiniert mit Relationsfiltern, Summen über mehr als eine Standard-Metric-Seite sowie leere Ergebnisse. React-Tests prüfen Rich-Select-Tastatursuche, Zahlungsart-Tastatursteuerung, Zahlen-Stepper, Tabwechsel mit erhaltenen Eingaben, Serverfehler-Tabwechsel, verzögerte Relationsabfragen und gezielte Kennzahlenaktualisierung ohne Listenreload. Der Screenshot-Job ergänzt `14-sheet-zahlung.png`, `15-komponenten-rich.png` und `16-komponenten-mobil.png`; die bestehende Aufnahme `05-vertrag-bearbeiten.png` zeigt Rich-Relation, Tabs und Karten.
+
+## 33. Spaltenschema, stabile Tabellen und gemeinsame Karten (14.11.2026)
+
+### Filter vollständig im Schema definieren
+
+Jede Tabellenspalte ist standardmäßig filterbar, auch eine per `defaultVisible: false` ausgeblendete Spalte. Write-only-Felder werden ausgeschlossen. `columnFilters(resource)` leitet Typ, Beschriftung und Auswahlwerte aus Spalte/Feld ab. Bestehende `resource.filters` bleiben für zusätzliche Relationsfilter und Überschreibungen erhalten. Jede angebotene API-Eigenschaft muss weiterhin in der PHP-Resource filterbar sein; eine Frontend-Deklaration erweitert keine Serverfreigabe.
+
+```ts
+columns: [
+    {
+        field: "name",
+        label: "Bezeichnung",
+        size: "30%",
+        minSize: 192,
+        maxSize: 480,
+    },
+    {
+        field: "status",
+        label: "Status",
+        kind: "badge",
+        minSize: 104,
+        maxSize: 140,
+    },
+    { field: "area", label: "m²", kind: "number" },
+    {
+        field: "expires_on",
+        label: "Gültig bis",
+        kind: "date",
+        filter: { nullable: true },
+    },
+    {
+        field: "business_partner.display_name",
+        label: "Geschäftspartner",
+        filter: { field: "businessPartner.display_name", kind: "text" },
+    },
+    { field: "preview", label: "Vorschau", filter: false },
+];
+```
+
+| Typ             | Bedienung / native Serveroperatoren                                                                 |
+| --------------- | --------------------------------------------------------------------------------------------------- |
+| Optionen        | Durchsuchbare Mehrfachauswahl; `in`, `not in`                                                       |
+| Text            | Gleich/ungleich, enthält/enthält nicht; `=`, `!=`, `like`, `not like`                               |
+| Zahl / Currency | Gleich/ungleich, größer/kleiner inklusive Grenzen und `between`; Zahlen werden numerisch übertragen |
+| Datum           | Gleich/ungleich, vor/bis/nach/ab und Bereich; ISO-Werte für API/URL, `dd.MM.yyyy` im Picker         |
+| Nullable        | `is null`, `is not null`; ohne künstlichen leeren String                                            |
+
+`filter.operators` begrenzt die erlaubte Auswahl pro Spalte. Text, Zahlen und Bereiche werden ausdrücklich per Enter oder Haken übernommen; unvollständige/umgekehrte Bereiche bleiben Entwurf und erzeugen keinen Request. Gleiche Bereichsgrenzen sind erlaubt. Bei Zahlen akzeptiert die Eingabe ein Dezimalkomma. Native `like`-Filter verwenden `%` und `_` als SQL-Platzhalter; ihre Werte bleiben gebundene Parameter. Der Server validiert unabhängig vom Browser Feld, Operator und Wert.
+
+Berechnete Felder verwenden die native Lomkit-Schnittstelle `filterUsing`: `full_address` und `full_name` filtern mit deklarierter SQL-Expression; `monthly_total` verwendet dieselbe Rundung wie seine Anzeige und einen numerischen SQL-Cast. `ExpressionFilter` hält die native Operatorlogik und Parameterbindung zentral. Die Anzahlspalte `units_count` filtert über den nicht selektierbaren Filteralias `unit_count` mittels `has('units', operator, count)`. Damit kollidiert der Filter nicht mit dem bestehenden REST-Aggregat `units_count`. Suchergebnis und KPI-Metric verwenden dieselben Filter. Keine Abfrage pro Zeile.
+
+### Filter und Gruppierung, Spalten und Ladezustand
+
+Filter hinzufügen und Gruppieren verwenden denselben `ChoicePicker` im Menümodus, dieselbe Höhe, Ränder, Icons und Tastatursuche. Aktive Filter bleiben Chips. Reset erscheint nur bei aktiven Filtern/Entwürfen. Gruppierung bleibt bewusst auf die aktuelle geladene Seite beschränkt.
+
+`ColumnDefinition.size` akzeptiert Pixel oder Prozent der verfügbaren Datenbreite. `minSize`, `maxSize`, `grow` bestimmen Grenzen und Verteilung. `column-layout.ts` vergibt freien Platz bevorzugt an Titel-/Adressspalten; Status, Beträge, Zahlen und Checkbox-/Action-Spalten wachsen nicht pauschal mit. Bei enger Breite werden bevorzugte Größen bis zu ihren Minima verkleinert, danach scrollt die Tabelle horizontal. Ein `ResizeObserver` misst nur den Collection-Container, Änderungen werden über Animation Frames zusammengefasst. Manuell gezogene Spaltenbreiten bleiben Tabellenzustand.
+
+Initiales Datenladen nutzt konkrete Skeleton-Zellen für Text, Badge, Zahl, Auswahl und Actions mit stabiler Zeilenhöhe; maximal 16 Skeleton-Zeilen, unabhängig von einer Seitengröße von 100. Beim verzögerten Laden des Routenmoduls erscheint `CollectionLoading` mit passender Header-/KPI-/Toolbar-/Grid-/Footer-Struktur. Es gibt keine künstliche Mindestwartezeit. Bei Hintergrundabfragen bleiben vorhandene Zeilen sichtbar und vor veralteten Aktionen geschützt. Der Footer bleibt außerhalb der scrollenden Zeilenfläche.
+
+### Eine Karten- und Detaildarstellung
+
+`ContentCard` ist die gemeinsame Komposition für Dashboard-, Formular-, Detail- und Tabellenkarten. Props: `title`, `description`, `icon`, `actions`, `footer`, `compact`, `flush`, `grow`, `fill`. Titel/Actions erzeugen eine REUI-Kopfzeile; ohne Kopf bleibt ein einzelnes weißes Panel ohne leeren Header. Bestehende `WorkspaceCard`, `SectionCard`, `DetailCard` und `FormSection` delegieren dorthin. Formulargruppen verwenden standardmäßig Karten; `sectionStyle: "plain"` bleibt eine bewusste Ausnahme.
+
+`KeyValueRows` übernimmt das gemeinsame semantische `dl`-Raster für lesende und direkt editierbare Werte. Labels und Werte stehen nebeneinander, lange Inhalte umbrechen, Summen dürfen über `align="spread"` rechts ausgerichtet werden. `formatFieldValue` teilt Datum-/Currency-/Options-/Relationsdarstellung zwischen Detail und Inline-Editor. Eingeladene Geschäftspartner zeigen ihren Namen statt nur der ID. Die vorhandene Einzelproperty-Mutation mit Serverprüfung und Versionskontrolle bleibt unverändert.
+
+`DetailPageLayout` begrenzt die Akte auf 72rem und zentriert sie. `DetailColumns` trennt Grunddaten von ergänzenden Angaben und Metadaten; mobil stapeln die Karten. Standard-Edit-Sheets sind maximal 48rem breit, explizite breite Sheets bleiben möglich. Pages komponieren diese Bausteine ohne eigene Layoutstyles.
+
+Die redundante Rücksprung-/Statuszeile und der Kategorie-/Code-Eyebrow im Page-Header entfallen global. Navigation bleibt im AppShell-Menü/Breadcrumb-Kontext. Die Sheet-/Dialog-Umschalter und ihr altes `presentationToggle`-Prop sind entfernt; `presentation` bleibt Bestandteil der Formular-API und Direktlinks. Alle aktuellen Module erlauben in der Mehrfachauswahl nur Löschen.
+
+`BaseField` kapselt den eigentlichen Control-Bereich. Portal-Fokuswächter sind dadurch keine zusätzlichen Abstands-Geschwister des Feldrasters. `PopoverContent` verwendet einen festen Portal-Positioner; ein Kalender vergrößert weder die Feldzeile noch den Scrollbereich des Formulars. Die Screenshot-Suite prüft die Y-Position des folgenden Datumsfelds vor/nach dem Öffnen in Sheet und Dialog sowie kompakte Statusspalten und sichtbare Lade-Skeletons.

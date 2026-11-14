@@ -19,29 +19,14 @@ import type {
     Values,
 } from "../types";
 import { initialValues } from "./initial-values";
-import { date, label, money } from "@/lib/format";
+import { formatFieldValue } from "./field-display";
+import { KeyValueRows } from "@/components/blocks/key-value-rows";
 
 export interface KeyValueProperty {
     name: string;
     editable?: boolean | ((record: RecordData) => boolean);
     render?: (value: unknown, record: RecordData) => ReactNode;
 }
-function display(field: FieldDefinition, value: unknown) {
-    if (value == null || value === "") return "—";
-    if (field.kind === "date") return date(value);
-    if (field.kind === "currency") return money(value);
-    if (field.kind === "checkbox") return value ? "Ja" : "Nein";
-    if (Array.isArray(value))
-        return value
-            .map(
-                (item) =>
-                    field.options?.find((o) => o.value === item)?.label ??
-                    label(item),
-            )
-            .join(", ");
-    return field.options?.find((o) => o.value === value)?.label ?? label(value);
-}
-
 /** Explicit editable allowlist; read-only by default. Saves a single property with version checking. */
 export function EditableKeyValueList({
     resource,
@@ -58,14 +43,14 @@ export function EditableKeyValueList({
         setCurrent(record);
     }, [record]);
     return (
-        <dl className="divide-y text-sm">
-            {properties.map((entry) => {
+        <KeyValueRows
+            items={properties.flatMap((entry) => {
                 const property =
                     typeof entry === "string" ? { name: entry } : entry;
                 const field = resource.fields.find(
                     (f) => f.name === property.name,
                 );
-                if (!field || field.writeOnly) return null;
+                if (!field || field.writeOnly) return [];
                 const editable =
                     !field.disabled &&
                     !field.readonlyOnEdit &&
@@ -73,16 +58,12 @@ export function EditableKeyValueList({
                     (typeof property.editable === "function"
                         ? property.editable(current)
                         : property.editable);
-                return (
-                    <div
-                        key={field.name}
-                        className="grid min-w-0 gap-2 py-3 sm:grid-cols-[minmax(7rem,1fr)_minmax(0,2fr)] sm:items-start sm:gap-4"
-                    >
-                        <dt className="pt-1.5 text-muted-foreground">
-                            {field.label}
-                        </dt>
-                        <dd className="min-w-0">
-                            {editing === field.name ? (
+                return [
+                    {
+                        id: field.name,
+                        label: field.label,
+                        value:
+                            editing === field.name ? (
                                 <PropertyEditor
                                     resource={resource}
                                     record={current}
@@ -94,13 +75,12 @@ export function EditableKeyValueList({
                                     onCancel={() => setEditing(undefined)}
                                 />
                             ) : (
-                                <div className="flex min-h-8 items-start justify-between gap-3">
-                                    <span className="min-w-0 whitespace-pre-wrap break-words pt-1.5">
+                                <div className="flex min-w-0 items-start justify-between gap-3">
+                                    <span className="min-w-0 whitespace-pre-wrap break-words">
                                         {property.render?.(
                                             current[field.name],
                                             current,
-                                        ) ??
-                                            display(field, current[field.name])}
+                                        ) ?? formatFieldValue(field, current)}
                                     </span>
                                     {editable && (
                                         <Button
@@ -116,12 +96,11 @@ export function EditableKeyValueList({
                                         </Button>
                                     )}
                                 </div>
-                            )}
-                        </dd>
-                    </div>
-                );
+                            ),
+                    },
+                ];
             })}
-        </dl>
+        />
     );
 }
 function PropertyEditor({

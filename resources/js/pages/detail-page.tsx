@@ -5,9 +5,12 @@ import {
     ErrorState,
     Loading,
     SectionCard,
-    StatusBadge,
 } from "@/components/blocks/content";
-import { Inline, PageHeader, Stack } from "@/components/blocks/layout";
+import {
+    DetailPageLayout,
+    DetailColumns,
+    PageHeader,
+} from "@/components/blocks/layout";
 import { LazyTabs, type LazyTab } from "@/components/blocks/lazy-tabs";
 import { Button } from "@/components/ui/button";
 import { useResource } from "@/framework/data/hooks";
@@ -15,11 +18,12 @@ import { RelationCollection } from "@/framework/tables/relation-collection";
 import { RowActions } from "@/framework/tables/resource-collection";
 import type { RecordData, ResourceDefinition } from "@/framework/types";
 import { useWorkbench } from "@/framework/workbench";
-import { date, label, money } from "@/lib/format";
+import { date } from "@/lib/format";
+import { formatFieldValue } from "@/framework/forms/field-display";
 import { OverviewMetrics } from "@/modules/properties/property-overview";
-import { ArrowLeft, Pencil, RefreshCw } from "lucide-react";
+import { Pencil, RefreshCw } from "lucide-react";
 import { lazy, Suspense } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useParams } from "react-router";
 const PropertyOverview = lazy(
     () => import("@/modules/properties/property-overview"),
 );
@@ -33,7 +37,6 @@ export default function DetailPage({
 }) {
     const { id } = useParams();
     const result = useResource(resource, Number(id));
-    const navigate = useNavigate();
     const w = useWorkbench();
     if (result.isPending) return <Loading />;
     if (result.error)
@@ -116,18 +119,7 @@ export default function DetailPage({
             render: () => <DocumentFile record={record} />,
         });
     return (
-        <Stack>
-            <Inline>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate("/" + resource.name)}
-                >
-                    <ArrowLeft />
-                    {resource.label}
-                </Button>
-                {!!record.status && <StatusBadge value={record.status} />}
-            </Inline>
+        <DetailPageLayout>
             <PageHeader
                 eyebrow={String(record.code ?? resource.singular)}
                 title={String(record[resource.titleField] ?? resource.singular)}
@@ -171,7 +163,7 @@ export default function DetailPage({
             <Suspense fallback={<Loading />}>
                 <LazyTabs tabs={tabs} />
             </Suspense>
-        </Stack>
+        </DetailPageLayout>
     );
 }
 function GenericOverview({
@@ -183,68 +175,68 @@ function GenericOverview({
 }) {
     const groups = resource.groups ?? [{ id: "general", label: "Grunddaten" }];
     return (
-        <Stack>
-            {groups.map((g) => (
-                <SectionCard key={g.id} title={g.label}>
-                    <DetailList
-                        items={resource.fields
-                            .filter(
-                                (f) =>
-                                    (f.group ?? "general") === g.id &&
-                                    f.name !== "document_number",
-                            )
-                            .map((f) => ({
-                                label: f.label,
-                                value:
-                                    f.kind === "currency"
-                                        ? money(record[f.name])
-                                        : f.kind === "date"
-                                          ? date(record[f.name])
-                                          : f.kind === "checkbox"
-                                            ? record[f.name]
-                                                ? "Ja"
-                                                : "Nein"
-                                            : f.kind === "relation"
-                                              ? `#${record[f.name]}`
-                                              : f.kind === "select"
-                                                ? label(record[f.name])
-                                                : String(record[f.name] ?? "—"),
-                            }))}
-                    />
-                </SectionCard>
-            ))}
-            {resource.name === "identity-documents" && (
-                <SectionCard title="Ausweisnummer">
-                    <DetailList
-                        items={[
-                            {
-                                label: "Letzte vier Zeichen",
-                                value: String(record.number_last_four ?? "—"),
-                            },
-                        ]}
-                    />
-                </SectionCard>
-            )}
-            {resource.name === "units" && (
-                <SectionCard title="Ausstattung direkt ändern">
-                    <BooleanPropertyList
-                        resource={resource}
-                        record={record}
-                        names={["has_balcony", "barrier_free"]}
-                    />
-                </SectionCard>
-            )}
-            <SectionCard title="Datensatz">
-                <DetailList
-                    items={[
-                        { label: "Angelegt", value: date(record.created_at) },
-                        {
-                            label: "Zuletzt aktualisiert",
-                            value: date(record.updated_at),
-                        },
-                    ]}
-                />
-            </SectionCard>
-        </Stack>
+        <DetailColumns
+            main={
+                <>
+                    {groups.map((g) => (
+                        <SectionCard key={g.id} title={g.label}>
+                            <DetailList
+                                items={resource.fields
+                                    .filter(
+                                        (f) =>
+                                            (f.group ?? "general") === g.id &&
+                                            f.name !== "document_number",
+                                    )
+                                    .map((f) => ({
+                                        label: f.label,
+                                        value: formatFieldValue(f, record),
+                                    }))}
+                            />
+                        </SectionCard>
+                    ))}
+                </>
+            }
+            aside={
+                <>
+                    {resource.name === "identity-documents" && (
+                        <SectionCard title="Ausweisnummer">
+                            <DetailList
+                                items={[
+                                    {
+                                        label: "Letzte vier Zeichen",
+                                        value: String(
+                                            record.number_last_four ?? "—",
+                                        ),
+                                    },
+                                ]}
+                            />
+                        </SectionCard>
+                    )}
+                    {resource.name === "units" && (
+                        <SectionCard title="Ausstattung direkt ändern">
+                            <BooleanPropertyList
+                                resource={resource}
+                                record={record}
+                                names={["has_balcony", "barrier_free"]}
+                            />
+                        </SectionCard>
+                    )}
+                    <SectionCard title="Datensatz">
+                        <DetailList
+                            items={[
+                                {
+                                    label: "Angelegt",
+                                    value: date(record.created_at),
+                                },
+                                {
+                                    label: "Zuletzt aktualisiert",
+                                    value: date(record.updated_at),
+                                },
+                            ]}
+                        />
+                    </SectionCard>
+                </>
+            }
+        />
     );
 }

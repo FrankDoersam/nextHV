@@ -293,7 +293,6 @@ export function AppShell({
     );
 }
 export function PageHeader({
-    eyebrow,
     title,
     description,
     actions,
@@ -306,11 +305,6 @@ export function PageHeader({
     return (
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
             <div className="min-w-0">
-                {eyebrow && (
-                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        {eyebrow}
-                    </p>
-                )}
                 <h1 className="text-2xl font-semibold tracking-tight">
                     {title}
                 </h1>
@@ -361,6 +355,31 @@ export function CollectionPage({ children }: { children: ReactNode }) {
     return (
         <div className="flex h-full min-h-0 flex-col gap-5 [&>div:not(:last-child)]:shrink-0">
             {children}
+        </div>
+    );
+}
+
+export function DetailPageLayout({ children }: { children: ReactNode }) {
+    return (
+        <div
+            data-slot="detail-layout"
+            className="mx-auto w-full min-w-0 max-w-6xl space-y-5"
+        >
+            {children}
+        </div>
+    );
+}
+export function DetailColumns({
+    main,
+    aside,
+}: {
+    main: ReactNode;
+    aside: ReactNode;
+}) {
+    return (
+        <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)]">
+            <Stack>{main}</Stack>
+            <Stack>{aside}</Stack>
         </div>
     );
 }

@@ -1,3 +1,4 @@
+import { KeyValueRows } from "./key-value-rows";
 import {
     Alert,
     AlertTitle,
@@ -7,14 +8,7 @@ import {
 import { ApiError } from "@/framework/data/http";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-    Card,
-    CardAction,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { label } from "@/lib/format";
@@ -27,49 +21,14 @@ import {
     TriangleAlert,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
-export function SectionCard({
-    title,
-    description,
-    actions,
-    children,
-    flush = false,
-    grow = false,
-}: {
-    title?: string;
-    description?: string;
-    actions?: ReactNode;
-    children: ReactNode;
-    flush?: boolean;
-    grow?: boolean;
-}) {
-    return (
-        <Card className={grow ? "min-h-0 flex-1 overflow-hidden" : undefined}>
-            {(title || description || actions) && (
-                <CardHeader className="shrink-0">
-                    <CardTitle>{title}</CardTitle>
-                    {description && (
-                        <CardDescription>{description}</CardDescription>
-                    )}
-                    {actions && <CardAction>{actions}</CardAction>}
-                </CardHeader>
-            )}
-            <CardContent
-                className={cn(
-                    flush && "p-0",
-                    grow && "flex min-h-0 flex-1 flex-col",
-                )}
-            >
-                {children}
-            </CardContent>
-        </Card>
-    );
-}
+export { ContentCard as SectionCard } from "./content-card";
 export function StatusBadge({ value }: { value: unknown }) {
     return (
         <Badge
             variant="secondary"
+            title={label(value)}
             className={cn(
-                "gap-1.5 font-medium",
+                "max-w-full gap-1.5 font-medium",
                 ["active", "ready", "received"].includes(String(value))
                     ? "bg-primary/10 text-primary"
                     : ["maintenance", "outstanding", "draft"].includes(
@@ -79,8 +38,8 @@ export function StatusBadge({ value }: { value: unknown }) {
                       : "",
             )}
         >
-            <span className="size-1.5 rounded-full bg-current" />
-            {label(value)}
+            <span className="size-1.5 shrink-0 rounded-full bg-current" />
+            <span className="truncate">{label(value)}</span>
         </Badge>
     );
 }
@@ -215,23 +174,12 @@ export function DetailList({
     items: { label: string; value: ReactNode }[];
 }) {
     return (
-        <dl className="divide-y">
-            {items.map((item) => (
-                <div
-                    key={item.label}
-                    className="flex justify-between gap-4 py-3 first:pt-0 last:pb-0"
-                >
-                    <dt className="text-xs text-muted-foreground">
-                        {item.label}
-                    </dt>
-                    <dd className="max-w-[65%] text-right text-xs font-medium">
-                        {item.value ?? "—"}
-                    </dd>
-                </div>
-            ))}
-        </dl>
+        <KeyValueRows
+            items={items.map((item, index) => ({ ...item, id: String(index) }))}
+        />
     );
 }
+
 export function DynamicList<T>({
     items,
     search = false,

@@ -80,11 +80,39 @@ export interface FieldDefinition {
     /** Demo-only schemaFor extension. REST forms do not run client business rules. */
     validate?: (value: unknown, values: Values) => string | undefined;
 }
+export interface FilterDefinition {
+    field: string;
+    label: string;
+    kind?: "choice" | "text" | "number" | "date";
+    options?: { value: string; label: string }[];
+    nullable?: boolean;
+    operators?: (
+        | "in"
+        | "not in"
+        | "="
+        | "!="
+        | "contains"
+        | "not contains"
+        | ">"
+        | ">="
+        | "<"
+        | "<="
+        | "between"
+        | "is null"
+        | "is not null"
+    )[];
+}
 export interface ColumnDefinition {
     field: string;
     label: string;
     kind?: "currency" | "date" | "number" | "badge";
     sortable?: boolean;
+    size?: number | `${number}%`;
+    minSize?: number;
+    maxSize?: number;
+    grow?: number;
+    filter?:
+        false | (Partial<Omit<FilterDefinition, "field">> & { field?: string });
     defaultVisible?: boolean;
     hideable?: boolean;
     render?: (row: RecordData) => ReactNode;
@@ -124,18 +152,14 @@ export interface ResourceDefinition {
     columns: ColumnDefinition[];
     groups?: { id: string; label: string; description?: string }[];
     groupBy?: { value: string; label: string }[];
-    filters?: {
-        field: string;
-        label: string;
-        kind?: "choice" | "text";
-        options?: { value: string; label: string }[];
-    }[];
+    filters?: FilterDefinition[];
     includes?: { relation: string; includes?: { relation: string }[] }[];
     aggregates?: { relation: string; type: string; field?: string }[];
     navigation?: boolean;
     navigationGroup?: string;
     deletionCheck?: boolean;
     actions: ResourceAction[];
+    bulkActions?: false | string[];
     editor?: {
         titleBadge?: boolean;
         description?: string | false;
@@ -144,7 +168,6 @@ export interface ResourceDefinition {
         summary?: FormSummaryDefinition;
     };
     supportsClone?: boolean;
-    presentationToggle?: boolean;
     bulkEditable?: string[];
     createFlow?: string;
     summary?: CollectionSummaryDefinition;
@@ -167,7 +190,6 @@ export interface CollectionOptions {
     columnChooser?: boolean;
     exportable?: boolean;
     refreshable?: boolean;
-    presentationToggle?: boolean;
     toolbar?: boolean;
     /** false disables all record actions; an array allows only those action IDs. */
     actions?: false | string[];

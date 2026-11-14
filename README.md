@@ -107,7 +107,7 @@ Eine `ResourceDefinition` beschreibt Felder, Gruppen, Spalten, Suchfilter, Grupp
 
 - Relationspicker: Datenbanksuche mit Debouncing, Anzeigen bestehender Auswahl, reduzierte Neuanlage im verschachtelten Dialog und automatische Übernahme.
 - Relationslisten im Bearbeitungsformular: Suche, Anlegen und Zeilenactions. Änderungen invalidieren die betroffenen Ansichten; Formular-Refresh erhält ungespeicherte Werte.
-- Sheet/Dialog ist über die Workbench wählbar und kann pro Aufruf überschrieben werden. Cards besitzen einen Action-Slot oben rechts. `DynamicList` unterstützt Suchprop, eigene Zeilenrenderer, Empty-State und Actions.
+- Sheet/Dialog wird über `presentation` pro Workbench-Aufruf konfiguriert; es gibt keine Umschaltbuttons in den Listen. Cards besitzen einen Action-Slot oben rechts. `DynamicList` unterstützt Suchprop, eigene Zeilenrenderer, Empty-State und Actions.
 - Datum, Monat, Uhrzeit sowie Datum-/Monatsbereiche sind zentrale Komponenten. Die Komponentenseite zeigt sie interaktiv; sie erfindet keine zusätzlichen Datenbankfelder.
 
 Eigene Actions sind Klassen mit `bulk`, `visible`, `fields` und `execute`. Der Kontext enthält die tatsächlichen `rows`, die Ressource und `instance` mit `reload`, `openForm`, `navigate`, optionalem Formular, `refreshForm` und Tabelleninstanz. Beispiel:

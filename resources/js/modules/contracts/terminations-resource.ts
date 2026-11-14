@@ -78,7 +78,17 @@ export const terminations: ResourceDefinition = {
         col("requested_end_on", "Gewünschtes Ende", "date"),
         col("confirmed_end_on", "Bestätigtes Ende", "date"),
         col("reason", "Grund"),
-        col("status", "Status", "badge"),
+        {
+            ...col("status", "Status", "badge"),
+            filter: {
+                kind: "choice",
+                options: [
+                    { value: "received", label: "Eingegangen" },
+                    { value: "confirmed", label: "Bestätigt" },
+                    { value: "withdrawn", label: "Zurückgezogen" },
+                ],
+            },
+        },
     ],
     includes: [{ relation: "contract" }],
     actions: [

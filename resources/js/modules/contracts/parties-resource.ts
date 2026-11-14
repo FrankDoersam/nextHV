@@ -31,6 +31,7 @@ export const parties: ResourceDefinition = {
     columns: [
         {
             field: "business_partner.display_name",
+            filter: { field: "businessPartner.display_name" },
             label: "Geschäftspartner",
             sortable: false,
             render: (r) =>
