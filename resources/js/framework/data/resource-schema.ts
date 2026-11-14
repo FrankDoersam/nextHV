@@ -234,6 +234,28 @@ function inferFilterKind(field: NativeField): FilterDefinition["kind"] {
 function nativeField(schema: ResourceSchema, name: string) {
     return schema.fields.find((field) => field.name === name);
 }
+/** A relation column can sort only when explicitly opted in and its exposed target field allows sorting.
+ *  The server checks the relation type and permission again on every search. */
+function columnSort(
+    column: ColumnDefinition,
+    schema: ResourceSchema,
+    schemas: Record<string, ResourceSchema>,
+): Pick<ColumnDefinition, "sortable" | "sortField"> {
+    if (column.sortable === false) return { sortable: false };
+    const direct = nativeField(schema, column.field);
+    if (direct) return { sortable: direct.sort };
+    if (column.sortable !== true) return { sortable: false };
+    const [prefix, field, ...remaining] = column.field.split(".");
+    if (!field || remaining.length) return { sortable: false };
+    const relation = Object.values(schema.meta.ui.relations).find(
+        (entry) => [entry.relation, entry.responseKey].includes(prefix),
+    );
+    const target = relation && schemas[relation.resource];
+    const relatedField = target && nativeField(target, field);
+    return relatedField?.sort
+        ? { sortable: true, sortField: `${relation!.relation}.${field}` }
+        : { sortable: false };
+}
 function hydrateField(
     field: FieldDefinition,
     schema: ResourceSchema,
@@ -416,29 +438,7 @@ export function hydrateResources(
             ...column,
             options:
                 schema.meta.ui.fields[column.field]?.options ?? column.options,
-            reference:
-                column.reference ??
-                (() => {
-                    const prefix = column.field.split(".")[0];
-                    const relation = Object.entries(
-                        schema.meta.ui.relations,
-                    ).find(
-                        ([, relation]) =>
-                            column.field.includes(".") &&
-                            [relation.relation, relation.responseKey].includes(
-                                prefix,
-                            ),
-                    );
-                    return relation
-                        ? {
-                              resource: relation[1].resource,
-                              idField: relation[0],
-                          }
-                        : undefined;
-                })(),
-            sortable:
-                column.sortable !== false &&
-                (nativeField(schema, column.field)?.sort ?? false),
+            ...columnSort(column, schema, schemas),
             filter:
                 column.filter === false
                     ? false
