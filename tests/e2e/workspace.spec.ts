@@ -23,7 +23,10 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
             name: "Willkommen, Browser.",
         }),
     ).toBeVisible();
-    await page.getByRole("link", { name: "Objekte", exact: true }).click();
+    await page
+        .getByRole("navigation", { name: "Hauptnavigation", exact: true })
+        .getByRole("link", { name: /^Objekte(?:\s|$)/ })
+        .click();
     await page
         .getByRole("textbox", { name: "Objekte durchsuchen" })
         .fill("Linden");
@@ -39,7 +42,10 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     await expect(
         page.getByRole("heading", { name: "Zähler · vorbereitet" }),
     ).toBeVisible();
-    await page.getByRole("link", { name: "Objekte", exact: true }).click();
+    await page
+        .getByRole("navigation", { name: "Hauptnavigation", exact: true })
+        .getByRole("link", { name: /^Objekte(?:\s|$)/ })
+        .click();
     await page
         .getByRole("button", { name: "Objekt anlegen", exact: true })
         .click();

@@ -578,7 +578,10 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(creator).toHaveCount(0);
     expect(contractWrites).toBe(1);
 
-    await page.getByRole("link", { name: "Objekte", exact: true }).click();
+    await page
+        .getByRole("navigation", { name: "Hauptnavigation", exact: true })
+        .getByRole("link", { name: /^Objekte(?:\s|$)/ })
+        .click();
     await page
         .getByRole("textbox", { name: "Objekte durchsuchen" })
         .fill("Linden");
