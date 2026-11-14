@@ -31,7 +31,7 @@ export function ResponsiveRecordList({
     const details = columns.filter((column) => column !== title);
     return (
         <div data-slot="responsive-record-list" className="min-w-0">
-            <div className="sticky top-0 z-10 flex min-h-10 items-center gap-3 border-b bg-muted px-3 py-2 text-xs font-medium text-muted-foreground">
+            <div className="sticky top-0 z-10 flex min-h-9 items-center gap-3 border-y bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
                 {selection?.header}
                 <span>{title?.label ?? "Datensätze"}</span>
                 <span className="ml-auto">
@@ -58,7 +58,7 @@ export function ResponsiveRecordList({
                             role="listitem"
                             data-row-id={row.id}
                             data-selected={selected?.(row) || undefined}
-                            className="min-w-0 space-y-4 px-3 py-4 data-selected:bg-primary/5"
+                            className="min-w-0 space-y-3 px-3 py-3 data-selected:bg-primary/5"
                         >
                             <div className="flex min-w-0 items-center gap-3">
                                 {selection?.row(row)}
@@ -88,13 +88,13 @@ export function ResponsiveRecordList({
                                 )}
                             </div>
                             {details.length > 0 && (
-                                <dl className="grid min-w-0 grid-cols-2 gap-x-5 gap-y-3">
+                                <dl className="grid min-w-0 grid-cols-2 gap-x-4 gap-y-2">
                                     {details.map((column) => (
                                         <div
                                             key={column.field}
                                             className="min-w-0"
                                         >
-                                            <dt className="mb-1 text-xs text-muted-foreground">
+                                            <dt className="mb-0.5 text-[11px] text-muted-foreground">
                                                 {column.label}
                                             </dt>
                                             <dd className="min-w-0 text-sm">

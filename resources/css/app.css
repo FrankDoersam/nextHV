@@ -43,7 +43,7 @@
 }
 :root {
     --radius: 0.625rem;
-    --background: #f5f6f8;
+    --background: #f7f7f8;
     --foreground: #18181b;
     --card: #fff;
     --card-foreground: #18181b;
@@ -99,7 +99,7 @@
         @apply flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground;
     }
     .nav-item-active {
-        @apply bg-card text-primary shadow-xs ring-1 ring-border/60 hover:bg-card hover:text-primary;
+        @apply bg-muted text-foreground hover:bg-muted hover:text-foreground;
     }
 }
 /* Nested dialogs stay mounted; Base UI owns focus trapping and modal semantics. */

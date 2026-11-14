@@ -215,11 +215,16 @@
     {
         "file": "resources/js/components/blocks/metric-card.tsx",
         "source": "https://reui.io/blocks/application/stats/stats-1",
-        "note": "Öffentliche Stats-Overview-Vorschau visuell geprüft. Eigene Komposition auf vorhandenem REUI Frame; Pro-Quellcode war lizenzgesperrt und wurde nicht kopiert."
+        "note": "Eigene Adaption der öffentlichen Stats-Overview-Vorschau: einzelne neutral umrandete Karten, kompakte Listenvariante und responsive Werte. Kein Import des lizenzgebundenen Pro-Quellcodes."
     },
     {
         "file": "resources/js/components/blocks/responsive-tab-list.tsx",
         "source": "https://reui.io/blocks/application/navbar/navbar-1",
         "note": "Öffentliche Project-Workspace-Vorschau visuell geprüft. Line-Tabs mit eigener responsiver Überlauflogik auf Base UI; kein Import des gesperrten Pro-Blocks."
+    },
+    {
+        "file": "resources/js/components/blocks/collection-surface.tsx",
+        "source": "https://reui.io/docs/components/base/data-grid",
+        "note": "Gemeinsame Listenfläche auf vorhandenem REUI DataGrid mit separaten Stats-Karten, einzeiligen Ansichtstabs und mobilem Seitenfluss. Eigenständige Anwendungskomposition."
     }
 ]

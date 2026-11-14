@@ -1002,5 +1002,134 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         page.getByRole("option", { name: /Wohnung 01.*Lindenhöfe.*Berlin/ }),
     ).toBeVisible();
     await capture("44-einheiten-picker-objektbezug");
+
+    // Whole collection surfaces: mobile uses the workspace scroll owner, not a clipped inner list.
+    await reserveApiBudget(45);
+    for (const resource of ["properties", "units"]) {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.goto(`/${resource}`);
+        const records = page.locator(
+            '[data-slot="responsive-record-list"] [data-row-id]',
+        );
+        await expect(records.first()).toBeVisible();
+        const surface = page.locator('[data-slot="collection-surface"]');
+        const tabs = surface.getByRole("tablist");
+        if (await tabs.count())
+            expect((await tabs.boundingBox())!.height).toBeLessThanOrEqual(45);
+        const metrics = page.locator('[data-slot="collection-kpis"]');
+        if (await metrics.count()) {
+            expect((await metrics.boundingBox())!.height).toBeLessThan(220);
+            expect(
+                await metrics.locator('[data-slot="metric-card"]').count(),
+            ).toBe(4);
+        }
+        const first = (await records.first().boundingBox())!;
+        const pager = page.locator('[data-slot="data-grid-pagination"]');
+        expect(first.y + first.height).toBeLessThanOrEqual(
+            (await pager.boundingBox())!.y + 1,
+        );
+        const scroll = page.locator('[data-slot="scroll-area-viewport"]');
+        expect(
+            await scroll.evaluate(
+                (element) => element.scrollHeight - element.clientHeight,
+            ),
+        ).toBeLessThanOrEqual(1);
+        expect(
+            (await page
+                .locator('[data-slot="collection-toolbar"]')
+                .boundingBox())!.height,
+        ).toBeLessThanOrEqual(85);
+        await capture(
+            resource === "properties"
+                ? "46-objekte-mobil"
+                : "47-einheiten-mobil",
+        );
+        await page
+            .getByRole("button", { name: "Weitere Tabellenaktionen" })
+            .click();
+        await expect(
+            page.getByRole("menuitem", { name: "Aktualisieren", exact: true }),
+        ).toBeVisible();
+        await expect(
+            page.getByRole("menuitem", {
+                name: "Aktuelle Seite als CSV exportieren",
+                exact: true,
+            }),
+        ).toBeEnabled();
+        await page.keyboard.press("Escape");
+        await page
+            .locator('[data-slot="workspace-scroll"]')
+            .evaluate((element) => {
+                element.scrollTop = element.scrollHeight;
+            });
+        const last = (await records.last().boundingBox())!;
+        expect(last.y + last.height).toBeLessThanOrEqual(
+            (await pager.boundingBox())!.y + 1,
+        );
+        await capture(
+            resource === "properties"
+                ? "48-objekte-mobil-letzter-datensatz"
+                : "49-einheiten-mobil-paging",
+        );
+        if (resource === "units") {
+            await page
+                .getByRole("button", { name: "Nächste Seite", exact: true })
+                .click();
+            await expect(page).toHaveURL(/page=2/);
+            await expect(
+                page.locator('[data-slot="resource-collection"]'),
+            ).not.toHaveAttribute("aria-busy", "true");
+            await expect(records.first()).toBeInViewport();
+            await capture("53-einheiten-mobil-zweite-seite");
+        }
+    }
+    for (const width of [768, 1440]) {
+        await page.setViewportSize({ width, height: 1000 });
+        await page.goto("/properties");
+        await expect(
+            page.locator('[data-slot="collection-surface"]'),
+        ).toBeVisible();
+        await expect(
+            page.locator('[data-slot="resource-collection"]'),
+        ).not.toHaveAttribute("aria-busy", "true");
+        const pager = (await page
+            .locator('[data-slot="data-grid-pagination"]')
+            .boundingBox())!;
+        expect(pager.y + pager.height).toBeLessThanOrEqual(1000);
+        await capture(
+            width === 768 ? "50-objekte-ipad" : "51-appshell-objekte-desktop",
+        );
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole("button", { name: "Menü öffnen" }).click();
+    await expect(
+        page.getByRole("navigation", { name: "Hauptnavigation" }).last(),
+    ).toBeVisible();
+    await capture("52-sidebar-mobil");
+    await page.keyboard.press("Escape");
+    for (const width of [1440, 390]) {
+        await page.setViewportSize({
+            width,
+            height: width === 390 ? 844 : 1000,
+        });
+        await page.goto("/contracts");
+        await expect(
+            page.locator('[data-slot="collection-kpis"]'),
+        ).toBeVisible();
+        await expect(
+            page.locator('[data-slot="resource-collection"]'),
+        ).not.toHaveAttribute("aria-busy", "true");
+        if (width === 390)
+            expect(
+                (await page
+                    .locator('[data-slot="collection-kpis"]')
+                    .boundingBox())!.height,
+            ).toBeLessThan(220);
+        await capture(
+            width === 390
+                ? "55-vertraege-kpi-mobil"
+                : "54-vertraege-kpi-desktop",
+        );
+    }
     expect(errors).toEqual([]);
 });

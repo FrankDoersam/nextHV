@@ -48,6 +48,7 @@ export interface ChoicePickerProps extends AriaAttributes {
     presentation?: "input" | "menu" | "chip";
     selectedDisplay?: "title" | "rich";
     triggerIcon?: ReactNode;
+    iconOnly?: boolean;
     size?: "default" | "sm";
 }
 
@@ -72,6 +73,7 @@ export function ChoicePicker({
     maxSelected,
     presentation = "input",
     triggerIcon,
+    iconOnly = false,
     selectedDisplay = "title",
     size = "default",
     ...aria
@@ -172,6 +174,7 @@ export function ChoicePicker({
                         title={caption || placeholder}
                         className={cn(
                             "h-9 min-w-0 max-w-full flex-1 shrink gap-2 text-[13px]",
+                            iconOnly && "size-9 flex-none px-0",
                             size === "sm" &&
                                 "h-8 gap-1.5 px-2 text-xs [&_svg]:size-3.5",
                             presentation === "chip" &&
@@ -193,7 +196,12 @@ export function ChoicePicker({
                         }}
                     >
                         {triggerIcon}
-                        <span className="min-w-0 flex-1 truncate text-left">
+                        <span
+                            className={cn(
+                                "min-w-0 flex-1 truncate text-left",
+                                iconOnly && "sr-only",
+                            )}
+                        >
                             {triggerCaption}
                         </span>
                         {multiple && ids.length > 1 && (
@@ -207,7 +215,9 @@ export function ChoicePicker({
                                     : ids.length}
                             </span>
                         )}
-                        <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+                        {!iconOnly && (
+                            <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+                        )}
                     </Combobox.Trigger>
                     {clearable && ids.length > 0 && (
                         <Button

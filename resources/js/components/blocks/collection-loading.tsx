@@ -1,5 +1,8 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { ContentCard } from "./content-card";
+import { CollectionSurface } from "./collection-surface";
+import { CollectionKpis } from "./collection-kpis";
+import { ResponsiveTabList } from "./responsive-tab-list";
+import { Tabs } from "@/components/ui/tabs";
 import { CollectionPage, PageHeader } from "./layout";
 import type { ResourceDefinition } from "@/framework/types";
 export function GridCellSkeleton({
@@ -49,75 +52,77 @@ export function CollectionLoading({
     resource: ResourceDefinition;
     activeView?: string | null;
 }) {
+    const selectedView =
+        resource.views?.find((view) => view.id === activeView)?.id ??
+        resource.views?.[0]?.id ??
+        "";
     return (
         <CollectionPage>
             <PageHeader title={resource.label} />
-            <ContentCard grow>
-                <div
-                    role="status"
-                    aria-label="Tabelle wird geladen"
-                    className="flex min-h-0 flex-1 flex-col gap-4"
+            <div className="flex min-w-0 flex-col gap-4 md:min-h-0 md:flex-1">
+                {resource.summary && (
+                    <CollectionKpis definition={resource.summary} loading />
+                )}
+                <CollectionSurface
+                    navigation={
+                        resource.views?.length ? (
+                            <Tabs value={selectedView}>
+                                <ResponsiveTabList
+                                    tabs={resource.views.map(
+                                        ({ id, label, icon }) => ({
+                                            id,
+                                            label,
+                                            icon,
+                                        }),
+                                    )}
+                                    active={selectedView}
+                                    onChange={() => {}}
+                                    ariaLabel={`${resource.label} Ansichten`}
+                                />
+                            </Tabs>
+                        ) : undefined
+                    }
                 >
-                    {resource.summary && (
-                        <div className="grid grid-cols-2 gap-6 border-b pb-4 lg:grid-cols-4">
-                            {resource.summary.items.map((item) => (
-                                <div key={item.key} className="space-y-3">
-                                    <Skeleton className="h-3 w-24" />
-                                    <Skeleton className="h-8 w-32" />
+                    <div
+                        role="status"
+                        aria-label="Tabelle wird geladen"
+                        className="flex min-h-0 flex-1 flex-col"
+                    >
+                        <div className="flex flex-wrap items-center gap-2 p-3 sm:p-4">
+                            <Skeleton className="h-9 w-full sm:w-64" />
+                            <Skeleton className="h-9 w-24" />
+                            <Skeleton className="ml-auto h-9 w-28" />
+                        </div>
+                        <div
+                            data-slot="collection-loading-table"
+                            className="min-h-64 flex-1 overflow-hidden md:min-h-0"
+                        >
+                            <Skeleton className="h-10 rounded-none" />
+                            {Array.from({ length: 12 }, (_, i) => (
+                                <div
+                                    key={i}
+                                    className="flex h-11 items-center gap-6 border-b px-4"
+                                >
+                                    <Skeleton className="size-4" />
+                                    {[1, 2, 3, 4].map((n) => (
+                                        <Skeleton
+                                            key={n}
+                                            className="h-4 flex-1"
+                                        />
+                                    ))}
                                 </div>
                             ))}
                         </div>
-                    )}
-                    {!!resource.views?.length && (
-                        <div
-                            data-slot="collection-loading-tabs"
-                            role="tablist"
-                            aria-label={`${resource.label} Ansichten`}
-                            className="flex h-10 shrink-0 items-center gap-5 border-b"
-                        >
-                            {resource.views.map((view, index) => (
-                                <span
-                                    key={view.id}
-                                    role="tab"
-                                    aria-selected={activeView ? view.id === activeView : index === 0}
-                                    className={(activeView ? view.id === activeView : index === 0)
-                                        ? "flex h-full items-center border-b-2 border-foreground text-sm font-medium"
-                                        : "flex h-full items-center text-sm text-muted-foreground"}
-                                >
-                                    {view.label}
-                                    {view.count && <Skeleton className="ml-2 h-4 w-5 rounded-md" />}
-                                </span>
-                            ))}
+                        <div className="flex shrink-0 justify-end gap-3 border-t p-3">
+                            <Skeleton className="h-8 w-16" />
+                            <Skeleton className="h-8 w-32" />
                         </div>
-                    )}
-                    <div className="flex items-center gap-3">
-                        <Skeleton className="h-9 w-72" />
-                        <Skeleton className="h-9 w-24" />
-                        <Skeleton className="ml-auto h-9 w-36" />
+                        <span className="sr-only">
+                            {resource.label} werden geladen.
+                        </span>
                     </div>
-                    <div data-slot="collection-loading-table" className="min-h-0 flex-1 overflow-hidden rounded-lg border">
-                        <Skeleton className="h-10 rounded-none" />
-                        {Array.from({ length: 12 }, (_, i) => (
-                            <div
-                                key={i}
-                                className="flex h-11 items-center gap-6 border-b px-4"
-                            >
-                                <Skeleton className="size-4" />
-                                {[1, 2, 3, 4].map((n) => (
-                                    <Skeleton key={n} className="h-4 flex-1" />
-                                ))}
-                            </div>
-                        ))}
-                    </div>
-                    <div className="flex justify-between border-t pt-3">
-                        <Skeleton className="h-8 w-44" />
-                        <Skeleton className="h-8 w-32" />
-                    </div>
-                    <span className="sr-only">
-                        {resource.label} werden geladen.
-                    </span>
-                </div>
-            </ContentCard>
+                </CollectionSurface>
+            </div>
         </CollectionPage>
     );
 }

@@ -18,35 +18,75 @@ const properties = {
     navigationGroup: "Stammdaten",
     views: [
         { id: "all", label: "Alle", count: false },
-        { id: "active", label: "Aktiv", count: true, filters: [{ field: "status", value: "active" }] },
-        { id: "archived", label: "Inaktiv", count: true, filters: [{ field: "status", value: "archived" }] },
+        {
+            id: "active",
+            label: "Aktiv",
+            count: true,
+            filters: [{ field: "status", value: "active" }],
+        },
+        {
+            id: "archived",
+            label: "Inaktiv",
+            count: true,
+            filters: [{ field: "status", value: "archived" }],
+        },
     ],
     navigationItem: {
         defaultOpen: true,
         children: [
-            { id: "active", label: "Aktiv", icon: CircleCheck, view: "active", count: true },
-            { id: "archived", label: "Inaktiv", icon: Archive, view: "archived", count: true },
+            {
+                id: "active",
+                label: "Aktiv",
+                icon: CircleCheck,
+                view: "active",
+                count: true,
+            },
+            {
+                id: "archived",
+                label: "Inaktiv",
+                icon: Archive,
+                view: "archived",
+                count: true,
+            },
         ],
     },
 } as ResourceDefinition;
 const tree = resolveNavigation(defaultNavigation([properties]), [properties]);
 
 beforeEach(() => {
+    vi.stubGlobal(
+        "ResizeObserver",
+        class {
+            observe() {}
+            disconnect() {}
+            unobserve() {}
+        },
+    );
     window.localStorage.clear();
-    vi.spyOn(dataProvider, "list").mockImplementation(async (_, params = {}) => ({
-        data: [],
-        total: params?.filters?.[0] && "field" in params.filters[0] && params.filters[0].value === "active"
-            ? 7 : 3,
-        current_page: 1,
-        last_page: 1,
-    }));
+    vi.spyOn(dataProvider, "list").mockImplementation(
+        async (_, params = {}) => ({
+            data: [],
+            total:
+                params?.filters?.[0] &&
+                "field" in params.filters[0] &&
+                params.filters[0].value === "active"
+                    ? 7
+                    : 3,
+            current_page: 1,
+            last_page: 1,
+        }),
+    );
 });
 afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
 });
 
-function SidebarExample({ rail = false, onExpandRail = () => {} }: {
+function SidebarExample({
+    rail = false,
+    onExpandRail = () => {},
+}: {
     rail?: boolean;
     onExpandRail?: () => void;
 }) {
@@ -65,9 +105,13 @@ function SidebarExample({ rail = false, onExpandRail = () => {} }: {
 function mount(rail = false, onExpandRail = () => {}) {
     return render(
         <MemoryRouter initialEntries={["/properties?view=active"]}>
-            <QueryClientProvider client={new QueryClient({
-                defaultOptions: { queries: { retry: false } },
-            })}>
+            <QueryClientProvider
+                client={
+                    new QueryClient({
+                        defaultOptions: { queries: { retry: false } },
+                    })
+                }
+            >
                 <SidebarExample rail={rail} onExpandRail={onExpandRail} />
                 <CollectionViews
                     resource={properties}
@@ -94,7 +138,10 @@ it("shows active and archived sidebar badges and reuses tab count requests", asy
     await waitFor(() => expect(dataProvider.list).toHaveBeenCalledTimes(2));
     expect(dataProvider.list).toHaveBeenCalledWith(
         expect.any(Object),
-        expect.objectContaining({ filters: [{ field: "status", value: "active" }], limit: 10 }),
+        expect.objectContaining({
+            filters: [{ field: "status", value: "active" }],
+            limit: 10,
+        }),
         expect.any(AbortSignal),
     );
 });
@@ -102,19 +149,28 @@ it("shows active and archived sidebar badges and reuses tab count requests", asy
 it("toggles nested disclosure and retains the user's expansion preference", async () => {
     mount();
     const user = userEvent.setup();
-    const toggle = screen.getByRole("button", { name: "Objekte Unterpunkte einklappen" });
+    const toggle = screen.getByRole("button", {
+        name: "Objekte Unterpunkte einklappen",
+    });
 
     await user.click(toggle);
-    expect(screen.getByRole("button", { name: "Objekte Unterpunkte ausklappen" }))
-        .toHaveAttribute("aria-expanded", "false");
-    expect(JSON.parse(window.localStorage.getItem("nexthv.sidebar.expanded.v1.42") ?? "{}"))
-        .toHaveProperty("properties", false);
+    expect(
+        screen.getByRole("button", { name: "Objekte Unterpunkte ausklappen" }),
+    ).toHaveAttribute("aria-expanded", "false");
+    expect(
+        JSON.parse(
+            window.localStorage.getItem("nexthv.sidebar.expanded.v1.42") ??
+                "{}",
+        ),
+    ).toHaveProperty("properties", false);
 });
 
 it("lets the icon rail open a parent's subtree and preserves labelled controls", async () => {
     const expand = vi.fn();
     mount(true, expand);
-    const opener = screen.getByRole("button", { name: "Objekte Untermenü öffnen" });
+    const opener = screen.getByRole("button", {
+        name: "Objekte Untermenü öffnen",
+    });
 
     await userEvent.setup().click(opener);
     expect(expand).toHaveBeenCalledOnce();

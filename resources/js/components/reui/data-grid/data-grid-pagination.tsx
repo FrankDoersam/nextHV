@@ -35,6 +35,8 @@ interface DataGridPaginationProps {
     previousPageLabel?: string;
     nextPageLabel?: string;
     ellipsisText?: string;
+    /** Small containers keep size, range and previous/next in one row. */
+    compact?: boolean;
 }
 
 /**
@@ -179,6 +181,7 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
             data-slot="data-grid-pagination"
             className={cn(
                 "flex w-full flex-wrap items-center justify-end gap-x-5 gap-y-2.5",
+                props.compact && "flex-nowrap justify-between gap-x-2",
                 mergedProps.className,
             )}
         >
@@ -187,7 +190,12 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
                     mergedProps.sizesSkeleton
                 ) : (
                     <>
-                        <div className="text-muted-foreground text-sm">
+                        <div
+                            className={cn(
+                                "text-muted-foreground text-sm",
+                                props.compact && "sr-only",
+                            )}
+                        >
                             {mergedProps.rowsPerPageLabel}
                         </div>
                         <Select
@@ -228,7 +236,12 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
                     mergedProps.infoSkeleton
                 ) : (
                     <>
-                        <div className="text-muted-foreground text-sm text-nowrap">
+                        <div
+                            className={cn(
+                                "text-muted-foreground text-sm text-nowrap",
+                                props.compact && "text-xs",
+                            )}
+                        >
                             {paginationInfo}
                         </div>
                         {pageCount > 1 && (
@@ -246,60 +259,65 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
                                     <ChevronLeftIcon className="size-4" />
                                 </Button>
 
-                                {paginationItems.map((item) =>
-                                    item.type === "page" ? (
-                                        <Button
-                                            key={`page-${item.index}`}
-                                            size="sm"
-                                            variant="ghost"
-                                            aria-label={i18n.labels.goToPage(
-                                                item.index + 1,
-                                            )}
-                                            aria-current={
-                                                pageIndex === item.index
-                                                    ? "page"
-                                                    : undefined
-                                            }
-                                            className={cn(
-                                                PAGE_BUTTON_WIDTH_CLASS,
-                                                "px-1.5 text-sm",
-                                                "text-muted-foreground",
-                                                {
-                                                    "bg-accent text-accent-foreground":
-                                                        pageIndex ===
-                                                        item.index,
-                                                },
-                                            )}
-                                            onClick={() => {
-                                                if (pageIndex !== item.index) {
-                                                    table.setPageIndex(
-                                                        item.index,
-                                                    );
+                                {!props.compact &&
+                                    paginationItems.map((item) =>
+                                        item.type === "page" ? (
+                                            <Button
+                                                key={`page-${item.index}`}
+                                                size="sm"
+                                                variant="ghost"
+                                                aria-label={i18n.labels.goToPage(
+                                                    item.index + 1,
+                                                )}
+                                                aria-current={
+                                                    pageIndex === item.index
+                                                        ? "page"
+                                                        : undefined
                                                 }
-                                            }}
-                                        >
-                                            {item.index + 1}
-                                        </Button>
-                                    ) : (
-                                        /* Clickable, unlike the shadcn PaginationEllipsis, which is
+                                                className={cn(
+                                                    PAGE_BUTTON_WIDTH_CLASS,
+                                                    "px-1.5 text-sm",
+                                                    "text-muted-foreground",
+                                                    {
+                                                        "bg-accent text-accent-foreground":
+                                                            pageIndex ===
+                                                            item.index,
+                                                    },
+                                                )}
+                                                onClick={() => {
+                                                    if (
+                                                        pageIndex !== item.index
+                                                    ) {
+                                                        table.setPageIndex(
+                                                            item.index,
+                                                        );
+                                                    }
+                                                }}
+                                            >
+                                                {item.index + 1}
+                                            </Button>
+                                        ) : (
+                                            /* Clickable, unlike the shadcn PaginationEllipsis, which is
                        an aria-hidden span. This one MOVES the user, so it needs
                        a name saying where. */
-                                        <Button
-                                            key={`ellipsis-${item.direction}`}
-                                            size="icon-sm"
-                                            className={btnBaseClasses}
-                                            variant="ghost"
-                                            aria-label={i18n.labels.goToPage(
-                                                item.target + 1,
-                                            )}
-                                            onClick={() =>
-                                                table.setPageIndex(item.target)
-                                            }
-                                        >
-                                            {mergedProps.ellipsisText}
-                                        </Button>
-                                    ),
-                                )}
+                                            <Button
+                                                key={`ellipsis-${item.direction}`}
+                                                size="icon-sm"
+                                                className={btnBaseClasses}
+                                                variant="ghost"
+                                                aria-label={i18n.labels.goToPage(
+                                                    item.target + 1,
+                                                )}
+                                                onClick={() =>
+                                                    table.setPageIndex(
+                                                        item.target,
+                                                    )
+                                                }
+                                            >
+                                                {mergedProps.ellipsisText}
+                                            </Button>
+                                        ),
+                                    )}
 
                                 <Button
                                     size="icon-sm"

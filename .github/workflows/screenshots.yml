@@ -1,7 +1,7 @@
 name: Workspace screenshots
 on:
   push:
-    branches: [main]
+    branches: [main, "codex/ui-shell-*"]
   workflow_dispatch:
 permissions:
   contents: read

@@ -8,6 +8,7 @@ import { resolveColumnLayout, stackRecordColumns } from "./column-layout";
 import { ResponsiveRecordList } from "./responsive-record-list";
 import { TableViewport } from "./table-viewport";
 import { useLayoutEffect, useId } from "react";
+import { CollectionSurface } from "@/components/blocks/collection-surface";
 import { CollectionKpis } from "@/components/blocks/collection-kpis";
 import { useCollectionSummary } from "../data/hooks";
 import { BulkActionBar } from "@/components/blocks/bulk-action-bar";
@@ -16,7 +17,13 @@ import type { ActionPlacement } from "../actions";
 import { useGridState, defaultColumnVisibility } from "./grid-state";
 import { exportRows } from "./export";
 import { cn } from "@/lib/utils";
-import { Download, X } from "lucide-react";
+import { Download, X, Ellipsis } from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { EmptyState, ErrorState } from "@/components/blocks/content";
 import {
     DataGrid,
@@ -208,10 +215,10 @@ export function ResourceCollection({
                 const scroll = node.querySelector<HTMLElement>(
                     '[data-slot="scroll-area-viewport"], [data-slot="data-grid-table-viewport"]',
                 );
-                const gutter = scroll
-                    ? scroll.offsetWidth - scroll.clientWidth
-                    : 0;
-                const next = Math.max(0, Math.floor(node.clientWidth - gutter));
+                const next = Math.max(
+                    0,
+                    Math.floor(scroll?.clientWidth ?? node.clientWidth),
+                );
                 return next === previous ? previous : next;
             });
         measure();
@@ -220,11 +227,16 @@ export function ResourceCollection({
             frame = requestAnimationFrame(measure);
         });
         observer.observe(node);
+        const tableViewport = node.querySelector<HTMLElement>(
+            '[data-slot="scroll-area-viewport"], [data-slot="data-grid-table-viewport"]',
+        );
+        if (tableViewport) observer.observe(tableViewport);
         return () => {
             observer.disconnect();
             cancelAnimationFrame(frame);
         };
     }, []);
+    const compactControls = width > 0 && width < 560;
     const [preferredSizes, setPreferredSizes] = useState<
         Record<string, number>
     >({});
@@ -336,8 +348,31 @@ export function ResourceCollection({
         search,
         paging,
     ]);
+    const previousPage = useRef(pagination.pageIndex);
     useEffect(() => {
         setSelection({});
+        if (
+            !compact &&
+            previousPage.current !== pagination.pageIndex &&
+            window.innerWidth < 768
+        ) {
+            const workspace = viewport.current?.closest<HTMLElement>(
+                '[data-slot="workspace-scroll"]',
+            );
+            const records = viewport.current?.querySelector<HTMLElement>(
+                '[data-slot="scroll-area-viewport"]',
+            );
+            if (workspace && records) {
+                workspace.scrollTo({
+                    top:
+                        workspace.scrollTop +
+                        records.getBoundingClientRect().top -
+                        workspace.getBoundingClientRect().top -
+                        8,
+                });
+            }
+        }
+        previousPage.current = pagination.pageIndex;
         viewport.current
             ?.querySelectorAll<HTMLElement>(
                 '[data-slot="scroll-area-viewport"], [data-slot="data-grid-table-viewport"]',
@@ -508,8 +543,7 @@ export function ResourceCollection({
                         RecordData
                     >;
                 }) =>
-                    c.field === resource.titleField &&
-                    detailLink ? (
+                    c.field === resource.titleField && detailLink ? (
                         <Cell
                             className="w-full"
                             title={
@@ -792,18 +826,22 @@ export function ResourceCollection({
             data-slot="collection-toolbar"
             className="flex min-w-0 flex-col gap-3"
         >
-            <div className="flex min-w-0 flex-wrap items-center gap-2.5">
-                <div
-                    data-slot="collection-controls"
-                    className="flex min-w-0 max-w-full flex-auto flex-wrap items-center gap-2.5"
-                >
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <div data-slot="collection-controls" className="contents">
                     <DirectFilters
                         definitions={directDefinitions}
                         value={filters}
                         onChange={(next) => update("filters", next, true)}
                     />
                     {searchable && (
-                        <div className="relative min-w-0 basis-full sm:min-w-48 sm:flex-1 sm:basis-48 sm:max-w-72">
+                        <div
+                            className={cn(
+                                "relative min-w-0",
+                                compactControls
+                                    ? "basis-full"
+                                    : "min-w-40 max-w-64 flex-1 basis-40",
+                            )}
+                        >
                             <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
                             <Input
                                 value={search}
@@ -833,6 +871,7 @@ export function ResourceCollection({
                         <ChoicePicker
                             presentation="menu"
                             triggerIcon={<ListFilter />}
+                            iconOnly={compactControls}
                             aria-label="Gruppierung"
                             placeholder="Gruppieren"
                             clearable={false}
@@ -859,7 +898,7 @@ export function ResourceCollection({
                         target={{ resource, rows: [], instance }}
                         placement="table"
                     />
-                    {exportable && (
+                    {!compactControls && exportable && (
                         <Button
                             variant="outline"
                             size="icon-lg"
@@ -883,7 +922,7 @@ export function ResourceCollection({
                             <Download />
                         </Button>
                     )}
-                    {refreshable && (
+                    {!compactControls && refreshable && (
                         <Button
                             variant="outline"
                             size="icon-lg"
@@ -901,12 +940,78 @@ export function ResourceCollection({
                             />
                         </Button>
                     )}
+                    {compactControls && (exportable || refreshable) && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button
+                                        variant="outline"
+                                        size="icon-lg"
+                                        aria-label="Weitere Tabellenaktionen"
+                                    />
+                                }
+                            >
+                                <Ellipsis />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {refreshable && (
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            void result.refetch();
+                                            if (summary && resource.summary)
+                                                void rollups.refetch();
+                                        }}
+                                    >
+                                        <RefreshCw />
+                                        Aktualisieren
+                                    </DropdownMenuItem>
+                                )}
+                                {exportable && (
+                                    <DropdownMenuItem
+                                        disabled={
+                                            !rows.length ||
+                                            result.isPlaceholderData
+                                        }
+                                        onClick={() =>
+                                            exportRows(
+                                                selectedRows.length
+                                                    ? selectedRows
+                                                    : rows,
+                                                resource.columns.filter(
+                                                    (c) =>
+                                                        columnVisibility[
+                                                            c.field
+                                                        ] !== false,
+                                                ),
+                                                resource.label,
+                                            )
+                                        }
+                                    >
+                                        <Download />
+                                        {selectedRows.length
+                                            ? "Auswahl als CSV exportieren"
+                                            : "Aktuelle Seite als CSV exportieren"}
+                                    </DropdownMenuItem>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
                     {creatable && can(resource.name, "create") && (
-                        <Button onClick={create} size="lg">
+                        <Button
+                            onClick={create}
+                            size="lg"
+                            aria-label={
+                                compact
+                                    ? "Hinzufügen"
+                                    : `${resource.singular} anlegen`
+                            }
+                        >
                             <Plus />
-                            {compact
-                                ? "Hinzufügen"
-                                : `${resource.singular} anlegen`}
+                            {compactControls
+                                ? "Neu"
+                                : compact
+                                  ? "Hinzufügen"
+                                  : `${resource.singular} anlegen`}
                         </Button>
                     )}
                 </div>
@@ -933,16 +1038,19 @@ export function ResourceCollection({
             }}
         >
             <div
-                className={cn("relative min-h-0 min-w-0", !compact && "h-full")}
+                className={cn(
+                    "relative min-h-0 min-w-0",
+                    !compact && "md:h-full md:flex-1",
+                )}
             >
                 <div
                     ref={viewport}
                     data-slot="resource-collection"
                     aria-busy={result.isFetching}
                     className={cn(
-                        "flex min-h-0 min-w-0 flex-col gap-3",
+                        "flex min-h-0 min-w-0 flex-col gap-4",
                         !compact &&
-                            "h-full overflow-x-hidden overflow-y-auto overscroll-contain",
+                            "md:h-full md:overflow-x-hidden md:overflow-y-auto md:overscroll-contain",
                     )}
                     onDoubleClick={(event) => {
                         if (
@@ -982,78 +1090,98 @@ export function ResourceCollection({
                             retry={() => rollups.refetch()}
                         />
                     )}
-                    {views.length > 0 && (
-                        <CollectionViews
-                            icons={tabIcons}
-                            panelId={panelId}
-                            resource={resource}
-                            views={views}
-                            active={activeView!.id}
-                            fixedFilters={fixedFilters}
-                            onChange={(next) => update("view", next, true)}
-                        />
-                    )}
-                    <div
-                        id={panelId}
-                        role={views.length ? "tabpanel" : undefined}
-                        aria-labelledby={
-                            views.length
-                                ? collectionViewTabId(panelId, activeView!.id)
-                                : undefined
+                    <CollectionSurface
+                        compact={compact}
+                        navigation={
+                            views.length > 0 ? (
+                                <CollectionViews
+                                    icons={tabIcons}
+                                    panelId={panelId}
+                                    resource={resource}
+                                    views={views}
+                                    active={activeView!.id}
+                                    fixedFilters={fixedFilters}
+                                    onChange={(next) =>
+                                        update("view", next, true)
+                                    }
+                                />
+                            ) : undefined
                         }
-                        className="flex min-h-0 flex-1 flex-col gap-3"
                     >
-                        {toolbar && (
-                            <div className="space-y-3">
-                                {filterable && !!builderDefinitions.length ? (
-                                    <ResourceFilters
-                                        definitions={builderDefinitions}
-                                        value={filters}
-                                        onChange={(next) =>
-                                            update("filters", next, true)
-                                        }
-                                        renderToolbar={renderToolbar}
-                                    />
-                                ) : (
-                                    renderToolbar()
-                                )}
-                            </div>
-                        )}
-                        {result.isFetching && !result.isPending && (
-                            <div
-                                data-slot="collection-table-progress"
-                                role="status"
-                                aria-label="Tabellendaten werden aktualisiert"
-                                className="relative h-0.5 shrink-0 overflow-hidden rounded bg-muted"
-                            >
-                                <div className="h-full w-full animate-pulse bg-primary/40" />
-                            </div>
-                        )}
-                        {result.error ? (
-                            <ErrorState
-                                error={result.error}
-                                retry={() => result.refetch()}
-                            />
-                        ) : (
-                            <>
+                        <div
+                            id={panelId}
+                            role={views.length ? "tabpanel" : undefined}
+                            aria-labelledby={
+                                views.length
+                                    ? collectionViewTabId(
+                                          panelId,
+                                          activeView!.id,
+                                      )
+                                    : undefined
+                            }
+                            className="relative flex min-w-0 flex-col md:min-h-0 md:flex-1"
+                        >
+                            {toolbar && (
                                 <div
-                                    inert={result.isPlaceholderData}
                                     className={cn(
-                                        "min-h-0",
-                                        result.isPlaceholderData &&
-                                            "pointer-events-none opacity-60",
-                                        compact
-                                            ? "max-h-[32rem] overflow-hidden"
-                                            : stackedRows
-                                              ? "min-h-64 flex-1 overflow-hidden"
-                                              : "min-h-24 flex-1 overflow-hidden",
+                                        "shrink-0 space-y-3",
+                                        !compact ? "p-3 sm:p-4" : "pb-3",
                                     )}
                                 >
-                                    {grouped && rows.length > 0 ? (
-                                        <TableViewport compact={compact}>
-                                            <div className="space-y-4">
-                                                {Object.entries(grouped).map(
-                                                    ([key, items]) => (
+                                    {filterable &&
+                                    !!builderDefinitions.length ? (
+                                        <ResourceFilters
+                                            definitions={builderDefinitions}
+                                            value={filters}
+                                            onChange={(next) =>
+                                                update("filters", next, true)
+                                            }
+                                            renderToolbar={renderToolbar}
+                                        />
+                                    ) : (
+                                        renderToolbar()
+                                    )}
+                                </div>
+                            )}
+                            {result.isFetching && !result.isPending && (
+                                <div
+                                    data-slot="collection-table-progress"
+                                    role="status"
+                                    aria-label="Tabellendaten werden aktualisiert"
+                                    className="pointer-events-none absolute inset-x-0 top-0 z-20 h-0.5 overflow-hidden bg-muted"
+                                >
+                                    <div className="h-full w-full animate-pulse bg-primary/40" />
+                                </div>
+                            )}
+                            {result.error ? (
+                                <ErrorState
+                                    error={result.error}
+                                    retry={() => result.refetch()}
+                                />
+                            ) : (
+                                <>
+                                    <div
+                                        inert={result.isPlaceholderData}
+                                        className={cn(
+                                            "min-h-0",
+                                            result.isPlaceholderData &&
+                                                "pointer-events-none opacity-60",
+                                            compact
+                                                ? "max-h-[32rem] overflow-hidden"
+                                                : stackedRows
+                                                  ? "min-h-64 md:flex-1 md:overflow-hidden"
+                                                  : "min-h-24 md:flex-1 md:overflow-hidden",
+                                        )}
+                                    >
+                                        {grouped && rows.length > 0 ? (
+                                            <TableViewport
+                                                compact={compact}
+                                                pageFlow={!compact}
+                                            >
+                                                <div className="space-y-4">
+                                                    {Object.entries(
+                                                        grouped,
+                                                    ).map(([key, items]) => (
                                                         <section
                                                             key={key}
                                                             className="overflow-hidden rounded-xl border"
@@ -1133,64 +1261,79 @@ export function ResourceCollection({
                                                                 />
                                                             )}
                                                         </section>
-                                                    ),
+                                                    ))}
+                                                </div>
+                                            </TableViewport>
+                                        ) : (
+                                            <DataGridContainer
+                                                className={cn(
+                                                    !compact && "md:h-full",
                                                 )}
-                                            </div>
-                                        </TableViewport>
-                                    ) : (
-                                        <DataGridContainer
-                                            className={cn(!compact && "h-full")}
-                                        >
-                                            {!stackedRows &&
-                                            rows.length > 0 &&
-                                            (virtualized === true ||
-                                                (virtualized === "auto" &&
-                                                    rows.length >= 50)) &&
-                                            !result.isPending ? (
-                                                <DataGridTableVirtual
-                                                    height={
-                                                        compact ? 480 : "100%"
-                                                    }
-                                                    estimateSize={
-                                                        dense ? 36 : 44
-                                                    }
-                                                    overscan={8}
-                                                />
-                                            ) : (
-                                                <TableViewport
-                                                    compact={compact}
-                                                >
-                                                    {stackedRows ? (
-                                                        recordCards(rows)
-                                                    ) : (
-                                                        <DataGridTable />
-                                                    )}
-                                                </TableViewport>
-                                            )}
-                                        </DataGridContainer>
-                                    )}
-                                </div>
-                                <div className="shrink-0 border-t pt-3">
-                                    {paging ? (
-                                        <DataGridPagination
-                                            className="w-full"
-                                            sizes={[10, 25, 50, 100]}
-                                        />
-                                    ) : (
-                                        <p className="text-xs text-muted-foreground">
-                                            {rows.length} von{" "}
-                                            {result.data?.total ?? 0} Einträgen
-                                            · maximal 100 ohne Seitennavigation
-                                        </p>
-                                    )}
-                                </div>
-                            </>
-                        )}
-                    </div>
+                                            >
+                                                {!stackedRows &&
+                                                rows.length > 0 &&
+                                                (virtualized === true ||
+                                                    (virtualized === "auto" &&
+                                                        rows.length >= 50)) &&
+                                                !result.isPending ? (
+                                                    <DataGridTableVirtual
+                                                        height={
+                                                            compact
+                                                                ? 480
+                                                                : "100%"
+                                                        }
+                                                        estimateSize={
+                                                            dense ? 36 : 44
+                                                        }
+                                                        overscan={8}
+                                                    />
+                                                ) : (
+                                                    <TableViewport
+                                                        compact={compact}
+                                                        pageFlow={!compact}
+                                                    >
+                                                        {stackedRows ? (
+                                                            recordCards(rows)
+                                                        ) : (
+                                                            <DataGridTable />
+                                                        )}
+                                                    </TableViewport>
+                                                )}
+                                            </DataGridContainer>
+                                        )}
+                                    </div>
+                                    <div
+                                        className={cn(
+                                            "shrink-0 border-t bg-card",
+                                            compact
+                                                ? "pt-3"
+                                                : "sticky bottom-0 z-10 rounded-b-xl px-3 py-3 sm:px-4 md:static",
+                                        )}
+                                    >
+                                        {paging ? (
+                                            <DataGridPagination
+                                                className="w-full"
+                                                compact={compactControls}
+                                                sizes={[10, 25, 50, 100]}
+                                            />
+                                        ) : (
+                                            <p className="text-xs text-muted-foreground">
+                                                {rows.length} von{" "}
+                                                {result.data?.total ?? 0}{" "}
+                                                Einträgen · maximal 100 ohne
+                                                Seitennavigation
+                                            </p>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </CollectionSurface>
                 </div>
                 {selectedRows.length > 0 && !result.isPlaceholderData && (
                     <BulkActionBar
                         count={selectedRows.length}
+                        pageFlow={!compact}
                         onClear={() => setSelection({})}
                     >
                         <ActionButtons

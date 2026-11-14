@@ -63,7 +63,9 @@ export function AppShell({
     const [mobile, setMobile] = useState(false);
     const [compact, setCompact] = useState(() => {
         try {
-            return window.localStorage.getItem("nexthv.sidebar.compact") === "1";
+            return (
+                window.localStorage.getItem("nexthv.sidebar.compact") === "1"
+            );
         } catch {
             return false;
         }
@@ -73,15 +75,27 @@ export function AppShell({
     const scrollArea = useRef<HTMLElement>(null);
     const navigate = useNavigate();
     const navigationItems = useMemo(
-        () => resolveNavigation(
-            navigation ?? defaultNavigation(resources, navigationGroups),
+        () =>
+            resolveNavigation(
+                navigation ?? defaultNavigation(resources, navigationGroups),
+                resources,
+                user,
+            ),
+        [
             resources,
-            user,
-        ),
-        [resources, navigation, navigationGroups, user.id, user.name, user.email],
+            navigation,
+            navigationGroups,
+            user.id,
+            user.name,
+            user.email,
+        ],
     );
     const controls = useSidebarExpansion(navigationItems, user.id);
-    const trail = navigationPath(navigationItems, location.pathname, location.search);
+    const trail = navigationPath(
+        navigationItems,
+        location.pathname,
+        location.search,
+    );
     const leaf = trail.at(-1);
     const current = resources.find(
         (resource) =>
@@ -92,19 +106,29 @@ export function AppShell({
         (resource) => location.pathname === `/${resource.name}`,
     );
     const currentTitle = current
-        ? leaf?.view ? `${current.label} · ${leaf.label}` : current.label
-        : location.pathname === "/components" ? "Komponenten" : "Übersicht";
+        ? leaf?.view
+            ? `${current.label} · ${leaf.label}`
+            : current.label
+        : location.pathname === "/components"
+          ? "Komponenten"
+          : "Übersicht";
 
     useEffect(() => {
         try {
-            window.localStorage.setItem("nexthv.sidebar.compact", compact ? "1" : "0");
+            window.localStorage.setItem(
+                "nexthv.sidebar.compact",
+                compact ? "1" : "0",
+            );
         } catch {
             // Optional workspace preference.
         }
     }, [compact]);
     useEffect(() => {
         const shortcut = (event: KeyboardEvent) => {
-            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+            if (
+                (event.metaKey || event.ctrlKey) &&
+                event.key.toLowerCase() === "k"
+            ) {
                 event.preventDefault();
                 setSearch((open) => !open);
             }
@@ -129,7 +153,12 @@ export function AppShell({
                 onNavigate={() => setMobile(false)}
                 onExpandRail={() => setCompact(false)}
             />
-            <div className={cn("space-y-3 border-t p-3", rail && "px-2")}>
+            <div
+                className={cn(
+                    "shrink-0 space-y-2 border-t p-3",
+                    rail && "px-2",
+                )}
+            >
                 <NavLink
                     to="/components"
                     onClick={() => setMobile(false)}
@@ -154,8 +183,12 @@ export function AppShell({
                     <PersonAvatar person={{ id: "me", name: user.name }} />
                     {!rail && (
                         <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-medium">{user.name}</p>
-                            <p className="truncate text-[10px] text-muted-foreground">{user.email}</p>
+                            <p className="truncate text-xs font-medium">
+                                {user.name}
+                            </p>
+                            <p className="truncate text-[10px] text-muted-foreground">
+                                {user.email}
+                            </p>
                         </div>
                     )}
                     <Button
@@ -171,10 +204,11 @@ export function AppShell({
             </div>
         </>
     );
-    const commandEntries = (section: NavigationItem) => [
-        ...(section.to ? [section] : []),
-        ...flattenNavigation(section.children),
-    ].filter((item) => item.to && !item.disabledReason);
+    const commandEntries = (section: NavigationItem) =>
+        [
+            ...(section.to ? [section] : []),
+            ...flattenNavigation(section.children),
+        ].filter((item) => item.to && !item.disabledReason);
     return (
         <div
             data-slot="app-shell"
@@ -182,9 +216,14 @@ export function AppShell({
         >
             <header
                 data-slot="shell-header"
-                className="z-20 flex h-14 shrink-0 items-center gap-3 border-b bg-card px-4 lg:px-5"
+                className="z-20 flex h-13 shrink-0 items-center gap-3 border-b bg-card px-3 sm:px-4"
             >
-                <div className="flex shrink-0 items-center gap-3 lg:w-60">
+                <div
+                    className={cn(
+                        "flex shrink-0 items-center gap-3",
+                        compact ? "lg:w-auto" : "lg:w-[204px]",
+                    )}
+                >
                     <Button
                         variant="ghost"
                         size="icon-sm"
@@ -207,19 +246,33 @@ export function AppShell({
                     </Button>
                 </div>
                 <span className="hidden h-5 border-l sm:block" aria-hidden />
-                <nav aria-label="Seitenpfad" className="flex min-w-0 items-center gap-2 text-xs">
-                    <Link to="/" className="hidden text-muted-foreground hover:text-foreground md:inline">
+                <nav
+                    aria-label="Seitenpfad"
+                    className="flex min-w-0 items-center gap-2 text-xs"
+                >
+                    <Link
+                        to="/"
+                        className="hidden text-muted-foreground hover:text-foreground md:inline"
+                    >
                         Arbeitsbereich
                     </Link>
                     {trail.slice(0, -1).map((item) => (
-                        <span key={item.id} className="hidden min-w-0 items-center gap-2 md:inline-flex">
+                        <span
+                            key={item.id}
+                            className="hidden min-w-0 items-center gap-2 md:inline-flex"
+                        >
                             <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
                             {item.to ? (
-                                <Link to={item.to} className="truncate text-muted-foreground hover:text-foreground">
+                                <Link
+                                    to={item.to}
+                                    className="truncate text-muted-foreground hover:text-foreground"
+                                >
                                     {item.label}
                                 </Link>
                             ) : (
-                                <span className="truncate text-muted-foreground">{item.label}</span>
+                                <span className="truncate text-muted-foreground">
+                                    {item.label}
+                                </span>
                             )}
                         </span>
                     ))}
@@ -233,14 +286,19 @@ export function AppShell({
                 <aside
                     className={cn(
                         "hidden shrink-0 flex-col border-r bg-sidebar lg:flex",
-                        compact ? "w-16" : "w-72",
+                        compact ? "w-16" : "w-60",
                     )}
                 >
                     {sidebar(compact)}
                 </aside>
                 <Sheet open={mobile} onOpenChange={setMobile}>
-                    <SheetContent side="left" className="w-72 gap-0 bg-sidebar p-0">
-                        <div className="px-5 py-5"><Brand /></div>
+                    <SheetContent
+                        side="left"
+                        className="w-72 gap-0 bg-sidebar p-0"
+                    >
+                        <div className="px-5 py-5">
+                            <Brand />
+                        </div>
                         <SheetTitle className="sr-only">Navigation</SheetTitle>
                         <SheetDescription className="sr-only">
                             Bereiche deiner Hausverwaltung öffnen.
@@ -251,7 +309,7 @@ export function AppShell({
                 <main
                     ref={scrollArea}
                     data-slot="workspace-scroll"
-                    className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
+                    className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain md:[scrollbar-gutter:stable]"
                 >
                     <PageWrapper mode={collection ? "collection" : "page"}>
                         {children}
@@ -271,7 +329,11 @@ export function AppShell({
                         {navigationItems.map((section) => (
                             <CommandGroup
                                 key={section.id}
-                                heading={section.to ? "Arbeitsbereich" : section.label}
+                                heading={
+                                    section.to
+                                        ? "Arbeitsbereich"
+                                        : section.label
+                                }
                             >
                                 {commandEntries(section).map((item) => {
                                     const Icon = item.icon;
@@ -282,7 +344,8 @@ export function AppShell({
                                             onSelect={() => go(item.to!)}
                                         >
                                             {Icon && <Icon />}
-                                            {item.resource && item.label !== item.resource.label
+                                            {item.resource &&
+                                            item.label !== item.resource.label
                                                 ? `${item.resource.label} · ${item.label}`
                                                 : item.label}
                                         </CommandItem>
@@ -311,10 +374,10 @@ export function PageWrapper({
             data-slot="page-wrapper"
             data-mode={mode}
             className={cn(
-                "mx-auto w-full min-w-0 p-4 lg:p-6",
+                "mx-auto w-full min-w-0 px-3 py-4 sm:p-5 lg:p-6",
                 width === "workspace" ? "max-w-[1440px]" : "max-w-5xl",
                 mode === "collection"
-                    ? "flex h-full min-h-0 flex-col overflow-hidden"
+                    ? "flex min-h-full flex-col md:h-full md:min-h-0 md:overflow-hidden"
                     : "min-h-full pb-10",
             )}
         >
@@ -383,7 +446,7 @@ export function Muted({ children }: { children: ReactNode }) {
 
 export function CollectionPage({ children }: { children: ReactNode }) {
     return (
-        <div className="flex h-full w-full min-h-0 flex-1 flex-col gap-5 [&>div:not(:last-child)]:shrink-0">
+        <div className="flex w-full min-w-0 flex-col gap-4 md:h-full md:min-h-0 md:flex-1 [&>div:not(:last-child)]:shrink-0">
             {children}
         </div>
     );

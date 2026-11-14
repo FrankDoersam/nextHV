@@ -15,6 +15,7 @@ export interface NavigationTab {
     label: string;
     count?: number | null;
     icon?: LucideIcon;
+    domId?: string;
 }
 
 const itemStyle =
@@ -41,11 +42,17 @@ export function ResponsiveTabList({
     active,
     onChange,
     icons = true,
+    ariaLabel = "Bereiche",
+    panelId,
+    moreLabel = "Weitere Bereiche",
 }: {
     tabs: NavigationTab[];
     active: string;
     onChange: (id: string) => void;
     icons?: boolean;
+    ariaLabel?: string;
+    panelId?: string;
+    moreLabel?: string;
 }) {
     const container = useRef<HTMLDivElement>(null);
     const measure = useRef<HTMLDivElement>(null);
@@ -122,13 +129,15 @@ export function ResponsiveTabList({
             </div>
             <TabsList
                 variant="line"
-                aria-label="Bereiche"
+                aria-label={ariaLabel}
                 className="min-w-0 shrink gap-0 data-[orientation=horizontal]:h-11"
             >
                 {visible.map((tab) => (
                     <TabsTrigger
                         key={tab.id}
                         value={tab.id}
+                        id={tab.domId}
+                        aria-controls={panelId}
                         className={cn(
                             itemStyle,
                             "min-w-0 shrink group-data-[variant=line]/tabs-list:data-active:text-foreground after:bg-foreground",
@@ -145,7 +154,7 @@ export function ResponsiveTabList({
                             <Button
                                 variant="ghost"
                                 className="h-11 shrink-0 gap-2 rounded-none px-3 text-muted-foreground"
-                                aria-label="Weitere Bereiche"
+                                aria-label={moreLabel}
                             />
                         }
                     >

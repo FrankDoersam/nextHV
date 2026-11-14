@@ -1,11 +1,24 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { Building2 } from "lucide-react";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { ResourceDefinition } from "@/framework/types";
 import { CollectionLoading } from "./collection-loading";
 
-afterEach(cleanup);
+beforeEach(() => {
+    vi.stubGlobal(
+        "ResizeObserver",
+        class {
+            observe() {}
+            disconnect() {}
+            unobserve() {}
+        },
+    );
+});
+afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+});
 
 it("renders view tabs above the table skeleton during route loading", () => {
     const resource = {
@@ -18,13 +31,20 @@ it("renders view tabs above the table skeleton during route loading", () => {
             { id: "archived", label: "Inaktiv", count: true },
         ],
     } as ResourceDefinition;
-    const { container } = render(<CollectionLoading resource={resource} activeView="archived" />);
+    const { container } = render(
+        <CollectionLoading resource={resource} activeView="archived" />,
+    );
 
     const tabs = screen.getByRole("tablist", { name: "Objekte Ansichten" });
-    const table = container.querySelector('[data-slot="collection-loading-table"]');
+    const table = container.querySelector(
+        '[data-slot="collection-loading-table"]',
+    );
     expect(table).not.toBeNull();
     expect(tabs).toContainElement(screen.getByRole("tab", { name: "Inaktiv" }));
-    expect(screen.getByRole("tab", { name: "Inaktiv" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Inaktiv" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+    );
     expect(tabs.compareDocumentPosition(table!)).toBe(
         Node.DOCUMENT_POSITION_FOLLOWING,
     );

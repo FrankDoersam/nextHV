@@ -1,6 +1,6 @@
 import { useQueries } from "@tanstack/react-query";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs } from "@/components/ui/tabs";
+import { ResponsiveTabList } from "@/components/blocks/responsive-tab-list";
 import { dataProvider } from "../data/provider";
 import type {
     CollectionViewDefinition,
@@ -40,7 +40,6 @@ export const viewCountQuery = (
         ).total,
 });
 
-
 /** Counts use the fixed relation scope plus the view query, independent of user chips/paging. */
 export function CollectionViews({
     resource,
@@ -60,7 +59,9 @@ export function CollectionViews({
     onChange: (view: string) => void;
 }) {
     const counts = useQueries({
-        queries: views.map((view) => viewCountQuery(resource, view, fixedFilters)),
+        queries: views.map((view) =>
+            viewCountQuery(resource, view, fixedFilters),
+        ),
     });
     return (
         <Tabs
@@ -68,42 +69,21 @@ export function CollectionViews({
             onValueChange={(v) => onChange(String(v))}
             className="min-w-0 shrink-0"
         >
-            <div className="min-w-0 border-b">
-                <TabsList
-                    responsive
-                    variant="line"
-                    aria-label={`${resource.label} Ansichten`}
-                    className="h-10 min-w-0"
-                >
-                    {views.map((view, i) => (
-                        <TabsTrigger
-                            key={view.id}
-                            icon={view.icon}
-                            icons={icons}
-                            value={view.id}
-                            id={collectionViewTabId(panelId, view.id)}
-                            aria-controls={panelId}
-                        >
-                            {view.label}
-                            {view.count &&
-                                (counts[i].isPending ? (
-                                    <Skeleton className="h-4 w-6" />
-                                ) : (
-                                    <span
-                                        className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] leading-4 tabular-nums"
-                                        title={
-                                            counts[i].error
-                                                ? "Anzahl derzeit nicht verfügbar"
-                                                : undefined
-                                        }
-                                    >
-                                        {counts[i].data ?? "—"}
-                                    </span>
-                                ))}
-                        </TabsTrigger>
-                    ))}
-                </TabsList>
-            </div>
+            <ResponsiveTabList
+                active={active}
+                onChange={onChange}
+                icons={icons}
+                ariaLabel={`${resource.label} Ansichten`}
+                moreLabel="Weitere Ansichten"
+                panelId={panelId}
+                tabs={views.map((view, index) => ({
+                    id: view.id,
+                    label: view.label,
+                    icon: view.icon,
+                    count: view.count ? counts[index].data : undefined,
+                    domId: collectionViewTabId(panelId, view.id),
+                }))}
+            />
         </Tabs>
     );
 }

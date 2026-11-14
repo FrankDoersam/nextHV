@@ -50,7 +50,10 @@ const resource: ResourceDefinition = {
 function Location() {
     return <output aria-label="URL">{useLocation().search}</output>;
 }
-function mount(initialEntry = "/?page=3", selectedResource: ResourceDefinition = resource) {
+function mount(
+    initialEntry = "/?page=3",
+    selectedResource: ResourceDefinition = resource,
+) {
     return render(
         <MemoryRouter initialEntries={[initialEntry]}>
             <QueryClientProvider
@@ -104,6 +107,60 @@ afterEach(() => {
     vi.restoreAllMocks();
 });
 describe("collection scopes and cells", () => {
+    it("keeps export and refresh available in the narrow toolbar and pages with previous/next controls", async () => {
+        vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(
+            390,
+        );
+        vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(
+            390,
+        );
+        vi.mocked(dataProvider.list).mockResolvedValue({
+            data: [
+                {
+                    id: 1,
+                    name: "Haus",
+                    status: "active",
+                    updated_at: "2026-01-01",
+                },
+            ],
+            total: 50,
+            current_page: 1,
+            last_page: 2,
+        });
+        const user = userEvent.setup();
+        mount("/");
+        await screen.findByText("Haus");
+
+        screen
+            .getByRole("button", { name: "Weitere Tabellenaktionen" })
+            .focus();
+        await user.keyboard("{Enter}");
+        expect(
+            await screen.findByRole("menuitem", { name: "Aktualisieren" }),
+        ).toBeVisible();
+        expect(
+            screen.getByRole("menuitem", {
+                name: "Aktuelle Seite als CSV exportieren",
+            }),
+        ).toBeEnabled();
+        await user.keyboard("{Escape}");
+        await user.click(screen.getByRole("button", { name: "Nächste Seite" }));
+
+        await waitFor(() =>
+            expect(dataProvider.list).toHaveBeenLastCalledWith(
+                resource,
+                expect.objectContaining({ page: 2 }),
+                expect.any(AbortSignal),
+            ),
+        );
+        expect(screen.getByLabelText("URL")).toHaveTextContent("page=2");
+        expect(
+            screen.getByRole("button", { name: "Vorherige Seite" }),
+        ).toBeEnabled();
+        expect(
+            screen.getByRole("combobox", { name: "Zeilen pro Seite" }),
+        ).toBeVisible();
+    });
     it("persists query tabs, resets pagination and retains parent scope with builder/grouping disabled", async () => {
         const user = userEvent.setup();
         mount();
@@ -179,7 +236,14 @@ describe("collection scopes and cells", () => {
     });
     it("shows refresh progress inside the tab panel, never above the tab strip", async () => {
         const sample = {
-            data: [{ id: 1, name: "Haus", status: "active", updated_at: "2026-01-01" }],
+            data: [
+                {
+                    id: 1,
+                    name: "Haus",
+                    status: "active",
+                    updated_at: "2026-01-01",
+                },
+            ],
             total: 80,
             current_page: 1,
             last_page: 4,
@@ -188,22 +252,33 @@ describe("collection scopes and cells", () => {
         vi.mocked(dataProvider.list)
             .mockResolvedValueOnce(sample)
             .mockImplementationOnce(
-                () => new Promise<typeof sample>((resolve) => {
-                    finishRefresh = resolve;
-                }),
+                () =>
+                    new Promise<typeof sample>((resolve) => {
+                        finishRefresh = resolve;
+                    }),
             );
         mount("/");
         await screen.findByText("Haus");
 
-        await userEvent.setup().click(screen.getByRole("button", { name: "Aktualisieren" }));
+        await userEvent
+            .setup()
+            .click(screen.getByRole("button", { name: "Aktualisieren" }));
         const panel = screen.getByRole("tabpanel");
         await waitFor(() => {
-            expect(panel.querySelector('[data-slot="collection-table-progress"]')).not.toBeNull();
+            expect(
+                panel.querySelector('[data-slot="collection-table-progress"]'),
+            ).not.toBeNull();
         });
-        expect(document.querySelectorAll('[data-slot="collection-table-progress"]')).toHaveLength(1);
+        expect(
+            document.querySelectorAll(
+                '[data-slot="collection-table-progress"]',
+            ),
+        ).toHaveLength(1);
         finishRefresh(sample);
         await waitFor(() => {
-            expect(panel.querySelector('[data-slot="collection-table-progress"]')).toBeNull();
+            expect(
+                panel.querySelector('[data-slot="collection-table-progress"]'),
+            ).toBeNull();
         });
     });
     it("validates configured view IDs and keeps unrelated nested-panel URL state", () => {
@@ -258,13 +333,15 @@ describe("collection scopes and cells", () => {
             ],
         };
         vi.mocked(dataProvider.list).mockResolvedValue({
-            data: [{
-                id: 1,
-                name: "Wohnung 01",
-                status: "active",
-                property_record: { name: "Birkenhof" },
-                updated_at: "2026-11-14",
-            }],
+            data: [
+                {
+                    id: 1,
+                    name: "Wohnung 01",
+                    status: "active",
+                    property_record: { name: "Birkenhof" },
+                    updated_at: "2026-11-14",
+                },
+            ],
             total: 1,
             current_page: 1,
             last_page: 1,
@@ -275,13 +352,15 @@ describe("collection scopes and cells", () => {
         mount(`/?sort=${encoded}`, custom);
 
         await screen.findByText("Birkenhof");
-        await waitFor(() => expect(dataProvider.list).toHaveBeenCalledWith(
-            custom,
-            expect.objectContaining({
-                sort: [{ field: "property.name", direction: "asc" }],
-            }),
-            expect.any(AbortSignal),
-        ));
+        await waitFor(() =>
+            expect(dataProvider.list).toHaveBeenCalledWith(
+                custom,
+                expect.objectContaining({
+                    sort: [{ field: "property.name", direction: "asc" }],
+                }),
+                expect.any(AbortSignal),
+            ),
+        );
     });
     it("renders related table values as plain text without automatic Cell navigation", () => {
         render(
@@ -295,7 +374,10 @@ describe("collection scopes and cells", () => {
                 column={{
                     field: "property.name",
                     label: "Objekt",
-                    reference: { resource: "properties", idField: "property_id" },
+                    reference: {
+                        resource: "properties",
+                        idField: "property_id",
+                    },
                 }}
             />,
         );

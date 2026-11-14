@@ -48,6 +48,7 @@ export function CollectionKpis({
                         ({ key, label, kind, suffix, icon, description }) => (
                             <MetricCard
                                 key={key}
+                                density="compact"
                                 label={label}
                                 icon={icon}
                                 suffix={suffix}
@@ -59,7 +60,7 @@ export function CollectionKpis({
                                           ? money(values[key])
                                           : number(values[key], 2)
                                 }
-                                hint={description}
+                                description={description}
                             />
                         ),
                     )}

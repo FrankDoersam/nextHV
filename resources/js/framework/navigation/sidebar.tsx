@@ -26,7 +26,8 @@ function storedExpansion(key: string): Expansion {
         return value && typeof value === "object" && !Array.isArray(value)
             ? Object.fromEntries(
                   Object.entries(value as Record<string, unknown>).filter(
-                      (entry): entry is [string, boolean] => typeof entry[1] === "boolean",
+                      (entry): entry is [string, boolean] =>
+                          typeof entry[1] === "boolean",
                   ),
               )
             : {};
@@ -39,7 +40,9 @@ function storedExpansion(key: string): Expansion {
 export function useSidebarExpansion(items: NavigationItem[], userId?: number) {
     const { pathname, search } = useLocation();
     const key = `nexthv.sidebar.expanded.v1.${userId ?? "current"}`;
-    const [overrides, setOverrides] = useState<Expansion>(() => storedExpansion(key));
+    const [overrides, setOverrides] = useState<Expansion>(() =>
+        storedExpansion(key),
+    );
 
     useEffect(() => {
         try {
@@ -53,7 +56,8 @@ export function useSidebarExpansion(items: NavigationItem[], userId?: number) {
         const ancestors: string[] = [];
         const visit = (item: NavigationItem): boolean => {
             const childActive = item.children.some(visit);
-            if (childActive && item.children.length > 0) ancestors.push(item.id);
+            if (childActive && item.children.length > 0)
+                ancestors.push(item.id);
             return childActive || navigationSelected(item, pathname, search);
         };
         items.forEach(visit);
@@ -70,7 +74,8 @@ export function useSidebarExpansion(items: NavigationItem[], userId?: number) {
     return {
         isOpen: (item: NavigationItem) =>
             overrides[item.id] ??
-            (item.defaultOpen ?? navigationBranchActive(item, pathname, search)),
+            item.defaultOpen ??
+            navigationBranchActive(item, pathname, search),
         setOpen: (id: string, open: boolean) =>
             setOverrides((current) => ({ ...current, [id]: open })),
     };
@@ -79,29 +84,36 @@ export function useSidebarExpansion(items: NavigationItem[], userId?: number) {
 type ExpansionControls = ReturnType<typeof useSidebarExpansion>;
 
 function NavCount({ item }: { item: NavigationItem }) {
-    const view = item.resource!.views!.find((candidate) => candidate.id === item.view)!;
+    const view = item.resource!.views!.find(
+        (candidate) => candidate.id === item.view,
+    )!;
     const query = useQuery({
         ...viewCountQuery(item.resource!, view, []),
         enabled: !item.disabledReason,
     });
     return query.isPending ? (
-            <Skeleton
-                data-slot="sidebar-count-loading"
-                className="h-4 w-6 shrink-0 rounded-md"
-            />
-        ) : (
-            <span
-                data-slot="sidebar-count"
-                className="min-w-6 shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-center text-[10px] font-medium tabular-nums text-muted-foreground"
-                title={query.isError ? "Anzahl nicht verfügbar" : undefined}
-            >
-                {query.isError ? "—" : query.data}
-            </span>
-        );
+        <Skeleton
+            data-slot="sidebar-count-loading"
+            className="h-4 w-6 shrink-0 rounded-md"
+        />
+    ) : (
+        <span
+            data-slot="sidebar-count"
+            className="min-w-6 shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-center text-[10px] font-medium tabular-nums text-muted-foreground"
+            title={query.isError ? "Anzahl nicht verfügbar" : undefined}
+        >
+            {query.isError ? "—" : query.data}
+        </span>
+    );
 }
 function NavBadge({ item }: { item: NavigationItem }) {
     if (item.disabledReason) return null;
-    if (item.count && item.resource?.views?.some((candidate) => candidate.id === item.view && candidate.count)) {
+    if (
+        item.count &&
+        item.resource?.views?.some(
+            (candidate) => candidate.id === item.view && candidate.count,
+        )
+    ) {
         return <NavCount item={item} />;
     }
     return item.badge ? (
@@ -111,12 +123,20 @@ function NavBadge({ item }: { item: NavigationItem }) {
     ) : null;
 }
 
-function NavHint({ trigger, item, rail }: {
+function NavHint({
+    trigger,
+    item,
+    rail,
+}: {
     trigger: ReactElement;
     item: NavigationItem;
     rail: boolean;
 }) {
-    const hint = [rail ? item.label : undefined, item.disabledReason, item.tooltip ?? item.description]
+    const hint = [
+        rail ? item.label : undefined,
+        item.disabledReason,
+        item.tooltip ?? item.description,
+    ]
         .filter(Boolean)
         .join(" · ");
     return hint ? (
@@ -126,7 +146,9 @@ function NavHint({ trigger, item, rail }: {
                 {hint}
             </TooltipContent>
         </Tooltip>
-    ) : trigger;
+    ) : (
+        trigger
+    );
 }
 
 function SidebarNode({
@@ -152,7 +174,12 @@ function SidebarNode({
 
     const label = (
         <>
-            {Icon && <Icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />}
+            {Icon && (
+                <Icon
+                    aria-hidden
+                    className="size-4 shrink-0 text-muted-foreground"
+                />
+            )}
             <span className="min-w-0 flex-1 truncate text-left">
                 <span className="block truncate">{item.label}</span>
                 {item.description && (
@@ -166,35 +193,36 @@ function SidebarNode({
     const rowClasses = cn(
         "flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         selected
-            ? "bg-muted font-semibold text-foreground ring-1 ring-border/50"
+            ? "bg-muted font-medium text-foreground"
             : branchActive
               ? "font-medium text-foreground hover:bg-muted/70"
-              : "font-medium text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+              : "text-foreground/80 hover:bg-muted/70 hover:text-foreground",
         item.disabledReason && "cursor-not-allowed opacity-50",
     );
-    const link = item.to && !item.disabledReason ? (
-        <Link
-            to={item.to}
-            data-slot="sidebar-link"
-            aria-current={selected ? "page" : undefined}
-            className={rowClasses}
-            onClick={onNavigate}
-        >
-            {label}
-            <NavBadge item={item} />
-        </Link>
-    ) : item.to ? (
-        <span
-            data-slot="sidebar-link-disabled"
-            role="link"
-            aria-disabled="true"
-            tabIndex={0}
-            className={rowClasses}
-        >
-            {label}
-            <NavBadge item={item} />
-        </span>
-    ) : null;
+    const link =
+        item.to && !item.disabledReason ? (
+            <Link
+                to={item.to}
+                data-slot="sidebar-link"
+                aria-current={selected ? "page" : undefined}
+                className={rowClasses}
+                onClick={onNavigate}
+            >
+                {label}
+                <NavBadge item={item} />
+            </Link>
+        ) : item.to ? (
+            <span
+                data-slot="sidebar-link-disabled"
+                role="link"
+                aria-disabled="true"
+                tabIndex={0}
+                className={rowClasses}
+            >
+                {label}
+                <NavBadge item={item} />
+            </span>
+        ) : null;
 
     if (!hasChildren) {
         return link ? (
@@ -209,7 +237,7 @@ function SidebarNode({
             data-level={level}
             open={open}
             onOpenChange={(next) => controls.setOpen(item.id, next)}
-            className={cn("min-w-0", level === 0 && "pt-4 first:pt-0")}
+            className={cn("min-w-0", level === 0 && "pt-3 first:pt-0")}
         >
             {link ? (
                 <div className="flex min-w-0 items-center gap-1">
@@ -220,7 +248,12 @@ function SidebarNode({
                         aria-label={`${item.label} Unterpunkte ${open ? "einklappen" : "ausklappen"}`}
                         className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                        <ChevronRight className={cn("size-3.5 transition-transform", open && "rotate-90")} />
+                        <ChevronRight
+                            className={cn(
+                                "size-3.5 transition-transform",
+                                open && "rotate-90",
+                            )}
+                        />
                     </Collapsible.Trigger>
                 </div>
             ) : (
@@ -229,10 +262,17 @@ function SidebarNode({
                     title={item.tooltip ?? item.description}
                 >
                     <span className="truncate">{item.label}</span>
-                    <ChevronRight className={cn("size-3 shrink-0 transition-transform", open && "rotate-90")} />
+                    <ChevronRight
+                        className={cn(
+                            "size-3 shrink-0 transition-transform",
+                            open && "rotate-90",
+                        )}
+                    />
                 </Collapsible.Trigger>
             )}
-            <Collapsible.Panel className={cn("min-w-0", level > 0 && "ml-4 border-l pl-2")}>
+            <Collapsible.Panel
+                className={cn("min-w-0", level > 0 && "ml-4 border-l pl-2")}
+            >
                 <div className="space-y-0.5 pt-1">
                     {item.children.map((child) => (
                         <SidebarNode
@@ -289,7 +329,11 @@ export function SidebarNavigation({
                         {railItems.map((item, index) => {
                             const Icon = item.icon;
                             if (!Icon) return null;
-                            const selected = navigationBranchActive(item, pathname, search);
+                            const selected = navigationBranchActive(
+                                item,
+                                pathname,
+                                search,
+                            );
                             const trigger = item.disabledReason ? (
                                 <span
                                     role="link"
@@ -332,7 +376,9 @@ export function SidebarNavigation({
                                     key={item.id}
                                     className={cn(
                                         "flex justify-center",
-                                        index > 0 && item.id !== "home" && "first:border-t",
+                                        index > 0 &&
+                                            item.id !== "home" &&
+                                            "first:border-t",
                                     )}
                                 >
                                     <NavHint
