@@ -1,0 +1,35 @@
+name: One-time authorized branch cleanup
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/cleanup-branches.yml]
+permissions:
+  contents: write
+jobs:
+  cleanup:
+    if: github.event.head_commit.message == 'chore: remove obsolete branches at user request (20261114)'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Remove the nine reviewed branches; preserve main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: python
+        run: |
+          import json, os, urllib.request, urllib.parse
+          base = "https://api.github.com/repos/" + os.environ["GITHUB_REPOSITORY"]
+          headers = {"Authorization": "Bearer " + os.environ["GH_TOKEN"], "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
+          branches = [{"name":"codex/ui-shell-unified-20261114","sha":"257139fe214f1ea3f9685de95e2a708e39995451"},{"name":"codex/ui-shell-wizard-screenshot-followup-20261114","sha":"4bb1b16ec24461e5b2ef4094fdef600532bfb990"},{"name":"feat/compact-shell-wizard-collection-controls-20261114","sha":"b579b1806f6f553d490b03e027c140bae05e1345"},{"name":"feat/enterprise-shell-wizard-table-controls-20261114","sha":"18830a4913104e8bb592a780ced34ae351d79ee5"},{"name":"feat/global-grid-row-navigation-20261114","sha":"2632c4187a421a66744e4abafe980afe3cfdbfc2"},{"name":"feat/headless-table-engine-20261114","sha":"806ad3e33e7b2e8418a6c49c29f2babf9a07acfe"},{"name":"fix/filter-chip-relation-overflow-20261114","sha":"4f27d6fcb2b6a74aa3d7f1d53ed69f43b0720806"},{"name":"fix/related-sort-alias-screenshot-20261114","sha":"0ec5d02a11732acccd58f4d31c63800b41b3f5fc"},{"name":"fix/unit-property-sort-and-reference-cells-20261114","sha":"6899059a93cab9290873fa87b9268cc45b98cf61"}]
+          for branch in branches:
+              name = branch["name"]
+              if name == "main":
+                  raise RuntimeError("main must never be deleted")
+              path = "/git/refs/heads/" + urllib.parse.quote(name, safe="/")
+              with urllib.request.urlopen(urllib.request.Request(base + path, headers=headers)) as response:
+                  current = json.load(response)["object"]["sha"]
+              if current != branch["sha"]:
+                  raise RuntimeError("Branch changed; refusing deletion: " + name)
+              with urllib.request.urlopen(urllib.request.Request(base + path, headers=headers, method="DELETE")) as response:
+                  assert response.status == 204
+              print("Deleted " + name)
+          
