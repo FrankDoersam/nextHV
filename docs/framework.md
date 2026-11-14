@@ -1517,7 +1517,7 @@ Der Schema-Adapter erkennt `BelongsTo`-Spalten wie `contract.code` und erzeugt d
 
 Browseraufnahmen `40`–`44` prüfen die einspaltige Rollentabelle, CSV-Beschriftungen, Suche/Navigation über Vertragsnummern, das kontextgebundene Bearbeiten, Tabs bei 390/768 px und die Einheiten-Auswahl mit Objektbezug. Backendtests prüfen zusätzlich kombinierte Suchbegriffe, wörtliche Wildcard-Zeichen und den unveränderten Elternfilter.
 
-Die umfangreiche Screenshot-Tour berücksichtigt vor dem zusätzlichen Szenarioblock die Rate-Limit-Header des Servers und wartet bei knappem Anfragebudget auf dessen Rücksetzung. Das produktive API-Limit bleibt unverändert.
+Die umfangreiche Screenshot-Tour berücksichtigt an Aufnahmegrenzen und vor zusätzlichen Szenarioblöcken die Rate-Limit-Header des Servers. Bei knappem Anfragebudget wartet sie auf die Rücksetzung und beginnt die Budgetmessung neu; damit werden auch zusätzliche Sidebar-Count-Abfragen berücksichtigt. Das Testzeitlimit von 180 Sekunden umfasst diese möglichen Wartezeiten. Das produktive API-Limit bleibt unverändert.
 
 ## 36. REUI-orientierte Bereichsnavigation und einzelne Kennzahlenkarten
 

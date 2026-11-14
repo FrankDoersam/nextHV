@@ -21,6 +21,16 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         else if (!apiResetAt) apiResetAt = Date.now() + 61_000;
     });
     page.on("pageerror", (error) => errors.push(error.message));
+    const reserveApiBudget = async (minimum = 25) => {
+        if (apiRemaining >= minimum) return;
+        if (apiResetAt > Date.now()) {
+            await new Promise((resolve) =>
+                setTimeout(resolve, apiResetAt - Date.now() + 250),
+            );
+        }
+        apiRemaining = Infinity;
+        apiResetAt = 0;
+    };
     await mkdir("screenshots", { recursive: true });
     await page.clock.setFixedTime(new Date("2026-11-13T10:00:00+01:00"));
     const checkPageWidth = async () => {
@@ -41,6 +51,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         await checkPageWidth();
     };
     const capture = async (name: string) => {
+        await reserveApiBudget();
         await page.evaluate(() => document.fonts.ready);
         await expect(
             page.getByRole("status", { name: "Wird geladen", exact: true }),
@@ -845,11 +856,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await capture("34-einheit-kontext-link");
     // The capture tour is faster than human navigation. Respect the server's
     // remaining request budget before starting the next batch of scenarios.
-    if (apiRemaining < 60 && apiResetAt > Date.now()) {
-        await new Promise((resolve) =>
-            setTimeout(resolve, apiResetAt - Date.now() + 250),
-        );
-    }
+    await reserveApiBudget(60);
     await page.goto("/business-partners");
     await page
         .getByRole("textbox", { name: "Geschäftspartner durchsuchen" })
