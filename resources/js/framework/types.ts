@@ -135,6 +135,8 @@ export interface ColumnDefinition {
     hideable?: boolean;
     cell?: CellDefinition;
     options?: { value: string | number; label: string }[];
+    /** Canonical REST sort path for a related display column (e.g. property_record.name → property.name). */
+    sortField?: string;
     reference?: false | { resource: string; idField: string };
     exportValue?: (row: RecordData) => string | number | null;
     render?: (row: RecordData) => ReactNode;
