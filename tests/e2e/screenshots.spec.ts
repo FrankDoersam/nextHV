@@ -30,6 +30,14 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         await expect(
             page.getByRole("status", { name: "Wird geladen", exact: true }),
         ).toHaveCount(0);
+        if (name !== "17-grid-loading") {
+            await expect(
+                page.getByRole("status", {
+                    name: "Tabelle wird geladen",
+                    exact: true,
+                }),
+            ).toHaveCount(0);
+        }
         await checkPageWidth();
         await page.screenshot({
             path: `screenshots/${name}.png`,
@@ -365,6 +373,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
             name: "Ein Baukasten. Klare Konventionen.",
         }),
     ).toBeVisible();
+    await capture("27-zelltypen");
     await expect(page.locator('[data-slot="choice-selection"]')).toContainText(
         "Verwaltungspaket",
     );
@@ -457,7 +466,13 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(
         unitView.getByRole("heading", { name: "Einheit bearbeiten" }),
     ).toBeVisible();
+<<<<<<< HEAD
     await expect(unitView.getByLabel("Balkon", { exact: true })).toBeVisible();
+=======
+    await expect(
+        unitView.getByRole("checkbox", { name: "Balkon", exact: true }),
+    ).toBeVisible();
+>>>>>>> d84bd32fabc2088ed0399211f16344a01eaf917d
     await expect(unitView.getByLabel("Nummer", { exact: false })).toHaveCount(
         0,
     );

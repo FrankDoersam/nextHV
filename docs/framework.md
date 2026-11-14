@@ -658,7 +658,11 @@ Bereits im Cache vorhandene Fremdschlüssel-Eltern werden gezielt als einzelne D
 20. `20-date-picker-sheet.png`
 21. `21-date-picker-dialog.png`
 
+<<<<<<< HEAD
 Zusätzliche Aufnahmen zeigen `00-anmeldung.png`, `00-anmeldung-mobil.png`, `22-dashboard-bestand.png`, `23-einheiten-objektfilter.png`, `24-einheit-view-sheet.png`, `25-einheit-abschnitt-edit.png` und `26-einheit-edit-regionen.png`. Die verbindliche Liste steht in `tests/e2e/screenshots.spec.ts`; die Dateinamen dokumentieren geplante Aufnahmen, keinen Nachweis eines bereits erfolgreichen Jobs.
+=======
+Zusätzliche Aufnahmen zeigen `00-anmeldung.png`, `00-anmeldung-mobil.png`, `22-dashboard-bestand.png`, `23-einheiten-objektfilter.png`, `24-einheit-view-sheet.png`, `25-einheit-abschnitt-edit.png`, `26-einheit-edit-regionen.png` und `27-zelltypen.png`. Die verbindliche Liste steht in `tests/e2e/screenshots.spec.ts`; die Dateinamen dokumentieren geplante Aufnahmen, keinen Nachweis eines bereits erfolgreichen Jobs.
+>>>>>>> d84bd32fabc2088ed0399211f16344a01eaf917d
 
 Die Suite prüft außerdem, dass der aktive Tab-Inhalt unterhalb der Tab-Leiste die verfügbare Breite nutzt, kein horizontaler Seitenüberlauf entsteht und die Vertragsansicht samt Edit-Sheet bei 390 px funktioniert. Der Zeitraum muss vor dem ersten Öffnen „Dieser Monat“ anzeigen.
 
