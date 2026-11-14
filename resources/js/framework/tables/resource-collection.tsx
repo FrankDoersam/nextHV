@@ -1042,7 +1042,9 @@ export function ResourceCollection({
                                             "pointer-events-none opacity-60",
                                         compact
                                             ? "max-h-[32rem] overflow-hidden"
-                                            : "min-h-24 flex-1 overflow-hidden",
+                                            : stackedRows
+                                              ? "min-h-64 flex-1 overflow-hidden"
+                                              : "min-h-24 flex-1 overflow-hidden",
                                     )}
                                 >
                                     {grouped && rows.length > 0 ? (
