@@ -76,14 +76,13 @@ export function useSidebarExpansion(items: NavigationItem[], userId?: number) {
 
 type ExpansionControls = ReturnType<typeof useSidebarExpansion>;
 
-function NavBadge({ item }: { item: NavigationItem }) {
-    const view = item.resource?.views?.find((candidate) => candidate.id === item.view);
+function NavCount({ item }: { item: NavigationItem }) {
+    const view = item.resource!.views!.find((candidate) => candidate.id === item.view)!;
     const query = useQuery({
-        ...viewCountQuery(item.resource!, view!, []),
-        enabled: !!item.count && !!view?.count && !item.disabledReason,
+        ...viewCountQuery(item.resource!, view, []),
+        enabled: !item.disabledReason,
     });
-    if (item.count && view?.count) {
-        return query.isPending ? (
+    return query.isPending ? (
             <Skeleton
                 data-slot="sidebar-count-loading"
                 className="h-4 w-6 shrink-0 rounded-md"
@@ -97,6 +96,10 @@ function NavBadge({ item }: { item: NavigationItem }) {
                 {query.isError ? "—" : query.data}
             </span>
         );
+}
+function NavBadge({ item }: { item: NavigationItem }) {
+    if (item.count && item.resource?.views?.some((candidate) => candidate.id === item.view && candidate.count)) {
+        return <NavCount item={item} />;
     }
     return item.badge ? (
         <span className="shrink-0 rounded-md bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">
