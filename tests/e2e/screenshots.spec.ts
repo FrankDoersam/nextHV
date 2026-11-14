@@ -1,10 +1,25 @@
 import { expect, test } from "@playwright/test";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 
 test("capture dashboard, contracts table, detail, create and edit with responsive layout checks", async ({
     page,
 }) => {
     const errors: string[] = [];
+    let apiRemaining = Infinity;
+    let apiResetAt = 0;
+    page.on("response", (response) => {
+        if (!response.url().includes("/api/v1/")) return;
+        const headers = response.headers();
+        const remaining = Number(headers["x-ratelimit-remaining"]);
+        const resetAt = Number(headers["x-ratelimit-reset"]) * 1000;
+        if (!Number.isFinite(remaining)) return;
+        apiRemaining = Math.min(apiRemaining, remaining);
+        // Laravel includes Reset only on 429. Its one-minute window starts
+        // no later than the first response; reserve one second for rounding.
+        if (Number.isFinite(resetAt) && resetAt > 0)
+            apiResetAt = resetAt + 1000;
+        else if (!apiResetAt) apiResetAt = Date.now() + 61_000;
+    });
     page.on("pageerror", (error) => errors.push(error.message));
     await mkdir("screenshots", { recursive: true });
     await page.clock.setFixedTime(new Date("2026-11-13T10:00:00+01:00"));
@@ -828,5 +843,127 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(lockedProperty).toBeDisabled();
     await expect(lockedProperty).toHaveValue("Lindenhöfe");
     await capture("34-einheit-kontext-link");
+    // The capture tour is faster than human navigation. Respect the server's
+    // remaining request budget before starting the next batch of scenarios.
+    if (apiRemaining < 60 && apiResetAt > Date.now()) {
+        await new Promise((resolve) =>
+            setTimeout(resolve, apiResetAt - Date.now() + 250),
+        );
+    }
+    await page.goto("/business-partners");
+    await page
+        .getByRole("textbox", { name: "Geschäftspartner durchsuchen" })
+        .fill("Demo Müller 1");
+    await page.locator('button[title="Demo Müller 1"]').click();
+    await page.getByRole("tab", { name: "Rollen", exact: true }).click();
+    const roleTable = page.getByRole("table");
+    await expect(roleTable.getByText("Mieter", { exact: true })).toBeVisible();
+    const roleRow = roleTable.getByRole("row").filter({ hasText: "Mieter" });
+    const roleCells = roleRow.getByRole("cell");
+    const roleWidth = (await roleCells.nth(1).boundingBox())!.width;
+    const tableBox = (await roleTable.boundingBox())!;
+    const actionBox = (await roleRow
+        .getByRole("button", { name: /^Aktionen für / })
+        .boundingBox())!;
+    expect(roleWidth).toBeGreaterThan(tableBox.width * 0.8);
+    expect(
+        tableBox.x + tableBox.width - actionBox.x - actionBox.width,
+    ).toBeLessThan(32);
+    const downloadPromise = page.waitForEvent("download");
+    await page
+        .getByRole("button", {
+            name: "Aktuelle Seite als CSV exportieren",
+            exact: true,
+        })
+        .click();
+    const csv = await downloadPromise;
+    const csvText = await readFile((await csv.path())!, "utf8");
+    expect(csvText).toContain('"Mieter"');
+    expect(csvText).not.toContain('"tenant"');
+    await roleRow.getByRole("button", { name: /^Aktionen für / }).click();
+    await expect(page.getByText("Verwalten", { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("menu").getByRole("separator")).toHaveCount(1);
+    await page.keyboard.press("Escape");
+    await capture("40-partner-rollen-actions");
+
+    await page
+        .getByRole("tab", { name: "Vertragsbeteiligungen", exact: true })
+        .click();
+    await page
+        .getByRole("textbox", { name: "Vertragsbeteiligte durchsuchen" })
+        .fill("MV-001-01");
+    const contractReference = page.getByRole("link", {
+        name: "MV-001-01",
+        exact: true,
+    });
+    await expect(contractReference).toBeVisible();
+    const partyRow = page.getByRole("row").filter({ has: contractReference });
+    await partyRow.getByRole("button", { name: /^Aktionen für / }).click();
+    await page
+        .getByRole("menuitem", { name: "Bearbeiten", exact: true })
+        .click();
+    const partyEditor = page.getByRole("dialog", {
+        name: "Vertragsbeteiligter bearbeiten",
+        exact: true,
+    });
+    await expect(
+        partyEditor.getByRole("combobox", { name: /Geschäftspartner/ }),
+    ).toBeDisabled();
+    await expect(
+        partyEditor.getByText("Durch den aktuellen Datensatz vorgegeben."),
+    ).toHaveCount(0);
+    await expect(
+        partyEditor.getByRole("button", { name: /Direktlink kopieren/ }),
+    ).toHaveCount(0);
+    const checkbox = partyEditor.getByRole("checkbox", {
+        name: "Hauptansprechpartner",
+        exact: true,
+    });
+    await expect(checkbox).toBeChecked();
+    const checkboxBox = (await checkbox.boundingBox())!;
+    const checkboxLabel = (await partyEditor
+        .locator("label")
+        .filter({ hasText: "Hauptansprechpartner" })
+        .boundingBox())!;
+    expect(Math.abs(checkboxBox.y - checkboxLabel.y)).toBeLessThan(6);
+    await capture("41-vertragsbeteiligter-bearbeiten");
+    await partyEditor
+        .getByRole("button", { name: "Abbrechen", exact: true })
+        .click();
+    await contractReference.click();
+    await expect(
+        page.getByRole("heading", { name: "MV-001-01", exact: true }),
+    ).toBeVisible();
+    for (const width of [768, 390]) {
+        await page.setViewportSize({ width, height: 900 });
+        await checkTabLayout();
+        const tabList = page.getByRole("tablist");
+        expect(
+            await tabList.evaluate(
+                (element) => element.scrollWidth - element.clientWidth,
+            ),
+        ).toBeLessThanOrEqual(1);
+        for (const tab of await tabList.getByRole("tab").all()) {
+            const box = (await tab.boundingBox())!;
+            expect(box.x).toBeGreaterThanOrEqual(0);
+            expect(box.x + box.width).toBeLessThanOrEqual(width);
+        }
+        await capture(
+            width === 390 ? "42-vertrag-tabs-iphone" : "43-vertrag-tabs-ipad",
+        );
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto("/contracts?panel=contracts/new");
+    const createContract = page.getByRole("dialog", {
+        name: "Vertrag anlegen",
+        exact: true,
+    });
+    await createContract
+        .getByRole("combobox", { name: /Einheit/ })
+        .fill("Lindenhöfe");
+    await expect(
+        page.getByRole("option", { name: /Wohnung 01.*Lindenhöfe.*Berlin/ }),
+    ).toBeVisible();
+    await capture("44-einheiten-picker-objektbezug");
     expect(errors).toEqual([]);
 });

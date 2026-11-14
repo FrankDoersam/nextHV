@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDebounced, useResourceList } from "@/framework/data/hooks";
 import { dataProvider } from "@/framework/data/provider";
+import { recordValue } from "@/framework/tables/cell-value";
 import { can } from "@/framework/permissions";
 import type { Filter, RecordData } from "@/framework/types";
 import { useWorkbench } from "@/framework/workbench";
@@ -51,6 +52,27 @@ export function RelationPicker({
     const [search, setSearch] = useState("");
     const [creationError, setCreationError] = useState<string>();
     const query = useDebounced(search);
+    const includes = resource.picker?.includes ?? resource.includes;
+    const primary = (row: RecordData) =>
+        displayText?.(row) ??
+        String(
+            recordValue(row, labelField ?? resource.titleField) ?? `#${row.id}`,
+        );
+    const secondary = (row: RecordData) =>
+        secondaryText?.(row) ??
+        [
+            ...new Set(
+                (resource.picker?.secondaryFields ?? ["code"])
+                    .map((field) => recordValue(row, field))
+                    .filter(
+                        (value) =>
+                            value != null &&
+                            value !== "" &&
+                            String(value) !== primary(row),
+                    )
+                    .map(String),
+            ),
+        ].join(" · ");
     const ids: number[] = (
         props.multiple
             ? Array.isArray(props.value)
@@ -65,13 +87,22 @@ export function RelationPicker({
     // One batched hydration request, independent of the current search term.
     const selected = useResourceList(
         resource,
-        { filters: [{ field: "id", operator: "in", value: ids }], limit: 100 },
+        {
+            filters: [{ field: "id", operator: "in", value: ids }],
+            limit: 100,
+            includes,
+            aggregates: [],
+        },
         ids.length > 0,
+        false,
+        30_000,
     );
     const result = useResourceList(
         resource,
-        { query, limit: 25, filters },
-        open,
+        { query, limit: 25, filters, includes, aggregates: [] },
+        open && !props.disabled && search === query,
+        false,
+        30_000,
     );
     const rows = new Map<number, RecordData>();
     if (!query)
@@ -84,14 +115,8 @@ export function RelationPicker({
     const options: ChoiceOption[] = displayRows.map((row) => ({
         ...optionMeta?.(row),
         value: row.id,
-        label:
-            displayText?.(row) ??
-            String(row[labelField ?? resource.titleField] ?? `#${row.id}`),
-        description:
-            secondaryText?.(row) ??
-            (row.code && row.code !== row[labelField ?? resource.titleField]
-                ? String(row.code)
-                : undefined),
+        label: primary(row),
+        description: secondary(row),
     }));
     // Retain the caption during loading and for a current value that is no longer available.
     for (const id of ids)
@@ -101,15 +126,11 @@ export function RelationPicker({
                 ...(row ? optionMeta?.(row) : {}),
                 value: id,
                 label: row
-                    ? (displayText?.(row) ??
-                      String(row[labelField ?? resource.titleField]))
+                    ? primary(row)
                     : selected.isFetching
                       ? "Wird geladen …"
                       : `#${id} · nicht verfügbar`,
-                description: row
-                    ? (secondaryText?.(row) ??
-                      (row.code ? String(row.code) : undefined))
-                    : undefined,
+                description: row ? secondary(row) : undefined,
             });
         }
     return (
@@ -117,13 +138,15 @@ export function RelationPicker({
             {...props}
             options={options}
             visibleOptions={
-                open && query
-                    ? options.filter((option) =>
-                          result.data?.data.some(
-                              (row) => row.id === option.value,
-                          ),
-                      )
-                    : undefined
+                search !== query
+                    ? []
+                    : open && query
+                      ? options.filter((option) =>
+                            result.data?.data.some(
+                                (row) => row.id === option.value,
+                            ),
+                        )
+                      : undefined
             }
             maxSelected={maxSelected}
             onOpenChange={setOpen}

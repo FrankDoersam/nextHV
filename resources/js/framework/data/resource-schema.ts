@@ -37,6 +37,7 @@ export interface ResourceSchema {
     meta: {
         ui: {
             version: 1;
+            picker?: ResourceDefinition["picker"];
             fields: Record<
                 string,
                 {
@@ -75,6 +76,16 @@ export function parseResourceSchema(raw: unknown): ResourceSchema {
         !Array.isArray(raw.fields) ||
         !isObject(ui) ||
         ui.version !== 1 ||
+        (ui.picker !== undefined &&
+            (!isObject(ui.picker) ||
+                !strings(ui.picker.secondaryFields) ||
+                (ui.picker.includes !== undefined &&
+                    (!Array.isArray(ui.picker.includes) ||
+                        !ui.picker.includes.every(
+                            (include) =>
+                                isObject(include) &&
+                                typeof include.relation === "string",
+                        ))))) ||
         !isObject(ui.fields) ||
         !isObject(ui.relations) ||
         !isObject(ui.labels) ||
@@ -403,6 +414,28 @@ export function hydrateResources(
         }
         const columns: ColumnDefinition[] = template.columns.map((column) => ({
             ...column,
+            options:
+                schema.meta.ui.fields[column.field]?.options ?? column.options,
+            reference:
+                column.reference ??
+                (() => {
+                    const prefix = column.field.split(".")[0];
+                    const relation = Object.entries(
+                        schema.meta.ui.relations,
+                    ).find(
+                        ([, relation]) =>
+                            column.field.includes(".") &&
+                            [relation.relation, relation.responseKey].includes(
+                                prefix,
+                            ),
+                    );
+                    return relation
+                        ? {
+                              resource: relation[1].resource,
+                              idField: relation[0],
+                          }
+                        : undefined;
+                })(),
             sortable:
                 column.sortable !== false &&
                 (nativeField(schema, column.field)?.sort ?? false),
@@ -425,6 +458,7 @@ export function hydrateResources(
         });
         return {
             resource,
+            picker: schema.meta.ui.picker ?? template.picker,
             fields: template.fields.map((field) => hydrateField(field, schema)),
             columns,
             filters,

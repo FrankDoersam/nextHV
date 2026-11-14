@@ -133,6 +133,8 @@ export interface ColumnDefinition {
     defaultVisible?: boolean;
     hideable?: boolean;
     cell?: CellDefinition;
+    options?: { value: string | number; label: string }[];
+    reference?: false | { resource: string; idField: string };
     exportValue?: (row: RecordData) => string | number | null;
     render?: (row: RecordData) => ReactNode;
 }
@@ -197,6 +199,10 @@ export interface ResourceDefinition {
     description: string;
     icon: LucideIcon;
     titleField: string;
+    picker?: {
+        secondaryFields: string[];
+        includes?: ResourceDefinition["includes"];
+    };
     fields: FieldDefinition[];
     columns: ColumnDefinition[];
     groups?: FormGroupDefinition[];

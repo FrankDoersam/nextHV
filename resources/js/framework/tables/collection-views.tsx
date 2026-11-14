@@ -65,11 +65,12 @@ export function CollectionViews({
             onValueChange={(v) => onChange(String(v))}
             className="min-w-0 shrink-0"
         >
-            <div className="min-w-0 overflow-x-auto border-b">
+            <div className="min-w-0 border-b">
                 <TabsList
+                    responsive
                     variant="line"
                     aria-label={`${resource.label} Ansichten`}
-                    className="h-10 min-w-max"
+                    className="h-10 min-w-0"
                 >
                     {views.map((view, i) => (
                         <TabsTrigger

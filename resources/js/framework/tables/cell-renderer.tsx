@@ -6,8 +6,9 @@ import {
 import { StatusBadge } from "@/components/blocks/content";
 import { Badge } from "@/components/ui/badge";
 import type { ColumnDefinition, RecordData } from "../types";
-import { cellItems, cellText, recordValue } from "./cell-value";
+import { cellItems, cellText, recordValue, optionLabel } from "./cell-value";
 import { date, money, number } from "@/lib/format";
+import { CellReference } from "@/components/blocks/cell-reference";
 export function CellRenderer({
     column,
     row,
@@ -15,6 +16,18 @@ export function CellRenderer({
     column: ColumnDefinition;
     row: RecordData;
 }) {
+    if (column.reference)
+        return (
+            <CellReference
+                resource={column.reference.resource}
+                id={recordValue(row, column.reference.idField)}
+            >
+                <CellRenderer
+                    column={{ ...column, reference: false }}
+                    row={row}
+                />
+            </CellReference>
+        );
     if (column.render) return column.render(row);
     const cell = column.cell;
     if (cell) {
@@ -126,20 +139,13 @@ export function CellRenderer({
             return (
                 <StatusBadge
                     value={value}
-                    displayLabel={
-                        (column.filter &&
-                            column.filter.options?.find(
-                                (option) =>
-                                    String(option.value) === String(value),
-                            )?.label) ||
-                        undefined
-                    }
+                    displayLabel={optionLabel(value, column)}
                 />
             );
         default:
             return (
                 <span className="block truncate" title={String(value ?? "")}>
-                    {String(value ?? "—")}
+                    {optionLabel(value, column) ?? String(value ?? "—")}
                 </span>
             );
     }

@@ -268,6 +268,7 @@ export function ResourceField({
                     <BaseField
                         id={id}
                         label={d.label}
+                        inline={d.kind === "checkbox"}
                         required={d.required}
                         help={d.help}
                         description={d.description}

@@ -17,6 +17,7 @@ export function BaseField({
     error,
     counter,
     wide,
+    inline = false,
     lockedReason,
     children,
 }: {
@@ -28,6 +29,7 @@ export function BaseField({
     error?: string;
     counter?: ReactNode;
     wide?: boolean;
+    inline?: boolean;
     lockedReason?: string;
     children: ReactNode;
 }) {
@@ -36,9 +38,16 @@ export function BaseField({
             className={cn(
                 "flex min-w-0 flex-col gap-2",
                 wide && "col-span-full",
+                inline && "justify-end",
             )}
         >
-            <div className="flex min-h-5 items-center gap-1.5">
+            <div
+                className={cn(
+                    "flex min-h-5 items-center gap-1.5",
+                    inline && "min-h-9 gap-2.5 rounded-lg border bg-card px-3",
+                )}
+            >
+                {inline && children}
                 <Label htmlFor={id} id={`${id}-label`}>
                     {label}
                     {required && (
@@ -73,9 +82,11 @@ export function BaseField({
                     />
                 )}
             </div>
-            <div data-slot="field-control" className="min-w-0">
-                {children}
-            </div>
+            {!inline && (
+                <div data-slot="field-control" className="min-w-0">
+                    {children}
+                </div>
+            )}
             {(description || lockedReason || counter) && (
                 <div className="flex items-start justify-between gap-3 text-xs leading-5 text-muted-foreground">
                     <p id={`${id}-help`}>{lockedReason ?? description}</p>

@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Pencil, RefreshCw } from "lucide-react";
-import { CopyLinkButton } from "@/components/blocks/copy-link-button";
 import { ErrorState } from "@/components/blocks/content";
 import { FormSection } from "@/components/blocks/form-section";
 import { KeyValueRows } from "@/components/blocks/key-value-rows";
@@ -96,7 +95,6 @@ export function ResourceView({
             }
             actions={
                 <div className="flex items-center gap-1">
-                    <CopyLinkButton onError={setError} />
                     <Button
                         type="button"
                         variant="ghost"

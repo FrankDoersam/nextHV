@@ -989,7 +989,7 @@ Die aktuelle Wizard-Komposition orientiert sich an der öffentlich sichtbaren [R
 
 ### Overlay-Slots und Standardverhalten
 
-`Overlay` bietet `icon`, `titleBadge`, `actions`, `sidebar`, `header`, `footerStart` und `footer`. Sheet und Dialog verwenden denselben Header: Icon und Titel links, Badge direkt am Titel, Subtext darunter, Direktlink/Aktualisieren/weitere Actions rechts neben Schließen. Der `header`-Slot enthält bei Wizards den horizontalen REUI-Stepper; nur vorherige Formularschritte sind direkt anwählbar. `sidebar` bleibt ein optionaler allgemeiner Overlay-Slot und wird vom Wizard nicht benutzt. Zurück liegt links im Footer, Abbrechen und Speichern/Weiter rechts. Kein zusätzlicher Schrittzähler im Footer. Der Inhalt scrollt zwischen Header und Footer.
+`Overlay` bietet `icon`, `titleBadge`, `actions`, `sidebar`, `header`, `footerStart` und `footer`. Sheet und Dialog verwenden denselben Header: Icon und Titel links, Badge direkt am Titel, Subtext darunter, Aktualisieren/weitere Actions rechts neben Schließen. Der `header`-Slot enthält bei Wizards den horizontalen REUI-Stepper; nur vorherige Formularschritte sind direkt anwählbar. `sidebar` bleibt ein optionaler allgemeiner Overlay-Slot und wird vom Wizard nicht benutzt. Zurück liegt links im Footer, Abbrechen und Speichern/Weiter rechts. Kein zusätzlicher Schrittzähler im Footer. Der Inhalt scrollt zwischen Header und Footer.
 
 Auf Ressourcenebene sind die Defaults zentral konfigurierbar:
 
@@ -1451,17 +1451,13 @@ Die benannten REUI-Blockvorschauen sind Gestaltungsreferenzen, keine Behauptung 
 
 Der Klick auf **Löschen** im geöffneten `ActionDialog` ist die ausdrückliche Zustimmung. Vorprüfungen bleiben erhalten. Falls die API `428` mit einem signierten Token sendet, führt derselbe Dialog genau eine Folgeanfrage aus. Während der Ausführung sind Schließen und Submit gesperrt. Erfolgreiche Aktionen aktualisieren die betroffenen Ansichten und schließen den Dialog; Validierungs-, Versions- und Netzwerkfehler bleiben darin sichtbar. Eine erneut abgelehnte Token-Anfrage wird nicht automatisch wiederholt. Auch alle anderen Dialog-Actions verwenden diesen Ablauf. Schlägt nach einer erfolgreichen Mutation nur die Aktualisierung fehl, bleibt die Erfolgsanzeige erhalten und erneutes Ausführen ist gesperrt.
 
-Toasts und die `sonner`-Abhängigkeit sind entfernt. Speichern zeigt das aktualisierte Formular bzw. schließt den Editor; Fehler bleiben am Formular. Kopierte Direktlinks werden am Kopierbutton bestätigt. Fehler direkter Actions erscheinen als beständiger Fehlerdialog, Abmeldefehler im Arbeitsbereich. Fachliche Ergebnisse wie PDF und Detailauswertungen behalten ihren Ergebnisdialog.
+Toasts und die `sonner`-Abhängigkeit sind entfernt. Speichern zeigt das aktualisierte Formular bzw. schließt den Editor; Fehler bleiben am Formular. Sheets und Dialoge haben keinen Kopierbutton; Direktlinks bleiben über die Browseradresse verfügbar. Fehler direkter Actions erscheinen als beständiger Fehlerdialog, Abmeldefehler im Arbeitsbereich. Fachliche Ergebnisse wie PDF und Detailauswertungen behalten ihren Ergebnisdialog.
 
 ### Einheitliche Toolbars und Mehrfachfilter
 
 Suche, Filter, Gruppieren, Export, Aktualisieren und Hinzufügen verwenden eine Höhe von 36 px – auch in eingebetteten Relationstabellen. Mehrfachfilter zeigen den ersten Titel mit `+N` für weitere ausgewählte Werte; Anzahl, Chevron und Entfernen bleiben getrennt und schrumpfen nicht. Der Tooltip enthält alle Titel, im geöffneten Picker bleiben sämtliche Werte vorausgewählt. Daten und OR-/IN-Filterverhalten ändern sich durch die kompaktere Anzeige nicht.
 
-<<<<<<< HEAD
-Die gemeinsame `ResourceCollection`-Toolbar trennt die Bedienzeile (Suche, Filter hinzufügen, Gruppieren und rechts Aktionen) von einer zweiten Zeile für aktive Filter. `ResourceFilters.renderToolbar(trigger, activeFilters)` liefert beide Slots getrennt. Lange Kriterien verdrängen die Aktionen dadurch nicht. Bei wenig Platz bricht der Aktionsblock als Gruppe um; Filterchips passen sich über einen Container-Query der tatsächlichen Tabellenbreite an, auch in eingebetteten Relationstabellen. Schmale Chips zeigen Feld/Operator und Entfernen oben, den Wert darunter. Zahlen- und Datumsbereiche teilen die verfügbare Breite, ohne horizontalen Überlauf. „Zurücksetzen“ entfernt nur Benutzerfilter des Builders; feste Relationsbezüge und separat konfigurierte direkte Filter bleiben bestehen. Die Aufnahmen `35-filter-toolbar-umbruch.png` und `36-filter-toolbar-mobil.png` prüfen diese Darstellung mit mehreren aktiven Kriterien.
-=======
 Die gemeinsame `ResourceCollection`-Toolbar trennt die Bedienzeile (Suche, Filter hinzufügen, Gruppieren und rechts Aktionen) von einer zweiten Zeile für aktive Filter. `ResourceFilters.renderToolbar(trigger, activeFilters)` liefert beide Slots getrennt. Lange Kriterien verdrängen die Aktionen dadurch nicht. Bei wenig Platz bricht der Aktionsblock als Gruppe um; Filterchips passen sich über einen Container-Query der tatsächlichen Tabellenbreite an, auch in eingebetteten Relationstabellen. Schmale Chips zeigen Feld/Operator und Entfernen oben, den Wert darunter. Zahlen- und Datumsbereiche teilen die verfügbare Breite, ohne horizontalen Überlauf. „Zurücksetzen“ entfernt nur Benutzerfilter des Builders; feste Relationsbezüge und separat konfigurierte direkte Filter bleiben bestehen. Der Tabellenbereich behält mindestens 16 rem Höhe. Reicht die verfügbare Höhe durch Filter/Kennzahlen nicht aus, scrollt zusätzlich die Collection mitsamt ihren Bedienelementen; Datensätze und Footer werden nicht zusammengedrückt. Die Auswahlaktionsleiste liegt außerhalb dieses Scrollbereichs als Overlay. Die Aufnahmen `35-filter-toolbar-umbruch.png`, `36-filter-toolbar-mobil.png` und `37-filter-mobile-datensatz.png` prüfen Umbruch und erreichbare Datensätze mit mehreren aktiven Kriterien.
->>>>>>> 295ac0c2347dca2a96344398238933dbbe2db4f7
 
 ### Icons in Tabs
 
@@ -1487,3 +1483,39 @@ Die gemeinsame `ResourceCollection`-Toolbar trennt die Bedienzeile (Suche, Filte
     ]}
 />
 ```
+
+
+## 35. Relationssuche, Tabellenabschluss und kompakte Eingaben
+
+- **Grid:** Die Aktionsspalte bleibt 40 px breit und am rechten Rand fixiert. Eine einzelne sichtbare Fachspalte übernimmt mit REUI `fillWidth` die übrige Breite, etwa bei Partnerrollen. Gruppierte Tabellen verwenden dieselbe Anordnung. Seitengröße, Trefferbereich und Seitennavigation bilden standardmäßig eine rechtsbündige Gruppe; mobil darf sie umbrechen. Der bestehende Tabellen-Scrollbereich und die überlagerte Mehrfachauswahlleiste bleiben erhalten.
+- **Actions/Formulare:** Das Standardmenü enthält keine Überschrift „Verwalten“. Destruktive Aktionen stehen hinter einer Trennlinie; explizite fachliche Gruppen bleiben möglich. Sheets und Dialoge verzichten auf die Kopieraktion. Gesperrte Elternbezüge bleiben beim Bearbeiten deaktiviert, zeigen aber keinen zusätzlichen Sperrhinweis/-Icon. Beim Anlegen bleibt der Hinweis sichtbar. `BaseField.inline` ordnet Checkbox und Label gemeinsam auf einer Zeile an.
+- **Tabs:** `TabsList responsive` bricht die Navigation innerhalb der verfügbaren Breite um. Detail-, Editor- und Collection-Tabs nutzen diese Darstellung; Seitenkopf-Aktionen dürfen ebenfalls umbrechen. Es gibt keinen horizontalen Scrollbalken in der Tabnavigation.
+- **Datum/Tastatur:** Neben `TT.MM.JJJJ` akzeptiert der DatePicker acht Ziffern (`01012026` → `01.01.2026`). Unmögliche Daten und Min-/Max-Verletzungen bleiben Fehler und blockieren das Absenden; die API erhält ISO-Daten. Zusätzliche Öffnungstasten neben Eingaben sind keine Tabstopps. Die Eingabe bleibt erreichbar; beim Datum öffnet `Alt+Pfeil runter` den Kalender. Eigenständige Auswahlbuttons bleiben per Tastatur erreichbar.
+
+### Einmalige PHP-Konfiguration für Suchfelder und Picker-Kontext
+
+`Resource::searchableRelations()` nimmt standardmäßig die direkt deklarierten `BelongsTo`-Relationen auf. `RelatedContains` erweitert die native Lomkit-Contains-Suche mit gruppierten `EXISTS`-Abfragen auf deren ausdrücklich suchbaren Feldern. Wörter dürfen auf Hauptdatensatz und Relation verteilt sein. So findet die Suche nach einer Vertragsnummer auch Vertragsbeteiligungen; vorhandene Elternfilter bleiben wirksam. Es gibt keine rekursive Suche über den gesamten Beziehungsgraphen und keine Einzelabfrage pro Zeile. Ein Resource-Override kann die beteiligten Beziehungen beschränken oder mit `[]` ausschließen. Die vorhandene Single-Workspace-Konfiguration bleibt unverändert; Organisationsgrenzen sind weiterhin separat umzusetzen.
+
+`Resource::uiPicker()` beschreibt die zweite Zeile zentral über `meta.ui.picker`, beispielsweise in `UnitResource`:
+
+```php
+public function uiPicker(): array
+{
+    return [
+        'secondaryFields' => ['property.name', 'property.city', 'code'],
+        'includes' => [['relation' => 'property']],
+    ];
+}
+```
+
+Formulare und Relationsfilter übernehmen diese Metadaten. Gleiche Wohnungsnamen werden durch Objekt und Ort unterscheidbar; geschlossen bleibt standardmäßig der Titel sichtbar. Feldspezifische `secondaryText`/`displayText`-Props können die Anzeige überschreiben. Picker laden höchstens 25 Treffer ohne Tabellenaggregate, suchen debounct, brechen überholte Requests ab und verwenden Ergebnisse 30 Sekunden lang aus dem Query-Cache. Während einer neuen Suche bleiben veraltete Optionen nicht auswählbar. Gewählte IDs werden gesammelt nachgeladen. Normale Tabellen übernehmen weiterhin ihre bisherigen Cache-Einstellungen und aktualisieren beim Speichern nur die geänderte Zeile.
+
+### Relationszellen und Export
+
+Der Schema-Adapter erkennt `BelongsTo`-Spalten wie `contract.code` und erzeugt daraus `ColumnDefinition.reference`. `CellReference` stellt diese linksbündig als Navigation zum verknüpften Datensatz dar. `reference: false` schaltet die Verlinkung gezielt ab; `{ resource: "contracts", idField: "contract_id" }` erlaubt eine explizite Zuordnung. Ungültige oder fehlende IDs werden als Text ausgegeben.
+
+`ColumnDefinition.options` wird unabhängig von der Filteranzeige aus den PHP-Metadaten übernommen. Zellanzeige und CSV verwenden diese Beschriftungen: `tenant` wird zu `Mieter`, boolesche Werte zu `Ja`/`Nein`. Spaltenüberschriften und Dateiname sind fachlich benannt. `exportValue(row)` bleibt der bewusste Override. Exportiert wird weiterhin nur die aktuelle Seite bzw. Auswahl; der Schutz vor CSV-Formeln bleibt aktiv.
+
+Browseraufnahmen `40`–`44` prüfen die einspaltige Rollentabelle, CSV-Beschriftungen, Suche/Navigation über Vertragsnummern, das kontextgebundene Bearbeiten, Tabs bei 390/768 px und die Einheiten-Auswahl mit Objektbezug. Backendtests prüfen zusätzlich kombinierte Suchbegriffe, wörtliche Wildcard-Zeichen und den unveränderten Elternfilter.
+
+Die umfangreiche Screenshot-Tour berücksichtigt vor dem zusätzlichen Szenarioblock die Rate-Limit-Header des Servers und wartet bei knappem Anfragebudget auf dessen Rücksetzung. Das produktive API-Limit bleibt unverändert.

@@ -11,6 +11,8 @@ export interface ListParams {
     page?: number;
     limit?: number;
     query?: string;
+    includes?: ResourceDefinition["includes"];
+    aggregates?: ResourceDefinition["aggregates"];
     filters?: Filter[];
     sort?: { field: string; direction: "asc" | "desc" }[];
 }
@@ -29,8 +31,12 @@ export function searchPayload(
                 ? sorts
                 : [...sorts, { field: "id", direction: "desc" }],
             ...(params.query ? { text: { value: params.query } } : {}),
-            ...(resource.includes ? { includes: resource.includes } : {}),
-            ...(resource.aggregates ? { aggregates: resource.aggregates } : {}),
+            ...((params.includes ?? resource.includes)
+                ? { includes: params.includes ?? resource.includes }
+                : {}),
+            ...((params.aggregates ?? resource.aggregates)
+                ? { aggregates: params.aggregates ?? resource.aggregates }
+                : {}),
         },
     };
 }

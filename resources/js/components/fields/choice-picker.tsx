@@ -293,6 +293,7 @@ export function ChoicePicker({
                                     size="icon-xs"
                                 />
                             }
+                            tabIndex={-1}
                             aria-label="Auswahl öffnen"
                         >
                             <ChevronsUpDown />

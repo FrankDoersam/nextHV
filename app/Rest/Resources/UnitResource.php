@@ -24,6 +24,11 @@ class UnitResource extends Resource
 {
     public static string $model = Unit::class;
 
+    public function uiPicker(): array
+    {
+        return ['secondaryFields' => ['property.name', 'property.city', 'code'], 'includes' => [['relation' => 'property']]];
+    }
+
     public function fields(): array
     {
         return [

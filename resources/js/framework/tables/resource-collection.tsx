@@ -42,6 +42,7 @@ import {
     type RowSelectionState,
     type SortingState,
     type ColumnVisibilityState,
+    type ColumnPinningState,
 } from "@tanstack/react-table";
 import { ListFilter, Plus, RefreshCw, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -192,6 +193,10 @@ export function ResourceCollection({
     } = state;
     const viewport = useRef<HTMLDivElement>(null);
     const [width, setWidth] = useState(0);
+    const [columnPinning, setColumnPinning] = useState<ColumnPinningState>({
+        start: [],
+        end: [],
+    });
     useLayoutEffect(() => {
         const node = viewport.current;
         if (!node) return;
@@ -426,6 +431,10 @@ export function ResourceCollection({
             ...createForm,
         });
     };
+    const singleDataColumn =
+        resource.columns.filter(
+            (column) => columnVisibility[column.field] !== false,
+        ).length === 1;
     const columns = useMemo<ColumnDef<DataGridFeatures, RecordData>[]>(
         () => [
             ...(rowSelection
@@ -463,6 +472,7 @@ export function ResourceCollection({
                 ...sizing[c.field],
                 meta: {
                     headerTitle: c.label,
+                    fillWidth: singleDataColumn,
                     skeleton: <GridCellSkeleton dense={dense} kind={c.kind} />,
                     cellClassName: ["currency", "number"].includes(c.kind ?? "")
                         ? "text-right tabular-nums"
@@ -483,6 +493,7 @@ export function ResourceCollection({
                         visibility={columnChooser}
                     />
                 ),
+                enablePinning: pinnable,
                 enableSorting: c.sortable !== false,
                 enableHiding: c.hideable !== false,
                 cell: ({
@@ -493,7 +504,9 @@ export function ResourceCollection({
                         RecordData
                     >;
                 }) =>
-                    c.field === resource.titleField && detailLink ? (
+                    c.field === resource.titleField &&
+                    detailLink &&
+                    !c.reference ? (
                         <button
                             className="block w-full min-w-0 max-w-full text-left font-medium text-foreground hover:text-primary"
                             title={
@@ -574,6 +587,8 @@ export function ResourceCollection({
             sizing,
             dense,
             filterDefinitions,
+            pinnable,
+            singleDataColumn,
         ],
     );
     const columnSizes = {
@@ -600,6 +615,17 @@ export function ResourceCollection({
         rowCount: result.data?.total ?? 0,
         state: {
             columnSizing: columnSizes,
+            columnPinning: {
+                start: pinnable ? columnPinning.start : [],
+                end: [
+                    ...(pinnable
+                        ? (columnPinning.end ?? []).filter(
+                              (id) => id !== "actions",
+                          )
+                        : []),
+                    ...(actions !== false ? ["actions"] : []),
+                ],
+            },
             pagination: paging ? pagination : { pageIndex: 0, pageSize: 100 },
             sorting,
             rowSelection: selection,
@@ -620,6 +646,7 @@ export function ResourceCollection({
                 ([id, rule]) => ({ id, value: rule.values }),
             ),
         },
+        onColumnPinningChange: setColumnPinning,
         onColumnSizingChange: (next) =>
             setPreferredSizes(
                 typeof next === "function" ? next(columnSizes) : next,
@@ -846,7 +873,7 @@ export function ResourceCollection({
                                         (c) =>
                                             columnVisibility[c.field] !== false,
                                     ),
-                                    resource.name,
+                                    resource.label,
                                 )
                             }
                         >
@@ -895,7 +922,7 @@ export function ResourceCollection({
             tableLayout={{
                 columnsVisibility: columnChooser,
                 columnsResizable: resizable,
-                columnsPinnable: pinnable,
+                columnsPinnable: pinnable || actions !== false,
                 columnsMovable: true,
                 headerSticky: true,
                 headerBackground: true,
@@ -1223,7 +1250,17 @@ function GroupedGrid({
         getRowId: (r) => String(r.id),
         manualPagination: true,
         manualSorting: true,
-        state: { rowSelection: selection, sorting, columnVisibility },
+        state: {
+            rowSelection: selection,
+            sorting,
+            columnVisibility,
+            columnPinning: {
+                start: [],
+                end: columns.some((column) => column.id === "actions")
+                    ? ["actions"]
+                    : [],
+            },
+        },
         onSortingChange: onSorting,
         onColumnVisibilityChange: onVisibility,
         onRowSelectionChange: onSelection,
@@ -1243,6 +1280,8 @@ function GroupedGrid({
             tableLayout={{
                 dense,
                 columnsVisibility: true,
+                columnsPinnable: true,
+                columnsResizable: true,
                 width: "fixed",
                 headerSticky: true,
             }}

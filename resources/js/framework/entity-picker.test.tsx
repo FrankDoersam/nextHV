@@ -70,10 +70,7 @@ it("batches selected entities, forwards backend filters and searches from keyboa
                   : rows,
             total: 2,
             current_page: 1,
-            per_page: 25,
             last_page: 1,
-            from: 1,
-            to: 2,
         }));
     function Demo() {
         const [value, setValue] = useState<unknown>([1]);
@@ -139,4 +136,100 @@ it("batches selected entities, forwards backend filters and searches from keyboa
     expect(
         screen.queryByRole("button", { name: "Vertrag anlegen" }),
     ).not.toBeInTheDocument();
+});
+
+it("uses resource picker context to distinguish identical unit titles and reuses fresh option results", async () => {
+    const { getResource } = await import("@/modules/registry");
+    const resource = getResource("units");
+    const previous = resource.picker;
+    resource.picker = {
+        secondaryFields: ["property.name", "property.city", "code"],
+        includes: [{ relation: "property" }],
+    };
+    const rows = [
+        {
+            id: 1,
+            updated_at: "v1",
+            code: "E-01",
+            name: "Wohnung 01",
+            property: { name: "Lindenhof", city: "Berlin" },
+        },
+        {
+            id: 2,
+            updated_at: "v1",
+            code: "E-01",
+            name: "Wohnung 01",
+            property: { name: "Sonnenhof", city: "Hamburg" },
+        },
+    ];
+    const list = vi.spyOn(dataProvider, "list").mockResolvedValue({
+        data: rows,
+        total: 2,
+        current_page: 1,
+        last_page: 1,
+    });
+    function Demo() {
+        const [value, setValue] = useState<unknown>(null);
+        return (
+            <RelationPicker
+                resource="units"
+                aria-label="Einheit"
+                value={value}
+                onChange={setValue}
+                creatable={false}
+            />
+        );
+    }
+    try {
+        const user = userEvent.setup();
+        render(
+            <MemoryRouter>
+                <QueryClientProvider
+                    client={
+                        new QueryClient({
+                            defaultOptions: { queries: { retry: false } },
+                        })
+                    }
+                >
+                    <WorkbenchProvider>
+                        <Demo />
+                    </WorkbenchProvider>
+                </QueryClientProvider>
+            </MemoryRouter>,
+        );
+        const input = screen.getByRole("combobox", {
+            name: "Einheit",
+        });
+        await user.click(input);
+        const option = await screen.findByRole("option", {
+            name: /Wohnung 01.*Lindenhof.*Berlin/,
+        });
+        expect(
+            screen.getByRole("option", {
+                name: /Wohnung 01.*Sonnenhof.*Hamburg/,
+            }),
+        ).toBeVisible();
+        await user.click(option);
+        await waitFor(() => expect(input).toHaveValue("Wohnung 01"));
+        await waitFor(() => expect(list).toHaveBeenCalledTimes(2));
+        await user.click(input);
+        await screen.findByRole("option", {
+            name: /Wohnung 01.*Lindenhof.*Berlin/,
+        });
+        expect(list).toHaveBeenCalledTimes(2);
+        expect(list).toHaveBeenCalledWith(
+            resource,
+            expect.objectContaining({
+                includes: [{ relation: "property" }],
+                aggregates: [],
+            }),
+            expect.anything(),
+        );
+        expect(screen.getByLabelText("Auswahl öffnen")).toHaveAttribute(
+            "tabindex",
+            "-1",
+        );
+    } finally {
+        resource.picker = previous;
+    }
 });

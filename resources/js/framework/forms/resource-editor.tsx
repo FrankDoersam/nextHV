@@ -23,7 +23,6 @@ import {
     useFormContext,
     useWatch,
 } from "react-hook-form";
-import { CopyLinkButton } from "@/components/blocks/copy-link-button";
 import { useReload, useSaveRecord } from "../data/hooks";
 import { ApiError } from "../data/http";
 import { dataProvider, normalizeValidationErrors } from "../data/provider";
@@ -261,7 +260,6 @@ export function ResourceEditor({
     };
     const headerActions = (
         <div className="flex gap-1">
-            <CopyLinkButton onError={setError} />
             {row && (
                 <>
                     <Button
@@ -585,7 +583,9 @@ export function ResourceEditor({
                                                                       ...f,
                                                                       disabled: true,
                                                                       lockedReason:
-                                                                          "Durch den aktuellen Datensatz vorgegeben.",
+                                                                          row
+                                                                              ? undefined
+                                                                              : "Durch den aktuellen Datensatz vorgegeben.",
                                                                   }
                                                                 : f
                                                         }
