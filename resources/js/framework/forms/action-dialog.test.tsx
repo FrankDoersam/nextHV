@@ -69,37 +69,24 @@ function mount(action: DeleteAction) {
     );
     return { close, completed };
 }
-const challenge = () =>
-    new ApiError(
-        428,
-        "Bestätigung erforderlich",
-        {},
-        { token: "signed-server-token", expires_at: "2026-12-01" },
-    );
 describe("one confirmation dialog", () => {
-    it("waits for one deliberate click, completes the server handshake and closes only after success", async () => {
+    it("waits for one deliberate click, executes once and closes only after success", async () => {
         const action = new DeleteAction();
         let finish!: (value: unknown) => void;
-        const execute = vi
-            .spyOn(action, "execute")
-            .mockRejectedValueOnce(challenge())
-            .mockImplementationOnce(
-                () =>
-                    new Promise((resolve) => {
-                        finish = resolve;
-                    }),
-            );
+        const execute = vi.spyOn(action, "execute").mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    finish = resolve;
+                }),
+        );
         const { close, completed } = mount(action);
         const user = userEvent.setup();
         const button = await screen.findByRole("button", { name: "Löschen" });
         await waitFor(() => expect(button).toBeEnabled());
         expect(execute).not.toHaveBeenCalled();
         await user.click(button);
-        await waitFor(() => expect(execute).toHaveBeenCalledTimes(2));
-        expect(execute).toHaveBeenLastCalledWith(
-            context,
-            "signed-server-token",
-        );
+        await waitFor(() => expect(execute).toHaveBeenCalledTimes(1));
+        expect(execute).toHaveBeenLastCalledWith(context);
         expect(
             screen.getByRole("button", { name: "Wird gelöscht …" }),
         ).toBeDisabled();
@@ -114,20 +101,11 @@ describe("one confirmation dialog", () => {
     });
     it("keeps validation failures in the same dialog without another confirmation or closing", async () => {
         const action = new DeleteAction();
-        const execute = vi
-            .spyOn(action, "execute")
-            .mockRejectedValueOnce(challenge())
-            .mockRejectedValueOnce(
-                new ApiError(
-                    422,
-                    "Aktive Verträge können nicht gelöscht werden.",
-                    {
-                        status: [
-                            "Aktive Verträge können nicht gelöscht werden.",
-                        ],
-                    },
-                ),
-            );
+        const execute = vi.spyOn(action, "execute").mockRejectedValueOnce(
+            new ApiError(422, "Aktive Verträge können nicht gelöscht werden.", {
+                status: ["Aktive Verträge können nicht gelöscht werden."],
+            }),
+        );
         const { close } = mount(action);
         const user = userEvent.setup();
         const button = await screen.findByRole("button", { name: "Löschen" });
@@ -141,7 +119,7 @@ describe("one confirmation dialog", () => {
         expect(screen.getAllByRole("dialog")).toHaveLength(1);
         expect(button).toBeEnabled();
         expect(close).not.toHaveBeenCalled();
-        expect(execute).toHaveBeenCalledTimes(2);
+        expect(execute).toHaveBeenCalledTimes(1);
     });
     it("never offers to repeat a successful deletion when only reloading the view fails", async () => {
         const action = new DeleteAction();
@@ -167,20 +145,27 @@ describe("one confirmation dialog", () => {
         ).toBeEnabled();
         expect(close).not.toHaveBeenCalled();
     });
-    it("does not loop when the server rejects the confirmation token", async () => {
+    it("does not automatically repeat a failed deletion", async () => {
         const action = new DeleteAction();
         const execute = vi
             .spyOn(action, "execute")
-            .mockRejectedValue(challenge());
+            .mockRejectedValue(
+                new ApiError(
+                    503,
+                    "Der Dienst ist vorübergehend nicht erreichbar.",
+                ),
+            );
         const { close } = mount(action);
         const user = userEvent.setup();
         const button = await screen.findByRole("button", { name: "Löschen" });
         await waitFor(() => expect(button).toBeEnabled());
         await user.click(button);
         expect(
-            await screen.findByText("Bestätigung erforderlich"),
+            await screen.findByText(
+                "Der Dienst ist vorübergehend nicht erreichbar.",
+            ),
         ).toBeVisible();
-        expect(execute).toHaveBeenCalledTimes(2);
+        expect(execute).toHaveBeenCalledTimes(1);
         expect(close).not.toHaveBeenCalled();
     });
 });

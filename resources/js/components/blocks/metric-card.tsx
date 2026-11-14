@@ -16,6 +16,7 @@ export interface MetricCardProps {
     children?: ReactNode;
     density?: "default" | "compact";
     description?: string;
+    appearance?: "card" | "inset";
 }
 
 /** Stats Overview anatomy: label, prominent value, separated supporting detail. */
@@ -32,6 +33,7 @@ export function MetricCard({
     children,
     density = "default",
     description,
+    appearance = "card",
 }: MetricCardProps) {
     const compact = density === "compact";
     return (
@@ -39,7 +41,10 @@ export function MetricCard({
             data-slot="metric-card"
             data-density={density}
             title={description}
-            className="@container/metric h-full min-w-0 rounded-xl border bg-card shadow-xs"
+            className={cn(
+                "@container/metric h-full min-w-0 bg-card",
+                appearance === "card" && "rounded-xl border shadow-xs",
+            )}
         >
             <div
                 className={cn(

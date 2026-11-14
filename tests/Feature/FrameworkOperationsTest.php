@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Property\Actions\CheckPropertyDeletion;
 use App\Models\BusinessPartner;
 use App\Models\Contract;
 use App\Models\Property;
@@ -10,7 +9,6 @@ use App\Models\RentCondition;
 use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class FrameworkOperationsTest extends TestCase
@@ -35,36 +33,35 @@ class FrameworkOperationsTest extends TestCase
         $this->assertDatabaseHas('properties', ['id' => $property->id, 'name' => 'Neuer Name']);
     }
 
-    public function test_preflight_reports_every_blocker_with_one_projection_query(): void
+    public function test_delete_rolls_back_the_complete_batch_when_a_record_is_active(): void
     {
-        $active = Property::factory()->create();
-        $archived = Property::factory()->create();
-        Unit::factory()->create(['property_id' => $archived->id])->delete();
-        $archived->update(['status' => 'archived']);
         $empty = Property::factory()->create(['status' => 'archived']);
-        $models = Property::all();
-        DB::enableQueryLog();
-        $result = app(CheckPropertyDeletion::class)->handle($models);
-        $queries = DB::getQueryLog();
-        DB::disableQueryLog();
-        $this->assertCount(1, $queries);
-        $this->assertFalse($result[0]['allowed']);
-        $this->assertFalse($result[1]['allowed']);
-        $this->assertTrue($result[2]['allowed']);
-        $this->postJson('/api/v1/properties/deletion-check', ['resources' => [$active->id, $archived->id, $empty->id]])->assertOk()->assertJsonCount(3, 'data');
-        $this->deleteJson('/api/v1/properties', ['resources' => [$active->id, $empty->id]])->assertUnprocessable();
-        $this->assertNotSoftDeleted($active);
+        $active = Property::factory()->create();
+
+        $this->deleteJson('/api/v1/properties', ['resources' => [$empty->id, $active->id]])
+            ->assertUnprocessable()->assertJsonValidationErrors(['status'])
+            ->assertJsonPath('errors.status.0', 'Das Objekt ist aktiv. Bitte zuerst archivieren.');
+
         $this->assertNotSoftDeleted($empty);
+        $this->assertNotSoftDeleted($active);
     }
 
-    public function test_confirmation_rechecks_status_before_delete(): void
+    public function test_delete_rejects_archived_properties_with_archived_units(): void
     {
-        $property = Property::factory()->create(['status' => 'archived']);
-        $body = ['resources' => [$property->id]];
-        $token = $this->deleteJson('/api/v1/properties', $body)->assertStatus(428)->json('confirmation.token');
-        $property->update(['status' => 'active']);
-        $this->deleteJson('/api/v1/properties', [...$body, 'confirmation' => $token])->assertUnprocessable();
+        $property = Property::factory()->create();
+        Unit::factory()->create(['property_id' => $property->id])->delete();
+        $property->update(['status' => 'archived']);
+
+        $this->deleteJson('/api/v1/properties', ['resources' => [$property->id]])
+            ->assertUnprocessable()->assertJsonValidationErrors(['units'])
+            ->assertJsonPath('errors.units.0', 'Es sind Einheiten zugeordnet, einschließlich archivierter Einheiten.');
+
         $this->assertNotSoftDeleted($property);
+    }
+
+    public function test_deletion_preflight_route_is_removed(): void
+    {
+        $this->postJson('/api/v1/properties/deletion-check', ['resources' => [1]])->assertNotFound();
     }
 
     public function test_clone_defaults_are_owned_by_the_backend_and_optional_in_the_action(): void

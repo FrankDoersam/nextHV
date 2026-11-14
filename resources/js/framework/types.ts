@@ -230,7 +230,6 @@ export interface ResourceDefinition {
         | "permission"
         | "children"
     >;
-    deletionCheck?: boolean;
     actions: ResourceAction[];
     bulkActions?: false | string[];
     editor?: {

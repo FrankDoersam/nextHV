@@ -215,7 +215,7 @@
     {
         "file": "resources/js/components/blocks/metric-card.tsx",
         "source": "https://reui.io/blocks/application/stats/stats-1",
-        "note": "Eigene Adaption der öffentlichen Stats-Overview-Vorschau: einzelne neutral umrandete Karten, kompakte Listenvariante und responsive Werte. Kein Import des lizenzgebundenen Pro-Quellcodes."
+        "note": "Eigene Adaption der öffentlichen Stats-Overview-Vorschau: einzelne neutral umrandete Karten in Detailseiten; rahmenlose Inset-Variante für die integrierte Kennzahlenzeile der Listen. Kein Import des lizenzgebundenen Pro-Quellcodes."
     },
     {
         "file": "resources/js/components/blocks/responsive-tab-list.tsx",
@@ -225,6 +225,6 @@
     {
         "file": "resources/js/components/blocks/collection-surface.tsx",
         "source": "https://reui.io/docs/components/base/data-grid",
-        "note": "Gemeinsame Listenfläche auf vorhandenem REUI DataGrid mit separaten Stats-Karten, einzeiligen Ansichtstabs und mobilem Seitenfluss. Eigenständige Anwendungskomposition."
+        "note": "Gemeinsame Listenfläche auf vorhandenem REUI DataGrid mit integriertem Summary-Slot, einzeiligen Ansichtstabs und mobilem Seitenfluss. Eigenständige Anwendungskomposition."
     }
 ]

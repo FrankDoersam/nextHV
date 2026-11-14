@@ -2,7 +2,6 @@
 
 namespace App\Rest\Resources;
 
-use App\Domain\Property\Actions\CheckPropertyDeletion;
 use App\Domain\Property\Enums\ManagementType;
 use App\Domain\Property\Enums\PropertyStatus;
 use App\Domain\Property\Enums\PropertyType;
@@ -16,9 +15,7 @@ use App\Rest\Filters\ExpressionFilter;
 use App\Rest\Metrics\CollectionSummary;
 use App\Rest\Metrics\PropertyOverview;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
-use Lomkit\Rest\Confirmation\Confirmation;
 use Lomkit\Rest\Fields\Date;
 use Lomkit\Rest\Fields\DateTime;
 use Lomkit\Rest\Fields\Enum;
@@ -71,12 +68,5 @@ class PropertyResource extends Resource
             'units' => fn (Builder $query): int => Unit::whereIn('property_id', $query->select('properties.id'))->count(),
             'area' => fn (Builder $query): float => (float) $query->sum('land_area'),
         ])];
-    }
-
-    public function destroyConfirmation(Collection $models): ?Confirmation
-    {
-        app(CheckPropertyDeletion::class)->assertAllowed($models);
-
-        return parent::destroyConfirmation($models);
     }
 }

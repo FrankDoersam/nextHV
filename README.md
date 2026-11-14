@@ -69,7 +69,7 @@ Beim Duplizieren werden nur Objekt-/Einheitenstammdaten kopiert. Verträge, Bete
 - Fremdschlüssel, eindeutige Nummern und Konditionsstichtage, Transaktionen und Zeilensperren für Vertragsoperationen.
 - Ein serverseitiges Regelwerk für Formulare und API, inkl. Laufzeiten, Duplikaten und Hauptansprechpartnern; Wizard-Schritte prüfen über Laravel Precognition vor dem Weitergehen.
 - Optimistische Versionsprüfung bei CRUD-Updates: `updated_at` wird als `version` übertragen; bei Konflikt antwortet die API mit `409`.
-- Löschen und verbindliche Actions verlangen den signierten Bestätigungstoken der API (`428` → signierter Token → einmalige Folgeanfrage nach dem Klick auf „Löschen“ im Dialog).
+- Löschen: einmal im Dialog bestätigen, ein DELETE ohne Vorprüfung/Token, Backend-Fehler direkt im selben Dialog. Verbindliche Fachaktionen wie Vertragsaktivierung behalten ihren signierten API-Handshake im Action-Adapter.
 - Aktive Objekte sowie Objekte mit Einheiten (auch gelöschten), Einheiten mit Vertragsgeschichte und aktivierte Verträge werden nicht einfach gelöscht. Stammdatentabellen verwenden Soft Deletes; es gibt in dieser Oberfläche noch keinen Papierkorb.
 - Ausweisnummern sind schreibbar, aber nicht lesbar über die API. Nur die letzten vier Zeichen werden angezeigt. Dateien liegen verschlüsselt auf dem privaten Disk; Download nur authentifiziert, ohne Browsercache. Upload: PDF/JPEG/PNG bis 10 MB.
 
@@ -122,14 +122,12 @@ class MyAction extends ResourceAction {
 
     async execute(
         { rows, resource, instance, values }: ActionContext,
-        confirmation?: string,
     ) {
         await dataProvider.action(
             resource.name,
             this.id,
             rows,
             values,
-            confirmation,
         );
         instance.form?.setValue("notes", "Aktion ausgeführt", {
             shouldDirty: true,

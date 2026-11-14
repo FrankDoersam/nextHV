@@ -39,7 +39,7 @@ Der wiederholbare Seeder erzeugt auf leerer Datenbank 10 Objekte mit je 5 Einhei
 | REST-Schema           | `app/Rest/Resources`                                                             | Felder, Regeln, Relationen, Versionen, Actions, berechnete Werte                                                                    |
 | UI-Metadaten          | `app/Rest/Ui`, `config/ui.php`, `resources/js/framework/data/resource-schema.ts` | Native REST-Details erweitern und UI-Registry ergänzen: Optionswerte, Relationsziele, Picker-Scopes, Operatoren und Eingabehinweise |
 | REST-Actions          | `app/Rest/Actions`                                                               | Autorisierung, Einzel-/Bulk-Ziel, Bestätigung, Übergabe an Fachaktionen, Ergebnisvertrag                                            |
-| Zusätzliche Endpunkte | `app/Http/Controllers`                                                           | Login, private Dokumente, Clone-Defaults, Löschvorprüfung, PDF-Abruf                                                                |
+| Zusätzliche Endpunkte | `app/Http/Controllers`                                                           | Login, private Dokumente, Clone-Defaults, PDF-Abruf                                                                |
 | UI-Primitives         | `resources/js/components/ui`                                                     | Offizielle Base-UI-/shadcn-Bausteine                                                                                                |
 | REUI                  | `resources/js/components/reui`                                                   | Öffentliche REUI-Quellen, einschließlich DataGrid, Stepper, TimePicker, NumberField und Alert                                       |
 | App-Blöcke            | `resources/js/components/blocks`                                                 | AppShell, Cards, Listen, KPIs, Overlay, Layout, Auth, LazyTabs                                                                      |
@@ -108,7 +108,6 @@ export const resource: ResourceDefinition = {
         new InspectPropertyAction(),
         new DeleteAction(),
     ],
-    deletionCheck: true,
 };
 ```
 
@@ -243,14 +242,9 @@ Eine `ResourceAction` definiert `id`, `label`, optional `icon`, `description`, `
 
 ### Löschregeln am Objekt
 
-`CheckPropertyDeletion` liefert pro Objekt alle Gründe. Es blockiert:
+Nach der einmaligen Bestätigung im Dialog sendet die UI genau einen `DELETE /api/v1/{resource}` mit den ausgewählten IDs. Es gibt keinen Vorprüfungsendpunkt, keine `deletionCheck`-Option, keine Blockaden-Vorschau und keinen Lösch-Token mehr.
 
-1. Status `active`;
-2. vorhandene Einheiten, einschließlich soft-gelöschter Einheiten.
-
-Die Prüfung der Relationen verwendet eine gemeinsame `EXISTS`-Projektion statt jede Einheit zu laden. Der Vorprüfungsendpunkt lädt die angefragten IDs gesammelt; er führt keine einzelne Exists-Validierungsabfrage je ID aus. Die UI zeigt alle Blockaden und entfernt den destruktiven Submit. Es wird kein Teil der Auswahl gelöscht.
-
-Auch ohne UI-Vorprüfung erzwingen `PropertyResource::destroyConfirmation` und `PropertyObserver` dieselben Regeln. Nach einem erhaltenen Bestätigungstoken wird der Status erneut geprüft. Für erlaubte Löschungen bleibt der signierte `428`-Bestätigungsablauf aktiv. Der Vorprüfungsendpunkt akzeptiert maximal 100 IDs.
+`PropertyObserver::deleting` prüft die fachlichen Regeln direkt bei der Ausführung: aktive Objekte sowie Objekte mit Einheiten (auch soft-gelöschten) bleiben erhalten. Andere Modelle verwenden ihre vorhandenen Observer. Die native REST-Transaktion rollt die gesamte Mehrfachlöschung zurück, sobald ein Datensatz abgelehnt wird. Fehler kommen als verständliche Backend-Meldungen zurück und werden im selben Dialog angezeigt; die Auswahl bleibt erhalten. Ein erneuter Versuch erfolgt nur nach einem weiteren bewussten Klick.
 
 ### Clone-Defaults
 
@@ -350,7 +344,6 @@ Die Detailseite priorisiert Einheiten, Belegung, nächste Prüfung und Verantwor
 | `DELETE /api/v1/{resource}`                     | Löschen mit signierter Bestätigung                         |
 | `POST /api/v1/{resource}/actions/{action}`      | Einzel-/Bulk-Action                                        |
 | `POST /api/v1/properties/metrics/overview`      | Portfolio-/Objekt-KPIs                                     |
-| `POST /api/v1/properties/deletion-check`        | `{resources: [1,2]}` → Blockaden pro Objekt                |
 | `GET /api/v1/properties/{id}/clone-defaults`    | Objekt-Klonvorbelegung                                     |
 | `GET /api/v1/units/{id}/clone-defaults`         | Einheiten-Klonvorbelegung                                  |
 | `GET /api/v1/properties/{id}/report?...`        | Signierter PDF-Abruf                                       |
@@ -389,7 +382,7 @@ npm test
 npm run build
 ```
 
-Featuretests decken unter anderem Auth, Seeder, Verträge, Historie, Dokumentenschutz, Versionskonflikte, Bestätigung, deaktivierte Permissions sowie neu Löschblockaden, konstante Vorprüfungsabfragen, Klondefaults, virtuelle schreibgeschützte Felder und den PDF-Abruf ab. React-Tests prüfen Wizard/Dirty-State, echte REUI-Tabellen, URL-Zustand, Deep-Link-Hydrierung, Browser-Zurück, geschachtelte gesperrte Relationsformulare, Currency-Parsing, Mehrfachauswahl, Datumsformat und mehrteilige Alerts.
+Featuretests decken unter anderem Auth, Seeder, Verträge, Historie, Dokumentenschutz, Versionskonflikte, Bestätigung, deaktivierte Permissions sowie direkte Löschfehler und transaktionales Zurückrollen einer Mehrfachlöschung, Klondefaults, virtuelle schreibgeschützte Felder und den PDF-Abruf ab. React-Tests prüfen Wizard/Dirty-State, echte REUI-Tabellen, URL-Zustand, Deep-Link-Hydrierung, Browser-Zurück, geschachtelte gesperrte Relationsformulare, Currency-Parsing, Mehrfachauswahl, Datumsformat und mehrteilige Alerts.
 
 Die Playwright-Suite prüft die Oberfläche mit einer isolierten Testdatenbank; der separate Screenshot-Workflow erzeugt die Aufnahmen aus Abschnitt 22. Ein blockierter oder fehlgeschlagener Browserstart ist keine visuelle Abnahme. Browsernative PDF-Einbettung, responsive Details und die tatsächliche Zielumgebung müssen geprüft werden; Komponententests ersetzen keine pixelgenaue Browserabnahme.
 
@@ -828,7 +821,7 @@ Maßstab: Eine Domain-Action bleibt bestehen, wenn sie eine benannte fachliche O
 | `CloneProperty`         | Behalten. Transaktion, Prüftermin-Reset und optionales Kopieren physischer Einheiten sind fachliche Kopierregeln. `CloneUnit` wird explizit per Konstruktor injiziert.                                                      |
 | `CloneUnit`             | Behalten. Physische Stammdaten kopieren, Zustand `ready`, keine Verträge oder Mieterdaten übernehmen. Derselbe Ablauf wird separat und beim Objekt-Klon verwendet.                                                          |
 | `CloneDefaults`         | Behalten. Nummer, Kopiebezeichnung und `with_units` sind gemeinsame Produktvorgaben für Vorbelegung und Ausführung. Ein Modell-agnostischer Generator wäre derzeit nur zusätzliche Indirektion.                             |
-| `CheckPropertyDeletion` | Behalten. Die beiden Regeln sind fachlich; Vorschau und Ausführung verwenden dieselbe Prüfung. `withExists` liefert die Vorprüfung gesammelt, ohne Einheiten zu laden.                                                      |
+| `PropertyObserver` | Prüft Status und vorhandene Einheiten direkt beim Löschen. Die separate Vorprüfung wurde entfernt; native REST-Transaktionen sichern Mehrfachlöschungen ab. |
 | `CalculateOverview`     | Behalten. Stichtag, laufende Verträge und wirksame Konditionen definieren Kennzahlen. Metric und PDF nutzen dieselbe Berechnung.                                                                                            |
 | `BuildPropertyReport`   | Behalten. Ein konkreter fachlicher Bericht, kein zweites CRUD-System. Ein generisches PDF-Templating-Framework wäre erst bei mehreren wiederholten Berichtlayouts sinnvoll.                                                 |
 
@@ -898,8 +891,8 @@ Vorhandenseinsregeln (`required`, `filled`, `present`) werden vor Typprüfungen 
 | `interaction`                     | `dialog` mit Vorbereitung/Bestätigung oder `immediate`. Auch direkte Aktionen verwenden Fehlerbehandlung und denselben Ergebnis-Dispatcher.                                                   |
 | `refresh`                         | Standard `true`; `false` für reine Formularaktionen oder Aktionen mit eigener Zeilenprojektion.                                                                                               |
 | `fieldsFor(context)`              | Dynamische Action-Felder, etwa die vom Resource-Schema freigegebenen Bulk-Felder.                                                                                                             |
-| `prepare(context)`                | Asynchrone Defaults oder Blockaden vor dem Ausführen.                                                                                                                                         |
-| `execute(context, confirmation?)` | Zugriff auf echte Zeilen, Instanz und Eingaben; Rückgabe entsprechend `ActionUIResult` bzw. dem REST-Ergebnisvertrag.                                                                         |
+| `prepare(context)`                | Optional: asynchrone Defaults, etwa für Duplizieren. Ohne Implementierung findet keine Vorbereitung statt.                                                                                                                                         |
+| `execute(context)` | Zugriff auf echte Zeilen, Instanz und Eingaben; Rückgabe entsprechend `ActionUIResult` bzw. dem REST-Ergebnisvertrag.                                                                         |
 
 Die tatsächliche Anzahl und IDs sind stets eindeutig:
 
@@ -945,7 +938,7 @@ return {
 
 Für Datenbankänderungen weiterhin den Provider oder die Backend-Action aufrufen. `document` öffnet weiterhin die PDF-Komponente, `details` eine Ergebnisansicht. Unbekannte Ergebnisformen werden abgewiesen. Für eine eigene Formular-Komposition außerhalb des Editors sind `FormProvider` und `FormActionScope` explizit einzubinden.
 
-`ActionMenu` und `ActionButtons` verwenden dieselben Definitionen. Die Collection bindet `table`, `row` und `bulk`, die Detailseite `detail`, der Editor `form`. Die eingebaute Edit-Aktion bleibt direkt; destructive Actions nutzen weiterhin Vorprüfung und Serverbestätigung. Die bestehenden expliziten Hauptbuttons „Bearbeiten“ bleiben erhalten.
+`ActionMenu` und `ActionButtons` verwenden dieselben Definitionen. Die Collection bindet `table`, `row` und `bulk`, die Detailseite `detail`, der Editor `form`. Die eingebaute Edit-Aktion bleibt direkt; Löschen verwendet einen Bestätigungsdialog mit genau einem DELETE und Fehleranzeige aus dem Backend. Die bestehenden expliziten Hauptbuttons „Bearbeiten“ bleiben erhalten.
 
 ## 28. Schwebende Auswahlleiste und native Mehrfachbearbeitung
 
@@ -1177,7 +1170,7 @@ public function metrics(): array
 
 `POST /api/v1/{resource}/metrics/summary` erhält dieselbe debouncte Suche, freigegebenen Filter und festen Relationsfilter wie die Liste. Paging, Sortierung, Includes und Zeilenauswahl werden nicht übertragen. Der native REST-Query bleibt Ausgangspunkt jeder Berechnung; jede Closure bekommt einen unabhängigen Clone ohne Sortierung. Kennzahlen gelten damit für die **gesamte gefilterte Auswahl**, nicht nur die aktuelle Seite. Bestehende Rechte-/Perimeter-Konfiguration wird unverändert übernommen; die zuvor vertagten Organisationsgrenzen werden dadurch nicht nachgerüstet.
 
-Objekte zeigen Anzahl, aktive Objekte, zugehörige Einheiten und Grundstücksfläche. Verträge zeigen Anzahl, aktive Verträge, Entwürfe und vereinbarte Kautionen. Vier Aggregationsabfragen je Metric, keine Abfrage je Tabellenzeile. `CollectionKpis` verwendet einheitliche Stat-Karten mit Icon, Label und klarer Wert-Hierarchie; initial Skeletons und bei Fehlern Wiederholen. Zahlen, Euro und Einheiten werden zentral formatiert. Es gibt keine erfundenen Trends oder Zahlungseingänge. Kleine Viewports verwenden zwei Spalten.
+Objekte zeigen Anzahl, aktive Objekte, zugehörige Einheiten und Grundstücksfläche. Verträge zeigen Anzahl, aktive Verträge, Entwürfe und vereinbarte Kautionen. Vier Aggregationsabfragen je Metric, keine Abfrage je Tabellenzeile. `CollectionKpis` verwendet eine integrierte Stat-Zeile mit Icon, Label, feinen Zellteilern und klarer Wert-Hierarchie; initial Skeletons und bei Fehlern Wiederholen. Zahlen, Euro und Einheiten werden zentral formatiert. Es gibt keine erfundenen Trends oder Zahlungseingänge. Kleine Viewports verwenden zwei Spalten.
 
 Nach einer Standardmutation werden aktive Kennzahlen der Resource gezielt invalidiert; die Tabellenzeile wird wie bisher aus der Mutationsantwort gepatcht. Das Grid wird beim Edit nicht komplett nachgeladen. Bei gecachten Eltern werden deren Datensatz und aktive Kennzahlen aktualisiert. Neue Einträge und expliziter Tabellen-Refresh laden die entsprechende Liste weiter regulär.
 
@@ -1449,7 +1442,9 @@ Die benannten REUI-Blockvorschauen sind Gestaltungsreferenzen, keine Behauptung 
 
 `framework/navigation/panels.ts` ist der einzige URL-Codec. Das Standard-Sheet braucht keinen Darstellungsparameter; `layout=dialog` ist optional. `parent=properties/16&bind=property_id` bindet eine neue Einheit an das Objekt. `prefill=1` macht den Bezug editierbar, ohne diesen Parameter bleibt er gesperrt. `wizard=1`, `reduced=1`, `fields=notes,code` und `back=view` steuern die Oberfläche. Für weitere Ebenen verwenden dieselben Parameter `p2.`, `p3.` usw. Die maximal acht Ebenen funktionieren nach Reload und mit Browser-Zurück; private Formwerte und zufällige UI-Schlüssel stehen nie im Link. Alte `panels=[…]`-Links werden weiterhin gelesen und beim nächsten Panel-Wechsel in das neue Format geschrieben. Legacy-Flows behalten `flow`, `step` und gespeicherte `records`-Referenzen; unbekannte oder unvollständige Abläufe werden verworfen.
 
-Der Klick auf **Löschen** im geöffneten `ActionDialog` ist die ausdrückliche Zustimmung. Vorprüfungen bleiben erhalten. Falls die API `428` mit einem signierten Token sendet, führt derselbe Dialog genau eine Folgeanfrage aus. Während der Ausführung sind Schließen und Submit gesperrt. Erfolgreiche Aktionen aktualisieren die betroffenen Ansichten und schließen den Dialog; Validierungs-, Versions- und Netzwerkfehler bleiben darin sichtbar. Eine erneut abgelehnte Token-Anfrage wird nicht automatisch wiederholt. Auch alle anderen Dialog-Actions verwenden diesen Ablauf. Schlägt nach einer erfolgreichen Mutation nur die Aktualisierung fehl, bleibt die Erfolgsanzeige erhalten und erneutes Ausführen ist gesperrt.
+Der Klick auf **Löschen** im geöffneten `ActionDialog` ist die einmalige Zustimmung und führt direkt einen DELETE aus. Es gibt weder Vorprüfung noch einen zweiten Bestätigungsrequest. Während der Ausführung sind Schließen und Submit gesperrt. Nach Erfolg werden die betroffenen Ansichten aktualisiert und der Dialog geschlossen; Backend- und Netzwerkfehler bleiben darin sichtbar. Schlägt nach erfolgreichem Löschen nur die Aktualisierung fehl, ist erneutes Ausführen gesperrt. `prepare(context)` ist ausschließlich für optionale Action-Defaults vorgesehen und wird ohne Implementierung nicht gestartet.
+
+Verbindliche Fachaktionen wie Vertragsaktivierung behalten ihre explizite serverseitige Bestätigung. Ausschließlich `dataProvider.action` behandelt dafür einen signierten `428`-Handshake mit genau einer Folgeanfrage. Die UI ruft `execute(context)` nur einmal auf; `dataProvider.destroy` hat keinen Token-Parameter und wiederholt fehlgeschlagene Löschungen nicht automatisch.
 
 Toasts und die `sonner`-Abhängigkeit sind entfernt. Speichern zeigt das aktualisierte Formular bzw. schließt den Editor; Fehler bleiben am Formular. Sheets und Dialoge haben keinen Kopierbutton; Direktlinks bleiben über die Browseradresse verfügbar. Fehler direkter Actions erscheinen als beständiger Fehlerdialog, Abmeldefehler im Arbeitsbereich. Fachliche Ergebnisse wie PDF und Detailauswertungen behalten ihren Ergebnisdialog.
 
@@ -1525,7 +1520,7 @@ Die umfangreiche Screenshot-Tour berücksichtigt an Aufnahmegrenzen und vor zus�
 
 URL-Parameter, Browser-Zurück, bestehende Direktlinks und Lazy-Mounting bleiben erhalten. Ein unbekannter Tab öffnet den konfigurierten Anfangsbereich, ersatzweise den ersten vorhandenen Bereich. `RelationDefinition.navigationLabel` erlaubt eine kurze Navigationsbeschriftung unabhängig vom vollständigen Relationstitel. Im Vertrag heißen die Bereiche nun **Übersicht**, **Beteiligte**, **Konditionen**, **Kündigungen**, **Verknüpfungen** und **Eingehende Links**. Die IDs und getrennten Richtungen der Vertragsverknüpfungen bleiben unverändert.
 
-`MetricCard` / `MetricCardGrid` sind die gemeinsame Kennzahlenbasis für Vertrag, Objekt, Dashboard und Tabellen. Jede Kennzahl besitzt eine eigene, einfach umrandete Karte mit Titel, hervorgehobenem Wert und optionalem, durch eine Linie getrenntem Zusatztext. Doppelte Rahmen entfallen. Es gibt keinen zusätzlichen äußeren Kartenheader. Das Raster zeigt zwei Karten auf schmalen und vier ab 40rem Inhaltsbreite; `MetricGrid` und `WorkspaceColumns variant="metrics"` delegieren an dieselbe Basis. Der frühere `compact`-Parameter von `MetricGrid` bleibt kompatibel, erzeugt aber keinen abgeschnittenen inneren Scrollbereich mehr.
+`MetricCard` / `MetricCardGrid` sind die Kennzahlenbasis für Vertrag, Objekt und Dashboard. Tabellen verwenden dieselbe Wertdarstellung mit `appearance="inset"` innerhalb ihrer gemeinsamen Listenfläche (Abschnitt 37). Jede Kennzahl besitzt eine eigene, einfach umrandete Karte mit Titel, hervorgehobenem Wert und optionalem, durch eine Linie getrenntem Zusatztext. Doppelte Rahmen entfallen. Es gibt keinen zusätzlichen äußeren Kartenheader. Das Raster zeigt zwei Karten auf schmalen und vier ab 40rem Inhaltsbreite; `MetricGrid` und `WorkspaceColumns variant="metrics"` delegieren an dieselbe Basis. Der frühere `compact`-Parameter von `MetricGrid` bleibt kompatibel, erzeugt aber keinen abgeschnittenen inneren Scrollbereich mehr.
 
 ```tsx
 <MetricGrid
@@ -1557,9 +1552,9 @@ Regression: Der Interaktionstest prüft Überlaufwahl, verzögertes Mounting, er
 
 Die Shell folgt dem Aufbau von REUI `app-shell-7` in heller Darstellung: durchgehender 52-px-Kopf, schmale 240-px-Navigation, neutrale aktive Menüzeilen, einklappbare Gruppen und Kontobereich unten. Die kompakte Icon-Leiste und das mobile Menü verwenden weiterhin denselben Navigationsbaum. Die festgelegten Abstände gelten zentral in `AppShell` und `PageWrapper`. Es gibt keine zusätzlichen Umgebungs-/Systemanzeigen oder Suchfelder in der Sidebar.
 
-`ResourcePage` braucht keinen umschließenden `SectionCard` mehr. `ResourceCollection` ordnet die kompakten, separaten KPI-Karten oberhalb von `CollectionSurface` an. Diese gemeinsame Fläche enthält genau eine Ansichtsnavigation, die Toolbar, Datensätze und Paging. Eingebettete Relationstabellen behalten `compact` und erhalten keinen zusätzlichen Außenrahmen. Die Ladeansicht benutzt dieselben Komponenten und dieselbe Hierarchie.
+`ResourcePage` braucht keinen umschließenden `SectionCard` mehr. `ResourceCollection` übergibt die Kennzahlen an den `summary`-Slot von `CollectionSurface`. Diese gemeinsame Fläche enthält eine integrierte Kennzahlenzeile mit feinen Trennlinien, genau eine Ansichtsnavigation, die Toolbar, Datensätze und Paging. Ein zusätzlicher Abstand und separate Kartenrahmen oberhalb der Tabelle entfallen. Eingebettete Relationstabellen behalten `compact` und erhalten keinen zusätzlichen Außenrahmen. Die Ladeansicht benutzt dieselben Komponenten und dieselbe Hierarchie.
 
-- `MetricCard density="compact"`: für Listenkennzahlen, ohne hohe Hinweiszeile. Zusatzbeschreibungen sind am Kartentitel verfügbar. Schriftgröße und Raster passen sich der tatsächlichen Karten-/Containerbreite an; kein horizontaler KPI-Scrollbereich.
+- `MetricCard density="compact" appearance="inset"`: für Listenkennzahlen, ohne hohe Hinweiszeile. Zusatzbeschreibungen sind am Kartentitel verfügbar. Schriftgröße und Raster passen sich der tatsächlichen Karten-/Containerbreite an; kein horizontaler KPI-Scrollbereich.
 - `ResponsiveTabList`: jetzt auch für `CollectionViews`. Tabs bleiben in einer Zeile; **Weitere Ansichten** übernimmt den Überlauf. Der aktive Tab bleibt sichtbar. URL, Query, feste Elternfilter und Zählercache ändern sich nicht. `ariaLabel`, `panelId`, `moreLabel` und `tabs[].domId` erlauben korrekte Zuordnung zu einem bestehenden Tabpanel.
 - Toolbar unter 560 px Inhaltsbreite: Suche in der ersten Zeile, Filter/Gruppierung und Aktionen in der zweiten. Die Gruppierung erhält einen beschrifteten Icon-Trigger (`ChoicePicker.iconOnly`); Export und Aktualisieren bleiben über **Weitere Tabellenaktionen** erreichbar. Der Erstellen-Button zeigt **Neu**, behält aber den vollständigen zugänglichen Namen. Benutzerdefinierte Actions bleiben verfügbar.
 - Unter 768 px Fensterbreite scrollt die gesamte Listenansicht im Workspace. `TableViewport.pageFlow` verhindert verschachtelte mobile Scrollfenster; alle Spalten bleiben als beschriftete Kartenwerte lesbar. Das Paging bleibt unten an der sichtbaren Fläche. Sein `compact`-Modus zeigt Seitengröße, Trefferbereich sowie Vor/Zurück in einer Zeile; die vollständige Seitenwahl bleibt auf breiten Flächen erhalten. Ab 768 px bleibt die Tabelle ein eigener Scrollbereich mit fixiertem Kopf und danebenliegendem Footer.

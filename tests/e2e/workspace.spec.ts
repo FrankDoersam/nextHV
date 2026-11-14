@@ -125,18 +125,16 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
         .getByRole("checkbox", { name: "Zeile auswählen", exact: true })
         .click();
     await page.getByRole("button", { name: "Löschen", exact: true }).click();
+    const deletion = page.getByRole("dialog", { name: "Löschen", exact: true });
+    await expect(deletion).toBeVisible();
+    await deletion
+        .getByRole("button", { name: "Löschen", exact: true })
+        .click();
     await expect(
-        page.getByRole("heading", {
-            name: "Löschen nicht möglich",
-            exact: true,
-        }),
+        deletion.getByText("Das Objekt ist aktiv. Bitte zuerst archivieren."),
     ).toBeVisible();
-    await expect(
-        page.getByText("Das Objekt ist aktiv. Bitte zuerst archivieren."),
-    ).toBeVisible();
-    await page
-        .getByRole("button", { name: "Schließen", exact: true })
-        .last()
+    await deletion
+        .getByRole("button", { name: "Abbrechen", exact: true })
         .click();
     await page.getByRole("link", { name: "Verträge", exact: true }).click();
     await page

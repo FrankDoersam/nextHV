@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormProvider, useForm } from "react-hook-form";
-import { Check, LoaderCircle, ShieldAlert, Trash2 } from "lucide-react";
+import { Check, LoaderCircle, Trash2 } from "lucide-react";
 import { ErrorState, Loading } from "@/components/blocks/content";
 import { FieldGrid } from "@/components/blocks/layout";
 import { Overlay } from "@/components/blocks/overlay";
 import { ResourceField } from "@/components/fields/field";
-import { Alert, AlertTitle, AlertDescription } from "@/components/reui/alert";
 import { Button } from "@/components/ui/button";
 import { actionAvailability, type ResourceAction } from "../actions";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -43,7 +42,8 @@ export function ActionDialog({
             context.resource.name,
             context.rows.map((r) => r.id),
         ],
-        queryFn: async () => (await action.prepare(context)) ?? {},
+        enabled: !!action.prepare,
+        queryFn: async () => (await action.prepare?.(context)) ?? {},
         staleTime: 0,
         gcTime: 0,
     });
@@ -56,8 +56,7 @@ export function ActionDialog({
                 initialValues(fields, undefined, preparation.data.defaults),
             );
     }, [preparation.data, fields, form]);
-    const blockers = preparation.data?.blockers ?? [];
-    const blocked = !!blockers.length;
+    const preparing = !!action.prepare && preparation.isPending;
     const execute = async (values: Values) => {
         if (running.current || succeeded) return;
         const availability = actionAvailability(action, context);
@@ -84,26 +83,13 @@ export function ActionDialog({
         form.clearErrors();
         let completed = false;
         try {
-            // The dialog's submit is the user's consent. Complete the server handshake once.
-            const requestContext = { ...context, values: submitted };
-            let response: unknown;
-            try {
-                response = await action.execute(requestContext);
-            } catch (challenge) {
-                if (
-                    !(challenge instanceof ApiError) ||
-                    challenge.status !== 428 ||
-                    !challenge.confirmation?.token
-                )
-                    throw challenge;
-                response = await action.execute(
-                    requestContext,
-                    challenge.confirmation.token,
-                );
-            }
-            onComplete(response);
+            const response = await action.execute({
+                ...context,
+                values: submitted,
+            });
             completed = true;
             setSucceeded(true);
+            onComplete(response);
             const records = (response as { records?: RecordData[] } | undefined)
                 ?.records;
             if (Array.isArray(records)) {
@@ -148,7 +134,7 @@ export function ActionDialog({
             onClose={onClose}
             busy={busy}
             size="compact"
-            title={blocked ? "Löschen nicht möglich" : action.label}
+            title={action.label}
             description={
                 action.description ??
                 `${context.rows.length} ${context.rows.length === 1 ? context.resource.singular : context.resource.label} ausgewählt`
@@ -157,16 +143,16 @@ export function ActionDialog({
             footer={
                 <>
                     <Button variant="outline" disabled={busy} onClick={onClose}>
-                        {blocked || succeeded ? "Schließen" : "Abbrechen"}
+                        {succeeded ? "Schließen" : "Abbrechen"}
                     </Button>
-                    {!blocked && !succeeded && (
+                    {!succeeded && (
                         <Button
                             variant={
                                 action.destructive ? "destructive" : "default"
                             }
                             disabled={
                                 busy ||
-                                preparation.isPending ||
+                                preparing ||
                                 preparation.isError ||
                                 (action.selectableFields && !selected.length)
                             }
@@ -190,39 +176,13 @@ export function ActionDialog({
             }
         >
             <div className="space-y-5">
-                {preparation.isPending ? (
+                {preparing ? (
                     <Loading rows={1} />
                 ) : preparation.error ? (
                     <ErrorState
                         error={preparation.error}
                         retry={() => preparation.refetch()}
                     />
-                ) : blocked ? (
-                    <Alert variant="warning">
-                        <ShieldAlert />
-                        <AlertTitle className="line-clamp-none">
-                            Diese Auswahl kann nicht gelöscht werden
-                        </AlertTitle>
-                        <AlertDescription>
-                            <ul className="space-y-3">
-                                {blockers.map((b, i) => (
-                                    <li key={i}>
-                                        <p className="font-medium text-foreground">
-                                            {b.label}
-                                        </p>
-                                        <ul className="mt-1 list-disc space-y-1 pl-4">
-                                            {b.reasons.map((r) => (
-                                                <li key={r}>{r}</li>
-                                            ))}
-                                        </ul>
-                                    </li>
-                                ))}
-                            </ul>
-                            <p className="mt-2">
-                                Es wurde kein Datensatz gelöscht.
-                            </p>
-                        </AlertDescription>
-                    </Alert>
                 ) : (
                     <>
                         {!!error && <ErrorState error={error} />}
@@ -307,7 +267,7 @@ export function ActionDialog({
                                     {!fields.length && !succeeded && (
                                         <p className="text-sm leading-6 text-muted-foreground">
                                             {action.destructive
-                                                ? `${context.rows.length} ${context.rows.length === 1 ? "Datensatz" : "Datensätze"} endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden.`
+                                                ? `${context.rows.length} ${context.rows.length === 1 ? "Datensatz" : "Datensätze"} wirklich löschen?`
                                                 : `${action.label} für die Auswahl ausführen.`}
                                         </p>
                                     )}

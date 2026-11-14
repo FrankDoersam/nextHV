@@ -349,6 +349,14 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     ).toBeVisible();
     await capture("08-bulk-loeschen");
     const deletion = page.getByRole("dialog", { name: "Löschen", exact: true });
+    let deleteRequests = 0;
+    page.on("request", (request) => {
+        if (
+            request.method() === "DELETE" &&
+            new URL(request.url()).pathname === "/api/v1/contracts"
+        )
+            deleteRequests++;
+    });
     await deletion
         .getByRole("button", { name: "Löschen", exact: true })
         .click();
@@ -358,6 +366,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         ),
     ).toBeVisible();
     await expect(page.getByRole("dialog")).toHaveCount(1);
+    expect(deleteRequests).toBe(1);
     await expect(
         page.getByRole("button", { name: "Löschen bestätigen" }),
     ).toHaveCount(0);

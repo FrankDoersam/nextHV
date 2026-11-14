@@ -8,7 +8,13 @@ const originalConditions = {
 };
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+    cleanup,
+    render,
+    screen,
+    waitFor,
+    within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -410,32 +416,36 @@ describe("navigation and results", () => {
         await screen.findByText("Berlin");
         expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     });
-    it("shows all deletion blockers and removes the destructive submit", async () => {
-        vi.spyOn(DeleteAction.prototype, "prepare").mockResolvedValue({
-            blockers: [
-                {
-                    label: "Lindenhöfe",
-                    allowed: false,
-                    reasons: ["Aktives Objekt", "Einheiten vorhanden"],
-                },
-            ],
-        });
+    it("confirms once and shows backend deletion errors in the same dialog", async () => {
+        const destroy = vi
+            .spyOn(dataProvider, "destroy")
+            .mockRejectedValue(
+                new ApiError(
+                    422,
+                    "Das Objekt ist aktiv. Bitte zuerst archivieren.",
+                ),
+            );
         const user = userEvent.setup();
         mount(<ResourceCollection resource={resource} />);
         await user.click(
             await screen.findByRole("checkbox", { name: "Zeile auswählen" }),
         );
         await user.click(screen.getByRole("button", { name: "Löschen" }));
+        const dialog = await screen.findByRole("dialog", { name: "Löschen" });
+        expect(destroy).not.toHaveBeenCalled();
+        await user.click(
+            within(dialog).getByRole("button", { name: "Löschen" }),
+        );
         expect(
-            await screen.findByRole("heading", {
-                name: "Löschen nicht möglich",
-            }),
+            await within(dialog).findByText(
+                "Das Objekt ist aktiv. Bitte zuerst archivieren.",
+            ),
         ).toBeVisible();
-        expect(screen.getByText("Aktives Objekt")).toBeVisible();
-        expect(screen.getByText("Einheiten vorhanden")).toBeVisible();
+        expect(destroy).toHaveBeenCalledExactlyOnceWith("properties", rows);
+        expect(screen.getAllByRole("dialog")).toHaveLength(1);
         expect(
-            screen.queryByRole("button", { name: "Löschen bestätigen" }),
-        ).not.toBeInTheDocument();
+            within(dialog).getByRole("button", { name: "Löschen" }),
+        ).toBeEnabled();
     });
 });
 function Fields() {

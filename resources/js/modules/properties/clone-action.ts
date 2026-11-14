@@ -31,16 +31,7 @@ export class CloneAction extends ResourceAction {
         }>(`/api/v1/${resource.name}/${rows[0].id}/clone-defaults`);
         return { defaults: response.data };
     }
-    async execute(
-        { rows, resource, values }: ActionContext,
-        confirmation?: string,
-    ) {
-        return dataProvider.action(
-            resource.name,
-            this.id,
-            rows,
-            values,
-            confirmation,
-        );
+    async execute({ rows, resource, values }: ActionContext) {
+        return dataProvider.action(resource.name, this.id, rows, values);
     }
 }

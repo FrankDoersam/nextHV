@@ -48,12 +48,10 @@ class PropertyPlatformTest extends TestCase
 
     private function confirmed(string $path, array $body)
     {
-        $method = str_ends_with($path, '/destroy') ? 'deleteJson' : 'postJson';
-        $path = str_replace('/destroy', '', $path);
-        $response = $this->$method($path, $body);
+        $response = $this->postJson($path, $body);
         $response->assertStatus(428);
 
-        return $this->$method($path, [...$body, 'confirmation' => $response->json('confirmation.token')]);
+        return $this->postJson($path, [...$body, 'confirmation' => $response->json('confirmation.token')]);
     }
 
     public function test_api_requires_authentication(): void
@@ -119,12 +117,11 @@ class PropertyPlatformTest extends TestCase
         $this->assertDatabaseCount('units', 1);
     }
 
-    public function test_empty_property_delete_requires_signed_confirmation(): void
+    public function test_empty_property_is_deleted_by_one_request_without_a_confirmation_token(): void
     {
         $p = Property::factory()->create(['status' => 'archived']);
         $body = ['resources' => [$p->id]];
-        $this->deleteJson('/api/v1/properties', [...$body, 'confirmation' => 'invalid'])->assertStatus(428);
-        $this->confirmed('/api/v1/properties/destroy', $body)->assertOk();
+        $this->deleteJson('/api/v1/properties', $body)->assertOk();
         $this->assertSoftDeleted($p);
     }
 

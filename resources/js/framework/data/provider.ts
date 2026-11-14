@@ -5,7 +5,7 @@ import type {
     ResourceDefinition,
     Values,
 } from "../types";
-import { request } from "./http";
+import { ApiError, request } from "./http";
 import { creationFields } from "../forms/create-relations";
 export interface ListParams {
     page?: number;
@@ -158,32 +158,48 @@ export const dataProvider = {
             `/api/v1/${resource.name}/mutate`,
             mutationPayload(resource, values, rows),
         ),
-    destroy: (resource: string, rows: RecordData[], confirmation?: string) =>
+    destroy: (resource: string, rows: RecordData[]) =>
         request(
             `/api/v1/${resource}`,
             {
                 resources: rows.map((r) => r.id),
-                ...(confirmation ? { confirmation } : {}),
             },
             "DELETE",
         ),
-    action: (
+    action: async (
         resource: string,
         action: string,
         rows: RecordData[],
         values: Values = {},
-        confirmation?: string,
-    ) =>
-        request<{
-            data: { impacted: number; result?: { data?: { ids: number[] } } };
-        }>(`/api/v1/${resource}/actions/${action}`, {
+    ) => {
+        const path = `/api/v1/${resource}/actions/${action}`;
+        const body = {
             resources: rows.map((r) => r.id),
             fields: Object.entries(values).map(([name, value]) => ({
                 name,
                 value,
             })),
-            ...(confirmation ? { confirmation } : {}),
-        }),
+        };
+        type ActionResponse = {
+            data: { impacted: number; result?: { data?: { ids: number[] } } };
+        };
+        try {
+            return await request<ActionResponse>(path, body);
+        } catch (error) {
+            // Only domain actions can require a signed handshake after the user's submit.
+            // DELETE is a single request and never enters this path.
+            if (
+                !(error instanceof ApiError) ||
+                error.status !== 428 ||
+                !error.confirmation?.token
+            )
+                throw error;
+            return request<ActionResponse>(path, {
+                ...body,
+                confirmation: error.confirmation.token,
+            });
+        }
+    },
     summary: (
         resource: ResourceDefinition,
         metric: string,

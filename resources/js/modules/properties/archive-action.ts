@@ -8,13 +8,7 @@ export class ArchiveAction extends ResourceAction {
     visible(row?: RecordData) {
         return !row || row.status !== "archived";
     }
-    async execute({ rows, resource }: ActionContext, confirmation?: string) {
-        return dataProvider.action(
-            resource.name,
-            this.id,
-            rows,
-            {},
-            confirmation,
-        );
+    async execute({ rows, resource }: ActionContext) {
+        return dataProvider.action(resource.name, this.id, rows, {});
     }
 }

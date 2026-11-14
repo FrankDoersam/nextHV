@@ -60,10 +60,15 @@ export function CollectionLoading({
         <CollectionPage>
             <PageHeader title={resource.label} />
             <div className="flex min-w-0 flex-col gap-4 md:min-h-0 md:flex-1">
-                {resource.summary && (
-                    <CollectionKpis definition={resource.summary} loading />
-                )}
                 <CollectionSurface
+                    summary={
+                        resource.summary ? (
+                            <CollectionKpis
+                                definition={resource.summary}
+                                loading
+                            />
+                        ) : undefined
+                    }
                     navigation={
                         resource.views?.length ? (
                             <Tabs value={selectedView}>

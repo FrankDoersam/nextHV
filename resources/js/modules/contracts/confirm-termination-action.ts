@@ -17,13 +17,7 @@ export class ConfirmTerminationAction extends ResourceAction {
     visible(row?: import("@/framework/types").RecordData) {
         return row?.status === "received";
     }
-    execute({ resource, rows, values }: ActionContext, confirmation?: string) {
-        return dataProvider.action(
-            resource.name,
-            this.id,
-            rows,
-            values,
-            confirmation,
-        );
+    execute({ resource, rows, values }: ActionContext) {
+        return dataProvider.action(resource.name, this.id, rows, values);
     }
 }

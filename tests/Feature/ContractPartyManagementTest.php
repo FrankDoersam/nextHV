@@ -163,9 +163,6 @@ class ContractPartyManagementTest extends TestCase
 
     private function deleteParties(array $ids): TestResponse
     {
-        $body = ['resources' => $ids];
-        $confirmation = $this->deleteJson('/api/v1/contract-parties', $body)->assertStatus(428);
-
-        return $this->deleteJson('/api/v1/contract-parties', [...$body, 'confirmation' => $confirmation->json('confirmation.token')]);
+        return $this->deleteJson('/api/v1/contract-parties', ['resources' => $ids]);
     }
 }

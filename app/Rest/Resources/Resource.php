@@ -6,10 +6,8 @@ use App\Rest\Text\RelatedContains;
 use App\Rest\Ui\ResourceMetadata;
 use App\Support\Validation\MutationValidationContext;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Lomkit\Rest\Attributes\WithoutPerimeter;
-use Lomkit\Rest\Confirmation\Confirmation;
 use Lomkit\Rest\Fields\Field;
 use Lomkit\Rest\Http\Resource as RestResource;
 use Lomkit\Rest\Mutations\MutationNode;
@@ -86,10 +84,5 @@ abstract class Resource extends RestResource
     public function uiPicker(): array
     {
         return ['secondaryFields' => ['code']];
-    }
-
-    public function destroyConfirmation(Collection $models): ?Confirmation
-    {
-        return Confirmation::make($models->count().' Datensätze wirklich löschen?');
     }
 }

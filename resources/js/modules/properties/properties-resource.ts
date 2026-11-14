@@ -144,7 +144,6 @@ export const properties: ResourceDefinition = {
             label: "Nutzung",
         },
     ],
-    deletionCheck: true,
     actions: [
         new InspectPropertyAction(),
         new PropertyReportAction(),

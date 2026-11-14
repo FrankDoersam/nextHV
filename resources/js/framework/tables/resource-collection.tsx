@@ -1080,18 +1080,20 @@ export function ResourceCollection({
                             {resource.label} werden geladen.
                         </span>
                     )}
-                    {summary && resource.summary && (
-                        <CollectionKpis
-                            definition={resource.summary}
-                            values={rollups.data?.data}
-                            loading={rollups.isPending}
-                            refreshing={rollups.isFetching}
-                            error={rollups.error}
-                            retry={() => rollups.refetch()}
-                        />
-                    )}
                     <CollectionSurface
                         compact={compact}
+                        summary={
+                            summary && resource.summary ? (
+                                <CollectionKpis
+                                    definition={resource.summary}
+                                    values={rollups.data?.data}
+                                    loading={rollups.isPending}
+                                    refreshing={rollups.isFetching}
+                                    error={rollups.error}
+                                    retry={() => rollups.refetch()}
+                                />
+                            ) : undefined
+                        }
                         navigation={
                             views.length > 0 ? (
                                 <CollectionViews
