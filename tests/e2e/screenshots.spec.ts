@@ -194,8 +194,6 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         ).toBeLessThanOrEqual(1);
     }
     await capture("36-filter-toolbar-mobil");
-<<<<<<< HEAD
-=======
     const mobileRecords = page.locator('[data-slot="scroll-area-viewport"]');
     expect((await mobileRecords.boundingBox())!.height).toBeGreaterThanOrEqual(
         240,
@@ -212,7 +210,6 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         .evaluate((element) => {
             element.scrollTop = 0;
         });
->>>>>>> 295ac0c2347dca2a96344398238933dbbe2db4f7
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page
         .getByRole("button", {
