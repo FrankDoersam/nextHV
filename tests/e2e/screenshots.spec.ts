@@ -871,7 +871,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await page
         .getByRole("textbox", { name: "Geschäftspartner durchsuchen" })
         .fill("Demo Müller 1");
-    await page.locator('button[title="Demo Müller 1"]').click();
+    await page.getByText("Demo Müller 1", { exact: true }).click();
     await page.getByRole("tab", { name: "Rollen", exact: true }).click();
     const roleTable = page.getByRole("table");
     await expect(roleTable.getByText("Mieter", { exact: true })).toBeVisible();
