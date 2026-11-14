@@ -180,9 +180,9 @@ describe("collection scopes and cells", () => {
     it("shows refresh progress inside the tab panel, never above the tab strip", async () => {
         const sample = {
             data: [{ id: 1, name: "Haus", status: "active", updated_at: "2026-01-01" }],
-            total: 1,
+            total: 80,
             current_page: 1,
-            last_page: 1,
+            last_page: 4,
         };
         let finishRefresh!: (value: typeof sample) => void;
         vi.mocked(dataProvider.list)
