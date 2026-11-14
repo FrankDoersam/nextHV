@@ -196,3 +196,17 @@ export function navigationBranchActive(
     return navigationSelected(item, pathname, search) ||
         item.children.some((child) => navigationBranchActive(child, pathname, search));
 }
+
+/** Matched leaf plus its ancestors for context-aware breadcrumbs. */
+export function navigationPath(
+    items: NavigationItem[],
+    pathname: string,
+    search: string,
+): NavigationItem[] {
+    for (const item of items) {
+        const childPath = navigationPath(item.children, pathname, search);
+        if (childPath.length) return [item, ...childPath];
+        if (navigationSelected(item, pathname, search)) return [item];
+    }
+    return [];
+}
