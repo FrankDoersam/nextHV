@@ -902,11 +902,12 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await page
         .getByRole("textbox", { name: "Vertragsbeteiligte durchsuchen" })
         .fill("MV-001-01");
-    const contractReference = page.getByRole("link", {
+    const contractReference = page.getByRole("cell", {
         name: "MV-001-01",
         exact: true,
     });
     await expect(contractReference).toBeVisible();
+    await expect(contractReference.locator("a")).toHaveCount(0);
     const partyRow = page.getByRole("row").filter({ has: contractReference });
     await partyRow.getByRole("button", { name: /^Aktionen für / }).click();
     await page
@@ -940,7 +941,14 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await partyEditor
         .getByRole("button", { name: "Abbrechen", exact: true })
         .click();
-    await contractReference.click();
+    await page
+        .getByRole("navigation", { name: "Hauptnavigation", exact: true })
+        .getByRole("link", { name: /^Verträge(?:\\s|$)/ })
+        .click();
+    await page
+        .getByRole("textbox", { name: "Verträge durchsuchen" })
+        .fill("MV-001-01");
+    await page.getByRole("button", { name: "MV-001-01", exact: true }).click();
     await expect(
         page.getByRole("heading", { name: "MV-001-01", exact: true }),
     ).toBeVisible();
