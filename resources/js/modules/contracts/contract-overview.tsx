@@ -1,5 +1,5 @@
 import { EditableKeyValueList } from "@/framework/forms/editable-key-value-list";
-import { Link } from "react-router";
+import { Cell } from "@/components/blocks/cell";
 import {
     ArrowUpRight,
     CalendarClock,
@@ -13,6 +13,7 @@ import {
     EmptyState,
     ErrorState,
     Loading,
+    MetricGrid,
 } from "@/components/blocks/content";
 import { Stack } from "@/components/blocks/layout";
 import {
@@ -62,42 +63,48 @@ export default function ContractOverview({ record }: { record: RecordData }) {
     }));
     return (
         <Stack>
-            <WorkspaceColumns variant="metrics">
-                <ContractMetric
-                    title="Monatliche Kondition"
-                    value={
-                        current.isPending
-                            ? "…"
+            <MetricGrid
+                items={[
+                    {
+                        label: "Monatliche Kondition",
+                        value: current.error
+                            ? "—"
                             : condition
                               ? money(condition.monthly_total)
-                              : "—"
-                    }
-                    description={
-                        condition
-                            ? `Gültig seit ${date(condition.effective_from)}`
-                            : "Keine zum heutigen Datum gültige Kondition"
-                    }
-                />
-                <ContractMetric
-                    title="Kaution"
-                    value={money(record.deposit)}
-                    description={label(record.deposit_status)}
-                />
-                <ContractMetric
-                    title="Vertragsbeginn"
-                    value={date(record.starts_on)}
-                    description={
-                        record.ends_on
+                              : "—",
+                        loading: current.isPending,
+                        icon: WalletCards,
+                        hint: current.isPending
+                            ? "Kondition wird geladen"
+                            : current.error
+                              ? "Kondition nicht verfügbar"
+                              : condition
+                                ? `Gültig seit ${date(condition.effective_from)}`
+                                : "Keine gültige Kondition",
+                    },
+                    {
+                        label: "Kaution",
+                        value: money(record.deposit),
+                        icon: WalletCards,
+                        hint: label(record.deposit_status),
+                    },
+                    {
+                        label: "Vertragsbeginn",
+                        value: date(record.starts_on),
+                        icon: CalendarClock,
+                        hint: record.ends_on
                             ? `Endet am ${date(record.ends_on)}`
-                            : "Unbefristeter Vertrag"
-                    }
-                />
-                <ContractMetric
-                    title="Kündigungsfrist"
-                    value={`${record.notice_period_months ?? "—"} Monate`}
-                    description={`Zum ${label(record.notice_to)}`}
-                />
-            </WorkspaceColumns>
+                            : "Unbefristeter Vertrag",
+                    },
+                    {
+                        label: "Kündigungsfrist",
+                        value: String(record.notice_period_months ?? "—"),
+                        suffix: "Monate",
+                        icon: FileX2,
+                        hint: `Zum ${label(record.notice_to)}`,
+                    },
+                ]}
+            />
             <WorkspaceColumns>
                 <WorkspaceCard
                     title="Vertrag & Laufzeit"
@@ -115,16 +122,16 @@ export default function ContractOverview({ record }: { record: RecordData }) {
                             {
                                 label: "Einheit",
                                 value: (
-                                    <Link
+                                    <Cell
                                         to={`/units/${record.unit_id}`}
-                                        className="inline-flex items-center gap-1 font-medium hover:underline"
+                                        className="inline-flex items-center gap-1"
                                     >
                                         {String(
                                             (record.unit as RecordData)?.name ??
                                                 `#${record.unit_id}`,
                                         )}
                                         <ArrowUpRight className="size-3" />
-                                    </Link>
+                                    </Cell>
                                 ),
                             },
                             {
@@ -159,7 +166,7 @@ export default function ContractOverview({ record }: { record: RecordData }) {
                                     record.parties_count ??
                                     0,
                             )}{" "}
-                            Beteiligte · vollständig im Tab „Vertragsbeteiligte“
+                            Beteiligte · vollständig im Tab „Beteiligte“
                         </span>
                     }
                 >
@@ -177,16 +184,16 @@ export default function ContractOverview({ record }: { record: RecordData }) {
                                     key={p.id}
                                     className="flex items-center justify-between gap-3 py-3 text-sm"
                                 >
-                                    <Link
+                                    <Cell
                                         to={`/business-partners/${p.business_partner_id}`}
-                                        className="font-medium hover:underline"
+                                        className="truncate"
                                     >
                                         {String(
                                             (p.business_partner as RecordData)
                                                 ?.display_name ??
                                                 "Geschäftspartner",
                                         )}
-                                    </Link>
+                                    </Cell>
                                     <span className="text-xs text-muted-foreground">
                                         {label(p.role)}
                                         {p.is_primary ? " · Hauptkontakt" : ""}
@@ -314,23 +321,5 @@ export default function ContractOverview({ record }: { record: RecordData }) {
                 />
             </WorkspaceCard>
         </Stack>
-    );
-}
-function ContractMetric({
-    title,
-    value,
-    description,
-}: {
-    title: string;
-    value: string;
-    description: string;
-}) {
-    return (
-        <WorkspaceCard title={title} compact>
-            <p className="text-2xl font-medium tracking-tight tabular-nums">
-                {value}
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">{description}</p>
-        </WorkspaceCard>
     );
 }

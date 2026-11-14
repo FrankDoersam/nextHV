@@ -284,6 +284,7 @@ export interface RelationFormOptions {
     flow?: string | false;
 }
 export interface RelationDefinition {
+    navigationLabel?: string;
     icon?: LucideIcon;
     resource: string;
     label: string;

@@ -77,7 +77,7 @@ export default function DetailPage({
     for (const relation of resource.relations ?? [])
         tabs.push({
             id: relation.resource + relation.field,
-            label: relation.label,
+            label: relation.navigationLabel ?? relation.label,
             icon: relation.icon ?? getResource(relation.resource).icon,
             count: relation.countRelation
                 ? Number(record[relation.countRelation + "_count"])

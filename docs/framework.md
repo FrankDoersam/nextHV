@@ -1457,7 +1457,7 @@ Toasts und die `sonner`-Abhängigkeit sind entfernt. Speichern zeigt das aktuali
 
 Suche, Filter, Gruppieren, Export, Aktualisieren und Hinzufügen verwenden eine Höhe von 36 px – auch in eingebetteten Relationstabellen. Mehrfachfilter zeigen den ersten Titel mit `+N` für weitere ausgewählte Werte; Anzahl, Chevron und Entfernen bleiben getrennt und schrumpfen nicht. Der Tooltip enthält alle Titel, im geöffneten Picker bleiben sämtliche Werte vorausgewählt. Daten und OR-/IN-Filterverhalten ändern sich durch die kompaktere Anzeige nicht.
 
-Die gemeinsame `ResourceCollection`-Toolbar trennt die Bedienzeile (Suche, Filter hinzufügen, Gruppieren und rechts Aktionen) von einer zweiten Zeile für aktive Filter. `ResourceFilters.renderToolbar(trigger, activeFilters)` liefert beide Slots getrennt. Lange Kriterien verdrängen die Aktionen dadurch nicht. Bei wenig Platz bricht der Aktionsblock als Gruppe um; Filterchips passen sich über einen Container-Query der tatsächlichen Tabellenbreite an, auch in eingebetteten Relationstabellen. Schmale Chips zeigen Feld/Operator und Entfernen oben, den Wert darunter. Zahlen- und Datumsbereiche teilen die verfügbare Breite, ohne horizontalen Überlauf. „Zurücksetzen“ entfernt nur Benutzerfilter des Builders; feste Relationsbezüge und separat konfigurierte direkte Filter bleiben bestehen. Der Tabellenbereich behält mindestens 16 rem Höhe. Reicht die verfügbare Höhe durch Filter/Kennzahlen nicht aus, scrollt zusätzlich die Collection mitsamt ihren Bedienelementen; Datensätze und Footer werden nicht zusammengedrückt. Die Auswahlaktionsleiste liegt außerhalb dieses Scrollbereichs als Overlay. Die Aufnahmen `35-filter-toolbar-umbruch.png`, `36-filter-toolbar-mobil.png` und `37-filter-mobile-datensatz.png` prüfen Umbruch und erreichbare Datensätze mit mehreren aktiven Kriterien.
+Die gemeinsame `ResourceCollection`-Toolbar trennt die Bedienzeile (Suche, Filter hinzufügen, Gruppieren und rechts Aktionen) von einer zweiten Zeile für aktive Filter. `ResourceFilters.renderToolbar(trigger, activeFilters)` liefert beide Slots getrennt. Lange Kriterien verdrängen die Aktionen dadurch nicht. Bei wenig Platz bricht der Aktionsblock als Gruppe um; Filterchips passen sich über einen Container-Query der tatsächlichen Tabellenbreite an, auch in eingebetteten Relationstabellen. Schmale Chips zeigen Feld/Operator und Entfernen oben, den Wert darunter. Zahlen- und Datumsbereiche teilen die verfügbare Breite, ohne horizontalen Überlauf. „Zurücksetzen“ entfernt nur Benutzerfilter des Builders; feste Relationsbezüge und separat konfigurierte direkte Filter bleiben bestehen. Der Tabellenbereich passt sich der verbleibenden Höhe an und behält mindestens 6 rem für Kopf und eine Zeile. So bleibt das Paging auch mit einzelnen KPI-Karten und Ansichtstabs bei 720 px Fensterhöhe sichtbar. Mobile Datensatzkarten behalten 16 rem Mindesthöhe, damit eine vollständige Karte lesbar bleibt. Wenn der jeweilige Mindestbereich wegen zusätzlicher Filter oder sehr geringer Fensterhöhe nicht passt, scrollt die Collection mitsamt ihren Bedienelementen; der Footer bleibt erreichbar. Die Auswahlaktionsleiste liegt außerhalb dieses Scrollbereichs als Overlay. Die Aufnahmen `35-filter-toolbar-umbruch.png`, `36-filter-toolbar-mobil.png` und `37-filter-mobile-datensatz.png` prüfen Umbruch und erreichbare Datensätze mit mehreren aktiven Kriterien.
 
 ### Icons in Tabs
 
@@ -1484,12 +1484,11 @@ Die gemeinsame `ResourceCollection`-Toolbar trennt die Bedienzeile (Suche, Filte
 />
 ```
 
-
 ## 35. Relationssuche, Tabellenabschluss und kompakte Eingaben
 
 - **Grid:** Die Aktionsspalte bleibt 40 px breit und am rechten Rand fixiert. Eine einzelne sichtbare Fachspalte übernimmt mit REUI `fillWidth` die übrige Breite, etwa bei Partnerrollen. Gruppierte Tabellen verwenden dieselbe Anordnung. Seitengröße, Trefferbereich und Seitennavigation bilden standardmäßig eine rechtsbündige Gruppe; mobil darf sie umbrechen. Der bestehende Tabellen-Scrollbereich und die überlagerte Mehrfachauswahlleiste bleiben erhalten.
 - **Actions/Formulare:** Das Standardmenü enthält keine Überschrift „Verwalten“. Destruktive Aktionen stehen hinter einer Trennlinie; explizite fachliche Gruppen bleiben möglich. Sheets und Dialoge verzichten auf die Kopieraktion. Gesperrte Elternbezüge bleiben beim Bearbeiten deaktiviert, zeigen aber keinen zusätzlichen Sperrhinweis/-Icon. Beim Anlegen bleibt der Hinweis sichtbar. `BaseField.inline` ordnet Checkbox und Label gemeinsam auf einer Zeile an.
-- **Tabs:** `TabsList responsive` bricht die Navigation innerhalb der verfügbaren Breite um. Detail-, Editor- und Collection-Tabs nutzen diese Darstellung; Seitenkopf-Aktionen dürfen ebenfalls umbrechen. Es gibt keinen horizontalen Scrollbalken in der Tabnavigation.
+- **Tabs:** Detailseiten verwenden die einzeilige `ResponsiveTabList` mit automatischem Überlaufmenü (Abschnitt 36). `TabsList responsive` bleibt für kurze Editor- und Collection-Tabs verfügbar. Seitenkopf-Aktionen dürfen umbrechen; Detailtabs erhalten keinen horizontalen Scrollbalken.
 - **Datum/Tastatur:** Neben `TT.MM.JJJJ` akzeptiert der DatePicker acht Ziffern (`01012026` → `01.01.2026`). Unmögliche Daten und Min-/Max-Verletzungen bleiben Fehler und blockieren das Absenden; die API erhält ISO-Daten. Zusätzliche Öffnungstasten neben Eingaben sind keine Tabstopps. Die Eingabe bleibt erreichbar; beim Datum öffnet `Alt+Pfeil runter` den Kalender. Eigenständige Auswahlbuttons bleiben per Tastatur erreichbar.
 
 ### Einmalige PHP-Konfiguration für Suchfelder und Picker-Kontext
@@ -1517,8 +1516,38 @@ Der Schema-Adapter erkennt `BelongsTo`-Spalten wie `contract.code` und erzeugt d
 `ColumnDefinition.options` wird unabhängig von der Filteranzeige aus den PHP-Metadaten übernommen. Zellanzeige und CSV verwenden diese Beschriftungen: `tenant` wird zu `Mieter`, boolesche Werte zu `Ja`/`Nein`. Spaltenüberschriften und Dateiname sind fachlich benannt. `exportValue(row)` bleibt der bewusste Override. Exportiert wird weiterhin nur die aktuelle Seite bzw. Auswahl; der Schutz vor CSV-Formeln bleibt aktiv.
 
 Browseraufnahmen `40`–`44` prüfen die einspaltige Rollentabelle, CSV-Beschriftungen, Suche/Navigation über Vertragsnummern, das kontextgebundene Bearbeiten, Tabs bei 390/768 px und die Einheiten-Auswahl mit Objektbezug. Backendtests prüfen zusätzlich kombinierte Suchbegriffe, wörtliche Wildcard-Zeichen und den unveränderten Elternfilter.
-<<<<<<< HEAD
-=======
 
-Die umfangreiche Screenshot-Tour berücksichtigt vor dem zusätzlichen Szenarioblock die Rate-Limit-Header des Servers und wartet bei knappem Anfragebudget auf dessen Rücksetzung. Das produktive API-Limit bleibt unverändert.
->>>>>>> a566580e7c7c9b6eee1aa32aa50049663d8432e7
+Die umfangreiche Screenshot-Tour berücksichtigt an Aufnahmegrenzen und vor zusätzlichen Szenarioblöcken die Rate-Limit-Header des Servers. Bei knappem Anfragebudget wartet sie auf die Rücksetzung und beginnt die Budgetmessung neu; damit werden auch zusätzliche Sidebar-Count-Abfragen berücksichtigt. Das Testzeitlimit von 180 Sekunden umfasst diese möglichen Wartezeiten. Das produktive API-Limit bleibt unverändert.
+
+## 36. REUI-orientierte Bereichsnavigation und einzelne Kennzahlenkarten
+
+`LazyTabs` verwendet zentral `ResponsiveTabList`: eine ruhige, einzeilige Line-Navigation mit Icons, neutraler aktiver Unterstreichung und kleinen Zählern. `ResizeObserver` misst den tatsächlichen Container und die gerenderten Beschriftungen statt Gerätebreiten zu raten. Der aktive Bereich bleibt sichtbar; weitere Bereiche stehen im tastaturbedienbaren Menü **Weitere**. Auch lange aktive Beschriftungen können die Seite nicht verbreitern. Die unsichtbare Messzeile ist vom Fokus und Accessibility-Baum ausgeschlossen und separat gegen Überlauf begrenzt. Die Berechnung erfolgt bei Größen-, Beschriftungs- oder Zähleränderungen, nicht über einen Scroll-Handler.
+
+URL-Parameter, Browser-Zurück, bestehende Direktlinks und Lazy-Mounting bleiben erhalten. Ein unbekannter Tab öffnet den konfigurierten Anfangsbereich, ersatzweise den ersten vorhandenen Bereich. `RelationDefinition.navigationLabel` erlaubt eine kurze Navigationsbeschriftung unabhängig vom vollständigen Relationstitel. Im Vertrag heißen die Bereiche nun **Übersicht**, **Beteiligte**, **Konditionen**, **Kündigungen**, **Verknüpfungen** und **Eingehende Links**. Die IDs und getrennten Richtungen der Vertragsverknüpfungen bleiben unverändert.
+
+`MetricCard` / `MetricCardGrid` sind die gemeinsame Kennzahlenbasis für Vertrag, Objekt, Dashboard und Tabellen. Jede Kennzahl besitzt einen eigenen REUI-Frame mit Titel innerhalb des weißen Panels, hervorgehobenem Wert und optionalem, durch eine Linie getrenntem Zusatztext. Es gibt keinen zusätzlichen äußeren Kartenheader. Das Raster zeigt zwei Karten auf schmalen und vier ab 48rem Inhaltsbreite; `MetricGrid` und `WorkspaceColumns variant="metrics"` delegieren an dieselbe Basis. Der frühere `compact`-Parameter von `MetricGrid` bleibt kompatibel, erzeugt aber keinen abgeschnittenen inneren Scrollbereich mehr.
+
+```tsx
+<MetricGrid
+    items={[
+        {
+            label: "Kaution",
+            value: money(record.deposit),
+            hint: label(record.deposit_status),
+            icon: WalletCards,
+        },
+        {
+            label: "Kündigungsfrist",
+            value: "3",
+            suffix: "Monate",
+            hint: "Zum Monatsende",
+        },
+    ]}
+/>
+```
+
+`MetricCard` bietet außerdem `loading`, `badge`, `actions`, `accent` und `children` für bestehende Minicharts. Ladezustände verwenden einen maßhaltigen Skeleton. Im Vertrag unterscheidet die Konditionskennzahl jetzt Laden, nicht verfügbare Daten und tatsächlich fehlende Konditionen. Fehlerdetails/Retry bleiben in der Konditionskarte. Es werden keine Trends oder Finanzwerte erfunden; die Dashboard-Demodaten behalten ihre Kennzeichnung.
+
+Gestaltungsreferenzen: öffentliche Vorschauen von REUI **Project Workspace / navbar-1** und **Stats Overview / stats-1**. Der Pro-Quellcode ist hinter einem Lizenzzugang gesperrt. Die Umsetzung ist eine eigene Komposition aus den bereits vorhandenen REUI/Base-UI-Primitiven, kein unveränderter Import dieser Pro-Blöcke; Herkunft siehe `ui-sources.json`. Es wurden keine Bibliotheken ergänzt.
+
+Regression: Der Interaktionstest prüft Überlaufwahl, verzögertes Mounting, erhaltene URL-Filter, aktiven Bereich nach Resize und ungültige Direktlinks. Die Screenshot-Tour prüft bei 390/768px eine einzeilige Navigation, zwei nebeneinanderliegende KPI-Karten und den Wechsel zu eingehenden Verknüpfungen über **Weitere**. Aufnahmen `03`, `42`, `43`, `45` zeigen Desktop, iPhone, iPad und die gewählte mobile Relation.

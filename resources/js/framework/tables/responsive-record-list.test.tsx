@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router";
 import { afterEach, expect, it, vi } from "vitest";
 import { ResponsiveRecordList } from "./responsive-record-list";
 import type { ColumnDefinition, RecordData } from "../types";
@@ -48,4 +49,34 @@ it("reflows every visible business column into labelled values and keeps record 
     await user.click(screen.getByRole("button", { name: "Aktion" }));
     expect(open).toHaveBeenCalledExactlyOnceWith(row);
     expect(action).toHaveBeenCalledExactlyOnceWith(row);
+});
+
+it("renders referenced mobile titles as direct links without nesting them in buttons", () => {
+    render(
+        <MemoryRouter>
+            <ResponsiveRecordList
+                columns={[
+                    {
+                        field: "name",
+                        label: "Einheit",
+                        reference: { resource: "units", idField: "unit_id" },
+                    },
+                ]}
+                rows={[
+                    {
+                        id: 1,
+                        updated_at: "2026-11-14T09:00:00Z",
+                        unit_id: 17,
+                        name: "Wohnung 17",
+                    },
+                ]}
+                open={vi.fn()}
+            />
+        </MemoryRouter>,
+    );
+
+    const link = screen.getByRole("link", { name: "Wohnung 17" });
+    expect(link).toHaveAttribute("href", "/units/17");
+    expect(link).toHaveClass("text-foreground");
+    expect(link.closest("button")).toBeNull();
 });

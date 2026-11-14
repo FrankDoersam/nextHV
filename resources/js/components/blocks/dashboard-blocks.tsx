@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/popover";
 import { ChoicePicker } from "@/components/fields/choice-picker";
 import { PeopleGroup, type AvatarPerson } from "./people-avatar";
+import { MetricCard } from "./metric-card";
 import { WorkspaceCard } from "./workspace-card";
 import { BarChart, type BarDatum } from "./bar-chart";
 import { money } from "@/lib/format";
@@ -290,21 +291,14 @@ export function DashboardMetric({
     formatValue?: (value: number) => string;
 }) {
     return (
-        <WorkspaceCard
-            title={title}
-            compact
-            footer={<span className="font-medium">{footer}</span>}
-        >
-            <p className="text-3xl font-medium tracking-tight tabular-nums">
-                {value}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">{change}</p>
+        <MetricCard label={title} value={value} hint={footer}>
+            <p className="text-xs text-muted-foreground">{change}</p>
             <BarChart
                 data={bars}
                 label={`${title} · Beispieldaten`}
                 compact
                 formatValue={formatValue}
             />
-        </WorkspaceCard>
+        </MetricCard>
     );
 }
