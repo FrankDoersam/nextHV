@@ -137,6 +137,7 @@ export function ResourceCollection({
     virtualized = "auto",
     pagination: paging = true,
     rowSelection = "multiple",
+    selectAll = true,
     doubleClickEdit = true,
     syncWithLocation = true,
     urlKey,
@@ -488,7 +489,7 @@ export function ResourceCollection({
                       {
                           id: "selection",
                           header: () =>
-                              rowSelection === "single" ? null : (
+                              rowSelection === "single" || !selectAll ? null : (
                                   <DataGridTableRowSelectAll />
                               ),
                           cell: ({ row }) => (
@@ -606,6 +607,7 @@ export function ResourceCollection({
         [
             resource,
             rowSelection,
+            selectAll,
             actions,
             columnChooser,
             sizing,
@@ -798,7 +800,7 @@ export function ResourceCollection({
                 rowSelection
                     ? {
                           header:
-                              rowSelection === "single" ? undefined : (
+                              rowSelection === "single" || !selectAll ? undefined : (
                                   <DataGridTableRowSelectAll />
                               ),
                           row: (row) => (

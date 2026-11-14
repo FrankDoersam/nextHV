@@ -830,10 +830,10 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     ).toBeVisible();
     const unitTab = page.getByRole("tab", { name: /Einheiten/ });
     await expect(unitTab.locator("svg")).toBeVisible();
-    await expect(
-        page.getByRole("button", { name: "Bereiche suchen", exact: true }),
-    ).toHaveCount(0);
     const embedded = page.getByRole("tabpanel");
+    await expect(
+        embedded.getByRole("button", { name: "Bereiche suchen", exact: true }),
+    ).toHaveCount(0);
     const controlHeights = await Promise.all(
         [
             embedded.getByRole("textbox", { name: "Einheiten durchsuchen" }),

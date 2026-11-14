@@ -263,6 +263,8 @@ export interface CollectionOptions {
     pagination?: boolean;
     rowSelection?:
         false | "single" | "multiple" | ((row: RecordData) => boolean);
+    /** Remove only the select-all control while retaining row checkboxes. */
+    selectAll?: boolean;
     doubleClickEdit?: boolean;
     syncWithLocation?: boolean;
     resizable?: boolean;

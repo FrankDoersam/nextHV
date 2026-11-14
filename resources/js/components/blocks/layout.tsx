@@ -33,17 +33,20 @@ import {
 } from "@/framework/navigation/sidebar";
 import { cn } from "@/lib/utils";
 import {
+    Building2,
     ChevronRight,
+    House,
     LogOut,
     Menu,
     PanelLeftClose,
     PanelLeftOpen,
+    Search,
     Shapes,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
 
-/** Header-first REUI workspace shell. All navigation surfaces share one resolved tree. */
+/** A single navigation tree feeds desktop, mobile, the icon rail and the command palette. */
 export function AppShell({
     resources,
     navigation,
@@ -53,7 +56,6 @@ export function AppShell({
     children,
 }: {
     resources: ResourceDefinition[];
-    /** An optional complete navigation tree; omitted means resource-derived navigation. */
     navigation?: NavigationItemDefinition[];
     navigationGroups?: Record<string, NavigationGroupSettings>;
     user: { id?: number; name: string; email: string };
@@ -63,9 +65,7 @@ export function AppShell({
     const [mobile, setMobile] = useState(false);
     const [compact, setCompact] = useState(() => {
         try {
-            return (
-                window.localStorage.getItem("nexthv.sidebar.compact") === "1"
-            );
+            return window.localStorage.getItem("nexthv.sidebar.compact") === "1";
         } catch {
             return false;
         }
@@ -81,22 +81,14 @@ export function AppShell({
                 resources,
                 user,
             ),
-        [
-            resources,
-            navigation,
-            navigationGroups,
-            user.id,
-            user.name,
-            user.email,
-        ],
+        [resources, navigation, navigationGroups, user.id, user.name, user.email],
     );
     const controls = useSidebarExpansion(navigationItems, user.id);
     const trail = navigationPath(
         navigationItems,
         location.pathname,
         location.search,
-    );
-    const leaf = trail.at(-1);
+    ).filter((item) => item.id !== "home");
     const current = resources.find(
         (resource) =>
             location.pathname === `/${resource.name}` ||
@@ -105,30 +97,22 @@ export function AppShell({
     const collection = resources.some(
         (resource) => location.pathname === `/${resource.name}`,
     );
-    const currentTitle = current
-        ? leaf?.view
-            ? `${current.label} · ${leaf.label}`
-            : current.label
-        : location.pathname === "/components"
-          ? "Komponenten"
-          : "Übersicht";
+    const detailId = current && location.pathname.startsWith(`/${current.name}/`)
+        ? location.pathname.slice(current.name.length + 2).split("/")[0]
+        : undefined;
+    const currentTitle = trail.at(-1)?.label ??
+        (location.pathname === "/components" ? "Komponenten" : "Übersicht");
 
     useEffect(() => {
         try {
-            window.localStorage.setItem(
-                "nexthv.sidebar.compact",
-                compact ? "1" : "0",
-            );
+            window.localStorage.setItem("nexthv.sidebar.compact", compact ? "1" : "0");
         } catch {
-            // Optional workspace preference.
+            // Storage is optional; the toggle always works in memory.
         }
     }, [compact]);
     useEffect(() => {
         const shortcut = (event: KeyboardEvent) => {
-            if (
-                (event.metaKey || event.ctrlKey) &&
-                event.key.toLowerCase() === "k"
-            ) {
+            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
                 event.preventDefault();
                 setSearch((open) => !open);
             }
@@ -138,6 +122,7 @@ export function AppShell({
     }, []);
     useEffect(() => {
         scrollArea.current?.scrollTo({ top: 0, left: 0 });
+        setMobile(false);
     }, [location.pathname]);
     const go = (path: string) => {
         setSearch(false);
@@ -154,8 +139,9 @@ export function AppShell({
                 onExpandRail={() => setCompact(false)}
             />
             <div
+                data-slot="sidebar-account"
                 className={cn(
-                    "shrink-0 space-y-2 border-t p-3",
+                    "shrink-0 border-t border-sidebar-border px-3 py-3",
                     rail && "px-2",
                 )}
             >
@@ -166,32 +152,30 @@ export function AppShell({
                     aria-label={rail ? "Komponenten" : undefined}
                     className={({ isActive }) =>
                         cn(
-                            "nav-item focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                            "mb-2 flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                             rail && "justify-center px-0",
-                            isActive && "nav-item-active",
+                            isActive && "bg-muted text-foreground",
                         )
                     }
                 >
-                    <Shapes size={16} /> {!rail && "Komponenten"}
+                    <Shapes className="size-4" aria-hidden />
+                    {!rail && "Komponenten"}
                 </NavLink>
                 <div
                     className={cn(
-                        "flex items-center gap-2.5 rounded-lg p-1",
-                        rail && "flex-col gap-2",
+                        "flex min-w-0 items-center gap-2 rounded-lg bg-muted/40 px-2 py-2",
+                        rail && "flex-col gap-1 bg-transparent px-0",
                     )}
                 >
                     <PersonAvatar person={{ id: "me", name: user.name }} />
                     {!rail && (
                         <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-medium">
-                                {user.name}
-                            </p>
-                            <p className="truncate text-[10px] text-muted-foreground">
-                                {user.email}
-                            </p>
+                            <p className="truncate text-xs font-medium">{user.name}</p>
+                            <p className="truncate text-[10px] text-muted-foreground">{user.email}</p>
                         </div>
                     )}
                     <Button
+                        type="button"
                         variant="ghost"
                         size="icon-sm"
                         aria-label="Abmelden"
@@ -209,103 +193,167 @@ export function AppShell({
             ...(section.to ? [section] : []),
             ...flattenNavigation(section.children),
         ].filter((item) => item.to && !item.disabledReason);
+
     return (
-        <div
-            data-slot="app-shell"
-            className="flex h-dvh min-w-0 flex-col overflow-hidden bg-background"
-        >
-            <header
-                data-slot="shell-header"
-                className="z-20 flex h-13 shrink-0 items-center gap-3 border-b bg-card px-3 sm:px-4"
+        <div data-slot="app-shell" className="flex h-dvh min-w-0 overflow-hidden bg-background">
+            <aside
+                data-slot="desktop-sidebar"
+                data-collapsed={compact || undefined}
+                className={cn(
+                    "hidden shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 motion-reduce:transition-none lg:flex",
+                    compact ? "w-[68px]" : "w-[256px]",
+                )}
             >
                 <div
+                    data-slot="sidebar-header"
                     className={cn(
-                        "flex shrink-0 items-center gap-3",
-                        compact ? "lg:w-auto" : "lg:w-[204px]",
+                        "flex h-14 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border px-4",
+                        compact && "justify-center px-2",
                     )}
                 >
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="lg:hidden"
-                        aria-label="Menü öffnen"
-                        onClick={() => setMobile(true)}
-                    >
-                        <Menu />
-                    </Button>
-                    <Brand />
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="ml-auto hidden lg:flex"
-                        aria-label="Navigation umschalten"
-                        aria-expanded={!compact}
-                        onClick={() => setCompact((value) => !value)}
-                    >
-                        {compact ? <PanelLeftOpen /> : <PanelLeftClose />}
-                    </Button>
-                </div>
-                <span className="hidden h-5 border-l sm:block" aria-hidden />
-                <nav
-                    aria-label="Seitenpfad"
-                    className="flex min-w-0 items-center gap-2 text-xs"
-                >
-                    <Link
-                        to="/"
-                        className="hidden text-muted-foreground hover:text-foreground md:inline"
-                    >
-                        Arbeitsbereich
-                    </Link>
-                    {trail.slice(0, -1).map((item) => (
-                        <span
-                            key={item.id}
-                            className="hidden min-w-0 items-center gap-2 md:inline-flex"
+                    {compact ? (
+                        <Link
+                            to="/"
+                            aria-label="nextHV Startseite"
+                            className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
-                            <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
-                            {item.to ? (
-                                <Link
-                                    to={item.to}
-                                    className="truncate text-muted-foreground hover:text-foreground"
-                                >
-                                    {item.label}
-                                </Link>
-                            ) : (
-                                <span className="truncate text-muted-foreground">
-                                    {item.label}
-                                </span>
-                            )}
-                        </span>
-                    ))}
-                    <ChevronRight className="hidden size-3 text-muted-foreground md:block" />
-                    <span className="truncate font-medium" aria-current="page">
-                        {currentTitle}
-                    </span>
-                </nav>
-            </header>
-            <div className="flex min-h-0 min-w-0 flex-1">
-                <aside
-                    className={cn(
-                        "hidden shrink-0 flex-col border-r bg-sidebar lg:flex",
-                        compact ? "w-16" : "w-60",
-                    )}
-                >
-                    {sidebar(compact)}
-                </aside>
-                <Sheet open={mobile} onOpenChange={setMobile}>
-                    <SheetContent
-                        side="left"
-                        className="w-72 gap-0 bg-sidebar p-0"
-                    >
-                        <div className="px-5 py-5">
+                            <Building2 className="size-4" />
+                        </Link>
+                    ) : (
+                        <>
                             <Brand />
-                        </div>
-                        <SheetTitle className="sr-only">Navigation</SheetTitle>
-                        <SheetDescription className="sr-only">
-                            Bereiche deiner Hausverwaltung öffnen.
-                        </SheetDescription>
-                        {sidebar(false)}
-                    </SheetContent>
-                </Sheet>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label="Navigation einklappen"
+                                title="Navigation einklappen"
+                                onClick={() => setCompact(true)}
+                            >
+                                <PanelLeftClose className="size-4" />
+                            </Button>
+                        </>
+                    )}
+                </div>
+                {compact && (
+                    <div className="flex shrink-0 justify-center border-b border-sidebar-border py-2">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="Navigation ausklappen"
+                            title="Navigation ausklappen"
+                            onClick={() => setCompact(false)}
+                        >
+                            <PanelLeftOpen className="size-4" />
+                        </Button>
+                    </div>
+                )}
+                {sidebar(compact)}
+            </aside>
+
+            <Sheet open={mobile} onOpenChange={setMobile}>
+                <SheetContent side="left" className="w-[min(19rem,90vw)] gap-0 bg-sidebar p-0">
+                    <div className="flex h-14 shrink-0 items-center border-b border-sidebar-border px-5">
+                        <Brand />
+                    </div>
+                    <SheetTitle className="sr-only">Navigation</SheetTitle>
+                    <SheetDescription className="sr-only">
+                        Bereiche deiner Hausverwaltung öffnen.
+                    </SheetDescription>
+                    {sidebar(false)}
+                </SheetContent>
+            </Sheet>
+
+            <div className="flex min-w-0 flex-1 flex-col">
+                <header
+                    data-slot="shell-header"
+                    className="z-20 flex h-14 shrink-0 items-center justify-between gap-3 border-b bg-card px-4 sm:px-5"
+                >
+                    <div className="flex min-w-0 items-center gap-2.5">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="shrink-0 lg:hidden"
+                            aria-label="Menü öffnen"
+                            onClick={() => setMobile(true)}
+                        >
+                            <Menu />
+                        </Button>
+                        <nav aria-label="Seitenpfad" className="flex min-w-0 items-center gap-2 text-sm">
+                            <Link
+                                to="/"
+                                aria-label="Zur Übersicht"
+                                className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                                <House className="size-4" />
+                            </Link>
+                            {trail.length === 0 ? (
+                                location.pathname === "/" ? (
+                                    <span aria-current="page" className="truncate font-medium">Übersicht</span>
+                                ) : (
+                                    <>
+                                        <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                                        <span aria-current="page" className="truncate font-medium">{currentTitle}</span>
+                                    </>
+                                )
+                            ) : (
+                                trail.map((item, index) => {
+                                    const last = index === trail.length - 1 && !detailId;
+                                    return (
+                                        <Fragment key={item.id}>
+                                            <ChevronRight
+                                                className={cn(
+                                                    "size-3.5 shrink-0 text-muted-foreground",
+                                                    !last && index < trail.length - 1 && "hidden md:block",
+                                                )}
+                                                aria-hidden
+                                            />
+                                            {last ? (
+                                                <span aria-current="page" className="truncate font-medium">{item.label}</span>
+                                            ) : item.to ? (
+                                                <Link
+                                                    to={item.to}
+                                                    className={cn(
+                                                        "max-w-40 truncate text-muted-foreground hover:text-foreground",
+                                                        index < trail.length - 1 && "hidden md:inline",
+                                                    )}
+                                                >
+                                                    {item.label}
+                                                </Link>
+                                            ) : (
+                                                <span className="hidden max-w-40 truncate text-muted-foreground md:inline">
+                                                    {item.label}
+                                                </span>
+                                            )}
+                                        </Fragment>
+                                    );
+                                })
+                            )}
+                            {detailId && (
+                                <>
+                                    <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                                    <span aria-current="page" className="truncate font-medium">#{detailId}</span>
+                                </>
+                            )}
+                        </nav>
+                    </div>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 shrink-0 gap-2 px-2.5 text-muted-foreground"
+                        aria-label="Bereiche suchen"
+                        onClick={() => setSearch(true)}
+                    >
+                        <Search className="size-4" />
+                        <span className="hidden sm:inline">Bereiche suchen</span>
+                        <kbd className="hidden rounded border bg-muted/60 px-1.5 py-0.5 text-[10px] leading-none lg:inline">
+                            Ctrl K
+                        </kbd>
+                    </Button>
+                </header>
                 <main
                     ref={scrollArea}
                     data-slot="workspace-scroll"
@@ -327,14 +375,7 @@ export function AppShell({
                     <CommandList>
                         <CommandEmpty>Kein Bereich gefunden.</CommandEmpty>
                         {navigationItems.map((section) => (
-                            <CommandGroup
-                                key={section.id}
-                                heading={
-                                    section.to
-                                        ? "Arbeitsbereich"
-                                        : section.label
-                                }
-                            >
+                            <CommandGroup key={section.id} heading={section.to ? "Arbeitsbereich" : section.label}>
                                 {commandEntries(section).map((item) => {
                                     const Icon = item.icon;
                                     return (
@@ -344,8 +385,7 @@ export function AppShell({
                                             onSelect={() => go(item.to!)}
                                         >
                                             {Icon && <Icon />}
-                                            {item.resource &&
-                                            item.label !== item.resource.label
+                                            {item.resource && item.label !== item.resource.label
                                                 ? `${item.resource.label} · ${item.label}`
                                                 : item.label}
                                         </CommandItem>
