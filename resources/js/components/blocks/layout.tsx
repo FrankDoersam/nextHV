@@ -17,7 +17,6 @@ import type { ResourceDefinition } from "@/framework/types";
 import { cn } from "@/lib/utils";
 import {
     ChevronRight,
-    ChevronsUpDown,
     House,
     LogOut,
     Menu,
@@ -70,18 +69,12 @@ export function AppShell({
     const nav = (
         <>
             <div className="p-3">
-                <div className="flex items-center justify-between rounded-xl border bg-card p-3">
-                    <div>
-                        <Brand />
-                        <p className="ml-10 mt-0.5 text-[10px] text-muted-foreground">
-                            Meine Hausverwaltung
-                        </p>
-                    </div>
-                    <ChevronsUpDown className="size-3 text-muted-foreground" />
+                <div className="flex h-10 items-center px-2">
+                    <Brand />
                 </div>
                 <Button
                     variant="outline"
-                    className="mt-3 h-8 w-full justify-start bg-card text-xs text-muted-foreground"
+                    className="mt-3 h-9 w-full justify-start bg-card/70 text-xs text-muted-foreground"
                     onClick={() => setSearch(true)}
                 >
                     <Search /> Bereiche suchen{" "}
@@ -94,7 +87,7 @@ export function AppShell({
                 aria-label="Hauptnavigation"
                 className="min-h-0 flex-1 overflow-y-auto px-3"
             >
-                <p className="px-2.5 pb-2 pt-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                <p className="px-2.5 pb-2 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Arbeitsbereich
                 </p>
                 <NavLink
@@ -113,7 +106,7 @@ export function AppShell({
                     ),
                 ).map((group) => (
                     <details key={group} open className="group pt-5">
-                        <summary className="flex cursor-pointer list-none items-center justify-between px-2.5 pb-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                        <summary className="flex cursor-pointer list-none items-center justify-between px-2.5 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                             {group}
                             <ChevronRight className="size-3 transition-transform group-open:rotate-90" />
                         </summary>
@@ -154,7 +147,7 @@ export function AppShell({
                 >
                     <Shapes size={15} /> Komponenten
                 </NavLink>
-                <div className="flex items-center gap-2.5 rounded-xl border bg-card p-2.5">
+                <div className="flex items-center gap-2.5 rounded-lg border border-sidebar-border bg-card/60 p-2.5">
                     <PersonAvatar person={{ id: "me", name: user.name }} />
                     <div className="min-w-0 flex-1">
                         <p className="truncate text-xs font-medium">
@@ -180,20 +173,20 @@ export function AppShell({
         <div className="min-h-screen bg-background">
             <aside
                 className={cn(
-                    "fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r bg-muted/70 lg:flex",
+                    "fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-sidebar-border bg-sidebar lg:flex",
                     compact && "lg:hidden",
                 )}
             >
                 {nav}
             </aside>
             <Sheet open={mobile} onOpenChange={setMobile}>
-                <SheetContent side="left" className="w-64 gap-0 bg-muted p-0">
+                <SheetContent side="left" className="w-64 gap-0 bg-sidebar p-0">
                     <SheetTitle className="sr-only">Navigation</SheetTitle>
                     {nav}
                 </SheetContent>
             </Sheet>
             <div className={cn(!compact && "lg:pl-56")}>
-                <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b bg-background/95 px-4 backdrop-blur-sm lg:px-6">
+                <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b bg-card/95 px-4 backdrop-blur-sm lg:px-6">
                     <div className="flex min-w-0 items-center gap-3">
                         <Button
                             variant="ghost"
@@ -229,7 +222,7 @@ export function AppShell({
                     </div>
                     <div className="flex items-center gap-2">
                         <time
-                            className="hidden rounded-md border bg-card px-2 py-1.5 font-mono text-[10px] uppercase tracking-wide text-muted-foreground md:block"
+                            className="hidden text-xs text-muted-foreground md:block"
                             dateTime={new Date().toISOString().slice(0, 10)}
                         >
                             {new Intl.DateTimeFormat("de-DE", {
@@ -238,14 +231,6 @@ export function AppShell({
                                 month: "short",
                             }).format(new Date())}
                         </time>
-                        <Button
-                            variant="outline"
-                            size="icon-sm"
-                            aria-label="Bereiche suchen"
-                            onClick={() => setSearch(true)}
-                        >
-                            <Search />
-                        </Button>
                     </div>
                 </header>
                 <main
@@ -319,10 +304,10 @@ export function PageHeader({
     actions?: ReactNode;
 }) {
     return (
-        <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
+            <div className="min-w-0">
                 {eyebrow && (
-                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-[.18em] text-primary">
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         {eyebrow}
                     </p>
                 )}
@@ -335,12 +320,16 @@ export function PageHeader({
                     </p>
                 )}
             </div>
-            {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+            {actions && (
+                <div className="flex flex-wrap items-center gap-2">
+                    {actions}
+                </div>
+            )}
         </div>
     );
 }
 export function Stack({ children }: { children: ReactNode }) {
-    return <div className="space-y-5">{children}</div>;
+    return <div className="min-w-0 space-y-5">{children}</div>;
 }
 export function Split({ main, aside }: { main: ReactNode; aside: ReactNode }) {
     return (
@@ -354,7 +343,13 @@ export function Inline({ children }: { children: ReactNode }) {
     return <div className="flex flex-wrap items-center gap-2">{children}</div>;
 }
 export function FieldGrid({ children }: { children: ReactNode }) {
-    return <div className="grid gap-5 sm:grid-cols-2">{children}</div>;
+    return (
+        <div className="@container/fields min-w-0">
+            <div className="grid min-w-0 gap-x-5 gap-y-4 @min-[28rem]/fields:grid-cols-2">
+                {children}
+            </div>
+        </div>
+    );
 }
 export function Muted({ children }: { children: ReactNode }) {
     return (

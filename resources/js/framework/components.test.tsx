@@ -283,11 +283,14 @@ describe("CRUD interactions", () => {
         expect(await screen.findAllByText("1 auf dieser Seite")).toHaveLength(
             2,
         );
-        await user.click(screen.getByRole("button", { name: "Spalten" }));
-        await user.click(
-            await screen.findByRole("menuitemcheckbox", { name: "Objekt" }),
-        );
-        await user.keyboard("{Escape}");
+        await user.click(screen.getAllByRole("button", { name: "Objekt" })[0]);
+        (await screen.findByRole("menuitem", { name: "Spalten" })).focus();
+        await user.keyboard("{ArrowRight}");
+        (
+            await screen.findByRole("menuitemcheckbox", { name: "Objekt" })
+        ).focus();
+        await user.keyboard(" ");
+        await user.keyboard("{Escape}{Escape}");
         expect(
             screen.queryByRole("button", { name: "Lindenhöfe" }),
         ).not.toBeInTheDocument();

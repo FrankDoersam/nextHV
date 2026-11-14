@@ -39,12 +39,13 @@ export const links: ResourceDefinition = {
                 String((r.contract as Record<string, unknown>)?.code ?? "—"),
         },
         {
-            field: "relatedContract.code",
+            field: "related_contract.code",
             label: "Verknüpfter Vertrag",
             sortable: false,
             render: (r) =>
                 String(
-                    (r.relatedContract as Record<string, unknown>)?.code ?? "—",
+                    (r.related_contract as Record<string, unknown>)?.code ??
+                        "—",
                 ),
         },
         col("type", "Beziehung", "badge"),

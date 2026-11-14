@@ -31,13 +31,13 @@ export function LazyTabs({
                 })
             }
         >
-            <div className="overflow-x-auto border-b">
-                <TabsList variant="line" className="h-12 min-w-max gap-4">
+            <div className="min-w-0 max-w-full overflow-x-auto border-b">
+                <TabsList variant="line" className="h-11 min-w-max gap-1">
                     {tabs.map((tab) => (
                         <TabsTrigger key={tab.id} value={tab.id}>
                             {tab.label}
                             {tab.count != null && (
-                                <span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">
+                                <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] leading-4 text-muted-foreground tabular-nums in-data-active:bg-primary/10 in-data-active:text-primary">
                                     {tab.count}
                                 </span>
                             )}
@@ -46,7 +46,7 @@ export function LazyTabs({
                 </TabsList>
             </div>
             {tabs.map((tab) => (
-                <TabsContent key={tab.id} value={tab.id} className="pt-5">
+                <TabsContent key={tab.id} value={tab.id}>
                     {active === tab.id && tab.render()}
                 </TabsContent>
             ))}

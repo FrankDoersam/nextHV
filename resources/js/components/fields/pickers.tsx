@@ -54,7 +54,7 @@ export function DatePicker({
                         {...aria}
                         type="button"
                         variant="outline"
-                        className="h-9 w-full justify-start bg-background font-normal"
+                        className="h-9 w-full justify-start bg-card font-normal"
                         disabled={disabled}
                     />
                 }
@@ -136,7 +136,7 @@ export function MonthPicker({
                         disabled={disabled}
                         type="button"
                         variant="outline"
-                        className="h-9 w-full justify-start bg-background font-normal"
+                        className="h-9 w-full justify-start bg-card font-normal"
                     />
                 }
             >

@@ -56,7 +56,7 @@ export default function ContractOverview({ record }: { record: RecordData }) {
     const people = (contacts.data?.data ?? []).map((p) => ({
         id: p.id,
         name: String(
-            (p.businessPartner as RecordData | undefined)?.display_name ??
+            (p.business_partner as RecordData | undefined)?.display_name ??
                 "Geschäftspartner",
         ),
     }));
@@ -182,7 +182,7 @@ export default function ContractOverview({ record }: { record: RecordData }) {
                                         className="font-medium hover:underline"
                                     >
                                         {String(
-                                            (p.businessPartner as RecordData)
+                                            (p.business_partner as RecordData)
                                                 ?.display_name ??
                                                 "Geschäftspartner",
                                         )}

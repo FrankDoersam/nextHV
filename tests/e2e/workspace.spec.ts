@@ -41,7 +41,9 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
         dialog.getByText("Dieses Feld ist erforderlich.").first(),
     ).toBeVisible();
     const code = "E2E-" + Date.now();
-    await dialog.getByLabel("Nummer").fill(code);
+    await dialog
+        .getByRole("textbox", { name: "Nummer", exact: true })
+        .fill(code);
     await dialog.getByLabel("Bezeichnung").fill("Browser Test Objekt");
     await dialog.getByRole("button", { name: "Weiter", exact: true }).click();
     await dialog.getByLabel("Straße", { exact: false }).fill("Testweg");

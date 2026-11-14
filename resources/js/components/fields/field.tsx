@@ -161,7 +161,7 @@ export function ResourceField({
                                 minLength={d.minLength}
                                 maxLength={d.maxLength}
                                 placeholder={d.placeholder}
-                                className="min-h-28 bg-background"
+                                className="min-h-28 bg-card"
                             />
                         );
                         break;
@@ -201,7 +201,7 @@ export function ResourceField({
                                     )
                                 }
                                 onBlur={field.onBlur}
-                                className="h-9 bg-background"
+                                className="h-9 bg-card"
                             />
                         );
                         break;
@@ -217,7 +217,7 @@ export function ResourceField({
                                 maxLength={d.maxLength}
                                 minLength={d.minLength}
                                 placeholder={d.placeholder}
-                                className="h-9 bg-background"
+                                className="h-9 bg-card"
                             />
                         );
                 }

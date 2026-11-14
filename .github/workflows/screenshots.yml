@@ -43,11 +43,11 @@ jobs:
       - run: npm run screenshots
       - name: Publish screenshots
         uses: actions/upload-artifact@v4
-        if: success()
+        if: always()
         with:
           name: workspace-screenshots
           path: screenshots/*.png
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
       - name: Publish browser diagnostics
         uses: actions/upload-artifact@v4
@@ -60,5 +60,5 @@ jobs:
         if: success()
         run: |
           echo '## nextHV · Screenshots' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Artifact: **workspace-screenshots** — Dashboard, Vertragsliste, Vertragsdetail, Vertrag anlegen.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Artifact: **workspace-screenshots** — Dashboard, Vertragsliste, Vertragsdetail, Vertrag anlegen, Vertrag bearbeiten (aus Detailansicht).' >> "$GITHUB_STEP_SUMMARY"
           echo '1440 × 1000 px · Chromium · nur isolierte Demo-Daten, keine Produktionszugänge.' >> "$GITHUB_STEP_SUMMARY"

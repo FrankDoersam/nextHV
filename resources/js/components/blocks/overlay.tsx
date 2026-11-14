@@ -48,7 +48,7 @@ export function Overlay({
         if (!busy) onClose();
     };
     const headClass =
-        "relative shrink-0 gap-2 border-b bg-card px-6 py-5 pr-16 sm:px-8 sm:pr-16";
+        "relative shrink-0 gap-1.5 border-b bg-card px-5 py-5 pr-14 sm:px-7 sm:pr-16";
     const closeButton = (
         <Button
             type="button"
@@ -63,17 +63,17 @@ export function Overlay({
         </Button>
     );
     const body = (
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-muted/15 px-6 py-6 sm:px-8">
+        <div className="@container/form min-h-0 flex-1 overflow-y-auto overscroll-contain bg-background px-5 py-5 sm:px-7">
             {children}
         </div>
     );
     const accessory = header && (
-        <div className="shrink-0 overflow-x-auto border-b bg-card px-6 py-4 sm:px-8">
+        <div className="min-w-0 shrink-0 border-b bg-card px-5 py-4 sm:px-7">
             {header}
         </div>
     );
     const bottom = footer && (
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t bg-card px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t bg-card px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-7">
             {footer}
         </div>
     );
@@ -121,7 +121,7 @@ export function Overlay({
                 showCloseButton={false}
                 data-stacked={stacked || undefined}
                 className={cn(
-                    "crud-sheet flex flex-col gap-0 overflow-hidden p-0 shadow-2xl data-[side=right]:w-full data-[side=right]:sm:max-w-[min(48rem,calc(100vw-3rem))]",
+                    "crud-sheet flex flex-col gap-0 overflow-hidden p-0 shadow-2xl data-[side=right]:w-full data-[side=right]:sm:max-w-[min(52rem,calc(100vw-3rem))]",
                     size === "wide" &&
                         "data-[side=right]:sm:max-w-[min(64rem,calc(100vw-3rem))]",
                 )}
@@ -149,7 +149,7 @@ export function Overlay({
 }
 export function OverlayFooterHint({ children }: { children: ReactNode }) {
     return (
-        <span className="mr-auto flex items-center gap-2 text-xs text-muted-foreground">
+        <span className="mr-auto flex w-full items-center gap-2 text-xs sm:w-auto text-muted-foreground">
             <Layers className="size-3.5" />
             {children}
         </span>

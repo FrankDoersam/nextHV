@@ -98,7 +98,7 @@ export default function DetailPage({
         tabs.push({
             id: "incoming-links",
             label: "Eingehende Verknüpfungen",
-            count: Number(record.incomingLinks_count ?? 0),
+            count: Number(record.incoming_links_count ?? 0),
             render: () => (
                 <RelationPanel
                     resource="contract-links"

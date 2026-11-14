@@ -129,7 +129,7 @@ export function ChoicePicker({
             disabled={disabled}
             autoHighlight
         >
-            <InputGroup ref={anchor} className="h-9 min-w-0 bg-background">
+            <InputGroup ref={anchor} className="h-9 min-w-0 bg-card">
                 <Combobox.Input
                     render={<InputGroupInput />}
                     id={id}

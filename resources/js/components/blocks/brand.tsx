@@ -4,10 +4,11 @@ export function Brand() {
     return (
         <Link
             to="/"
-            className="flex items-center gap-2.5 font-semibold tracking-tight"
+            aria-label="nextHV Startseite"
+            className="inline-flex items-center gap-2 text-base font-semibold tracking-tight"
         >
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Building2 size={18} />
+            <span className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Building2 size={16} />
             </span>
             <span>nextHV</span>
         </Link>

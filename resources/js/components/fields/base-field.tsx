@@ -32,7 +32,7 @@ export function BaseField({
     children: ReactNode;
 }) {
     return (
-        <div className={cn("space-y-2", wide && "sm:col-span-2")}>
+        <div className={cn("min-w-0 space-y-2", wide && "col-span-full")}>
             <div className="flex min-h-5 items-center gap-1.5">
                 <Label htmlFor={id} id={`${id}-label`}>
                     {label}

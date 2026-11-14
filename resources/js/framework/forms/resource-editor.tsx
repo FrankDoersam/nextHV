@@ -2,15 +2,7 @@ import { ErrorState, SectionCard } from "@/components/blocks/content";
 import { FieldGrid, Stack } from "@/components/blocks/layout";
 import { Overlay, OverlayFooterHint } from "@/components/blocks/overlay";
 import { ResourceField } from "@/components/fields/field";
-import {
-    Stepper,
-    StepperIndicator,
-    StepperItem,
-    StepperNav,
-    StepperSeparator,
-    StepperTitle,
-    StepperTrigger,
-} from "@/components/reui/stepper";
+import { WizardProgress } from "@/components/blocks/wizard-progress";
 import { Button } from "@/components/ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ChevronLeft, ChevronRight, Save, Link, RefreshCw } from "lucide-react";
@@ -144,23 +136,12 @@ export function ResourceEditor({
             setStep(step + 1);
     };
     const navigation = request.wizard ? (
-        <Stepper value={step + 1}>
-            <StepperNav className="min-w-max">
-                {groups.map((g, i) => (
-                    <StepperItem key={g.id} step={i + 1}>
-                        <StepperTrigger
-                            type="button"
-                            disabled={i > step || busy}
-                            onClick={() => setStep(i)}
-                        >
-                            <StepperIndicator>{i + 1}</StepperIndicator>
-                            <StepperTitle>{g.label}</StepperTitle>
-                        </StepperTrigger>
-                        {i < groups.length - 1 && <StepperSeparator />}
-                    </StepperItem>
-                ))}
-            </StepperNav>
-        </Stepper>
+        <WizardProgress
+            steps={groups}
+            active={step}
+            onSelect={setStep}
+            busy={busy}
+        />
     ) : (
         <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground">
@@ -279,28 +260,15 @@ export function ResourceEditor({
             presentation={request.presentation}
             header={
                 flow ? (
-                    <div className="space-y-3">
-                        <p className="text-xs font-medium">{flow.label}</p>
-                        <Stepper value={flow.index + 1}>
-                            <StepperNav>
-                                {flow.steps.map((label, index) => (
-                                    <StepperItem key={label} step={index + 1}>
-                                        <StepperIndicator>
-                                            {index + 1}
-                                        </StepperIndicator>
-                                        <StepperTitle>{label}</StepperTitle>
-                                        {index < flow.steps.length - 1 && (
-                                            <StepperSeparator />
-                                        )}
-                                    </StepperItem>
-                                ))}
-                            </StepperNav>
-                        </Stepper>
-                        <p className="text-xs text-muted-foreground">
-                            Jeder Schritt wird gespeichert. Beim Abbrechen
-                            bleiben gespeicherte Datensätze erhalten.
-                        </p>
-                    </div>
+                    <WizardProgress
+                        label={flow.label}
+                        steps={flow.steps.map((label, index) => ({
+                            id: String(index),
+                            label,
+                        }))}
+                        active={flow.index}
+                        description="Jeder Schritt wird gespeichert. Beim Abbrechen bleiben gespeicherte Datensätze erhalten."
+                    />
                 ) : (
                     navigation
                 )

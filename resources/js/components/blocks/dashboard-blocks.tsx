@@ -5,6 +5,7 @@ import {
     CalendarDays,
     Check,
     SlidersHorizontal,
+    Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -26,6 +27,11 @@ import { BarChart, type BarDatum } from "./bar-chart";
 import { money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+const periods = [
+    { value: "month", label: "Dieser Monat" },
+    { value: "quarter", label: "Dieses Quartal" },
+];
+
 export function DashboardControls({
     period,
     onPeriod,
@@ -39,10 +45,14 @@ export function DashboardControls({
 }) {
     return (
         <div className="flex flex-wrap gap-2">
-            <Select value={period} onValueChange={(v) => onPeriod(String(v))}>
+            <Select
+                items={periods}
+                value={period}
+                onValueChange={(v) => onPeriod(String(v))}
+            >
                 <SelectTrigger aria-label="Vorschau-Zeitraum">
                     <CalendarDays />
-                    <SelectValue />
+                    <SelectValue placeholder="Zeitraum wählen" />
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="month">Dieser Monat</SelectItem>
@@ -78,13 +88,16 @@ export function DashboardControls({
 }
 export function PreviewNotice() {
     return (
-        <p className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="rounded border bg-muted px-1.5 py-0.5 font-medium">
-                Designvorschau
-            </span>
-            Finanzen, Termine und Aufgaben zeigen Beispieldaten. Echte
-            Bestandsdaten findest du im Tab „Bestand“.
-        </p>
+        <div className="flex items-start gap-2.5 rounded-lg border border-info/15 bg-info/5 px-3.5 py-3 text-xs leading-5 text-muted-foreground">
+            <Info className="mt-0.5 size-4 shrink-0 text-info" />
+            <p>
+                <span className="font-medium text-foreground">
+                    Designvorschau.
+                </span>{" "}
+                Finanzen, Termine und Aufgaben zeigen Beispieldaten. Aktuelle
+                Bestandsdaten findest du im Tab „Bestand“.
+            </p>
+        </div>
     );
 }
 export function RevenueCard({
@@ -107,11 +120,15 @@ export function RevenueCard({
             : values.slice(-3).reduce((sum, d) => sum + d.value, 0);
     return (
         <WorkspaceCard
-            title="Finanzen · Monatsübersicht"
+            title={
+                period === "month"
+                    ? "Finanzen · Monatsübersicht"
+                    : "Finanzen · Quartalsübersicht"
+            }
             icon={<BarChart3 />}
             footer={
                 <>
-                    <span className="font-mono uppercase tracking-wide">
+                    <span className="font-medium">
                         Beispieldaten · noch ohne Zahlungsanbindung
                     </span>
                     <Button variant="ghost" size="sm" onClick={onOpen}>
@@ -160,8 +177,12 @@ export function RevenueCard({
                 </div>
             </div>
             <BarChart
-                label="Beispielhafter monatlicher Mietverlauf"
-                data={values}
+                label={
+                    view === "rent"
+                        ? "Beispielhafter monatlicher Mietverlauf"
+                        : "Beispielhafte monatliche Zahlungseingänge"
+                }
+                data={period === "month" ? values : values.slice(-3)}
                 formatValue={(v) => money(Math.round(v))}
                 goal={56000}
             />
@@ -193,7 +214,7 @@ export function AgendaCard({
             icon={<CalendarDays />}
             footer={
                 <>
-                    <span className="font-mono uppercase tracking-wide">
+                    <span className="font-medium">
                         Termine & Aufgaben · Vorschau
                     </span>
                     <Button variant="ghost" size="sm" onClick={onOpen}>
@@ -217,7 +238,7 @@ export function AgendaCard({
                         </time>
                         <div className="min-w-0 flex-1">
                             <p className="text-xs font-medium">{entry.title}</p>
-                            <p className="mt-1 text-[11px] text-muted-foreground">
+                            <p className="mt-1 text-xs text-muted-foreground">
                                 {entry.description}
                             </p>
                         </div>
@@ -225,7 +246,7 @@ export function AgendaCard({
                     </div>
                 ))}
             </div>
-            <div className="mt-3 space-y-3">
+            <div className="mt-4 space-y-3">
                 {labels.map((label, i) => (
                     <label
                         key={label}
@@ -282,16 +303,12 @@ export function DashboardMetric({
         <WorkspaceCard
             title={title}
             compact
-            footer={
-                <span className="font-mono uppercase tracking-wide">
-                    {footer}
-                </span>
-            }
+            footer={<span className="font-medium">{footer}</span>}
         >
             <p className="text-3xl font-medium tracking-tight tabular-nums">
                 {value}
             </p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{change}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{change}</p>
             <BarChart
                 data={bars}
                 label={`${title} · Beispieldaten`}

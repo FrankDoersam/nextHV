@@ -30,12 +30,12 @@ export const parties: ResourceDefinition = {
     ],
     columns: [
         {
-            field: "businessPartner.display_name",
+            field: "business_partner.display_name",
             label: "Geschäftspartner",
             sortable: false,
             render: (r) =>
                 String(
-                    (r.businessPartner as Record<string, unknown>)
+                    (r.business_partner as Record<string, unknown>)
                         ?.display_name ?? "—",
                 ),
         },

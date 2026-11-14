@@ -480,7 +480,6 @@ describe("relation capabilities and server facets", () => {
                 actions={false}
                 create={false}
                 columnChooser={false}
-                densityToggle={false}
                 exportable={false}
                 refreshable={false}
                 presentationToggle={false}

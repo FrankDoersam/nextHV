@@ -47,7 +47,7 @@ export function CurrencyField({
                 maximumFractionDigits: 2,
             }}
         >
-            <NumberFieldGroup className="h-9 bg-background">
+            <NumberFieldGroup className="h-9 bg-card">
                 <NumberFieldInput {...input} className="text-left" />
             </NumberFieldGroup>
         </NumberField>

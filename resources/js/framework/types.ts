@@ -123,7 +123,6 @@ export interface CollectionOptions {
     resizable?: boolean;
     pinnable?: boolean;
     columnChooser?: boolean;
-    densityToggle?: boolean;
     exportable?: boolean;
     refreshable?: boolean;
     presentationToggle?: boolean;

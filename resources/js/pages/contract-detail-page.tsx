@@ -95,7 +95,7 @@ export default function ContractDetailPage() {
                         {
                             id: "incoming-links",
                             label: "Eingehende Verknüpfungen",
-                            count: Number(record.incomingLinks_count ?? 0),
+                            count: Number(record.incoming_links_count ?? 0),
                             render: () => (
                                 <RelationCollection
                                     relation={{

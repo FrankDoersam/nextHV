@@ -422,7 +422,6 @@ const relation: RelationDefinition = {
         filterable: false,
         groupable: false,
         columnChooser: false,
-        densityToggle: false,
         exportable: false,
         refreshable: false,
     },
@@ -447,18 +446,18 @@ Bei einem Edit-Direktlink lädt das Framework den Datensatz und prüft, ob sein 
 
 ### Fähigkeiten einer Collection
 
-| Option                                                                              | Verhalten                                                                                                                                         |
-| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `searchable`, `filterable`, `groupable`                                             | Suche, Mehrfachfilter, Gruppierung jeweils aktivieren; deaktivierte Funktionen wenden auch entsprechende URL-Werte nicht an                       |
-| `pagination`                                                                        | Seitennavigation ein-/ausblenden; ohne Paging höchstens 100 Einträge, Gesamtzahl und Grenze bleiben sichtbar                                      |
-| `rowSelection`                                                                      | `false`, `single`, `multiple` oder Prädikat pro Datensatz                                                                                         |
-| `actions`                                                                           | Alle registrierten Actions, `false` für keine oder eine Allowlist wie `["edit", "inspect"]`; gilt für Zeilen, Auswahl und Doppelklick-Bearbeitung |
-| `create`, `detailLink`, `doubleClickEdit`                                           | Hinzufügen, Titel-Link und Doppelklick unabhängig schalten                                                                                        |
-| `columnChooser`, `densityToggle`, `exportable`, `refreshable`, `presentationToggle` | Werkzeugschalter unabhängig konfigurieren                                                                                                         |
-| `toolbar`                                                                           | Gesamte Werkzeugleiste ein-/ausblenden; Fähigkeiten bleiben separat konfigurierbar                                                                |
-| `resizable`, `pinnable`                                                             | Spaltenbreiten und Fixierung steuern                                                                                                              |
-| `virtualized`                                                                       | `"auto"` ab 50 geladenen Zeilen, `true` oder `false`; gruppierte Seiten verwenden ihre einzelnen Gruppen-Tabellen                                 |
-| `syncWithLocation`, `urlKey`                                                        | URL-Synchronisation und isolierter Namensraum für mehrere Tabellen                                                                                |
+| Option                                                             | Verhalten                                                                                                                                         |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `searchable`, `filterable`, `groupable`                            | Suche, Mehrfachfilter, Gruppierung jeweils aktivieren; deaktivierte Funktionen wenden auch entsprechende URL-Werte nicht an                       |
+| `pagination`                                                       | Seitennavigation ein-/ausblenden; ohne Paging höchstens 100 Einträge, Gesamtzahl und Grenze bleiben sichtbar                                      |
+| `rowSelection`                                                     | `false`, `single`, `multiple` oder Prädikat pro Datensatz                                                                                         |
+| `actions`                                                          | Alle registrierten Actions, `false` für keine oder eine Allowlist wie `["edit", "inspect"]`; gilt für Zeilen, Auswahl und Doppelklick-Bearbeitung |
+| `create`, `detailLink`, `doubleClickEdit`                          | Hinzufügen, Titel-Link und Doppelklick unabhängig schalten                                                                                        |
+| `columnChooser`, `exportable`, `refreshable`, `presentationToggle` | Spaltenmenü im Tabellenkopf und übrige Werkzeuge unabhängig konfigurieren                                                                         |
+| `toolbar`                                                          | Gesamte Werkzeugleiste ein-/ausblenden; Fähigkeiten bleiben separat konfigurierbar                                                                |
+| `resizable`, `pinnable`                                            | Spaltenbreiten und Fixierung steuern                                                                                                              |
+| `virtualized`                                                      | `"auto"` ab 50 geladenen Zeilen, `true` oder `false`; gruppierte Seiten verwenden ihre einzelnen Gruppen-Tabellen                                 |
+| `syncWithLocation`, `urlKey`                                       | URL-Synchronisation und isolierter Namensraum für mehrere Tabellen                                                                                |
 
 CSV exportiert die aktuelle Seite bzw. Auswahl, nicht stillschweigend den gesamten Datenbestand. Paging aus bedeutet bewusst keinen unbegrenzten Download. Für umfangreiche Historien kann dieselbe Relation Paging aktivieren.
 
@@ -634,9 +633,31 @@ Bereits im Cache vorhandene Fremdschlüssel-Eltern werden gezielt als einzelne D
 2. `02-vertraege-tabelle.png` (Suche nach `MV-001`)
 3. `03-vertrag-detail.png`
 4. `04-vertrag-anlegen.png`
+5. `05-vertrag-bearbeiten.png` (Detailseite → Bearbeiten, mit geladenen Formularwerten)
 
-Das Artefakt **workspace-screenshots** enthält die PNG-Dateien und bleibt 14 Tage verfügbar. Bei einem Browser-/App-Fehler wird `screenshot-diagnostics` mit Trace und Fehlerausgabe für 7 Tage hochgeladen. Fehler beim Start eines GitHub-Runners können dagegen keine Artefakte erzeugen.
+Die Suite prüft außerdem, dass der aktive Tab-Inhalt unterhalb der Tab-Leiste die verfügbare Breite nutzt, kein horizontaler Seitenüberlauf entsteht und die Vertragsansicht samt Edit-Sheet bei 390 px funktioniert. Der Zeitraum muss vor dem ersten Öffnen „Dieser Monat“ anzeigen.
+
+Das Artefakt **workspace-screenshots** enthält die PNG-Dateien und bleibt 14 Tage verfügbar. Bereits erstellte Aufnahmen werden auch bei einem späteren Testfehler veröffentlicht. Bei einem Browser-/App-Fehler wird zusätzlich `screenshot-diagnostics` mit Trace und Fehlerausgabe für 7 Tage hochgeladen. Fehler beim Start eines GitHub-Runners können dagegen keine Artefakte erzeugen.
 
 Lokal nach der im README beschriebenen Testdatenbank-Vorbereitung: `npm run screenshots`. Ein vorhandener Browser kann optional mit `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/pfad/zu/chromium` verwendet werden. Der normale CI-Workflow testet weiterhin Anwendung/API und den vollständigen Browserablauf; die Screenshot-Suite ist separat.
 
 Regressionstests decken Tastatursuche, Mehrfachauswahl/Vorauswahl, Backend-Filter, abgesicherte Datumsgrenzen, explizite Nullwerte, Checkbox-Auswahl, einzelne Cache-Zeilen, Inline-Validierung/Fehler und die projizierte Mutation über die echte Laravel-API ab. Ein fehlgeschlagener Browserstart ist keine erfolgreiche visuelle Abnahme.
+
+## 23. Zentrales Layout und visuelle Korrekturen
+
+Die Auswertung der echten CI-Aufnahmen zeigte vier gemeinsame Ursachen: falsche Orientierungsselektoren in `Tabs`, fehlende übersetzte Initialwerte im Zeitraum-Select, eine überladene Tabellen-Toolbar sowie uneinheitliche Wizard-Komposition. Die Korrekturen liegen in Komponenten, nicht in Seitenstyles.
+
+| Bereich             | Standard und Erweiterungspunkt                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Theme / AppShell    | Kühle neutrale Flächen, weiße Inhaltskarten, Petrol für aktive Navigation, Aktionen und Diagramm-Hervorhebung. Farben einschließlich Sidebar zentral in `resources/css/app.css`. Kompakte einzeilige Marke ohne weiße Logokarte; Suche in Sidebar und per Strg/⌘ K. Kein zusätzlicher Suchbutton rechts im Header.                                                                                           |
+| Tabs / LazyTabs     | Das `orientation`-Prop wird an Base UI weitergegeben. Selektoren verwenden dessen tatsächliches `data-orientation`. Horizontale Tabs stehen über dem Inhalt; vertikale Tabs daneben. Die Tab-Leiste darf innerhalb ihrer eigenen Breite scrollen; Panels bleiben `min-width: 0`. Aktiver Unterstrich, Zähler und Tastaturfokus zentral. URL und verzögertes Laden unverändert.                               |
+| Karten / Kennzahlen | `WorkspaceCard` übernimmt lesbare Kopf- und Fußzeilen sowie umbrechende Actions. `WorkspaceColumns` besitzt begrenzte Grid-Spalten und `min-width: 0`. Ein einzelner sichtbarer Baustein belegt die volle Breite.                                                                                                                                                                                            |
+| Dashboard           | Zeitraum-Optionen werden als Base-UI-`items` übergeben, damit bereits vor dem Öffnen übersetzte Labels erscheinen. Monats-/Quartalsauswahl passt Betrag, Titel und Balkenauswahl an. Die Demo-Kennzeichnung bleibt sichtbar.                                                                                                                                                                                 |
+| Balkendiagramm      | Gemeinsame gerundete Skala, dezente Hilfslinien, Planlinie und Petrol-Hervorhebung. Mini-Diagramme zeigen ersten und letzten Monat außerhalb der schmalen Balkenspalten, ohne abgeschnittene Monatslabels. Tastaturfokus liefert dieselben Werte wie Hover.                                                                                                                                                  |
+| Tabellen-Toolbar    | Reihenfolge: Suche → Filter → Gruppierung; rechts Export → Aktualisieren → Anlegen. Keine separaten Buttons „Spalten“ oder „Zeilendichte“. `columnChooser` steuert das Spalten-Untermenü in den Tabellenköpfen. `densityToggle` entfällt; die bestehende `dense`-URL-Einstellung bleibt lesbar. Auswahl und Zeilenaktionen haben feste, nicht skalierbare Spaltenbreiten; Badge-Spalten bekommen mehr Platz. |
+| Overlay / FieldGrid | Sheet, Dialog, Header, scrollender Inhalt und Footer teilen dieselben Abstände. Standard-Sheets bis 52 rem. Das Feldraster richtet sich per Container Query nach seiner eigenen Breite; breite Felder belegen `col-span-full` und erzeugen bei schmalen Formularen keine zusätzliche Spalte.                                                                                                                 |
+| WizardProgress      | Eine gemeinsame Komposition auf REUI-Stepper für Formulargruppen und gespeicherte Multi-Entity-Flows. Schritt-Karten mit Nummer bzw. Haken, aktivem Zustand und mobiler Kurzansicht. Nur bereits erreichbare Formulargruppen sind anklickbar. Persistierte Flows behalten ihre vorhandene Zurück-/Speicherlogik; der Fortschritt springt nicht über notwendige Mutationen hinweg.                            |
+
+API-Projektionen verwenden bei Includes und Aggregaten snake_case: `business_partner`, `related_contract`, `incoming_links_count`. Eloquent-Relationsnamen in Suchanfragen bleiben camelCase. Die Vertragsansichten verwenden die tatsächlichen Antwortschlüssel, damit Kontakte, Verknüpfungen und Zähler sichtbar werden.
+
+Orientierung an den öffentlichen [REUI-Data-Grid-Kompositionen](https://reui.io/components/data-grid/c-data-grid-34) und [REUI-Stepper-Primitives](https://reui.io/docs/components/base/stepper); keine zusätzlichen Pakete oder kostenpflichtigen Blöcke.

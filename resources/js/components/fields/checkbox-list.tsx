@@ -118,7 +118,7 @@ export function CheckboxList({
                                 "flex min-w-0 cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm transition-colors has-focus-visible:ring-2 has-focus-visible:ring-ring",
                                 active
                                     ? "border-primary/40 bg-primary/5"
-                                    : "bg-background hover:bg-muted/50",
+                                    : "bg-card hover:bg-muted/50",
                                 locked && "cursor-not-allowed opacity-50",
                             )}
                         >

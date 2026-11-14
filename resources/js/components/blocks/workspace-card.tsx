@@ -25,10 +25,10 @@ export function WorkspaceCard({
     return (
         <Frame
             spacing={compact ? "sm" : "default"}
-            className="h-full bg-muted/70"
+            className="min-w-0 h-full bg-muted/50"
         >
-            <FrameHeader className="flex-row items-center justify-between gap-2">
-                <FrameTitle className="flex items-center gap-2 font-mono text-[10px] font-normal uppercase tracking-wider text-muted-foreground [&>svg]:size-3">
+            <FrameHeader className="min-w-0 flex-row flex-wrap items-center justify-between gap-2">
+                <FrameTitle className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground [&>svg]:size-3.5 [&>svg]:shrink-0">
                     {icon}
                     {title}
                 </FrameTitle>
@@ -40,7 +40,7 @@ export function WorkspaceCard({
                 {children}
             </FramePanel>
             {footer && (
-                <FrameFooter className="flex-row flex-wrap items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                <FrameFooter className="flex-row flex-wrap items-center justify-between gap-2 text-[11px] leading-5 text-muted-foreground">
                     {footer}
                 </FrameFooter>
             )}
@@ -58,8 +58,8 @@ export function WorkspaceColumns({
         <div
             className={
                 variant === "main"
-                    ? "grid items-stretch gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]"
-                    : "grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+                    ? "grid min-w-0 items-stretch gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)] [&>*]:min-w-0 [&>*:only-child]:col-span-full"
+                    : "grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-4 [&>*]:min-w-0"
             }
         >
             {children}

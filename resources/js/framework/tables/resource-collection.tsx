@@ -3,7 +3,7 @@ import { useGridState } from "./grid-state";
 import { exportRows } from "./export";
 import { cn } from "@/lib/utils";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
-import { Download, Rows3, X } from "lucide-react";
+import { Download, X } from "lucide-react";
 import { ErrorState, StatusBadge } from "@/components/blocks/content";
 import {
     DataGrid,
@@ -14,7 +14,6 @@ import {
 import { DataGridColumnFilter } from "@/components/reui/data-grid/data-grid-column-filter";
 import { DataGridTableVirtual } from "@/components/reui/data-grid/data-grid-table-virtual";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
-import { DataGridColumnVisibility } from "@/components/reui/data-grid/data-grid-column-visibility";
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
 import {
     DataGridTable,
@@ -45,7 +44,6 @@ import {
     type ColumnVisibilityState,
 } from "@tanstack/react-table";
 import {
-    Columns3,
     ListFilter,
     MoreHorizontal,
     Plus,
@@ -179,7 +177,6 @@ export function ResourceCollection({
     filterable = !compact,
     groupable = !compact,
     columnChooser = true,
-    densityToggle = true,
     exportable = true,
     refreshable = true,
     presentationToggle = compact,
@@ -383,7 +380,9 @@ export function ResourceCollection({
                           cell: ({ row }) => (
                               <DataGridTableRowSelect row={row} />
                           ),
-                          size: 40,
+                          size: 44,
+                          enableResizing: false,
+                          enablePinning: false,
                           enableSorting: false,
                           enableHiding: false,
                       } as ColumnDef<DataGridFeatures, RecordData>,
@@ -393,6 +392,8 @@ export function ResourceCollection({
                 id: c.field,
                 accessorFn: (row: RecordData) => row[c.field],
                 meta: { headerTitle: c.label },
+                size: c.kind === "badge" ? 190 : 160,
+                minSize: 100,
                 header: ({
                     column,
                 }: {
@@ -401,7 +402,13 @@ export function ResourceCollection({
                         RecordData,
                         unknown
                     >;
-                }) => <DataGridColumnHeader column={column} title={c.label} />,
+                }) => (
+                    <DataGridColumnHeader
+                        column={column}
+                        title={c.label}
+                        visibility={columnChooser}
+                    />
+                ),
                 enableSorting: c.sortable !== false,
                 cell: ({
                     row,
@@ -447,14 +454,19 @@ export function ResourceCollection({
                                   allowed={actions}
                               />
                           ),
-                          size: 48,
+                          size: 64,
+                          minSize: 64,
+                          maxSize: 64,
+                          meta: { cellClassName: "text-right" },
+                          enableResizing: false,
+                          enablePinning: false,
                           enableSorting: false,
                           enableHiding: false,
                       } as ColumnDef<DataGridFeatures, RecordData>,
                   ]
                 : []),
         ],
-        [resource, navigate, rowSelection, actions, detailLink],
+        [resource, navigate, rowSelection, actions, detailLink, columnChooser],
     );
     const table = useTable({
         features: dataGridFeatures,
@@ -595,16 +607,16 @@ export function ResourceCollection({
                     </div>
                 )}
                 {toolbar && (
-                    <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2.5">
                         {searchable && (
-                            <div className="relative min-w-48 flex-1 sm:max-w-80">
+                            <div className="relative min-w-48 flex-1 sm:max-w-72">
                                 <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
                                 <Input
                                     value={search}
                                     onChange={(e) => {
                                         update("search", e.target.value, true);
                                     }}
-                                    className="h-9 bg-background pl-9 pr-9"
+                                    className="h-9 bg-card pl-9 pr-9"
                                     aria-label={`${resource.label} durchsuchen`}
                                     placeholder={`${resource.label} durchsuchen …`}
                                 />
@@ -624,60 +636,8 @@ export function ResourceCollection({
                                 )}
                             </div>
                         )}
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-1 flex-wrap items-center gap-2">
                             {presentationToggle && <PresentationToggle />}
-                            {columnChooser && (
-                                <DataGridColumnVisibility
-                                    table={table}
-                                    trigger={
-                                        <Button variant="outline">
-                                            <Columns3 />
-                                            Spalten
-                                        </Button>
-                                    }
-                                />
-                            )}
-                            {densityToggle && (
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    aria-label="Zeilendichte umschalten"
-                                    aria-pressed={dense}
-                                    onClick={() => update("dense", !dense)}
-                                >
-                                    <Rows3 />
-                                </Button>
-                            )}
-                            {exportable && (
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    aria-label={
-                                        selectedRows.length
-                                            ? "Auswahl als CSV exportieren"
-                                            : "Aktuelle Seite als CSV exportieren"
-                                    }
-                                    disabled={
-                                        !rows.length || result.isPlaceholderData
-                                    }
-                                    onClick={() =>
-                                        exportRows(
-                                            selectedRows.length
-                                                ? selectedRows
-                                                : rows,
-                                            resource.columns.filter(
-                                                (c) =>
-                                                    columnVisibility[
-                                                        c.field
-                                                    ] !== false,
-                                            ),
-                                            resource.name,
-                                        )
-                                    }
-                                >
-                                    <Download />
-                                </Button>
-                            )}
                             {filterable &&
                                 resource.filters?.map((filter) =>
                                     table.getColumn(filter.field) ? (
@@ -734,33 +694,66 @@ export function ResourceCollection({
                                     </SelectContent>
                                 </Select>
                             )}
-                            {refreshable && (
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => result.refetch()}
-                                    aria-label="Aktualisieren"
-                                >
-                                    <RefreshCw
-                                        className={
-                                            result.isFetching
-                                                ? "animate-spin"
-                                                : ""
+                            <div className="ml-auto flex items-center gap-2">
+                                {exportable && (
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        aria-label={
+                                            selectedRows.length
+                                                ? "Auswahl als CSV exportieren"
+                                                : "Aktuelle Seite als CSV exportieren"
                                         }
-                                    />
-                                </Button>
-                            )}
-                            {creatable && can(resource.name, "create") && (
-                                <Button
-                                    onClick={create}
-                                    size={compact ? "sm" : "default"}
-                                >
-                                    <Plus />
-                                    {compact
-                                        ? "Hinzufügen"
-                                        : `${resource.singular} anlegen`}
-                                </Button>
-                            )}
+                                        disabled={
+                                            !rows.length ||
+                                            result.isPlaceholderData
+                                        }
+                                        onClick={() =>
+                                            exportRows(
+                                                selectedRows.length
+                                                    ? selectedRows
+                                                    : rows,
+                                                resource.columns.filter(
+                                                    (c) =>
+                                                        columnVisibility[
+                                                            c.field
+                                                        ] !== false,
+                                                ),
+                                                resource.name,
+                                            )
+                                        }
+                                    >
+                                        <Download />
+                                    </Button>
+                                )}
+                                {refreshable && (
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => result.refetch()}
+                                        aria-label="Aktualisieren"
+                                    >
+                                        <RefreshCw
+                                            className={
+                                                result.isFetching
+                                                    ? "animate-spin"
+                                                    : ""
+                                            }
+                                        />
+                                    </Button>
+                                )}
+                                {creatable && can(resource.name, "create") && (
+                                    <Button
+                                        onClick={create}
+                                        size={compact ? "sm" : "default"}
+                                    >
+                                        <Plus />
+                                        {compact
+                                            ? "Hinzufügen"
+                                            : `${resource.singular} anlegen`}
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
