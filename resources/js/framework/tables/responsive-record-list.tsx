@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Cell } from "@/components/blocks/cell";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ColumnDefinition, RecordData } from "../types";
 import { CellRenderer } from "./cell-renderer";
@@ -62,17 +63,16 @@ export function ResponsiveRecordList({
                             <div className="flex min-w-0 items-center gap-3">
                                 {selection?.row(row)}
                                 {title &&
-                                    (open ? (
-                                        <button
-                                            type="button"
-                                            className="min-w-0 flex-1 text-left font-medium hover:text-primary"
+                                    (open && !title.reference ? (
+                                        <Cell
+                                            className="w-full flex-1"
                                             onClick={() => open(row)}
                                         >
                                             <CellRenderer
                                                 column={title}
                                                 row={row}
                                             />
-                                        </button>
+                                        </Cell>
                                     ) : (
                                         <div className="min-w-0 flex-1">
                                             <CellRenderer

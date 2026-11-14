@@ -1,5 +1,5 @@
 import { EditableKeyValueList } from "@/framework/forms/editable-key-value-list";
-import { Link } from "react-router";
+import { Cell } from "@/components/blocks/cell";
 import {
     ArrowUpRight,
     CalendarClock,
@@ -115,16 +115,16 @@ export default function ContractOverview({ record }: { record: RecordData }) {
                             {
                                 label: "Einheit",
                                 value: (
-                                    <Link
+                                    <Cell
                                         to={`/units/${record.unit_id}`}
-                                        className="inline-flex items-center gap-1 font-medium hover:underline"
+                                        className="inline-flex items-center gap-1"
                                     >
                                         {String(
                                             (record.unit as RecordData)?.name ??
                                                 `#${record.unit_id}`,
                                         )}
                                         <ArrowUpRight className="size-3" />
-                                    </Link>
+                                    </Cell>
                                 ),
                             },
                             {
@@ -177,16 +177,16 @@ export default function ContractOverview({ record }: { record: RecordData }) {
                                     key={p.id}
                                     className="flex items-center justify-between gap-3 py-3 text-sm"
                                 >
-                                    <Link
+                                    <Cell
                                         to={`/business-partners/${p.business_partner_id}`}
-                                        className="font-medium hover:underline"
+                                        className="truncate"
                                     >
                                         {String(
                                             (p.business_partner as RecordData)
                                                 ?.display_name ??
                                                 "Geschäftspartner",
                                         )}
-                                    </Link>
+                                    </Cell>
                                     <span className="text-xs text-muted-foreground">
                                         {label(p.role)}
                                         {p.is_primary ? " · Hauptkontakt" : ""}

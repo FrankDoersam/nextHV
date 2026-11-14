@@ -1,4 +1,5 @@
 import { KeyValueRows } from "./key-value-rows";
+import { Cell } from "./cell";
 import {
     Alert,
     AlertTitle,
@@ -263,12 +264,9 @@ export function ListRow({
             )}
             <div className="min-w-0 flex-1">
                 {onClick ? (
-                    <button
-                        onClick={onClick}
-                        className="text-left text-sm font-medium hover:text-primary"
-                    >
+                    <Cell onClick={onClick} className="text-sm">
                         {title}
-                    </button>
+                    </Cell>
                 ) : (
                     <p className="text-sm font-medium">{title}</p>
                 )}

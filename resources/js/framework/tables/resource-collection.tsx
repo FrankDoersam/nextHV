@@ -1,4 +1,5 @@
 import { CellRenderer } from "./cell-renderer";
+import { Cell } from "@/components/blocks/cell";
 import { CollectionViews, collectionViewTabId } from "./collection-views";
 import { DirectFilters, supportsDirectFilter } from "./direct-filters";
 import { GridCellSkeleton } from "@/components/blocks/collection-loading";
@@ -507,8 +508,8 @@ export function ResourceCollection({
                     c.field === resource.titleField &&
                     detailLink &&
                     !c.reference ? (
-                        <button
-                            className="block w-full min-w-0 max-w-full text-left font-medium text-foreground hover:text-primary"
+                        <Cell
+                            className="w-full"
                             title={
                                 typeof row.original[c.field] === "string"
                                     ? String(row.original[c.field])
@@ -528,7 +529,7 @@ export function ResourceCollection({
                             }
                         >
                             {formatCell(c, row.original)}
-                        </button>
+                        </Cell>
                     ) : (
                         formatCell(c, row.original)
                     ),
