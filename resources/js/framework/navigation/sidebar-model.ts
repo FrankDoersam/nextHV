@@ -141,12 +141,20 @@ export function resolveNavigation(
             ? byName.get(definition.resource)
             : inheritedResource;
         if (definition.resource && !resource) return null;
+        // Every resource-linked navigation must pass list access, even if an
+        // additional, more specific permission is declared for this menu item.
+        const listDecision = resource ? decide(resource.name, "list") : true;
         const permissionResource = definition.permission?.resource ?? resource?.name;
-        const allowed = permissionResource
-            ? decide(permissionResource, definition.permission?.action ?? "list")
+        const action = definition.permission?.action ?? "list";
+        const extraDecision = permissionResource &&
+            (permissionResource !== resource?.name || action !== "list")
+            ? decide(permissionResource, action)
             : true;
-        const permitted = typeof allowed === "boolean" ? allowed : allowed.allowed;
-        const denialReason = typeof allowed === "boolean" ? undefined : allowed.reason;
+        const denied = [listDecision, extraDecision].find(
+            (decision) => typeof decision === "boolean" ? !decision : !decision.allowed,
+        );
+        const permitted = denied === undefined;
+        const denialReason = denied && typeof denied !== "boolean" ? denied.reason : undefined;
         if (!permitted && definition.permission?.denied !== "disable") return null;
         const disabledReason =
             parentDisabled ??
