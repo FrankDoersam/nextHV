@@ -44,8 +44,10 @@ export function GridCellSkeleton({
 /** Route chunk fallback follows the actual collection structure instead of unrelated loading bars. */
 export function CollectionLoading({
     resource,
+    activeView,
 }: {
     resource: ResourceDefinition;
+    activeView?: string | null;
 }) {
     return (
         <CollectionPage>
@@ -77,8 +79,8 @@ export function CollectionLoading({
                                 <span
                                     key={view.id}
                                     role="tab"
-                                    aria-selected={index === 0}
-                                    className={index === 0
+                                    aria-selected={activeView ? view.id === activeView : index === 0}
+                                    className={(activeView ? view.id === activeView : index === 0)
                                         ? "flex h-full items-center border-b-2 border-foreground text-sm font-medium"
                                         : "flex h-full items-center text-sm text-muted-foreground"}
                                 >
