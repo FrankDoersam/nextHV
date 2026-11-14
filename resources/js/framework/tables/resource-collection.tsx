@@ -230,6 +230,8 @@ export function ResourceCollection({
         start: [],
         end: [],
     });
+    // Rebind when loading, grouping or errors replace the scroll owner;
+    // its client width excludes the reserved scrollbar gutter.
     useLayoutEffect(() => {
         const node = viewport.current;
         if (!node) return;
@@ -259,7 +261,13 @@ export function ResourceCollection({
             observer.disconnect();
             cancelAnimationFrame(frame);
         };
-    }, []);
+    }, [
+        resource.name,
+        result.isPending,
+        result.isError,
+        effectiveGroup,
+        groupResult.isPending,
+    ]);
     const compactControls = width > 0 && width < 560;
     const [preferredSizes, setPreferredSizes] = useState<
         Record<string, number>

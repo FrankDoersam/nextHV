@@ -1620,6 +1620,7 @@ Das [Framework-Konzept mit Refine-Vergleich und Freigabekriterien](framework-rea
 
 - Listen berücksichtigen nun auch die wirksamen `includes`/`aggregates` im Cache-Schlüssel. Unterschiedliche Antwortprojektionen teilen nicht versehentlich denselben Cacheeintrag.
 - `dataProvider: "default"` und eine nicht gesetzte Providerangabe verwenden denselben Namensraum. Benannte Provider bleiben getrennt, auch bei Panel-Patches, Tab-Zählern, RelationPicker-Nachverarbeitung und Inline-Konfliktauflösung.
+- Der Grid-Breitenbeobachter bindet sich nach Lade-, Gruppen- und Fehlerzuständen erneut an den tatsächlich montierten Scrollbereich. So wird dessen Scrollbar-Reserve auch bei leeren Gruppenlisten abgezogen; Header und Action-Spalte bleiben innerhalb der verfügbaren Breite.
 - `one(resource, id, signal?)` und `overview(id?, signal?)` geben das `AbortSignal` bis zum HTTP-Aufruf weiter. Detailseiten, Panel-Hydrierung und Sitzungsladen verwerfen überholte Antworten.
 - `useResourceTable` behält beim Seitenwechsel vorherige Zeilen. Bei Änderung von Ressource, Provider, permanenten Filtern, Elternbezug, Query-View oder Projektion zeigt es den Ladezustand ohne fremde Zeilen. Deaktivierte Abfragen starten auch keine Gruppenmetrik.
 - `useSaveRecord` aktualisiert die betroffene Zeile in normalen Listen **und** geladenen Infinite-Seiten. Andere Zeilen und Seiten behalten ihre Referenzen. Ein Edit markiert Listen für den nächsten Besuch als veraltet, ohne sofort den kompletten Tabelleninhalt neu abzurufen. Neue Records lösen ein gezieltes Nachladen aus.
