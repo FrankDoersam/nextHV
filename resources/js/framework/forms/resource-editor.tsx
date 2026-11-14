@@ -319,12 +319,25 @@ export function ResourceEditor({
                         </Button>
                     )}
                     {request.wizard && step < groups.length - 1 ? (
-                        <Button type="button" onClick={next}>
+                        <Button
+                            key="wizard-next"
+                            type="button"
+                            disabled={busy}
+                            onClick={(event) => {
+                                event.preventDefault();
+                                void next();
+                            }}
+                        >
                             Weiter
                             <ChevronRight />
                         </Button>
                     ) : (
-                        <Button type="submit" form={formId} disabled={busy}>
+                        <Button
+                            key="save"
+                            type="submit"
+                            form={formId}
+                            disabled={busy}
+                        >
                             <Save />
                             {busy
                                 ? "Wird gespeichert …"
@@ -358,7 +371,12 @@ export function ResourceEditor({
                 <FormProvider {...form}>
                     <form
                         id={formId}
-                        onSubmit={save}
+                        onSubmit={(event) => {
+                            if (request.wizard && step < groups.length - 1) {
+                                event.preventDefault();
+                                void next();
+                            } else void save(event);
+                        }}
                         className="space-y-6"
                         noValidate
                     >

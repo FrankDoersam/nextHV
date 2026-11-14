@@ -7,8 +7,9 @@ import {
     StepperNav,
     StepperTitle,
 } from "@/components/reui/stepper";
+import { cn } from "@/lib/utils";
 
-/** Shared progress for validated form sections and persisted multi-entity flows. */
+/** One responsive progress rail for validated forms and persisted multi-entity flows. */
 export function WizardProgress({
     steps,
     active,
@@ -17,7 +18,7 @@ export function WizardProgress({
     onSelect,
     busy = false,
 }: {
-    steps: { id: string; label: string }[];
+    steps: { id: string; label: string; description?: string }[];
     active: number;
     label?: string;
     description?: string;
@@ -25,12 +26,15 @@ export function WizardProgress({
     busy?: boolean;
 }) {
     return (
-        <div className="@container/wizard min-w-0 space-y-3">
-            {label && (
-                <p className="text-xs font-medium text-muted-foreground">
-                    {label}
-                </p>
-            )}
+        <div className="@container/wizard min-w-0 space-y-4">
+            <div className="flex items-center justify-between gap-3 text-xs">
+                <span className="font-medium text-muted-foreground">
+                    {label ?? "Schrittweise Erfassung"}
+                </span>
+                <span className="shrink-0 rounded-md bg-secondary px-2 py-1 font-medium tabular-nums text-secondary-foreground">
+                    {active + 1} / {steps.length}
+                </span>
+            </div>
             <Stepper
                 role="group"
                 aria-orientation={undefined}
@@ -39,21 +43,29 @@ export function WizardProgress({
                 indicators={{ completed: <Check className="size-4" /> }}
                 style={{ "--wizard-steps": steps.length } as CSSProperties}
             >
-                <StepperNav className="grid grid-cols-[repeat(var(--wizard-steps),minmax(0,1fr))] gap-2">
+                <StepperNav className="grid grid-cols-[repeat(var(--wizard-steps),minmax(0,1fr))] items-start gap-3">
                     {steps.map((step, index) => {
                         const content = (
                             <>
-                                <StepperIndicator className="size-7 text-xs font-semibold">
-                                    {index + 1}
-                                </StepperIndicator>
-                                <div className="hidden min-w-0 text-left @min-[28rem]/wizard:block">
-                                    <p className="mb-1 text-[10px] font-medium text-muted-foreground">
-                                        Schritt {index + 1}
-                                    </p>
-                                    <StepperTitle className="text-xs leading-4 text-muted-foreground data-[state=active]:text-foreground data-[state=completed]:text-foreground">
-                                        {step.label}
-                                    </StepperTitle>
-                                </div>
+                                <span className="flex w-full items-center gap-3">
+                                    <StepperIndicator className="size-8 shrink-0 rounded-lg border border-border bg-card text-xs font-semibold text-muted-foreground shadow-xs data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:ring-4 data-[state=active]:ring-primary/10 data-[state=completed]:border-primary/20 data-[state=completed]:bg-accent data-[state=completed]:text-primary">
+                                        {index + 1}
+                                    </StepperIndicator>
+                                    {index < steps.length - 1 && (
+                                        <span
+                                            aria-hidden
+                                            className={cn(
+                                                "h-px flex-1",
+                                                index < active
+                                                    ? "bg-primary/40"
+                                                    : "bg-border",
+                                            )}
+                                        />
+                                    )}
+                                </span>
+                                <StepperTitle className="hidden w-full text-left text-xs leading-5 font-medium text-muted-foreground data-[state=active]:text-primary data-[state=completed]:text-foreground @min-[28rem]/wizard:block">
+                                    {step.label}
+                                </StepperTitle>
                             </>
                         );
                         return (
@@ -63,7 +75,7 @@ export function WizardProgress({
                                 aria-current={
                                     index === active ? "step" : undefined
                                 }
-                                className="min-w-0 justify-start rounded-lg border bg-muted/30 data-[state=active]:border-primary/30 data-[state=active]:bg-primary/5"
+                                className="min-w-0 items-start justify-start"
                             >
                                 {onSelect && index <= active ? (
                                     <button
@@ -71,14 +83,14 @@ export function WizardProgress({
                                         aria-label={`${step.label}, Schritt ${index + 1}`}
                                         disabled={busy}
                                         onClick={() => onSelect(index)}
-                                        className="flex w-full min-w-0 items-center justify-center gap-2.5 rounded-lg p-2.5 text-left hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50 @min-[28rem]/wizard:justify-start"
+                                        className="flex w-full min-w-0 flex-col items-start gap-2.5 rounded-md py-1 text-left outline-offset-4 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50"
                                     >
                                         {content}
                                     </button>
                                 ) : (
                                     <div
                                         aria-label={`${step.label}, Schritt ${index + 1}`}
-                                        className="flex w-full min-w-0 items-center justify-center gap-2.5 p-2.5 @min-[28rem]/wizard:justify-start"
+                                        className="flex w-full min-w-0 flex-col items-start gap-2.5 py-1"
                                     >
                                         {content}
                                     </div>
@@ -91,9 +103,9 @@ export function WizardProgress({
             <p className="text-sm font-medium @min-[28rem]/wizard:hidden">
                 {steps[active]?.label}
             </p>
-            {description && (
+            {(description || steps[active]?.description) && (
                 <p className="text-xs leading-5 text-muted-foreground">
-                    {description}
+                    {description ?? steps[active]?.description}
                 </p>
             )}
         </div>

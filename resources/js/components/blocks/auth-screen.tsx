@@ -172,7 +172,10 @@ export function AuthScreen({
                                     </span>
                                     {s}
                                 </span>
-                                <Check size={16} className="text-emerald-200" />
+                                <Check
+                                    size={16}
+                                    className="text-primary-foreground/80"
+                                />
                             </div>
                         ))}
                     </div>

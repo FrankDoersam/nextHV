@@ -60,5 +60,5 @@ jobs:
         if: success()
         run: |
           echo '## nextHV · Screenshots' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Artifact: **workspace-screenshots** — Dashboard, Vertragsliste, Vertragsdetail, Vertrag anlegen, Vertrag bearbeiten (aus Detailansicht).' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Artifact: **workspace-screenshots** — Dashboard, Vertragsliste, Vertragsdetail, Vertrag anlegen, Vertrag bearbeiten (aus Detailansicht), Filterauswahl.' >> "$GITHUB_STEP_SUMMARY"
           echo '1440 × 1000 px · Chromium · nur isolierte Demo-Daten, keine Produktionszugänge.' >> "$GITHUB_STEP_SUMMARY"

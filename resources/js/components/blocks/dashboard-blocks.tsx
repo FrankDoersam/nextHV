@@ -14,13 +14,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { ChoicePicker } from "@/components/fields/choice-picker";
 import { PeopleGroup, type AvatarPerson } from "./people-avatar";
 import { WorkspaceCard } from "./workspace-card";
 import { BarChart, type BarDatum } from "./bar-chart";
@@ -45,20 +39,16 @@ export function DashboardControls({
 }) {
     return (
         <div className="flex flex-wrap gap-2">
-            <Select
-                items={periods}
+            <ChoicePicker
+                presentation="menu"
+                triggerIcon={<CalendarDays />}
+                aria-label="Vorschau-Zeitraum"
+                placeholder="Zeitraum wählen"
+                options={periods}
                 value={period}
-                onValueChange={(v) => onPeriod(String(v))}
-            >
-                <SelectTrigger aria-label="Vorschau-Zeitraum">
-                    <CalendarDays />
-                    <SelectValue placeholder="Zeitraum wählen" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="month">Dieser Monat</SelectItem>
-                    <SelectItem value="quarter">Dieses Quartal</SelectItem>
-                </SelectContent>
-            </Select>
+                onChange={(value) => onPeriod(String(value))}
+                clearable={false}
+            />
             <Popover>
                 <PopoverTrigger render={<Button variant="outline" />}>
                     <SlidersHorizontal /> Anpassen

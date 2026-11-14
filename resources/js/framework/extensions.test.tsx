@@ -164,7 +164,9 @@ describe("navigation and results", () => {
             resource,
         );
         expect(state.pagination).toEqual({ pageIndex: 2, pageSize: 50 });
-        expect(state.filters).toEqual({ status: ["active"] });
+        expect(state.filters).toEqual({
+            status: { operator: "in", values: ["active"] },
+        });
         expect(state.columnVisibility).toEqual({ city: false });
         const url = writeGridState(new URLSearchParams("panels=[]"), state);
         expect(url.get("panels")).toBe("[]");
@@ -175,6 +177,48 @@ describe("navigation and results", () => {
                 resource,
             ).pagination,
         ).toEqual({ pageIndex: 0, pageSize: 25 });
+    });
+    it("rejects unknown filter fields, operators and values while preserving exclusion rules", () => {
+        const state = readGridState(
+            new URLSearchParams({
+                filters: JSON.stringify({
+                    status: {
+                        operator: "not in",
+                        values: ["active", "active", "forged"],
+                    },
+                    secret: { operator: "in", values: ["x"] },
+                }),
+            }),
+            resource,
+        );
+        expect(state.filters).toEqual({
+            status: { operator: "not in", values: ["active"] },
+        });
+        expect(
+            readGridState(
+                writeGridState(
+                    new URLSearchParams("contract.tab=parties"),
+                    state,
+                    "units.",
+                ),
+                resource,
+                "units.",
+            ).filters,
+        ).toEqual(state.filters);
+        for (const invalid of [
+            { operator: "raw", values: ["active"] },
+            { operator: "in", values: [] },
+            { operator: "in", values: [null, 1, "bad"] },
+        ]) {
+            expect(
+                readGridState(
+                    new URLSearchParams({
+                        filters: JSON.stringify({ status: invalid }),
+                    }),
+                    resource,
+                ).filters,
+            ).toEqual({});
+        }
     });
     it("rejects malformed deep links and roundtrips only record descriptors", () => {
         expect(readPanels("?panels=invalid")).toEqual([]);
@@ -529,15 +573,35 @@ describe("relation capabilities and server facets", () => {
         );
         const user = userEvent.setup();
         await screen.findByText("Lindenhöfe");
-        await user.click(screen.getByRole("button", { name: "Status" }));
-        await user.click(screen.getByRole("button", { name: "Aktiv" }));
-        await user.click(screen.getByRole("button", { name: "Archiviert" }));
+        await user.click(
+            screen.getByRole("combobox", { name: "Filter hinzufügen" }),
+        );
+        await user.click(await screen.findByRole("option", { name: "Status" }));
+        // Choosing a field alone must not filter the server data.
+        expect(
+            vi.mocked(dataProvider.list).mock.calls.at(-1)![1]?.filters,
+        ).toEqual([]);
+        await user.click(
+            screen.getByRole("combobox", {
+                name: "Status Operator",
+            }),
+        );
+        await user.click(
+            await screen.findByRole("option", {
+                name: "ist nicht",
+            }),
+        );
+        await user.click(
+            screen.getByRole("combobox", { name: "Status Werte" }),
+        );
+        await user.click(await screen.findByRole("option", { name: "Aktiv" }));
+        await user.click(screen.getByRole("option", { name: "Archiviert" }));
         await waitFor(() =>
             expect(
                 vi.mocked(dataProvider.list).mock.calls.at(-1)![1]?.filters,
             ).toContainEqual({
                 field: "status",
-                operator: "in",
+                operator: "not in",
                 value: ["active", "archived"],
             }),
         );
@@ -547,6 +611,27 @@ describe("relation capabilities and server facets", () => {
                     "filters",
                 )!,
             ),
-        ).toEqual({ status: ["active", "archived"] });
+        ).toEqual({
+            status: { operator: "not in", values: ["active", "archived"] },
+        });
+        await user.keyboard("{Escape}");
+        await user.click(
+            screen.getByRole("combobox", { name: "Status Werte" }),
+        );
+        expect(
+            await screen.findByRole("option", { name: "Aktiv" }),
+        ).toHaveAttribute("aria-selected", "true");
+        await user.keyboard("{Escape}");
+        await user.click(
+            screen.getByRole("button", { name: "Status Filter entfernen" }),
+        );
+        await waitFor(() =>
+            expect(
+                vi.mocked(dataProvider.list).mock.calls.at(-1)![1]?.filters,
+            ).toEqual([]),
+        );
+        expect(
+            new URLSearchParams(router.state.location.search).has("filters"),
+        ).toBe(false);
     });
 });

@@ -4,7 +4,13 @@ import { Button } from "@/components/ui/button";
 import { CloneAction } from "@/modules/properties/clone-action";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+    cleanup,
+    fireEvent,
+    render,
+    screen,
+    waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Building2 } from "lucide-react";
 import React from "react";
@@ -94,7 +100,13 @@ function wrap(element: React.ReactNode) {
         </MemoryRouter>,
     );
 }
-function OpenForm({ wizard = false }: { wizard?: boolean }) {
+function OpenForm({
+    wizard = false,
+    defaults,
+}: {
+    wizard?: boolean;
+    defaults?: Record<string, unknown>;
+}) {
     const w = useWorkbench();
     return (
         <Button
@@ -103,6 +115,7 @@ function OpenForm({ wizard = false }: { wizard?: boolean }) {
                     resource,
                     mode: "create",
                     wizard,
+                    defaults,
                     presentation: "dialog",
                 })
             }
@@ -174,6 +187,30 @@ describe("CRUD interactions", () => {
             undefined,
         );
     }, 10000);
+    it("advances a valid wizard without persisting until the explicit final save", async () => {
+        const user = userEvent.setup();
+        wrap(
+            <OpenForm
+                wizard
+                defaults={{ code: "P3", name: "Testobjekt", city: "Bonn" }}
+            />,
+        );
+        await user.click(screen.getByRole("button", { name: "Öffnen" }));
+        const code = await screen.findByLabelText("Nummer", { exact: false });
+        fireEvent.submit(code.closest("form")!);
+        await waitFor(() =>
+            expect(
+                screen.getByLabelText("Ort", { exact: false }),
+            ).toBeVisible(),
+        );
+        expect(dataProvider.save).not.toHaveBeenCalled();
+        await user.click(screen.getByRole("button", { name: "Zurück" }));
+        await user.click(screen.getByRole("button", { name: "Weiter" }));
+        await screen.findByRole("button", { name: "Speichern" });
+        expect(dataProvider.save).not.toHaveBeenCalled();
+        await user.click(screen.getByRole("button", { name: "Speichern" }));
+        await waitFor(() => expect(dataProvider.save).toHaveBeenCalledTimes(1));
+    });
     it("requires an explicit discard of dirty forms", async () => {
         const user = userEvent.setup();
         wrap(<OpenForm />);

@@ -60,7 +60,28 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(
         page.locator('[data-slot="resource-collection"]'),
     ).not.toHaveAttribute("aria-busy", "true");
+    await page
+        .getByRole("combobox", { name: "Filter hinzufügen", exact: true })
+        .click();
+    await page.getByRole("option", { name: "Status", exact: true }).click();
+    await page
+        .getByRole("combobox", { name: "Status Werte", exact: true })
+        .click();
+    await page.getByRole("option", { name: "Aktiv", exact: true }).click();
+    await page.keyboard.press("Escape");
+    await expect(
+        page.locator('[data-slot="resource-collection"]'),
+    ).not.toHaveAttribute("aria-busy", "true");
+    await expect(page).toHaveURL(/filters=/);
     await capture("02-vertraege-tabelle");
+    await page
+        .getByRole("combobox", { name: "Status Werte", exact: true })
+        .click();
+    await expect(
+        page.getByRole("option", { name: "Aktiv", exact: true }),
+    ).toHaveAttribute("aria-selected", "true");
+    await capture("06-grid-filter");
+    await page.keyboard.press("Escape");
 
     await page.getByRole("button", { name: "MV-001-01", exact: true }).click();
     await expect(

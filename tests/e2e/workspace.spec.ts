@@ -3,6 +3,11 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     page,
 }) => {
     const errors: string[] = [];
+    let propertyWrites = 0;
+    page.on("request", (request) => {
+        if (request.url().endsWith("/api/v1/properties/mutate"))
+            propertyWrites++;
+    });
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto("/");
     await page.getByLabel("E-Mail-Adresse").fill("e2e@example.test");
@@ -52,10 +57,13 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     await dialog.getByLabel("Ort", { exact: false }).fill("Berlin");
     await dialog.getByRole("button", { name: "Weiter", exact: true }).click();
     await dialog.getByRole("button", { name: "Weiter", exact: true }).click();
+    await expect(dialog.getByLabel("Baujahr", { exact: false })).toBeVisible();
+    expect(propertyWrites).toBe(0);
     await dialog
         .getByRole("button", { name: "Speichern", exact: true })
         .click();
     await expect(dialog).toHaveCount(0);
+    expect(propertyWrites).toBe(1);
     await page.getByRole("textbox", { name: "Objekte durchsuchen" }).fill(code);
     await expect(
         page.getByRole("button", { name: "Browser Test Objekt", exact: true }),
@@ -120,6 +128,9 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
         .last()
         .click();
     await page.getByRole("link", { name: "Verträge", exact: true }).click();
+    await page
+        .getByRole("textbox", { name: "Verträge durchsuchen" })
+        .fill("MV-001-01");
     await page.getByRole("button", { name: "MV-001-01", exact: true }).click();
     await expect(
         page.getByRole("heading", { name: "MV-001-01", exact: true }),

@@ -11,7 +11,9 @@ import {
     dataGridFeatures,
     type DataGridFeatures,
 } from "@/components/reui/data-grid/data-grid";
-import { DataGridColumnFilter } from "@/components/reui/data-grid/data-grid-column-filter";
+import { ChoicePicker } from "@/components/fields/choice-picker";
+import { ResourceFilters } from "./resource-filters";
+import { compileGridFilters } from "./filter-rules";
 import { DataGridTableVirtual } from "@/components/reui/data-grid/data-grid-table-virtual";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
@@ -28,13 +30,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { date, label, money, number } from "@/lib/format";
 import {
     useTable,
@@ -232,9 +227,7 @@ export function ResourceCollection({
     const [selection, setSelection] = useState<RowSelectionState>({});
     const apiFilters = [
         ...fixedFilters,
-        ...Object.entries(filterable ? filters : {})
-            .filter(([, v]) => v.length > 0)
-            .map(([field, value]) => ({ field, operator: "in", value })),
+        ...compileGridFilters(filterable ? filters : {}),
     ];
     const sort = [
         ...(effectiveGroup !== "none"
@@ -495,7 +488,7 @@ export function ResourceCollection({
                 ...columnVisibility,
             },
             columnFilters: Object.entries(filterable ? filters : {}).map(
-                ([id, value]) => ({ id, value }),
+                ([id, rule]) => ({ id, value: rule.values }),
             ),
         },
         onColumnFiltersChange: (value) =>
@@ -503,7 +496,7 @@ export function ResourceCollection({
                 "filters",
                 (previous) => {
                     const prior = Object.entries(previous).map(
-                        ([id, value]) => ({ id, value }),
+                        ([id, rule]) => ({ id, value: rule.values }),
                     );
                     const next =
                         typeof value === "function" ? value(prior) : value;
@@ -512,7 +505,13 @@ export function ResourceCollection({
                             .filter(
                                 (f) => Array.isArray(f.value) && f.value.length,
                             )
-                            .map((f) => [f.id, f.value as string[]]),
+                            .map((f) => [
+                                f.id,
+                                {
+                                    operator: previous[f.id]?.operator ?? "in",
+                                    values: f.value as string[],
+                                },
+                            ]),
                     );
                 },
                 true,
@@ -607,154 +606,140 @@ export function ResourceCollection({
                     </div>
                 )}
                 {toolbar && (
-                    <div className="flex flex-wrap items-center gap-2.5">
-                        {searchable && (
-                            <div className="relative min-w-48 flex-1 sm:max-w-72">
-                                <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
-                                <Input
-                                    value={search}
-                                    onChange={(e) => {
-                                        update("search", e.target.value, true);
-                                    }}
-                                    className="h-9 bg-card pl-9 pr-9"
-                                    aria-label={`${resource.label} durchsuchen`}
-                                    placeholder={`${resource.label} durchsuchen …`}
-                                />
-                                {search && (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon-xs"
-                                        className="absolute right-1.5 top-1.5"
-                                        aria-label="Suche leeren"
-                                        onClick={() =>
-                                            update("search", "", true)
-                                        }
-                                    >
-                                        <X />
-                                    </Button>
-                                )}
-                            </div>
-                        )}
-                        <div className="flex flex-1 flex-wrap items-center gap-2">
-                            {presentationToggle && <PresentationToggle />}
-                            {filterable &&
-                                resource.filters?.map((filter) =>
-                                    table.getColumn(filter.field) ? (
-                                        <DataGridColumnFilter
-                                            key={filter.field}
-                                            column={table.getColumn(
-                                                filter.field,
-                                            )}
-                                            title={filter.label}
-                                            options={filter.options}
-                                        />
-                                    ) : null,
-                                )}
-                            {filterable && Object.keys(filters).length > 0 && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => update("filters", {}, true)}
-                                >
-                                    <X /> Filter zurücksetzen
-                                </Button>
-                            )}
-                            {groupable && resource.groupBy && (
-                                <Select
-                                    value={group}
-                                    onValueChange={(v) => {
-                                        update("group", String(v), true);
-                                    }}
-                                >
-                                    <SelectTrigger aria-label="Gruppierung">
-                                        <ListFilter />
-                                        <SelectValue>
-                                            {(v) =>
-                                                v === "none"
-                                                    ? "Gruppieren"
-                                                    : resource.groupBy?.find(
-                                                          (g) => g.value === v,
-                                                      )?.label
+                    <div className="space-y-3">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            {searchable && (
+                                <div className="relative min-w-48 flex-1 sm:max-w-72">
+                                    <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
+                                    <Input
+                                        value={search}
+                                        onChange={(e) => {
+                                            update(
+                                                "search",
+                                                e.target.value,
+                                                true,
+                                            );
+                                        }}
+                                        className="h-9 bg-card pl-9 pr-9"
+                                        aria-label={`${resource.label} durchsuchen`}
+                                        placeholder={`${resource.label} durchsuchen …`}
+                                    />
+                                    {search && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon-xs"
+                                            className="absolute right-1.5 top-1.5"
+                                            aria-label="Suche leeren"
+                                            onClick={() =>
+                                                update("search", "", true)
                                             }
-                                        </SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="none">
-                                            Keine Gruppierung
-                                        </SelectItem>
-                                        {resource.groupBy.map((g) => (
-                                            <SelectItem
-                                                key={g.value}
-                                                value={g.value}
-                                            >
-                                                {g.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                        >
+                                            <X />
+                                        </Button>
+                                    )}
+                                </div>
                             )}
-                            <div className="ml-auto flex items-center gap-2">
-                                {exportable && (
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        aria-label={
-                                            selectedRows.length
-                                                ? "Auswahl als CSV exportieren"
-                                                : "Aktuelle Seite als CSV exportieren"
-                                        }
-                                        disabled={
-                                            !rows.length ||
-                                            result.isPlaceholderData
-                                        }
-                                        onClick={() =>
-                                            exportRows(
-                                                selectedRows.length
-                                                    ? selectedRows
-                                                    : rows,
-                                                resource.columns.filter(
-                                                    (c) =>
-                                                        columnVisibility[
-                                                            c.field
-                                                        ] !== false,
-                                                ),
-                                                resource.name,
+                            <div className="flex flex-1 flex-wrap items-center gap-2">
+                                {presentationToggle && <PresentationToggle />}
+                                {groupable && resource.groupBy && (
+                                    <ChoicePicker
+                                        presentation="menu"
+                                        triggerIcon={<ListFilter />}
+                                        aria-label="Gruppierung"
+                                        placeholder="Gruppieren"
+                                        clearable={false}
+                                        value={group === "none" ? null : group}
+                                        onChange={(value) =>
+                                            update(
+                                                "group",
+                                                String(value ?? "none"),
+                                                true,
                                             )
                                         }
-                                    >
-                                        <Download />
-                                    </Button>
+                                        options={[
+                                            {
+                                                value: "none",
+                                                label: "Keine Gruppierung",
+                                            },
+                                            ...resource.groupBy,
+                                        ]}
+                                    />
                                 )}
-                                {refreshable && (
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => result.refetch()}
-                                        aria-label="Aktualisieren"
-                                    >
-                                        <RefreshCw
-                                            className={
-                                                result.isFetching
-                                                    ? "animate-spin"
-                                                    : ""
+                                <div className="ml-auto flex items-center gap-2">
+                                    {exportable && (
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            aria-label={
+                                                selectedRows.length
+                                                    ? "Auswahl als CSV exportieren"
+                                                    : "Aktuelle Seite als CSV exportieren"
                                             }
-                                        />
-                                    </Button>
-                                )}
-                                {creatable && can(resource.name, "create") && (
-                                    <Button
-                                        onClick={create}
-                                        size={compact ? "sm" : "default"}
-                                    >
-                                        <Plus />
-                                        {compact
-                                            ? "Hinzufügen"
-                                            : `${resource.singular} anlegen`}
-                                    </Button>
-                                )}
+                                            disabled={
+                                                !rows.length ||
+                                                result.isPlaceholderData
+                                            }
+                                            onClick={() =>
+                                                exportRows(
+                                                    selectedRows.length
+                                                        ? selectedRows
+                                                        : rows,
+                                                    resource.columns.filter(
+                                                        (c) =>
+                                                            columnVisibility[
+                                                                c.field
+                                                            ] !== false,
+                                                    ),
+                                                    resource.name,
+                                                )
+                                            }
+                                        >
+                                            <Download />
+                                        </Button>
+                                    )}
+                                    {refreshable && (
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={() => result.refetch()}
+                                            aria-label="Aktualisieren"
+                                        >
+                                            <RefreshCw
+                                                className={
+                                                    result.isFetching
+                                                        ? "animate-spin"
+                                                        : ""
+                                                }
+                                            />
+                                        </Button>
+                                    )}
+                                    {creatable &&
+                                        can(resource.name, "create") && (
+                                            <Button
+                                                onClick={create}
+                                                size={
+                                                    compact ? "sm" : "default"
+                                                }
+                                            >
+                                                <Plus />
+                                                {compact
+                                                    ? "Hinzufügen"
+                                                    : `${resource.singular} anlegen`}
+                                            </Button>
+                                        )}
+                                </div>
                             </div>
                         </div>
+                        {filterable && !!resource.filters?.length && (
+                            <ResourceFilters
+                                definitions={resource.filters}
+                                value={filters}
+                                onChange={(next) =>
+                                    update("filters", next, true)
+                                }
+                            />
+                        )}
                     </div>
                 )}
                 {selectedRows.length > 0 && !result.isPlaceholderData && (

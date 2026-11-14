@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 
 final class CloneProperty
 {
+    public function __construct(private CloneUnit $cloneUnit) {}
+
     public function handle(Property $source, string $code, string $name, bool $withUnits): Property
     {
         return DB::transaction(function () use ($source, $code, $name, $withUnits) {
@@ -15,7 +17,7 @@ final class CloneProperty
             $copy->save();
             if ($withUnits) {
                 foreach ($source->units as $unit) {
-                    app(CloneUnit::class)->handle($unit, $unit->code, $unit->name, $copy->id);
+                    $this->cloneUnit->handle($unit, $unit->code, $unit->name, $copy->id);
                 }
             }
 

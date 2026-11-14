@@ -1,5 +1,5 @@
 import { Combobox } from "@base-ui/react/combobox";
-import { Check, ChevronsUpDown, X } from "lucide-react";
+import { Check, ChevronDown, ChevronsUpDown, Search, X } from "lucide-react";
 import {
     useRef,
     useState,
@@ -41,6 +41,9 @@ export interface ChoicePickerProps extends AriaAttributes {
     error?: string;
     footer?: ReactNode;
     maxSelected?: number;
+    /** One selection model for form inputs, toolbar menus and filter chips. */
+    presentation?: "input" | "menu" | "chip";
+    triggerIcon?: ReactNode;
 }
 
 /** Searchable input, shared by enums and asynchronous entity selections. */
@@ -62,6 +65,8 @@ export function ChoicePicker({
     error,
     footer,
     maxSelected,
+    presentation = "input",
+    triggerIcon,
     ...aria
 }: ChoicePickerProps) {
     const [open, setOpen] = useState(false);
@@ -99,7 +104,7 @@ export function ChoicePicker({
             isItemEqualToValue={(a, b) => a.value === b.value}
             itemToStringLabel={(option) => option.label}
             itemToStringValue={(option) => String(option.value)}
-            inputValue={open ? query : caption}
+            inputValue={presentation === "input" && !open ? caption : query}
             onInputValueChange={(text, event) => {
                 if (event.reason === "input-change") updateQuery(text);
             }}
@@ -129,29 +134,64 @@ export function ChoicePicker({
             disabled={disabled}
             autoHighlight
         >
-            <InputGroup ref={anchor} className="h-9 min-w-0 bg-card">
-                <Combobox.Input
-                    render={<InputGroupInput />}
-                    id={id}
-                    ref={inputRef}
-                    {...aria}
-                    onBlur={onBlur}
-                    placeholder={placeholder}
-                    title={caption || undefined}
-                    className="min-w-0 flex-1 truncate"
-                    onFocus={(event) => event.currentTarget.select()}
-                />
-                <InputGroupAddon align="inline-end" className="shrink-0 gap-0">
-                    {clearable && (
+            {presentation !== "input" ? (
+                <div
+                    ref={anchor}
+                    className="inline-flex min-w-0 max-w-64 items-center"
+                >
+                    <Combobox.Trigger
+                        id={id}
+                        {...aria}
+                        onBlur={onBlur}
+                        render={
+                            <Button
+                                type="button"
+                                variant={
+                                    presentation === "chip"
+                                        ? "ghost"
+                                        : "outline"
+                                }
+                            />
+                        }
+                        title={caption || placeholder}
+                        className={cn(
+                            "h-9 min-w-0 max-w-full flex-1 shrink gap-2 text-[13px]",
+                            presentation === "chip" &&
+                                "h-8 rounded-none border-0 px-2 shadow-none focus-visible:ring-2 focus-visible:ring-inset",
+                        )}
+                        onKeyDown={(event) => {
+                            if (
+                                event.key.length === 1 &&
+                                event.key !== " " &&
+                                !event.ctrlKey &&
+                                !event.metaKey &&
+                                !event.altKey
+                            ) {
+                                event.preventDefault();
+                                setOpen(true);
+                                onOpenChange?.(true);
+                                updateQuery(event.key);
+                            }
+                        }}
+                    >
+                        {triggerIcon}
+                        <span className="min-w-0 truncate">
+                            {caption || placeholder}
+                        </span>
+                        {multiple && ids.length > 1 && (
+                            <span className="rounded bg-muted px-1.5 text-[10px] tabular-nums">
+                                {ids.length}
+                            </span>
+                        )}
+                        <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+                    </Combobox.Trigger>
+                    {clearable && ids.length > 0 && (
                         <Button
                             type="button"
                             variant="ghost"
                             size="icon-xs"
                             aria-label="Auswahl entfernen"
                             disabled={disabled}
-                            tabIndex={ids.length ? 0 : -1}
-                            aria-hidden={!ids.length}
-                            className={cn(!ids.length && "invisible")}
                             onClick={() => {
                                 onChange(multiple ? [] : null);
                                 updateQuery("");
@@ -160,27 +200,80 @@ export function ChoicePicker({
                             <X />
                         </Button>
                     )}
-                    <Combobox.Trigger
-                        render={
+                </div>
+            ) : (
+                <InputGroup ref={anchor} className="h-9 min-w-0 bg-card">
+                    <Combobox.Input
+                        render={<InputGroupInput />}
+                        id={id}
+                        ref={inputRef}
+                        {...aria}
+                        onBlur={onBlur}
+                        placeholder={placeholder}
+                        title={caption || undefined}
+                        className="min-w-0 flex-1 truncate"
+                        onFocus={(event) => event.currentTarget.select()}
+                    />
+                    <InputGroupAddon
+                        align="inline-end"
+                        className="shrink-0 gap-0"
+                    >
+                        {clearable && (
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon-xs"
-                            />
-                        }
-                        aria-label="Auswahl öffnen"
-                    >
-                        <ChevronsUpDown />
-                    </Combobox.Trigger>
-                </InputGroupAddon>
-            </InputGroup>
+                                aria-label="Auswahl entfernen"
+                                disabled={disabled}
+                                tabIndex={ids.length ? 0 : -1}
+                                aria-hidden={!ids.length}
+                                className={cn(!ids.length && "invisible")}
+                                onClick={() => {
+                                    onChange(multiple ? [] : null);
+                                    updateQuery("");
+                                }}
+                            >
+                                <X />
+                            </Button>
+                        )}
+                        <Combobox.Trigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                />
+                            }
+                            aria-label="Auswahl öffnen"
+                        >
+                            <ChevronsUpDown />
+                        </Combobox.Trigger>
+                    </InputGroupAddon>
+                </InputGroup>
+            )}
             <Combobox.Portal>
                 <Combobox.Positioner
                     anchor={anchor}
                     sideOffset={6}
+                    align="start"
                     className="z-[100] outline-none"
                 >
                     <Combobox.Popup className="w-[var(--anchor-width)] min-w-56 max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 data-open:animate-in data-closed:animate-out">
+                        {presentation !== "input" && (
+                            <div className="border-b p-2">
+                                <InputGroup className="h-8 border-0 bg-transparent shadow-none ring-0">
+                                    <InputGroupAddon>
+                                        <Search className="size-4" />
+                                    </InputGroupAddon>
+                                    <Combobox.Input
+                                        render={<InputGroupInput />}
+                                        ref={inputRef}
+                                        aria-label={`${aria["aria-label"] ?? placeholder} durchsuchen`}
+                                        placeholder="Suchen …"
+                                    />
+                                </InputGroup>
+                            </div>
+                        )}
                         {error ? (
                             <p
                                 role="alert"

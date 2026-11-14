@@ -3,55 +3,24 @@
 namespace App\Rest\Actions;
 
 use App\Domain\Property\Actions\CloneDefaults;
+use App\Domain\Property\Actions\CloneUnit as CopyUnit;
 use App\Models\Unit;
-use Illuminate\Support\Collection;
-use Illuminate\Validation\ValidationException;
-use Lomkit\Rest\Actions\Action;
+use Illuminate\Database\Eloquent\Model;
 use Lomkit\Rest\Actions\ActionFields;
-use Lomkit\Rest\Actions\ActionResponse;
-use Lomkit\Rest\Actions\ActionTarget;
 use Lomkit\Rest\Fields\Text;
 
-class CloneUnit extends Action
+class CloneUnit extends CloneAction
 {
-    public ?string $uriKey = 'clone';
-
-    public ?string $name = 'Duplizieren';
-
-    public ActionTarget $target = ActionTarget::Resources;
-
-    public ?int $maxResources = 1;
-
-    private array $created = [];
-
-    public function authorizeEach(): ?string
-    {
-        return 'view';
-    }
-
-    public function abilities(): array
-    {
-        return ['viewAny', 'create'];
-    }
-
     public function fields(): array
     {
         return [Text::make('code')->rules('sometimes', 'filled', 'max:40'), Text::make('name')->rules('sometimes', 'filled', 'max:160')];
     }
 
-    public function handle(ActionFields $fields, Collection $models): void
+    protected function cloneModel(Model $source, ActionFields $fields): Unit
     {
-        $source = $models->first();
+        /** @var Unit $source */
         $defaults = app(CloneDefaults::class)->handle($source);
-        $code = $fields->code ?? $defaults['code'];
-        $name = $fields->name ?? $defaults['name'];
-        if (Unit::withTrashed()->where('property_id', $source->property_id)->where('code', $code)->exists()) {
-            throw ValidationException::withMessages(['fields.code' => 'Diese Nummer ist bereits vergeben.']);
-        } $this->created[] = app(\App\Domain\Property\Actions\CloneUnit::class)->handle($source, $code, $name)->id;
-    }
 
-    public function respond(ActionFields $fields, int $impacted): ?ActionResponse
-    {
-        return ActionResponse::data(['ids' => $this->created]);
+        return app(CopyUnit::class)->handle($source, $fields->code ?? $defaults['code'], $fields->name ?? $defaults['name']);
     }
 }

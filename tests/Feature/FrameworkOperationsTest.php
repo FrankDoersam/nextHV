@@ -81,6 +81,36 @@ class FrameworkOperationsTest extends TestCase
         $this->getJson('/api/v1/units/'.$unit->id.'/clone-defaults')->assertOk()->assertJsonPath('data.name', $unit->name.' · Kopie');
     }
 
+    public function test_clone_maps_domain_errors_to_action_fields_and_does_not_create_a_duplicate(): void
+    {
+        $unit = Unit::factory()->create();
+
+        $this->postJson('/api/v1/units/actions/clone', ['resources' => [$unit->id], 'fields' => [['name' => 'code', 'value' => $unit->code]]])
+            ->assertUnprocessable()->assertJsonValidationErrors(['fields.code']);
+        $this->assertDatabaseCount('units', 1);
+    }
+
+    public function test_unit_clone_uses_shared_response_and_domain_defaults(): void
+    {
+        $unit = Unit::factory()->create(['status' => 'maintenance']);
+
+        $response = $this->postJson('/api/v1/units/actions/clone', ['resources' => [$unit->id], 'fields' => []])->assertOk();
+
+        $clone = Unit::findOrFail($response->json('data.result.data.ids.0'));
+        $this->assertNotSame($unit->code, $clone->code);
+        $this->assertDatabaseHas('units', ['id' => $clone->id, 'property_id' => $unit->property_id, 'name' => $unit->name.' · Kopie', 'status' => 'ready']);
+    }
+
+    public function test_grid_exclusion_operator_is_applied_by_the_server(): void
+    {
+        Property::factory()->create(['status' => 'active']);
+        $archived = Property::factory()->create(['status' => 'archived']);
+
+        $this->postJson('/api/v1/properties/search', ['search' => ['filters' => [
+            ['field' => 'status', 'operator' => 'not in', 'value' => ['active']],
+        ]]])->assertOk()->assertJsonPath('total', 1)->assertJsonPath('data.0.id', $archived->id);
+    }
+
     public function test_composite_and_calculated_fields_are_api_values_and_read_only(): void
     {
         $property = Property::factory()->create(['street' => 'Parkstraße', 'house_number' => '5', 'postal_code' => '10115', 'city' => 'Berlin']);

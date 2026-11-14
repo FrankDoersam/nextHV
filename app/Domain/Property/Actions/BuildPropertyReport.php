@@ -16,7 +16,7 @@ final class BuildPropertyReport
         $pdf->AddPage();
         $pdf->AddFont('DejaVu', '', 'DejaVuSansCondensed.ttf', true);
         $pdf->SetFont('DejaVu', '', 20);
-        $pdf->SetTextColor(11, 97, 85);
+        $pdf->SetTextColor(79, 70, 229);
         $pdf->Cell(0, 12, 'nextHV · Objektbericht', 0, 1);
         $pdf->SetTextColor(25, 35, 35);
         $pdf->SetFont('DejaVu', '', 14);
@@ -37,8 +37,8 @@ final class BuildPropertyReport
             $pdf->MultiCell(0, 7, $unit->code.' · '.$unit->name.' · '.number_format($unit->area, 2, ',', '.').' m²');
         }
         $pdf->Ln(6);
-        $pdf->SetFont('DejaVu','',8);
-        $pdf->MultiCell(0,5,'Kennzahlen basieren auf laufenden Vertragskonditionen am Erstellungsdatum. Die Jahreshochrechnung ist kein Nachweis eingegangener Zahlungen.');
+        $pdf->SetFont('DejaVu', '', 8);
+        $pdf->MultiCell(0, 5, 'Kennzahlen basieren auf laufenden Vertragskonditionen am Erstellungsdatum. Die Jahreshochrechnung ist kein Nachweis eingegangener Zahlungen.');
 
         return $pdf->Output('S');
     }

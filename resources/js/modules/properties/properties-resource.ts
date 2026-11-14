@@ -73,6 +73,7 @@ export const properties: ResourceDefinition = {
                 ["A+", "A", "B", "C", "D", "E", "F", "G", "H"],
                 "details",
             ),
+            required: false,
             nullable: true,
             default: null,
         },

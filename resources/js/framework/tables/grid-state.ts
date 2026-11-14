@@ -7,12 +7,13 @@ import type {
     Updater,
 } from "@tanstack/react-table";
 import type { ResourceDefinition } from "../types";
+import { sanitizeGridFilters, type GridFilters } from "./filter-rules";
 export interface GridState {
     search: string;
     pagination: PaginationState;
     sorting: SortingState;
     columnVisibility: ColumnVisibilityState;
-    filters: Record<string, string[]>;
+    filters: GridFilters;
     group: string;
     dense: boolean;
 }
@@ -58,25 +59,7 @@ export function readGridState(
                   .map((s) => ({ id: s.id, desc: !!s.desc }))
                   .slice(0, 3)
             : [],
-        filters: Object.fromEntries(
-            (resource.filters ?? []).flatMap((f) => {
-                const raw =
-                    rawFilters && typeof rawFilters === "object"
-                        ? rawFilters[f.field]
-                        : undefined;
-                const values = [
-                    ...new Set(
-                        (Array.isArray(raw)
-                            ? raw
-                            : typeof raw === "string"
-                              ? [raw]
-                              : []
-                        ).filter((v) => f.options.some((o) => o.value === v)),
-                    ),
-                ];
-                return values.length ? [[f.field, values]] : [];
-            }),
-        ),
+        filters: sanitizeGridFilters(rawFilters, resource.filters),
         columnVisibility: Object.fromEntries(
             rawColumns && typeof rawColumns === "object"
                 ? Object.entries(rawColumns).filter(

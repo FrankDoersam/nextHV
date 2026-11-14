@@ -214,7 +214,7 @@ Relationstabellen im Bearbeitungsformular verwenden denselben Ablauf für Kondit
 />
 ```
 
-Weitere Funktionen: serverseitige Sortierung, registrierte Filter, Spaltenchooser in der Toolbar, Spaltenverschiebung über das REUI-Menü, Dichteumschalter, Refresh, Lade-/Fehlerzustände und explizite Bulk-Actions. Die Spaltenreihenfolge/-breite/-fixierung bleiben sitzungsbezogener Tabellenzustand; die URL persistiert Suche, Seite, Seitengröße, Sortierung, Filter, Gruppierung, Sichtbarkeit und Dichte.
+Weitere Funktionen: serverseitige Sortierung, registrierte Filter, Spaltenauswahl und Spaltenverschiebung über das REUI-Kopfmenü, Refresh, Lade-/Fehlerzustände und explizite Bulk-Actions. Die Spaltenreihenfolge/-breite/-fixierung bleiben sitzungsbezogener Tabellenzustand; die URL persistiert Suche, Seite, Seitengröße, Sortierung, Filter, Gruppierung, Sichtbarkeit und Dichte.
 
 Die Hauptliste füllt die nach Header, KPI-Bar, Abständen und Toolbar verfügbare Höhe. Zeilen scrollen intern; der Footer bleibt außerhalb der Scrollfläche, mit Seitenauswahl rechts. Relationslisten verwenden eine kompaktere maximale Höhe. Auf sehr niedrigen Viewports kann der Inhaltsbereich entsprechend klein werden.
 
@@ -647,17 +647,95 @@ Regressionstests decken Tastatursuche, Mehrfachauswahl/Vorauswahl, Backend-Filte
 
 Die Auswertung der echten CI-Aufnahmen zeigte vier gemeinsame Ursachen: falsche Orientierungsselektoren in `Tabs`, fehlende übersetzte Initialwerte im Zeitraum-Select, eine überladene Tabellen-Toolbar sowie uneinheitliche Wizard-Komposition. Die Korrekturen liegen in Komponenten, nicht in Seitenstyles.
 
-| Bereich             | Standard und Erweiterungspunkt                                                                                                                                                                                                                                                                                                                                                                               |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Theme / AppShell    | Kühle neutrale Flächen, weiße Inhaltskarten, Petrol für aktive Navigation, Aktionen und Diagramm-Hervorhebung. Farben einschließlich Sidebar zentral in `resources/css/app.css`. Kompakte einzeilige Marke ohne weiße Logokarte; Suche in Sidebar und per Strg/⌘ K. Kein zusätzlicher Suchbutton rechts im Header.                                                                                           |
-| Tabs / LazyTabs     | Das `orientation`-Prop wird an Base UI weitergegeben. Selektoren verwenden dessen tatsächliches `data-orientation`. Horizontale Tabs stehen über dem Inhalt; vertikale Tabs daneben. Die Tab-Leiste darf innerhalb ihrer eigenen Breite scrollen; Panels bleiben `min-width: 0`. Aktiver Unterstrich, Zähler und Tastaturfokus zentral. URL und verzögertes Laden unverändert.                               |
-| Karten / Kennzahlen | `WorkspaceCard` übernimmt lesbare Kopf- und Fußzeilen sowie umbrechende Actions. `WorkspaceColumns` besitzt begrenzte Grid-Spalten und `min-width: 0`. Ein einzelner sichtbarer Baustein belegt die volle Breite.                                                                                                                                                                                            |
-| Dashboard           | Zeitraum-Optionen werden als Base-UI-`items` übergeben, damit bereits vor dem Öffnen übersetzte Labels erscheinen. Monats-/Quartalsauswahl passt Betrag, Titel und Balkenauswahl an. Die Demo-Kennzeichnung bleibt sichtbar.                                                                                                                                                                                 |
-| Balkendiagramm      | Gemeinsame gerundete Skala, dezente Hilfslinien, Planlinie und Petrol-Hervorhebung. Mini-Diagramme zeigen ersten und letzten Monat außerhalb der schmalen Balkenspalten, ohne abgeschnittene Monatslabels. Tastaturfokus liefert dieselben Werte wie Hover.                                                                                                                                                  |
-| Tabellen-Toolbar    | Reihenfolge: Suche → Filter → Gruppierung; rechts Export → Aktualisieren → Anlegen. Keine separaten Buttons „Spalten“ oder „Zeilendichte“. `columnChooser` steuert das Spalten-Untermenü in den Tabellenköpfen. `densityToggle` entfällt; die bestehende `dense`-URL-Einstellung bleibt lesbar. Auswahl und Zeilenaktionen haben feste, nicht skalierbare Spaltenbreiten; Badge-Spalten bekommen mehr Platz. |
-| Overlay / FieldGrid | Sheet, Dialog, Header, scrollender Inhalt und Footer teilen dieselben Abstände. Standard-Sheets bis 52 rem. Das Feldraster richtet sich per Container Query nach seiner eigenen Breite; breite Felder belegen `col-span-full` und erzeugen bei schmalen Formularen keine zusätzliche Spalte.                                                                                                                 |
-| WizardProgress      | Eine gemeinsame Komposition auf REUI-Stepper für Formulargruppen und gespeicherte Multi-Entity-Flows. Schritt-Karten mit Nummer bzw. Haken, aktivem Zustand und mobiler Kurzansicht. Nur bereits erreichbare Formulargruppen sind anklickbar. Persistierte Flows behalten ihre vorhandene Zurück-/Speicherlogik; der Fortschritt springt nicht über notwendige Mutationen hinweg.                            |
+| Bereich             | Standard und Erweiterungspunkt                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Theme / AppShell    | Kühle neutrale Flächen, weiße Inhaltskarten, Indigo für aktive Navigation, Aktionen und Diagramm-Hervorhebung. Farben einschließlich Sidebar zentral in `resources/css/app.css`. Kompakte einzeilige Marke ohne weiße Logokarte; Suche in Sidebar und per Strg/⌘ K. Kein zusätzlicher Suchbutton rechts im Header.                                                                                                                                                       |
+| Tabs / LazyTabs     | Das `orientation`-Prop wird an Base UI weitergegeben. Selektoren verwenden dessen tatsächliches `data-orientation`. Horizontale Tabs stehen über dem Inhalt; vertikale Tabs daneben. Die Tab-Leiste darf innerhalb ihrer eigenen Breite scrollen; Panels bleiben `min-width: 0`. Aktiver Unterstrich, Zähler und Tastaturfokus zentral. URL und verzögertes Laden unverändert.                                                                                           |
+| Karten / Kennzahlen | `WorkspaceCard` übernimmt lesbare Kopf- und Fußzeilen sowie umbrechende Actions. `WorkspaceColumns` besitzt begrenzte Grid-Spalten und `min-width: 0`. Ein einzelner sichtbarer Baustein belegt die volle Breite.                                                                                                                                                                                                                                                        |
+| Dashboard           | Der Zeitraum verwendet denselben durchsuchbaren `ChoicePicker` im Menümodus wie Gruppierung und Filter. Bereits vor dem Öffnen erscheinen übersetzte Labels. Monats-/Quartalsauswahl passt Betrag, Titel und Balkenauswahl an. Die Demo-Kennzeichnung bleibt sichtbar.                                                                                                                                                                                                   |
+| Balkendiagramm      | Gemeinsame gerundete Skala, dezente Hilfslinien, Planlinie und Indigo-Hervorhebung. Mini-Diagramme zeigen ersten und letzten Monat außerhalb der schmalen Balkenspalten, ohne abgeschnittene Monatslabels. Tastaturfokus liefert dieselben Werte wie Hover.                                                                                                                                                                                                              |
+| Tabellen-Toolbar    | Erste Zeile: Suche und Gruppierung; rechts Export → Aktualisieren → Anlegen. Darunter: Filter hinzufügen, aktive Filter-Chips und Zurücksetzen. Keine separaten Buttons „Spalten“ oder „Zeilendichte“. `columnChooser` steuert das Spalten-Untermenü in den Tabellenköpfen. `densityToggle` entfällt; die bestehende `dense`-URL-Einstellung bleibt lesbar. Auswahl und Zeilenaktionen haben feste, nicht skalierbare Spaltenbreiten; Badge-Spalten bekommen mehr Platz. |
+| Overlay / FieldGrid | Sheet, Dialog, Header, scrollender Inhalt und Footer teilen dieselben Abstände. Standard-Sheets bis 52 rem. Das Feldraster richtet sich per Container Query nach seiner eigenen Breite; breite Felder belegen `col-span-full` und erzeugen bei schmalen Formularen keine zusätzliche Spalte.                                                                                                                                                                             |
+| WizardProgress      | Eine gemeinsame Komposition auf REUI-Stepper für Formulargruppen und gespeicherte Multi-Entity-Flows. Eine verbundene Fortschrittsleiste mit Nummer bzw. Haken, Indigo-Fokus auf dem aktiven Schritt, Schrittzähler und mobiler Kurzansicht. Nur bereits erreichbare Formulargruppen sind anklickbar. Persistierte Flows behalten ihre vorhandene Zurück-/Speicherlogik; der Fortschritt springt nicht über notwendige Mutationen hinweg.                                |
 
 API-Projektionen verwenden bei Includes und Aggregaten snake_case: `business_partner`, `related_contract`, `incoming_links_count`. Eloquent-Relationsnamen in Suchanfragen bleiben camelCase. Die Vertragsansichten verwenden die tatsächlichen Antwortschlüssel, damit Kontakte, Verknüpfungen und Zähler sichtbar werden.
 
 Orientierung an den öffentlichen [REUI-Data-Grid-Kompositionen](https://reui.io/components/data-grid/c-data-grid-34) und [REUI-Stepper-Primitives](https://reui.io/docs/components/base/stepper); keine zusätzlichen Pakete oder kostenpflichtigen Blöcke.
+
+## 24. Filter-Builder und einheitliche Auswahl
+
+Die öffentlichen [REUI-Filters](https://reui.io/docs/components/base/filters) und [Wizard-Kompositionen](https://reui.io/blocks/application/wizard/wizard-1) dienen als Interaktionsvorbild. Die Umsetzung besteht aus den bereits installierten REUI-/Base-UI-Primitives. Es wird kein lizenzpflichtiger Pro-Block eingebunden und kein neues Paket benötigt.
+
+`ResourceFilters` wird automatisch aus `resource.filters` aufgebaut. „Filter“ öffnet eine durchsuchbare Feldauswahl. Pro Feld entsteht ein Chip mit Feldname, **ist / ist nicht**, durchsuchbarer Mehrfachauswahl und Entfernen. „Zurücksetzen“ entfernt sämtliche Filter. Unvollständige Chips sind nur lokale Entwürfe und erzeugen keinen Serverfilter. Nach Auswahl des ersten Werts bleibt das Menü offen, auch während die URL asynchron aktualisiert wird. Ein Feld kann nur einmal vorkommen; mehrere Werte werden innerhalb dieses Feldes als Menge behandelt, verschiedene Felder per AND kombiniert.
+
+```ts
+filters: [
+    {
+        field: "status",
+        label: "Status",
+        options: opts(["draft", "active", "ended"]),
+    },
+    {
+        field: "type",
+        label: "Vertragsart",
+        options: opts(["residential", "garage"]),
+    },
+];
+```
+
+Die Felder und Werte müssen zum tatsächlichen REST-Resource passen. Das Beispiel beschreibt die Konfiguration; es erweitert nicht automatisch das Backend-Enum. Der aktuelle Builder unterstützt diskrete Optionsfelder. Datums-, Betragsbereiche und verschachtelte OR-Gruppen bleiben bewusst separate Erweiterungen, statt einen unvollständigen generischen Query-Editor vorzutäuschen.
+
+```json
+{ "status": { "operator": "not in", "values": ["draft", "ended"] } }
+```
+
+So wird `filters` URL-kodiert gespeichert. `sanitizeGridFilters` akzeptiert nur registrierte Felder, bekannte Werte und die beiden unterstützten Operatoren; Duplikate und leere Regeln werden entfernt. Alte Links mit `{"status":"active"}` oder `{"status":["active"]}` bleiben gültig. `compileGridFilters` übersetzt in Lomkit-Filter mit `operator: "in" | "not in"` und `value: string[]`. Die Datenbank filtert den gesamten Bestand; der Browser filtert nicht nur die aktuell geladene Seite. Filteränderungen setzen die Seite auf 1 und heben Zeilenauswahl auf. `filterable={false}` deaktiviert die UI und URL-Filter, erhält aber die fest vorgegebenen Relationsfilter.
+
+`ChoicePicker` besitzt jetzt drei Präsentationen mit derselben Auswahl-, Such- und Tastaturlogik:
+
+| `presentation`    | Verwendung                                                                      |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `input` (Default) | Formularfelder und asynchrone Entity-Picker; Tippen sucht direkt im Feld        |
+| `menu`            | Gruppierung, Dashboard-Zeitraum und Filterauswahl; Button mit Suchfeld im Popup |
+| `chip`            | Kompakte Operator-/Wertauswahl innerhalb eines Filter-Chips                     |
+
+`triggerIcon` ist optional. Single/Multiple, Clearable, Disabled, Preselection, Optionsuche und Beschriftungen bleiben dieselben Props. Tab + Tippen öffnet auch Toolbar-Menüs direkt mit der Suche. Escape schließt ohne gespeicherte Auswahl zu löschen. Geschlossen erscheinen nur Titel; lange Mehrfachauswahlen werden innerhalb einer begrenzten Breite abgeschnitten und um die Anzahl ergänzt. Styles liegen ausschließlich in der gemeinsamen Komponente.
+
+Das Theme verwendet Indigo für Primäraktionen, Fokus, aktive Navigation und Diagramm-Akzente; neutrale Grau-/Weißflächen für Sidebar und Inhalt. Erfolgszustände sind blau, Warnungen amber, Fehler rot. Die zentrale Token-Datei gilt auch für Login und Overlays. Der Objektbericht verwendet dieselbe Indigo-Akzentfarbe.
+
+## 25. Architekturprüfung der Domain-Klassen
+
+Maßstab: Eine Domain-Action bleibt bestehen, wenn sie eine benannte fachliche Operation, Transaktion oder wiederverwendete Invariante kapselt. Reine HTTP-Autorisierung, Feldnamenübersetzung und Antwortformatierung gehören an die REST-Grenze. Eine Klasse pro CRUD-Methode ohne zusätzliche Fachlichkeit ist hier nicht nötig; diese Aufgaben übernimmt Lomkit bereits.
+
+| Klasse                  | Entscheidung und Begründung                                                                                                                                                                                                 |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ActivateContract`      | Behalten. Aktivierung verlangt Entwurf, Mieter und Anfangskondition; Transaktion und gesperrter Vertrag bilden eine fachliche Zustandsänderung.                                                                             |
+| `ConfirmTermination`    | Behalten. Kündigung und Vertrag werden gemeinsam geändert; nachgelagerte Konditionen blockieren den Abschluss. Das ist keine generische Statusänderung.                                                                     |
+| `ValidateContract`      | Behalten. Mindestlaufzeit, Enddatum und Überschneidungen gehören zur Vermietungsdomäne. Gemeinsamer Aufruf über den Observer sichert verschiedene Schreibwege.                                                              |
+| `ValidateUnit`          | Behalten und als einzige fachliche Prüfung nutzen. Aktives Objekt, Nummer im Objekt und Verschiebesperre bei Vertragshistorie gelten auch beim Klonen. Die doppelte Nummernprüfung in der REST-Clone-Action wurde entfernt. |
+| `CloneProperty`         | Behalten. Transaktion, Prüftermin-Reset und optionales Kopieren physischer Einheiten sind fachliche Kopierregeln. `CloneUnit` wird explizit per Konstruktor injiziert.                                                      |
+| `CloneUnit`             | Behalten. Physische Stammdaten kopieren, Zustand `ready`, keine Verträge oder Mieterdaten übernehmen. Derselbe Ablauf wird separat und beim Objekt-Klon verwendet.                                                          |
+| `CloneDefaults`         | Behalten. Nummer, Kopiebezeichnung und `with_units` sind gemeinsame Produktvorgaben für Vorbelegung und Ausführung. Ein Modell-agnostischer Generator wäre derzeit nur zusätzliche Indirektion.                             |
+| `CheckPropertyDeletion` | Behalten. Die beiden Regeln sind fachlich; Vorschau und Ausführung verwenden dieselbe Prüfung. `withExists` liefert die Vorprüfung gesammelt, ohne Einheiten zu laden.                                                      |
+| `CalculateOverview`     | Behalten. Stichtag, laufende Verträge und wirksame Konditionen definieren Kennzahlen. Metric und PDF nutzen dieselbe Berechnung.                                                                                            |
+| `BuildPropertyReport`   | Behalten. Ein konkreter fachlicher Bericht, kein zweites CRUD-System. Ein generisches PDF-Templating-Framework wäre erst bei mehreren wiederholten Berichtlayouts sinnvoll.                                                 |
+
+Die fünf Property-Enums (`PropertyStatus`, `PropertyType`, `UnitStatus`, `UnitType`, `ManagementType`) bleiben ebenfalls: Sie begrenzen fachliche Werte und werden von Eloquent/REST wiederverwendet. Vertragszustände sind derzeit noch Strings. Ein späteres `ContractStatus`-Enum und die Ableitung der Frontend-Optionen aus API-Metadaten würden diese doppelte Werteliste verringern; ein neues Enum-Framework ist dafür nicht erforderlich.
+
+### Bereits ins Framework gezogen: `App\Rest\Actions\CloneAction`
+
+Die gemeinsame Basis übernimmt URI/Bezeichnung, Resource-Ziel, standardmäßig maximal einen Datensatz, `view` je Model sowie `viewAny`/`create`, Ausführung und die Antwort `data.result.data.ids`. Domain-Validierungsfehler werden am REST-Rand von z. B. `code` nach `fields.code` übersetzt; das Formular kann denselben Fehler direkt am Eingabefeld anzeigen.
+
+Konkrete REST-Actions deklarieren weiterhin `fields()` und implementieren `cloneModel(Model $source, ActionFields $fields): Model`. Dort werden Backend-Defaults geladen und die jeweilige Domain-Action aufgerufen. So teilen Objekt und Einheit den Ablauf, ohne ihre Kopierregeln in ein allgemeines `replicate()`-Framework zu verschieben. Transaktionen des REST-Pakets und die fachliche Objekt-Transaktion bleiben erhalten.
+
+### Nächste sinnvolle Erweiterungen – nicht als implementiert zu verstehen
+
+- **Deklarative Löschregeln:** Sobald weitere Ressourcen dieselbe Kombination aus Status- und Relationsblockaden benötigen, kann ein `DeletionGuard` mit gebündelter `withExists`-Projektion Vorschau und Ausführung vereinheitlichen. Gegenwärtig ist die Objektregel der einzige vollständige Anwendungsfall; eine neue Rules-/Registry-Hierarchie würde mehr Code als Nutzen erzeugen.
+- **Zustandsübergänge:** Wiederholte Transition-Metadaten (Label, Quellstatus, Permission, Bestätigung) lassen sich später zentral deklarieren. Fachliche Vorbedingungen und atomare Änderungen verbleiben in `ActivateContract`/`ConfirmTermination`.
+- **Berichte:** Den bestehenden typisierten `document`-Return wiederverwenden. Erst bei mehreren Berichten gemeinsame PDF-Kopf-/Fußzeilen extrahieren; keine eigene Report-Engine im Voraus.
+- **Performance:** `CalculateOverview` lädt derzeit Vertragsbeginn-Daten für die durchschnittliche Mietdauer. Bei großen Portfolios eine datenbankspezifische Aggregation oder inkrementelle Projektion mit Messung einführen. Kopieren großer Objekte kann als Job mit Fortschritts-Return erfolgen; für die aktuellen kleinen Objekte bleibt es synchron.
+- **Nebenläufigkeit:** Für produktive Mehrbenutzerschreibzugriffe müssen Überschneidung und Lösch-/Anlage-Rennen zusätzlich unter der produktiven Datenbank mit parallelen Transaktionen geprüft werden. SQLite-Tests belegen keine PostgreSQL-/MySQL-Sperrsemantik. Keine Behauptung einer vollständigen Concurrency-Garantie aus dem aktuellen Testlauf.
+
+Die Energieklasse am Objekt ist optional wie im Backend. Sie trägt deshalb kein `required` mehr; zuvor verhinderte diese widersprüchliche Felddefinition das Speichern eines ansonsten gültigen Wizards ohne Energieklasse.
+
+Wizard-Weiter und Speichern haben getrennte React-Keys. Der Weiter-Klick unterbindet die native Default-Aktion vor der asynchronen Schrittvalidierung. So kann derselbe DOM-Button beim letzten Übergang nicht zu einem Submit-Button werden und unbeabsichtigt speichern. Ein Form-Submit vor dem letzten Schritt führt nur die Schrittvalidierung aus; erst der letzte Schritt darf persistieren. Unit- und Browserregression prüfen, dass vor dem ausdrücklichen Speichern keine Mutation erfolgt.

@@ -212,3 +212,50 @@ it("preserves explicit null defaults instead of restoring an old field value", a
         ),
     ).toEqual({ date: null });
 });
+
+it("searches toolbar choices immediately from keyboard focus and retains selection on Escape", async () => {
+    const user = userEvent.setup();
+    render(
+        <SelectDemo
+            presentation="menu"
+            clearable={false}
+            aria-label="Gruppierung"
+        />,
+    );
+    await user.tab();
+    await user.keyboard("Entw");
+    expect(
+        await screen.findByRole("option", { name: /Entwurf/ }),
+    ).toBeVisible();
+    expect(
+        screen.queryByRole("option", { name: /Aktiv/ }),
+    ).not.toBeInTheDocument();
+    await user.keyboard("{ArrowDown}{Enter}");
+    await waitFor(() =>
+        expect(
+            screen.getByRole("combobox", { name: "Gruppierung" }),
+        ).toHaveTextContent("Entwurf"),
+    );
+    await user.click(screen.getByRole("combobox", { name: "Gruppierung" }));
+    expect(
+        await screen.findByRole("option", { name: /Entwurf/ }),
+    ).toHaveAttribute("aria-selected", "true");
+    await user.keyboard("{Escape}");
+    expect(screen.getByText('"draft"', { exact: true })).toBeVisible();
+});
+
+it("accepts a new property without an optional energy class", async () => {
+    const { properties } =
+        await import("@/modules/properties/properties-resource");
+    const { initialValues } = await import("./forms/schema");
+    const values = initialValues(properties.fields, undefined, {
+        code: "NEW-1",
+        name: "Testobjekt",
+        street: "Testweg",
+        house_number: "7",
+        postal_code: "10115",
+        city: "Berlin",
+    });
+    expect(values.energy_class).toBeNull();
+    expect(schemaFor(properties.fields).safeParse(values).success).toBe(true);
+});
