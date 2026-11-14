@@ -1,6 +1,9 @@
 <?php
 
 return [
+    // The workspace and its server messages share one language, including legacy installations.
+    'locale' => 'de',
+
     'options' => [
         'month_end' => 'Monatsende',
         'quarter_end' => 'Quartalsende',

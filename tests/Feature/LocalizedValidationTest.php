@@ -13,6 +13,21 @@ class LocalizedValidationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_invalid_relation_and_missing_name_report_distinct_readable_errors(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $response = $this->postJson('/api/v1/units/mutate', ['mutate' => [[
+            'operation' => 'create',
+            'attributes' => ['property_id' => 'kein-objekt', 'code' => 'E-01', 'name' => null],
+        ]]])->assertUnprocessable()->assertJsonPath('message', 'Bitte prüfe die markierten Angaben.');
+
+        $this->assertSame([
+            'mutate.0.attributes.property_id' => ['Objekt muss eine ganze Zahl sein.'],
+            'mutate.0.attributes.name' => ['Bezeichnung ist erforderlich.'],
+        ], $response->json('errors'));
+        $this->assertDatabaseCount('units', 0);
+    }
+
     public function test_empty_create_fields_report_one_required_message_with_readable_labels(): void
     {
         $this->actingAs(User::factory()->create());
