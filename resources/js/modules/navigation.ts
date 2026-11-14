@@ -8,7 +8,7 @@ export const navigationGroups: Record<string, NavigationGroupSettings> = {
         description: "Grundlagen der Immobilienverwaltung",
     },
     Vermietung: {
-        defaultOpen: false,
+        defaultOpen: true,
         tooltip: "Verträge, Mietkonditionen und Kündigungen",
     },
     Dokumente: {
