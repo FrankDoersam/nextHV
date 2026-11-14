@@ -506,8 +506,7 @@ export function ResourceCollection({
                     >;
                 }) =>
                     c.field === resource.titleField &&
-                    detailLink &&
-                    !c.reference ? (
+                    detailLink ? (
                         <Cell
                             className="w-full"
                             title={
