@@ -52,6 +52,27 @@ describe("sidebar navigation model", () => {
         ]);
     });
 
+    it("keeps a tabbed resource active and its breadcrumb accurate without view children", () => {
+        const contracts = {
+            ...properties,
+            name: "contracts",
+            label: "Verträge",
+            navigationGroup: "Vermietung",
+            navigationItem: undefined,
+            views: [
+                { id: "all", label: "Alle" },
+                { id: "active", label: "Aktiv" },
+                { id: "draft", label: "Entwurf" },
+            ],
+        } as ResourceDefinition;
+        const tree = resolveNavigation(defaultNavigation([contracts]), [contracts]);
+        const parent = flattenNavigation(tree).find((item) => item.id === "contracts")!;
+        expect(navigationSelected(parent, "/contracts", "?view=active")).toBe(true);
+        expect(navigationSelected(parent, "/contracts", "?view=draft")).toBe(true);
+        expect(navigationPath(tree, "/contracts", "?view=active").map((item) => item.label))
+            .toEqual(["Vermietung", "Verträge"]);
+    });
+
     it("allows visible/enabled callbacks with a reasoned permission decision", () => {
         const decide = vi.fn((resource: string, action: string) => {
             expect(resource).toBe("properties");

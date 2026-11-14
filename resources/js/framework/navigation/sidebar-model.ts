@@ -205,7 +205,9 @@ export function navigationSelected(
     const current = new URLSearchParams(search).get("view");
     if (item.view) return current === item.view;
     if (item.resource?.views?.length) {
-        return !current || current === item.resource.views[0].id;
+        // Resource parents remain selected for tabbed views unless a visible
+        // child navigation entry represents that exact view.
+        return !item.children.some((child) => child.view === current);
     }
     return true;
 }
