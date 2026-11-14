@@ -11,7 +11,10 @@ export default function ResourcePage({
         <CollectionPage>
             <PageHeader eyebrow="Verwaltung" title={resource.label} />
             <SectionCard grow>
-                <ResourceCollection resource={resource} />
+                <ResourceCollection
+                    resource={resource}
+                    {...resource.collection}
+                />
             </SectionCard>
         </CollectionPage>
     );

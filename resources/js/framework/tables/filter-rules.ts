@@ -50,7 +50,7 @@ export function filterOperators(
 ): GridFilterOperator[] {
     if (field.operators) return field.operators;
     const operators: GridFilterOperator[] =
-        !field.kind || field.kind === "choice"
+        !field.kind || field.kind === "choice" || field.kind === "relation"
             ? ["in", "not in"]
             : field.kind === "text"
               ? ["=", "!=", "contains", "not contains"]
@@ -92,6 +92,11 @@ export function sanitizeGridFilters(
                 ? candidates.filter((v): v is string => {
                       if (typeof v !== "string" || !v.trim() || v.length > 200)
                           return false;
+                      if (definition.kind === "relation")
+                          return (
+                              /^[1-9]\d*$/.test(v) &&
+                              Number.isSafeInteger(Number(v))
+                          );
                       if (definition.kind === "number")
                           return (
                               /^-?(?:\d+\.?\d*|\.\d+)$/.test(v) &&
@@ -141,7 +146,7 @@ export function compileGridFilters(
         if (!rule.values.length) return [];
         const kind = definitions.find((d) => d.field === field)?.kind;
         const values = rule.values.map((v) =>
-            kind === "number" ? Number(v) : v,
+            kind === "number" || kind === "relation" ? Number(v) : v,
         );
         const pattern = ["contains", "not contains"].includes(rule.operator);
         return [

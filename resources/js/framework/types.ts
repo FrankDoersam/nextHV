@@ -83,7 +83,13 @@ export interface FieldDefinition {
 export interface FilterDefinition {
     field: string;
     label: string;
-    kind?: "choice" | "text" | "number" | "date";
+    kind?: "choice" | "text" | "number" | "date" | "relation";
+    resource?: string;
+    labelField?: string;
+    filters?: Filter[];
+    creatable?: boolean;
+    multiple?: boolean;
+    clearable?: boolean;
     options?: { value: string; label: string }[];
     nullable?: boolean;
     operators?: (
@@ -102,6 +108,17 @@ export interface FilterDefinition {
         | "is not null"
     )[];
 }
+export interface CellDefinition {
+    type: "avatar" | "avatars" | "tags" | "icon-text" | "text";
+    primary?: string | ((row: RecordData) => string);
+    secondary?: string | ((row: RecordData) => string);
+    image?: string;
+    icon?: LucideIcon;
+    items?: string | ((row: RecordData) => unknown[]);
+    nameField?: string;
+    imageField?: string;
+    max?: number;
+}
 export interface ColumnDefinition {
     field: string;
     label: string;
@@ -115,6 +132,8 @@ export interface ColumnDefinition {
         false | (Partial<Omit<FilterDefinition, "field">> & { field?: string });
     defaultVisible?: boolean;
     hideable?: boolean;
+    cell?: CellDefinition;
+    exportValue?: (row: RecordData) => string | number | null;
     render?: (row: RecordData) => ReactNode;
 }
 export interface FormSummaryDefinition {
@@ -141,6 +160,21 @@ export interface CollectionSummaryDefinition {
         description?: string;
     }[];
 }
+export interface FormGroupDefinition {
+    id: string;
+    label: string;
+    description?: string;
+    collapsible?: boolean;
+    defaultOpen?: boolean;
+    summary?: (values: Values) => ReactNode;
+}
+export interface CollectionViewDefinition {
+    id: string;
+    label: string;
+    filters?: Filter[];
+    query?: string;
+    count?: boolean;
+}
 export interface ResourceDefinition {
     name: string;
     label: string;
@@ -150,9 +184,12 @@ export interface ResourceDefinition {
     titleField: string;
     fields: FieldDefinition[];
     columns: ColumnDefinition[];
-    groups?: { id: string; label: string; description?: string }[];
+    groups?: FormGroupDefinition[];
     groupBy?: { value: string; label: string }[];
     filters?: FilterDefinition[];
+    views?: CollectionViewDefinition[];
+    toolbarFilters?: string[];
+    collection?: CollectionOptions;
     includes?: { relation: string; includes?: { relation: string }[] }[];
     aggregates?: { relation: string; type: string; field?: string }[];
     navigation?: boolean;
@@ -164,9 +201,11 @@ export interface ResourceDefinition {
         titleBadge?: boolean;
         description?: string | false;
         tabs?: EditorTabDefinition[];
-        sectionStyle?: "plain" | "card";
+        sectionStyle?: "plain" | "card" | "collapsible";
         summary?: FormSummaryDefinition;
+        wizardSummary?: FormSummaryDefinition;
     };
+    view?: { sectionStyle?: "plain" | "card" | "collapsible" };
     supportsClone?: boolean;
     bulkEditable?: string[];
     createFlow?: string;
@@ -175,6 +214,9 @@ export interface ResourceDefinition {
 }
 /** The same capabilities apply to full-page grids and embedded relations. */
 export interface CollectionOptions {
+    views?: CollectionViewDefinition[] | false;
+    toolbarFilters?: string[];
+    viewMode?: "page" | "sheet" | "dialog";
     summary?: boolean;
     virtualized?: boolean | "auto";
     searchable?: boolean;
@@ -217,12 +259,13 @@ export interface RelationDefinition {
 }
 export interface FormRequest {
     resource: ResourceDefinition;
-    mode: "create" | "edit";
+    mode: "create" | "edit" | "view";
     row?: RecordData;
     defaults?: Values;
     presentation?: Presentation;
     wizard?: boolean;
     reduced?: boolean;
+    fields?: string[];
     context?: {
         resource: string;
         id: number;

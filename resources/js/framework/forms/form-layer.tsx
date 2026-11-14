@@ -4,15 +4,18 @@ import { ErrorState, Loading } from "@/components/blocks/content";
 import { Overlay } from "@/components/blocks/overlay";
 import { getResource } from "@/modules/registry";
 import { dataProvider } from "../data/provider";
-import type { FormRequest } from "../types";
+import type { FormRequest, RecordData } from "../types";
 import type { PanelLink } from "../navigation/panels";
 import { ResourceEditor } from "./resource-editor";
+import { ResourceView } from "./resource-view";
 import type { FlowControls } from "./flow";
 export function FormLayer({
     panel,
     cached,
     onClose,
     onDirtyChange,
+    onEdit,
+    onSaved,
     nested,
     stacked,
     flow,
@@ -21,6 +24,8 @@ export function FormLayer({
     cached?: FormRequest;
     onClose: () => void;
     onDirtyChange: (value: boolean) => void;
+    onEdit: (row: RecordData, fields?: string[]) => void;
+    onSaved: (row: RecordData) => void;
     nested?: ReactNode;
     stacked: boolean;
     flow?: FlowControls;
@@ -32,9 +37,31 @@ export function FormLayer({
         /* Bad deep links render a recoverable state. */
     }
     const hydration = useQuery({
-        queryKey: ["panel", panel.key, panel.resource, panel.id, panel.context],
+        queryKey: [
+            "panel",
+            panel.key,
+            panel.resource,
+            panel.id,
+            panel.context,
+            panel.mode,
+            panel.fields,
+        ],
         enabled: !!resource,
         queryFn: async () => {
+            if (
+                panel.fields?.some(
+                    (name) =>
+                        !resource!.fields.some(
+                            (field) =>
+                                field.name === name &&
+                                !field.readonlyOnEdit &&
+                                !field.disabled,
+                        ),
+                )
+            )
+                throw new Error(
+                    "Der Direktlink enthält nicht bearbeitbare Felder.",
+                );
             if (panel.context) {
                 const field = resource!.fields.find(
                     (f) =>
@@ -49,7 +76,7 @@ export function FormLayer({
                 );
             }
             const row =
-                panel.mode === "edit"
+                panel.mode !== "create"
                     ? (cached?.row ??
                       (await dataProvider.one(resource!, panel.id!)))
                     : null;
@@ -89,24 +116,40 @@ export function FormLayer({
                 </>
             </Overlay>
         );
+    const request: FormRequest = {
+        ...cached,
+        resource,
+        mode: panel.mode,
+        row: hydration.data ?? undefined,
+        presentation: panel.presentation,
+        wizard: panel.wizard,
+        reduced: panel.reduced,
+        fields: panel.fields,
+        context: panel.context,
+        defaults: {
+            ...cached?.defaults,
+            ...(panel.context
+                ? { [panel.context.field]: panel.context.id }
+                : {}),
+        },
+        onSaved: async (row) => {
+            onSaved(row);
+            await cached?.onSaved?.(row);
+        },
+    };
+    if (panel.mode === "view" && hydration.data)
+        return (
+            <ResourceView
+                request={{ ...request, row: hydration.data }}
+                onClose={onClose}
+                onEdit={onEdit}
+                nested={nested}
+                stacked={stacked}
+            />
+        );
     return (
         <ResourceEditor
-            request={{
-                ...cached,
-                resource,
-                mode: panel.mode,
-                row: hydration.data ?? undefined,
-                presentation: panel.presentation,
-                wizard: panel.wizard,
-                reduced: panel.reduced,
-                context: panel.context,
-                defaults: {
-                    ...cached?.defaults,
-                    ...(panel.context
-                        ? { [panel.context.field]: panel.context.id }
-                        : {}),
-                },
-            }}
+            request={request}
             onClose={onClose}
             onDirtyChange={onDirtyChange}
             nested={nested}

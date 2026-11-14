@@ -11,20 +11,10 @@ export const roles: ResourceDefinition = {
     navigation: false,
     fields: [
         {
-            ...relation(
-                "business_partner_id",
-                "Geschäftspartner",
-                "business-partners",
-            ),
+            ...relation("business_partner_id", "Geschäftspartner"),
             readonlyOnEdit: true,
         },
-        select("role", "Rolle", [
-            "tenant",
-            "owner",
-            "supplier",
-            "caretaker",
-            "guarantor",
-        ]),
+        select("role", "Rolle"),
     ],
     columns: [col("role", "Rolle", "badge")],
     actions: crud(),

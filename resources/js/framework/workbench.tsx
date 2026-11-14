@@ -97,6 +97,7 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
             presentation: request.presentation ?? presentation,
             wizard: request.wizard,
             reduced: request.reduced,
+            fields: request.fields,
             context: request.context,
         };
         navigate({
@@ -104,12 +105,72 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
         });
     };
     const closeAt = (index: number) => {
+        const current = panels[index];
+        if (current.returnToView) {
+            const request = cached.current.get(current.key);
+            if (request)
+                cached.current.set(current.key, {
+                    ...request,
+                    mode: "view",
+                    fields: undefined,
+                });
+            dirty.current.delete(current.key);
+            panels.slice(index + 1).forEach((panel) => {
+                dirty.current.delete(panel.key);
+                cached.current.delete(panel.key);
+            });
+            navigate(
+                {
+                    search: panelSearch(location.search, [
+                        ...panels.slice(0, index),
+                        {
+                            ...current,
+                            mode: "view",
+                            fields: undefined,
+                            returnToView: undefined,
+                            wizard: undefined,
+                            reduced: undefined,
+                        },
+                    ]),
+                },
+                { replace: true },
+            );
+            return;
+        }
         panels.slice(index).forEach((p) => {
             dirty.current.delete(p.key);
             cached.current.delete(p.key);
         });
         navigate(
             { search: panelSearch(location.search, panels.slice(0, index)) },
+            { replace: true },
+        );
+    };
+    const editAt = (index: number, row: RecordData, fields?: string[]) => {
+        const current = panels[index];
+        const previous = cached.current.get(current.key);
+        cached.current.set(current.key, {
+            ...previous,
+            resource: previous?.resource ?? getResource(current.resource),
+            mode: "edit",
+            row,
+            fields,
+            context: current.context,
+        });
+        navigate(
+            {
+                search: panelSearch(location.search, [
+                    ...panels.slice(0, index),
+                    {
+                        ...current,
+                        mode: "edit",
+                        fields,
+                        returnToView: true,
+                        wizard: undefined,
+                        reduced: undefined,
+                    },
+                ]),
+            },
             { replace: true },
         );
     };
@@ -268,10 +329,21 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
         if (!panel) return tail;
         return (
             <FormLayer
-                key={`${panel.key}:${panel.flow?.step ?? "form"}`}
+                key={`${panel.key}:${panel.flow?.step ?? "form"}:${panel.mode}:${panel.fields?.join(",") ?? "all"}`}
                 panel={panel}
                 cached={cached.current.get(panel.key)}
                 onClose={() => closeAt(index)}
+                onEdit={(row, fields) => editAt(index, row, fields)}
+                onSaved={(row) => {
+                    const previous = cached.current.get(panel.key);
+                    cached.current.set(panel.key, {
+                        ...previous,
+                        resource:
+                            previous?.resource ?? getResource(panel.resource),
+                        mode: panel.mode,
+                        row,
+                    });
+                }}
                 onDirtyChange={(value) => dirty.current.set(panel.key, value)}
                 stacked={index < panels.length - 1 || !!tail}
                 nested={layer(index + 1)}

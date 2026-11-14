@@ -41,7 +41,7 @@ class ContractResource extends Resource
             Text::make('code')->searchable()->rules('max:40', Contextual::rule(fn (MutationContext $m) => Rule::unique('contracts', 'code')->ignore($m->key)))->creationRules('required')->updateRules('filled'),
             Integer::make('unit_id')->rules(Rule::exists('units', 'id')->whereNull('deleted_at'))->creationRules('required'),
             Text::make('type')->rules('in:residential_lease,commercial_lease,garage_lease,parking_lease,storage_lease'),
-            Text::make('status')->readonly(),
+            Text::make('status')->rules('in:draft,active,ended')->readonly(),
             Date::make('signed_on')->nullable(),
             Date::make('minimum_term_until')->nullable(),
             Text::make('notice_to')->rules('in:month_end,quarter_end,year_end,any'),

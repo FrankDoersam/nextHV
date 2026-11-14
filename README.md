@@ -57,7 +57,7 @@ Geldwerte sind im Formular `Currency`-Felder und im JSON Zahlen in Euro, z. B. `
 2. Geschäftspartner als Mieter bzw. andere Vertragsbeteiligte zuordnen. Die passende Partnerrolle wird automatisch ergänzt.
 3. Eine Kondition ab Vertragsbeginn erfassen. Weitere Stichtage können jährliche Änderungen abbilden.
 4. **Vertrag aktivieren**. Die serverseitige Action verlangt Mieter und Anfangskondition und verhindert überlappende verbindliche Verträge derselben Einheit.
-5. Spätere Beträge als neue Kondition erfassen. Bereits gültige Konditionen und Beteiligte aktivierter Verträge bleiben historisch erhalten. Vertragsnotizen und Kautionsstatus sind weiter bearbeitbar.
+5. Spätere Beträge als neue Kondition erfassen; bereits gültige Konditionen aktivierter Verträge bleiben historisch geschützt. Beteiligte sind auch bei aktiven und beendeten Verträgen bearbeitbar. Ein aktiver Vertrag muss mindestens einen Mieter behalten; Duplikat- und Hauptkontaktregeln gelten weiterhin. Eine zeitliche Beteiligtenhistorie ist nicht implementiert. Vertragsnotizen und Kautionsstatus bleiben bearbeitbar.
 6. Kündigung separat erfassen. Erst **Kündigung bestätigen** setzt in einer Transaktion das bestätigte Vertragsende. Mindestlaufzeit und Kündigungsfrist sind dokumentierte Vertragsangaben; rechtliche Fristberechnung und Zulässigkeitsbewertung werden nicht automatisiert.
 
 Eine Garage erhält einen eigenen Vertrag mit demselben Mieter; `ContractLink` verbindet ihn mit dem Wohnraummietvertrag. Verknüpfungen werden in beiden Richtungen angezeigt. Eine Wohnung zu kündigen beendet einen separaten Garagenvertrag nicht automatisch.
@@ -67,7 +67,7 @@ Beim Duplizieren werden nur Objekt-/Einheitenstammdaten kopiert. Verträge, Bete
 ### Datenintegrität
 
 - Fremdschlüssel, eindeutige Nummern und Konditionsstichtage, Transaktionen und Zeilensperren für Vertragsoperationen.
-- Servervalidierung zusätzlich zur Formularvalidierung, inkl. Laufzeiten, Duplikaten und Hauptansprechpartnern.
+- Ein serverseitiges Regelwerk für Formulare und API, inkl. Laufzeiten, Duplikaten und Hauptansprechpartnern; Wizard-Schritte prüfen über Laravel Precognition vor dem Weitergehen.
 - Optimistische Versionsprüfung bei CRUD-Updates: `updated_at` wird als `version` übertragen; bei Konflikt antwortet die API mit `409`.
 - Löschen und verbindliche Actions verlangen den signierten Bestätigungstoken der API (`428` → Bestätigung → erneute Anfrage).
 - Aktive Objekte sowie Objekte mit Einheiten (auch gelöschten), Einheiten mit Vertragsgeschichte und aktivierte Verträge werden nicht einfach gelöscht. Stammdatentabellen verwenden Soft Deletes; es gibt in dieser Oberfläche noch keinen Papierkorb.
@@ -81,7 +81,7 @@ Beim Duplizieren werden nur Objekt-/Einheitenstammdaten kopiert. Verträge, Bete
 | `app/Domain/Property/Actions`                              | Klonen, Validierung und Portfolio-Kennzahlen                                                |
 | `app/Domain/Contract/Actions`                              | Vertragsvalidierung, Aktivierung und Kündigungsbestätigung                                  |
 | `app/Observers`                                            | Integritätsregeln für Modelländerungen                                                      |
-| `app/Rest/Resources`                                       | Explizite API-Felder, Validierung, erlaubte Relationen, Versionierung                       |
+| `app/Rest/Resources`, `app/Rest/Ui`, `config/ui.php`       | API-Felder, Regeln, Relationen, Versionierung; native Ressourcenmetadaten und Optionslabels |
 | `app/Rest/Controllers`                                     | Dünne Controller pro Ressource                                                              |
 | `app/Rest/Actions`                                         | REST-Actions mit Zielmenge, Bulk-Limit, Transaktion und Bestätigung                         |
 | `app/Policies`, `app/Contracts`, `app/Support/Permissions` | Vorbereiteter, abschaltbarer Permission-Adapter                                             |
@@ -97,17 +97,18 @@ Beim Duplizieren werden nur Objekt-/Einheitenstammdaten kopiert. Verträge, Bete
 
 ### CRUD-Konventionen
 
-Eine `ResourceDefinition` beschreibt Felder, Gruppen, Spalten, Suchfilter, Gruppierung, Actions und Relationen. Aus dieser Registrierung entstehen Sidebar, Listen, Detailansichten und Formulare. Fachmodule importieren gemeinsame Feldbausteine aus `modules/fields.ts`.
+Eine `ResourceDefinition` beschreibt UI-Felder, Gruppen, Spalten, Views, Actions und Relationslisten. Aus dieser Registrierung entstehen Sidebar, Listen, Detailansichten und Formulare. Der authentifizierte native Details-Endpunkt der PHP-Resource liefert Enums, Relationsziele, Picker-Suchfilter, erlaubte Filteroperatoren und Eingabehinweise. `ResourceSchemaProvider` ergänzt die Registry vor dem ersten Formular; Optionen und Relationsziele werden nicht nochmals in TypeScript gepflegt. Fachmodule verwenden etwa `select("status", "Status")` und `relation("property_id", "Objekt")` aus `modules/fields.ts`. Darstellung, Layout und React-Renderer bleiben im Frontend.
 
-- Tabellen: serverseitige Suche, Filter, Sortierung und Pagination, auswählbare Spalten, Zeilenauswahl und explizit freigegebene Bulk-Actions. Gruppierung betrifft die aktuell geladene Seite und ist entsprechend beschriftet; sie lädt nicht unbemerkt den gesamten Bestand.
-- Formulare: React Hook Form + Zod, serverseitige Fehler an Feldern, Wizard mit Schrittkontrolle und Zurück-Navigation, Warnung bei ungespeicherten Änderungen, Reload bei Versionskonflikten.
+- Tabellen: serverseitige Suche, Filter, Sortierung und Pagination, Query-Tabs mit optionalen Zählern, direkte Toolbar-Filter und getrennt abschaltbare Filter/Gruppierung. Spalten unterstützen Avatargruppen, Tags, Icon/Text und Unterzeilen sowie einen eigenen Exportwert. Gruppierung und Zeilenauswahl beziehen sich auf die geladene Seite. Die aktuellen Module erlauben als Bulk-Action ausschließlich Löschen.
+- Formulare: React Hook Form und Laravel-Servervalidierung, zentrale Fehlerdarstellung, horizontaler Header-Wizard mit optionaler Zusammenfassung, klappbare Gruppen, Dirty-Check und Reload bei Versionskonflikten. Zod bleibt ausschließlich in der isolierten Komponentendemo.
 - Suchbare Select-/Entity-Picker: `multiple`, `clearable`, Backend-Filter, anpassbare Titel/Subtexte und abschaltbare Neuanlage. Datumspicker mit ISO-Minimum/Maximum.
 - Key-Value-Liste mit einzelnen versionsgeprüften Mutationen; Checkbox-Listen/-Karten und direkte boolesche Änderungen. Editieren aktualisiert standardmäßig nur die betroffene Cache-Zeile.
 - PDF-Anzeige über den Browser in einer React-Komponente, ohne zusätzliche PDF-Frontendbibliotheken. Geschützter Abruf und Download bleiben erhalten.
 
 - Relationspicker: Datenbanksuche mit Debouncing, Anzeigen bestehender Auswahl, reduzierte Neuanlage im verschachtelten Dialog und automatische Übernahme.
 - Relationslisten im Bearbeitungsformular: Suche, Anlegen und Zeilenactions. Änderungen invalidieren die betroffenen Ansichten; Formular-Refresh erhält ungespeicherte Werte.
-- Sheet/Dialog wird über `presentation` pro Workbench-Aufruf konfiguriert; es gibt keine Umschaltbuttons in den Listen. Cards besitzen einen Action-Slot oben rechts. `DynamicList` unterstützt Suchprop, eigene Zeilenrenderer, Empty-State und Actions.
+- Sheet/Dialog wird über `presentation` pro Workbench-Aufruf konfiguriert; `collection.viewMode` steuert, ob ein Datensatzlink eine Page, ein lesendes Sheet oder einen Dialog öffnet. Die echte View-Ansicht bietet Key-Value-Werte und abschnittsweises Bearbeiten im selben Panel. Es gibt keine Darstellungs-Umschaltbuttons in den Listen.
+- `PageWrapper` hält Dashboard, Akten und Tabs auf derselben Inhaltsbreite. Gemeinsame REUI-Frames bilden Cards, Formulargruppen und Key-Value-Karten; Actions stehen in den zentralen Slots. `DynamicList` unterstützt Suche, eigene Zeilenrenderer, Empty-State und Actions. Der Login ist eine zentrierte Karte vor einem lokal ausgelieferten Wohngebäude-Bild.
 - Datum, Monat, Uhrzeit sowie Datum-/Monatsbereiche sind zentrale Komponenten. Die Komponentenseite zeigt sie interaktiv; sie erfindet keine zusätzlichen Datenbankfelder.
 
 Eigene Actions sind Klassen mit `bulk`, `visible`, `fields` und `execute`. Der Kontext enthält die tatsächlichen `rows`, die Ressource und `instance` mit `reload`, `openForm`, `navigate`, optionalem Formular, `refreshForm` und Tabelleninstanz. Beispiel:
@@ -151,15 +152,16 @@ Darunter: schnell erreichbare Einheiten, Auslastung, nächster Prüftermin, Vera
 
 Laravel REST API 3 von Lomkit ist installiert, keine handgeschriebene Nachbildung des Pakets. Authentifizierung erfolgt über Laravel-Session und Sanctum mit CSRF-Schutz; Frontend und API laufen unter derselben Origin. Login ist rate-limitiert. OpenAPI/Swagger-Dokumentation unter `/docs/api` ist authentifiziert geschützt.
 
-| Operation            | Endpunkt                                                  |
-| -------------------- | --------------------------------------------------------- |
-| Session              | `GET /auth/user`, `POST /auth/login`, `POST /auth/logout` |
-| Liste / Detailfilter | `POST /api/v1/{resource}/search`                          |
-| Erstellen / Ändern   | `POST /api/v1/{resource}/mutate`                          |
-| Löschen              | `DELETE /api/v1/{resource}`                               |
-| Action               | `POST /api/v1/{resource}/actions/{action}`                |
-| Kennzahlen           | `POST /api/v1/properties/metrics/overview`                |
-| Private Ausweisdatei | `POST` / `GET /api/v1/identity-documents/{id}/file`       |
+| Operation              | Endpunkt                                                                                           |
+| ---------------------- | -------------------------------------------------------------------------------------------------- |
+| Session                | `GET /auth/user`, `POST /auth/login`, `POST /auth/logout`                                          |
+| Ressourcenbeschreibung | `GET /api/v1/{resource}?with=fields.capabilities,fields.filter,fields.rules,fields.meta,relations` |
+| Liste / Detailfilter   | `POST /api/v1/{resource}/search`                                                                   |
+| Erstellen / Ändern     | `POST /api/v1/{resource}/mutate`                                                                   |
+| Löschen                | `DELETE /api/v1/{resource}`                                                                        |
+| Action                 | `POST /api/v1/{resource}/actions/{action}`                                                         |
+| Kennzahlen             | `POST /api/v1/properties/metrics/overview`                                                         |
+| Private Ausweisdatei   | `POST` / `GET /api/v1/identity-documents/{id}/file`                                                |
 
 Ressourcen: `properties`, `units`, `business-partners`, `partner-roles`, `contracts`, `contract-parties`, `rent-conditions`, `identity-documents`, `termination-notices`, `contract-links`.
 
@@ -192,7 +194,7 @@ npm run build
 
 PHP-Featuretests prüfen Auth, API-Verträge, Seeder, Klonen, Bestätigung, Versionskonflikte, Währungsvalidierung, Belegung, Konditionshistorie, Vertragsgrenzen, Kündigungen, Verknüpfungen, Ausweisschutz und den deaktivierten Permission-Adapter. React-Komponententests prüfen u. a. Wizard, Fehler, Zurück-Navigation, Discard, echte REUI-Tabelle, Suche, Bulk-Auswahl und LazyTabs.
 
-Die GitHub-Action führt diese Prüfungen aus und anschließend einen Playwright-Durchlauf gegen eine **separate** SQLite-Datenbank. Dieser Browserlauf konnte in der Erstellungsumgebung wegen einer Sandbox-Beschränkung nicht lokal ausgeführt werden. Build, PHP- und React-Komponententests wurden lokal ausgeführt.
+Die GitHub-Action führt diese Prüfungen und einen Playwright-Durchlauf gegen eine **separate** SQLite-Datenbank aus. Die Ergebnisse des jeweiligen Jobs und seine Browserdiagnostik sind maßgeblich; ein fehlgeschlagener Browserstart ersetzt keine visuelle Prüfung.
 
 Browserprüfung lokal, nur mit einer eigens dafür angelegten Testdatenbank:
 
@@ -211,7 +213,7 @@ npm run screenshots
 
 `tests/e2e/seed.php` verweigert andere Umgebungen und Datenbanknamen. Sein Zugang ist ausschließlich für diese isolierte Testdatenbank. Für reale Daten den normalen Admin-Befehl verwenden.
 
-Der separate Workflow **Workspace screenshots** erzeugt bei Push auf `main` oder manuell vier echte PNG-Aufnahmen (Dashboard, Vertragsliste, Vertragsakte, Anlage-Flow). Artefakt: `workspace-screenshots`, Aufbewahrung 14 Tage. Details und sämtliche Framework-Props: [docs/framework.md](docs/framework.md).
+Der separate Workflow **Workspace screenshots** erzeugt bei Push auf `main` oder manuell echte PNG-Aufnahmen der in `tests/e2e/screenshots.spec.ts` definierten Ansichten, darunter Dashboard, Vertragsliste, Vertragsakte, Anlage und Bearbeitung. Artefakt: `workspace-screenshots`, Aufbewahrung 14 Tage. Ein vorhandenes Artefakt allein belegt keinen erfolgreichen Gesamtlauf; bereits erstellte Bilder werden auch bei späteren Testfehlern veröffentlicht. Details und sämtliche Framework-Props: [docs/framework.md](docs/framework.md).
 
 ## Grundlagen und UI-Quellen
 

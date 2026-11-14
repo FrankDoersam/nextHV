@@ -1,8 +1,5 @@
 import { DeleteAction, EditAction } from "@/framework/actions";
 import type { ColumnDefinition, FieldDefinition } from "@/framework/types";
-import { labels } from "@/lib/format";
-export const opts = (values: string[]) =>
-    values.map((value) => ({ value, label: labels[value] ?? value }));
 export const text = (
     name: string,
     label: string,
@@ -19,7 +16,6 @@ export const text = (
 export const select = (
     name: string,
     label: string,
-    values: string[],
     group = "general",
 ): FieldDefinition => ({
     name,
@@ -27,20 +23,16 @@ export const select = (
     kind: "select",
     required: true,
     clearable: false,
-    options: opts(values),
     group,
-    default: values[0],
 });
 export const relation = (
     name: string,
     label: string,
-    resource: string,
     group = "general",
 ): FieldDefinition => ({
     name,
     label,
     kind: "relation",
-    resource,
     group,
     required: true,
 });

@@ -1,4 +1,5 @@
 import type { RecordData, ColumnDefinition } from "../types";
+import { exportColumnValue } from "./cell-value";
 export function csvCell(value: unknown): string {
     const text = String(value ?? "");
     return `"${(/^(?:\s*[=+@-]|[\t\r])/.test(text) ? "'" + text : text).replaceAll('"', '""')}"`;
@@ -11,7 +12,7 @@ export function exportRows(
     const content = [
         columns.map((c) => csvCell(c.label)).join(";"),
         ...rows.map((row) =>
-            columns.map((c) => csvCell(row[c.field])).join(";"),
+            columns.map((c) => csvCell(exportColumnValue(row, c))).join(";"),
         ),
     ].join("\r\n");
     const url = URL.createObjectURL(

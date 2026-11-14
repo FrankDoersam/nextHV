@@ -1,6 +1,6 @@
 # nextHV · Framework- und Fachmodell-Handbuch
 
-Dieses Dokument beschreibt den aktuellen Framework-Stand einschließlich Formular-Flows, Vertragsakte, direkter Feldmutationen und Screenshot-Workflow. Es ist die Anleitung zum Bauen weiterer CRUD-Fachmodule. Die bestehenden öffentlichen REUI-Komponenten bleiben die UI-Grundlage; Refine und Filament dienen als Architekturvorbilder, werden nicht zusätzlich als Laufzeit installiert.
+Dieses Dokument beschreibt den aktuellen Framework-Stand einschließlich nativer PHP-Metadaten, Query-Tabs, View-/Edit-Sheets, Formular-Flows, Vertragsakte, direkter Feldmutationen und Screenshot-Workflow. Es ist die Anleitung zum Bauen weiterer CRUD-Fachmodule. Die bestehenden öffentlichen REUI-Komponenten bleiben die UI-Grundlage; Refine und Filament dienen als Architekturvorbilder, werden nicht zusätzlich als Laufzeit installiert. Die zusammenhängenden Konfigurationsbeispiele für den jüngsten Ausbau stehen in Abschnitt 34.
 
 ## 1. Einstieg und Betriebsmodell
 
@@ -31,21 +31,22 @@ Der wiederholbare Seeder erzeugt auf leerer Datenbank 10 Objekte mit je 5 Einhei
 
 ## 2. Architektur und Verantwortlichkeiten
 
-| Ebene                 | Ort                                                          | Aufgabe                                                                                         |
-| --------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| Datenmodell           | `app/Models`, `database/migrations`                          | Tabellen, Fremdschlüssel, Indizes, Casts, explizite Relationen                                  |
-| Fachaktionen          | `app/Domain/Property/Actions`, `app/Domain/Contract/Actions` | Fachliche Änderungen, Klonen, Vertragsregeln, Kennzahlen, PDF-Erstellung                        |
-| Integrität            | `app/Observers`                                              | Regeln auch bei Modelländerungen außerhalb eines einzelnen REST-Endpunkts                       |
-| REST-Schema           | `app/Rest/Resources`                                         | Felder, Regeln, Relationen, Versionen, Actions, berechnete Werte                                |
-| REST-Actions          | `app/Rest/Actions`                                           | Autorisierung, Einzel-/Bulk-Ziel, Bestätigung, Übergabe an Fachaktionen, Ergebnisvertrag        |
-| Zusätzliche Endpunkte | `app/Http/Controllers`                                       | Login, private Dokumente, Clone-Defaults, Löschvorprüfung, PDF-Abruf                            |
-| UI-Primitives         | `resources/js/components/ui`                                 | Offizielle Base-UI-/shadcn-Bausteine                                                            |
-| REUI                  | `resources/js/components/reui`                               | Öffentliche REUI-Quellen, einschließlich DataGrid, Stepper, TimePicker, NumberField und Alert   |
-| App-Blöcke            | `resources/js/components/blocks`                             | AppShell, Cards, Listen, KPIs, Overlay, Layout, Auth, LazyTabs                                  |
-| Formularfelder        | `resources/js/components/fields`                             | BaseField, ResourceField, CurrencyField, ChoicePicker, EntityPicker, CheckboxList, Datumspicker |
-| CRUD-Laufzeit         | `resources/js/framework`                                     | Provider, Hooks, Form-Engine, Workbench, Actions, Navigation, Tabellen                          |
-| Fachkonfiguration     | `resources/js/modules`                                       | Ressourcen, Felder, Spalten, Relationslisten, fachliche UI-Actions                              |
-| Seiten                | `resources/js/pages`                                         | Zusammensetzung der Komponenten ohne eigene Styles                                              |
+| Ebene                 | Ort                                                                              | Aufgabe                                                                                                                             |
+| --------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Datenmodell           | `app/Models`, `database/migrations`                                              | Tabellen, Fremdschlüssel, Indizes, Casts, explizite Relationen                                                                      |
+| Fachaktionen          | `app/Domain/Property/Actions`, `app/Domain/Contract/Actions`                     | Fachliche Änderungen, Klonen, Vertragsregeln, Kennzahlen, PDF-Erstellung                                                            |
+| Integrität            | `app/Observers`                                                                  | Regeln auch bei Modelländerungen außerhalb eines einzelnen REST-Endpunkts                                                           |
+| REST-Schema           | `app/Rest/Resources`                                                             | Felder, Regeln, Relationen, Versionen, Actions, berechnete Werte                                                                    |
+| UI-Metadaten          | `app/Rest/Ui`, `config/ui.php`, `resources/js/framework/data/resource-schema.ts` | Native REST-Details erweitern und UI-Registry ergänzen: Optionswerte, Relationsziele, Picker-Scopes, Operatoren und Eingabehinweise |
+| REST-Actions          | `app/Rest/Actions`                                                               | Autorisierung, Einzel-/Bulk-Ziel, Bestätigung, Übergabe an Fachaktionen, Ergebnisvertrag                                            |
+| Zusätzliche Endpunkte | `app/Http/Controllers`                                                           | Login, private Dokumente, Clone-Defaults, Löschvorprüfung, PDF-Abruf                                                                |
+| UI-Primitives         | `resources/js/components/ui`                                                     | Offizielle Base-UI-/shadcn-Bausteine                                                                                                |
+| REUI                  | `resources/js/components/reui`                                                   | Öffentliche REUI-Quellen, einschließlich DataGrid, Stepper, TimePicker, NumberField und Alert                                       |
+| App-Blöcke            | `resources/js/components/blocks`                                                 | AppShell, Cards, Listen, KPIs, Overlay, Layout, Auth, LazyTabs                                                                      |
+| Formularfelder        | `resources/js/components/fields`                                                 | BaseField, ResourceField, CurrencyField, ChoicePicker, EntityPicker, CheckboxList, Datumspicker                                     |
+| CRUD-Laufzeit         | `resources/js/framework`                                                         | Provider, Hooks, Form-Engine, Workbench, Actions, Navigation, Tabellen                                                              |
+| Fachkonfiguration     | `resources/js/modules`                                                           | Ressourcen, Felder, Spalten, Relationslisten, fachliche UI-Actions                                                                  |
+| Seiten                | `resources/js/pages`                                                             | Zusammensetzung der Komponenten ohne eigene Styles                                                                                  |
 
 Der Ablauf einer Änderung lautet: Formular → Datenprovider → REST-Resource → Fachaktion/Observer → Model → projizierte API-Antwort → betroffene Cache-Zeile und Detail → UI. Darstellung, API-Protokoll und Fachregeln haben jeweils einen eindeutigen Ort.
 
@@ -68,6 +69,8 @@ Einheiten enthalten keine Mieternamen, Mietlaufzeiten oder Mietkonditionen. Ders
 
 Konditionen gelten ab ihrem Stichtag bis zum nächsten Stand. Neue Jahresbeträge werden als neuer Stand angelegt. Die Aktivierung verlangt Mieter und Anfangskondition und verhindert überlappende verbindliche Verträge derselben Einheit. Bereits gültige Konditionen aktivierter Verträge werden historisch geschützt. Ein Vertrag mit künftigem bestätigtem Ende zählt bis zu diesem Datum weiter zur Belegung.
 
+Vertragsbeteiligte lassen sich im Entwurf, bei aktiven und bei beendeten Verträgen anlegen, ändern und entfernen. Duplikate derselben Person/Rolle und mehrere Hauptkontakte derselben Rolle bleiben ausgeschlossen. Der letzte Mieter eines aktiven Vertrags darf weder gelöscht noch in eine andere Rolle geändert werden. Der Vertragsbezug einer bestehenden Beteiligung bleibt unveränderbar. Diese Beteiligungen besitzen keine zeitliche Historisierung; ihre Bearbeitbarkeit ist keine Historienfunktion. Konditionshistorie und geschützte Vertragskerndaten behalten ihre eigenen Regeln.
+
 Kündigungen werden zunächst erfasst; erst die bestätigte Backend-Action setzt das Vertragsende. Die erfassten Fristen sind Vertragsangaben. Eine rechtliche Bewertung oder automatische Berechnung gesetzlicher Kündigungsfristen ist nicht implementiert.
 
 Ausweisnummern sind verschlüsselt und schreibbar, aber nicht über die API auslesbar; angezeigt werden nur die letzten vier Zeichen. Dateien werden privat und verschlüsselt gespeichert. PDF/JPEG/PNG bis 10 MB, authentifizierter Download ohne Cache. `APP_KEY` muss dauerhaft erhalten bleiben.
@@ -76,8 +79,8 @@ Ausweisnummern sind verschlüsselt und schreibbar, aber nicht über die API ausl
 
 1. Migration, Model, Relationen und gegebenenfalls Enum anlegen.
 2. Fachregeln in eine Domain-Action; relevante Invarianten über Observer absichern.
-3. REST-Resource, Controller und Policy erstellen; Route unter `api/v1` registrieren.
-4. Frontend-Definition im passenden Fachordner anlegen und in `modules/registry.ts` aufnehmen.
+3. REST-Resource, Controller und Policy erstellen; Route unter `api/v1` registrieren. Enum-Werte und Relationen dort definieren, Optionslabels in `config/ui.php` und optionale Picker-Scopes am PHP-Feld hinterlegen.
+4. Frontend-Definition im passenden Fachordner anlegen und in `modules/registry.ts` aufnehmen. `select(name, label, group?)` und `relation(name, label, group?)` verwenden; Wertelisten und Relationsziele kommen aus den nativen Details der PHP-Resource.
 5. Standardseiten verwenden; nur für fachliche Abweichungen eigene Blöcke ergänzen.
 6. API-Verhalten und wichtige UI-Abläufe prüfen.
 
@@ -115,21 +118,21 @@ Die Registrierung erzeugt Menüeinträge, Listen-, Detail- und Formularansichten
 
 Jedes `ResourceField` verwendet `BaseField`: Label, Pflichtkennzeichnung, I-Icon mit Popover, Beschreibung, Sperrhinweis, Fehlerzuordnung und optionalen Zähler. IDs und `aria-describedby` verbinden Hinweise mit dem Eingabeelement. Text- und Zahlenfelder benutzen die vorhandenen Primitives; Select, Dialog, Popover und Fokussteuerung stammen aus Base UI.
 
-| `kind`                             | Verhalten                                                                                                |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `text`, `email`                    | Kontrollierte Eingabe, Mindest-/Maximallänge, E-Mail-Prüfung                                             |
-| `textarea`                         | Mehrzeilig, `rows`, Live-Zeichenzähler, `minLength`, `maxLength`                                         |
-| `number`                           | Numerischer Formwert, `min`, `max`, `step`                                                               |
-| `currency`                         | REUI NumberField mit deutscher Betragsdarstellung, `EUR`, numerischem Formwert und zwei Nachkommastellen |
-| `select`                           | Suchbare Einzel-/Mehrfachauswahl (`multiple`) aus `options`                                              |
-| `multiselect`                      | Suchbare Mehrfachauswahl, einzeilige Titel, optionales Leeren                                            |
-| `checkbox`                         | Einzelner boolescher Wert                                                                                |
-| `checkbox-group`, `checkbox-cards` | Dynamische Listen/Karten, Suche, Select-all, deaktivierte Optionen, Auswahlgrenze und Array-Wert         |
-| `relation`                         | Serverseitige Suche/Filter, Einzel-/Mehrfachauswahl, Titel/Subtext, abschaltbare Neuanlage               |
-| `date`, `month`, `time`            | Kalender-/Monats-/Zeitpicker                                                                             |
-| `date-range`, `month-range`        | Beginn/Ende, vollständige und chronologische Bereichsvalidierung                                         |
+| `kind`                             | Verhalten                                                                                                           |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `text`, `email`                    | Kontrollierte Eingabe und Eingabehinweise; fachliche Mindest-/Maximallänge und E-Mail-Gültigkeit prüft Laravel      |
+| `textarea`                         | Mehrzeilig, `rows`, Live-Zeichenzähler, `minLength`, `maxLength`                                                    |
+| `number`                           | Numerischer Formwert, `min`, `max`, `step`                                                                          |
+| `currency`                         | REUI NumberField mit deutscher Betragsdarstellung, `EUR`, numerischem Formwert und zwei Nachkommastellen            |
+| `select`                           | Suchbare Einzel-/Mehrfachauswahl (`multiple`) aus `options`                                                         |
+| `multiselect`                      | Suchbare Mehrfachauswahl, einzeilige Titel, optionales Leeren                                                       |
+| `checkbox`                         | Einzelner boolescher Wert                                                                                           |
+| `checkbox-group`, `checkbox-cards` | Dynamische Listen/Karten, Suche, Select-all, deaktivierte Optionen, Auswahlgrenze und Array-Wert                    |
+| `relation`                         | Serverseitige Suche/Filter, Einzel-/Mehrfachauswahl, Titel/Subtext, abschaltbare Neuanlage                          |
+| `date`, `month`, `time`            | Kalender-/Monats-/Zeitpicker                                                                                        |
+| `date-range`, `month-range`        | Beginn/Ende mit gegenseitigen Kalendergrenzen; Vollständigkeit und fachliche Gültigkeit gehören in die Serverregeln |
 
-Gemeinsame Props: `required`, `nullable`, `default`, `description`, `help`, `placeholder`, `disabled`, `lockedReason`, `readonlyOnEdit`, `writeOnly`, `group`, `reduced`, `validate(value, values)`.
+Gemeinsame Props: `required`, `nullable`, `default`, `description`, `help`, `placeholder`, `disabled`, `lockedReason`, `readonlyOnEdit`, `writeOnly`, `group`, `reduced`. `validate(value, values)` gehört ausschließlich zur isolierten Demo, nicht zum REST-Formular. Der Metadaten-Adapter ergänzt native Nullbarkeit, Schreibmöglichkeiten und einfache Eingabegrenzen; er führt die Laravel-Regeln nicht im Browser erneut aus.
 
 ```ts
 {
@@ -144,7 +147,7 @@ Gemeinsame Props: `required`, `nullable`, `default`, `description`, `help`, `pla
 }
 ```
 
-Optionale leere Felder bleiben erlaubt; `required` macht eine Mindestlänge auch für den leeren Wert verbindlich. Mehrfachauswahlen prüfen jede Option gegen die Definition. Das Backend muss das entsprechende Array-Feld ebenfalls ausdrücklich erlauben; ein UI-Prop erzeugt keine Datenbankspalte.
+Ob leere Felder und Mehrfachwerte zulässig sind, entscheiden die PHP-Regeln. Pflichtmarkierungen, Zähler und Picker unterstützen die Eingabe. Das Backend muss Array-Felder und deren zulässige Werte ausdrücklich erlauben; ein UI-Prop erzeugt keine Datenbankspalte.
 
 ### CurrencyField
 
@@ -159,12 +162,12 @@ Tabellenspalten mit `kind: "date"` werden zentral als **dd.MM.yyyy** dargestellt
 ## 6. Sheet, Dialog, Wizard und Direktlinks
 
 - Formular-Sheets bis 48rem breit, auf Desktop eingerückt und abgerundet, mobil bildschirmbreit. `size: "wide"` erlaubt bis 64rem.
-- Fester Header mit Icon, Titel, optionalem Badge/Subtext sowie Werkzeugen rechts; eigener scrollbarer Inhalt und fester Footer. Wizard-Schritte stehen immer horizontal im festen Kopfbereich unter dem Titel, auch auf mobilen Ansichten. Der Formularinhalt nutzt die volle Breite.
+- Fester Header mit Icon, Titel, optionalem Badge/Subtext sowie Werkzeugen rechts; eigener scrollbarer Inhalt und fester Footer. Wizard-Schritte stehen horizontal zentriert im festen Kopfbereich unter dem Titel, auch mobil. Eine optionale `editor.summary` steht bei ausreichender Breite neben den Feldern, sonst darunter.
 - Dialoggrößen `compact`, `form`, `wide`; kompakt für Bestätigungen, breit für PDF-Vorschauen.
 - Speichern/Weiter rechts, Abbrechen daneben, Zurück links. Im Wizard steht kein zusätzlicher Schritttext im Footer. Schließen, Escape und Abbrechen durchlaufen denselben Dirty-Check; laufendes Speichern blockiert Schließen.
 - Wizard validiert den aktuellen Schritt mit Laravel Precognition vor Weiter, bewahrt Werte beim Zurückgehen und springt bei Fehlern in den betreffenden Schritt.
 - Mehrere Serverfehler erscheinen gesammelt ohne identische Wiederholungen; konkrete Feldfehler bleiben am Feld sichtbar.
-- Jede Neu-/Bearbeiten-Ansicht wird standardmäßig als `panels`-Descriptor in der URL abgebildet. Ein neu geladener Link lädt den Datensatz erneut über die API.
+- Jede Neu-/Bearbeiten-/View-Ansicht wird standardmäßig als `panels`-Descriptor in der URL abgebildet. Ein neu geladener Link lädt den Datensatz erneut über die API. Abschnittsbearbeitung ergänzt eine Feldliste und die Rückkehr zur Ansicht.
 - In der URL stehen Ressource, Modus, ID, Darstellungsart und Relationskontext. Ungespeicherte Formularinhalte, Ausweisnummern und Callbacks werden nicht serialisiert.
 - Browser-Zurück/Navigation fragt bei ungespeicherten Formularen nach. Für Reload/Tab-Schließen wird der native Browserhinweis verwendet.
 - Bis zu acht verschachtelte Formulare. Eltern bleiben gemountet und rücken visuell zurück; Base UI übernimmt Fokus und Modalverhalten. Reduzierte Bewegung wird berücksichtigt.
@@ -188,19 +191,23 @@ Relationstabellen im Bearbeitungsformular verwenden denselben Ablauf für Kondit
 
 `ResourceCollection` verwendet das offizielle REUI DataGrid mit TanStack Table 9. Der Quellcode des Grids wurde für diese Erweiterung nicht geforkt; die Fachlogik liegt im Wrapper.
 
-| Prop                                  | Default / Bedeutung                                                                    |
-| ------------------------------------- | -------------------------------------------------------------------------------------- |
-| `searchable`                          | `true`; Suchfeld, Clear-Button, 250-ms-Debouncing                                      |
-| `pagination`                          | `true`; serverseitige Seiten mit 10/25/50/100 Zeilen                                   |
-| `pagination={false}`                  | Begrenzte Liste bis 100 Zeilen, ausdrücklich angezeigte Begrenzung                     |
-| `rowSelection`                        | `"multiple"`; auch `"single"`, `false` oder `(row) => boolean`                         |
-| `doubleClickEdit`                     | `true`; Doppelklick auf normale Zellen öffnet Edit; Buttons/Links bleiben eigenständig |
-| `syncWithLocation`                    | `true`; Zustand aus URL, auch bei Zurück/Vorwärts                                      |
-| `urlKey`                              | Optionaler Präfix für unabhängige Tabellen auf derselben Seite                         |
-| `resizable`, `pinnable`               | `true`; Spaltenbreite und Fixieren über REUI                                           |
-| `compact`                             | Relationsliste mit begrenzter Höhe, kleinerer Standardseite und eigenem URL-Präfix     |
-| `fixedFilters`, `defaults`, `context` | Serverseitige Relationsfilter, Vorbelegung und gesperrter Bezug                        |
-| `onSaved`, `form`, `formResource`     | Rückkopplung an ein übergeordnetes Formular                                            |
+| Prop                                  | Default / Bedeutung                                                                                             |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `searchable`                          | `true`; Suchfeld, Clear-Button, 250-ms-Debouncing                                                               |
+| `pagination`                          | `true`; serverseitige Seiten mit 10/25/50/100 Zeilen                                                            |
+| `pagination={false}`                  | Begrenzte Liste bis 100 Zeilen, ausdrücklich angezeigte Begrenzung                                              |
+| `rowSelection`                        | `"multiple"`; auch `"single"`, `false` oder `(row) => boolean`                                                  |
+| `doubleClickEdit`                     | `true`; Doppelklick auf normale Zellen öffnet Edit; Buttons/Links bleiben eigenständig                          |
+| `syncWithLocation`                    | `true`; Zustand aus URL, auch bei Zurück/Vorwärts                                                               |
+| `urlKey`                              | Optionaler Präfix für unabhängige Tabellen auf derselben Seite                                                  |
+| `resizable`, `pinnable`               | `true`; Spaltenbreite und Fixieren über REUI                                                                    |
+| `compact`                             | Relationsliste mit begrenzter Höhe, kleinerer Standardseite und eigenem URL-Präfix                              |
+| `filterable`, `groupable`             | Unabhängig schaltbar; Standard Hauptliste `true`, kompakte Relation `false`                                     |
+| `views`                               | Query-Tabs; Standard `resource.views` bei Hauptlisten, kompakt aus; `false` blendet sie aus                     |
+| `toolbarFilters`                      | Feldnamen derselben Filterdefinitionen für direkte Auswahl-/Relationsfilter; Standard `resource.toolbarFilters` |
+| `viewMode`                            | `"page"` als Standard; `"sheet"` / `"dialog"` öffnet einen echten Lesemodus über den Datensatzlink              |
+| `fixedFilters`, `defaults`, `context` | Serverseitige Relationsfilter, Vorbelegung und gesperrter Bezug                                                 |
+| `onSaved`, `form`, `formResource`     | Rückkopplung an ein übergeordnetes Formular                                                                     |
 
 ```tsx
 <ResourceCollection
@@ -214,13 +221,13 @@ Relationstabellen im Bearbeitungsformular verwenden denselben Ablauf für Kondit
 />
 ```
 
-Weitere Funktionen: serverseitige Sortierung, registrierte Filter, Spaltenauswahl und Spaltenverschiebung über das REUI-Kopfmenü, Refresh, Lade-/Fehlerzustände und explizite Bulk-Actions. Die Spaltenreihenfolge/-breite/-fixierung bleiben sitzungsbezogener Tabellenzustand; die URL persistiert Suche, Seite, Seitengröße, Sortierung, Filter, Gruppierung, Sichtbarkeit und Dichte.
+Weitere Funktionen: serverseitige Sortierung, registrierte Filter, Spaltenauswahl und Spaltenverschiebung über das REUI-Kopfmenü, Refresh, Lade-/Fehlerzustände und explizite Bulk-Actions. Die Spaltenreihenfolge/-breite/-fixierung bleiben sitzungsbezogener Tabellenzustand; die URL persistiert View, Suche, Seite, Seitengröße, Sortierung, Filter, Gruppierung, Sichtbarkeit und Dichte.
 
 Die Hauptliste füllt die nach Header, KPI-Bar, Abständen und Toolbar verfügbare Höhe. Zeilen scrollen intern; der Footer bleibt außerhalb der Scrollfläche, mit Seitenauswahl rechts. Relationslisten verwenden eine kompaktere maximale Höhe. Auf sehr niedrigen Viewports kann der Inhaltsbereich entsprechend klein werden.
 
 Gruppierung bezieht sich auf die aktuell serverseitig geladene Seite und nennt ausdrücklich die Anzahl **auf dieser Seite**. Es wird nicht der gesamte Datenbestand in den Browser geladen. Zeilenauswahl wird bei Wechsel von Seite, Suche, Sortierung oder Filtern aufgehoben. Bulk-Actions erhalten nur die tatsächlich ausgewählten Zeilen der geladenen Seite.
 
-Der CSV-Button exportiert die Auswahl oder die aktuelle Seite, jeweils die sichtbaren Spalten. Er ist kein unbeschränkter Gesamtexport. Trennzeichen `;`, UTF-8 mit BOM, Anführungszeichen-Escaping und Schutz gegen typische Tabellenformeln. Custom-Renderer werden nicht als HTML exportiert; exportiert wird der API-Feldwert.
+Der CSV-Button exportiert die Auswahl oder die aktuelle Seite, jeweils die sichtbaren Spalten. Er ist kein unbeschränkter Gesamtexport. Trennzeichen `;`, UTF-8 mit BOM, Anführungszeichen-Escaping und Schutz gegen typische Tabellenformeln. Custom-Renderer werden nicht als HTML exportiert; `column.exportValue(row)` bestimmt optional den Exportwert; Avatargruppen und Tags werden sonst als Namensliste exportiert, andere Zellen mit ihrem API-Feldwert.
 
 ## 8. Actions und Löschblockaden
 
@@ -384,7 +391,7 @@ npm run build
 
 Featuretests decken unter anderem Auth, Seeder, Verträge, Historie, Dokumentenschutz, Versionskonflikte, Bestätigung, deaktivierte Permissions sowie neu Löschblockaden, konstante Vorprüfungsabfragen, Klondefaults, virtuelle schreibgeschützte Felder und den PDF-Abruf ab. React-Tests prüfen Wizard/Dirty-State, echte REUI-Tabellen, URL-Zustand, Deep-Link-Hydrierung, Browser-Zurück, geschachtelte gesperrte Relationsformulare, Currency-Parsing, Mehrfachauswahl, Datumsformat und mehrteilige Alerts.
 
-Die bestehende Playwright-Suite wurde für die neue Oberfläche erweitert. Ein echter Browserlauf ist in der lokalen Erstellungsumgebung durch die Browser-Sandbox blockiert; visuelle Abnahme, browsernative PDF-Einbettung und responsive Details müssen zusätzlich im Zielbrowser geprüft werden. Die Komponententests ersetzen keine pixelgenaue Browserabnahme.
+Die Playwright-Suite prüft die Oberfläche mit einer isolierten Testdatenbank; der separate Screenshot-Workflow erzeugt die Aufnahmen aus Abschnitt 22. Ein blockierter oder fehlgeschlagener Browserstart ist keine visuelle Abnahme. Browsernative PDF-Einbettung, responsive Details und die tatsächliche Zielumgebung müssen geprüft werden; Komponententests ersetzen keine pixelgenaue Browserabnahme.
 
 Keine vollständige Buchhaltung, Zahlungsabstimmung, Mandantentrennung, ausgebautes Rollenmodell, automatische rechtliche Fristbewertung oder persistierte gemeinsame Tabellenansichten. REUI unterstützt weitere Grid-Modi wie Tree Rows und Inline Editing; diese sind nicht automatisch Bestandteil des hier freigegebenen CRUD-Wrappers. Zeilenvirtualisierung gehört seit dem in Abschnitt 18 beschriebenen Ausbau dazu. Gerade Inline-Mutationen brauchen dieselben Vertrags- und Versionsregeln wie die Formulare.
 
@@ -651,6 +658,8 @@ Bereits im Cache vorhandene Fremdschlüssel-Eltern werden gezielt als einzelne D
 20. `20-date-picker-sheet.png`
 21. `21-date-picker-dialog.png`
 
+Zusätzliche Aufnahmen zeigen `00-anmeldung.png`, `00-anmeldung-mobil.png`, `22-dashboard-bestand.png`, `23-einheiten-objektfilter.png`, `24-einheit-view-sheet.png`, `25-einheit-abschnitt-edit.png`, `26-einheit-edit-regionen.png` und `27-zelltypen.png`. Die verbindliche Liste steht in `tests/e2e/screenshots.spec.ts`; die Dateinamen dokumentieren geplante Aufnahmen, keinen Nachweis eines bereits erfolgreichen Jobs.
+
 Die Suite prüft außerdem, dass der aktive Tab-Inhalt unterhalb der Tab-Leiste die verfügbare Breite nutzt, kein horizontaler Seitenüberlauf entsteht und die Vertragsansicht samt Edit-Sheet bei 390 px funktioniert. Der Zeitraum muss vor dem ersten Öffnen „Dieser Monat“ anzeigen.
 
 Das Artefakt **workspace-screenshots** enthält die PNG-Dateien und bleibt 14 Tage verfügbar. Bereits erstellte Aufnahmen werden auch bei einem späteren Testfehler veröffentlicht. Bei einem Browser-/App-Fehler wird zusätzlich `screenshot-diagnostics` mit Trace und Fehlerausgabe für 7 Tage hochgeladen. Fehler beim Start eines GitHub-Runners können dagegen keine Artefakte erzeugen.
@@ -680,9 +689,9 @@ Orientierung an den öffentlichen [REUI-Data-Grid-Kompositionen](https://reui.io
 
 ## 24. Filter-Builder und einheitliche Auswahl
 
-Die öffentlichen [REUI-Filters](https://reui.io/docs/components/base/filters) und [Wizard-Kompositionen](https://reui.io/blocks/application/wizard/wizard-1) dienen als Interaktionsvorbild. Die Umsetzung besteht aus den bereits installierten REUI-/Base-UI-Primitives. Es wird kein lizenzpflichtiger Pro-Block eingebunden und kein neues Paket benötigt.
+Die öffentlichen [REUI-Filters](https://reui.io/docs/components/base/filters) und [Wizard-Kompositionen](https://reui.io/blocks/application/wizard/wizard-4) dienen als Interaktionsvorbild. Die Umsetzung besteht aus den bereits installierten REUI-/Base-UI-Primitives. Es wird kein lizenzpflichtiger Pro-Block eingebunden und kein neues Paket benötigt.
 
-`ResourceFilters` wird aus allen freigegebenen `resource.columns` aufgebaut; Feldtypen und Optionen kommen aus `resource.fields`. `column.filter` passt einen Filter an oder schaltet ihn ab; `resource.filters` ergänzt zusätzliche Felder bzw. überschreibt automatisch abgeleitete Definitionen. „Filter“ öffnet eine durchsuchbare Feldauswahl. Pro Feld entsteht ein Chip mit Feldname, **ist / ist nicht**, durchsuchbarer Mehrfachauswahl und Entfernen. Ein kompakter Reset-Iconbutton erscheint nur bei vorhandenen Filtern und nennt die Filteranzahl in Tooltip/Accessible Name. Er entfernt sämtliche Filter und Entwürfe; Suchtext, Sortierung und Spalten bleiben erhalten. Einzelne Filter lassen sich weiterhin am jeweiligen Chip entfernen. Unvollständige Chips sind nur lokale Entwürfe und erzeugen keinen Serverfilter. Nach Auswahl des ersten Werts bleibt das Menü offen, auch während die URL asynchron aktualisiert wird. Ein Feld kann nur einmal vorkommen; mehrere Werte werden innerhalb dieses Feldes als Menge behandelt, verschiedene Felder per AND kombiniert.
+`ResourceFilters` wird aus den freigegebenen `resource.columns` aufgebaut. Native PHP-Metadaten ergänzen Feldtypen, Optionen, Relationspicker und erlaubte Operatoren vor der Anzeige; siehe Abschnitt 34. `column.filter` passt einen Filter an oder schaltet ihn ab; `resource.filters` ergänzt zusätzliche Felder bzw. überschreibt automatisch abgeleitete Definitionen. „Filter“ öffnet eine durchsuchbare Feldauswahl. Pro Feld entsteht ein Chip mit Feldname, **ist / ist nicht**, durchsuchbarer Mehrfachauswahl und Entfernen. Ein kompakter Reset-Iconbutton erscheint nur bei vorhandenen Filtern und nennt die Filteranzahl in Tooltip/Accessible Name. Er entfernt sämtliche Filter und Entwürfe; Suchtext, Sortierung und Spalten bleiben erhalten. Einzelne Filter lassen sich weiterhin am jeweiligen Chip entfernen. Unvollständige Chips sind nur lokale Entwürfe und erzeugen keinen Serverfilter. Nach Auswahl des ersten Werts bleibt das Menü offen, auch während die URL asynchron aktualisiert wird. Ein Feld kann nur einmal vorkommen; mehrere Werte werden innerhalb dieses Feldes als Menge behandelt, verschiedene Felder per AND kombiniert.
 
 ```ts
 filters: [
@@ -736,7 +745,7 @@ Maßstab: Eine Domain-Action bleibt bestehen, wenn sie eine benannte fachliche O
 | `CalculateOverview`     | Behalten. Stichtag, laufende Verträge und wirksame Konditionen definieren Kennzahlen. Metric und PDF nutzen dieselbe Berechnung.                                                                                            |
 | `BuildPropertyReport`   | Behalten. Ein konkreter fachlicher Bericht, kein zweites CRUD-System. Ein generisches PDF-Templating-Framework wäre erst bei mehreren wiederholten Berichtlayouts sinnvoll.                                                 |
 
-Die fünf Property-Enums (`PropertyStatus`, `PropertyType`, `UnitStatus`, `UnitType`, `ManagementType`) bleiben ebenfalls: Sie begrenzen fachliche Werte und werden von Eloquent/REST wiederverwendet. Vertragszustände sind derzeit noch Strings. Ein späteres `ContractStatus`-Enum und die Ableitung der Frontend-Optionen aus API-Metadaten würden diese doppelte Werteliste verringern; ein neues Enum-Framework ist dafür nicht erforderlich.
+Die fünf Property-Enums (`PropertyStatus`, `PropertyType`, `UnitStatus`, `UnitType`, `ManagementType`) begrenzen fachliche Werte und werden von Eloquent/REST wiederverwendet. Vertragszustände bleiben native `in:`-Regeln. Der Details-Adapter liest beide Varianten und versorgt das Frontend mit denselben Werten; dafür sind weder zusätzliche Domain-Enums noch ein neues Enum-Framework erforderlich.
 
 ### Bereits ins Framework gezogen: `App\Rest\Actions\CloneAction`
 
@@ -873,13 +882,13 @@ Konkrete Einsparungen dieses Updates:
 
 Neue Ressourcen werden weiterhin mit Model/Migration, einer REST-Resource samt validierten Feldern und Relationsfreigaben, dem dünnen REST-Controller und einer UI-Resource registriert. Erst eine echte Fachoperation wie Aktivierung, Laufzeitüberschneidung, Kündigungsbestätigung oder fachliches Klonen rechtfertigt eine eigene Domain-Action. Kein generisches `BaseModel`, das jede Beziehung und jede Regel magisch ableitet: Das würde die heute sichtbaren Verträge und Sicherheitsgrenzen verstecken.
 
-Ein späterer Metadaten-Adapter könnte REST-Enums, Labels und Eingabegrenzen in TypeScript generieren. Das ist **noch nicht implementiert**; derzeit werden UI-Feldtypen und Labels ausdrücklich definiert. Die Geschäftsvalidierung wird bereits heute nicht doppelt ausgeführt. Ebenso bleiben Organisationsgrenzen wie vereinbart verschoben.
+Der Metadaten-Adapter ist implementiert: Er ergänzt die registrierte UI-Resource zur Laufzeit aus den nativen Lomkit-Details. Enums, Optionslabels, Relationsziele, Picker-Scopes und einfache Eingabehinweise kommen aus PHP; Layout, Feldreihenfolge, Icons und React-Renderer bleiben ausdrücklich in TypeScript. Es gibt keinen zweiten Ressourcen-Endpunkt und keine generierten Client-Geschäftsregeln. Organisationsgrenzen bleiben wie vereinbart verschoben.
 
-Orientierung: [REUI Stepper](https://reui.io/docs/components/base/stepper), [öffentliche REUI-Wizard-Komposition](https://reui.io/blocks/application/wizard/wizard-1), [Filament Actions](https://filamentphp.com/docs/5.x/actions/overview), [Refine Forms](https://refine.dev/core/docs/guides-concepts/forms/) und [Laravel Precognition](https://github.com/laravel/docs/blob/13.x/precognition.md). Bestehende Bibliotheken werden genutzt; keine neue Laufzeit-Abhängigkeit.
+Orientierung: [REUI Stepper](https://reui.io/docs/components/base/stepper), [öffentliche REUI-Wizard-Komposition](https://reui.io/blocks/application/wizard/wizard-4), [Filament Actions](https://filamentphp.com/docs/5.x/actions/overview), [Refine Forms](https://refine.dev/core/docs/guides-concepts/forms/) und [Laravel Precognition](https://github.com/laravel/docs/blob/13.x/precognition.md). Bestehende Bibliotheken werden genutzt; keine neue Laufzeit-Abhängigkeit.
 
 ## 30. Wizard, Sheet und zentrale Konfiguration von Filtern/Spalten
 
-Die neue Komposition orientiert sich an den öffentlich sichtbaren [REUI Billing Setup Wizard](https://reui.io/blocks/application/wizard/wizard-1) und [inset Sheet 8](https://reui.io/blocks/application/sheet/sheet-8). Sie verwendet die vorhandenen Primitives; kein kostenpflichtiger Blockcode und keine neue Abhängigkeit. Die echte serverseitige Schrittvalidierung, Dirty-Checks, Direktlinks und gespeicherten Flows bleiben erhalten.
+Die aktuelle Wizard-Komposition orientiert sich an der öffentlich sichtbaren [REUI Wizard-4-Vorschau](https://reui.io/blocks/application/wizard/wizard-4); die Sheet-Anordnung nutzt dieselben zentralen Overlay-Slots. Sie verwendet die vorhandenen Primitives; kein kostenpflichtiger Blockcode und keine neue Abhängigkeit. Die echte serverseitige Schrittvalidierung, Dirty-Checks, Direktlinks und gespeicherten Flows bleiben erhalten.
 
 ### Overlay-Slots und Standardverhalten
 
@@ -912,14 +921,14 @@ Text::make('name')->searchable()
 ```ts
 // resources/js/modules/contracts/contracts-resource.ts
 filters: [
-    { field: "status", label: "Status", options: opts(["draft", "active", "ended"]) },
+    { field: "status", label: "Status" }, // Werte aus der PHP-Resource
     { field: "unit.name", label: "Einheit · Name", kind: "text" },
 ],
 ```
 
 Der API-Filter lautet `{ field: "unit.name", operator: "=", value: "Wohnung 01" }`. Die REST-Bibliothek löst nur registrierte Relationen/Felder auf und prüft deren Filterfreigabe, Operatoren und bestehende Policies. Nicht freigegebene Pfade oder Operatoren führen zu HTTP 422. Die vorhandene Permission-/Organisationsarchitektur wird dadurch nicht um neue Mandantengrenzen erweitert. Eine UI-Definition ist keine Berechtigung.
 
-**Die PHP-Definition erzeugt aktuell kein UI-Schema.** PHP bleibt verantwortlich für API-Felder, Geschäftsregeln, Relationspfade und erlaubte Operationen; TypeScript beschreibt Labels, Filter-Steuerelemente und Rendering. So muss nicht jede React-Darstellung in PHP nachgebaut werden. Weitere registrierte Relationspfade lassen sich nach demselben Muster konfigurieren. Bereichsfilter und verschachtelte OR-Gruppen sind noch nicht Teil des UI-Builders; die unterstützten Textoperatoren sind bewusst explizit.
+**Die PHP-Resource liefert native Metadaten für die UI.** `detailsMeta()` ergänzt vorhandene Lomkit-Details um Optionen und Relationspicker; der Adapter übernimmt nur serverseitig erlaubte Operatoren. TypeScript definiert Layout und Rendering. Eine Relationsspalte wird standardmäßig zum durchsuchbaren ID-Picker; ein explizites `kind: "text"` behält einen Pfadfilter wie `unit.name`. Zahlen-/Datumsbereiche sind verfügbar. Frei verschachtelte OR-Gruppen sind weiterhin kein Bestandteil des UI-Builders.
 
 ### Spalten und Standardspalten
 
@@ -943,7 +952,7 @@ Die Tests prüfen Relationsfilter über die echte API, abgewiesene Pfade/Operato
 
 `ResourceEditor` setzt `WizardProgress` in `Overlay.header`. Die Navigation bleibt unter dem Titel sichtbar, während ausschließlich der Inhalt scrollt. Sheet und Dialog teilen diese Anordnung; es gibt keine seitliche Wizard-Spalte und keinen Schrittzähler im Footer. Alle Schrittlabels bleiben auch mobil sichtbar (maximal zwei Zeilen). Zurück bleibt links, Abbrechen und Weiter/Speichern rechts. Gespeicherte Multi-Entity-Flows erklären im Kopf, dass Abbrechen bereits gespeicherte Datensätze behält. Ein Formularwizard validiert weiterhin vor Weiter auf dem Server; ein gespeicherter Flow behält seine Transaktionen pro Schritt und seine Zurück-Logik.
 
-`FormSection` ersetzt geschachtelte Karten für reine Feldgruppen durch semantische Fieldsets mit Legende, optionaler Beschreibung und ruhiger Trennung. Das Feldraster passt sich weiterhin an die tatsächliche Containerbreite an. Selbstständige Inhalte wie Relationslisten bleiben Karten. Damit bleibt dieselbe Struktur für neue Module nutzbar, ohne Seitenstyles oder individuelle Wizard-Layouts.
+`FormSection` verwendet dieselbe REUI-Frame-Struktur wie die übrigen Karten. Gruppen können als `card`, `plain` oder `collapsible` präsentiert werden. Das Feldraster richtet sich nach der tatsächlichen Containerbreite; eingeklappte Regionen bewahren Formularwerte. Relationslisten bleiben eigenständige Karten. Neue Module benötigen dafür keine Seitenstyles.
 
 ### Grid: behobene Review-Funde
 
@@ -964,16 +973,16 @@ Die Tests prüfen Relationsfilter über die echte API, abgewiesene Pfade/Operato
 | Betrieb / Nachvollziehbarkeit | Ein fachliches Änderungsjournal, eine nachgewiesene Backup-Wiederherstellung sowie Monitoring-/Alarmierungs- und Rollback-Abnahme sind im geprüften Repository nicht als vollständiger Betriebsnachweis vorhanden. Infrastruktur außerhalb des Repositories wurde nicht geprüft.                                                      |
 | Datenbank / Last              | Die CI verwendet SQLite und überschaubare Demodaten. Serverseitiges Paging und Virtualisierung sind vorhanden, ersetzen aber keine Messungen mit realistischen Datenmengen und konkurrierenden Vertrags-/Konditionsänderungen auf der Ziel-Datenbank.                                                                                 |
 | UX / Barrierefreiheit         | Desktop-/Mobil-Screenshots und Interaktionstests helfen gegen Regressionen. Ein vollständiger Tastatur-/Screenreader-Audit und Nutzertests mit Verwaltern sind noch kein nachgewiesener Teil der Freigabe.                                                                                                                            |
-| Schema-Vertrag                | PHP definiert API-Felder/Regeln, TypeScript die UI. Das ist eine bewusste Trennung, keine automatische PHP-zu-UI-Generierung. Neue Module brauchen einen Integrationscheck für Feldnamen, erlaubte Filter/Sortierungen, Mutationsantworten und serverseitige Fehler.                                                                  |
+| Schema-Vertrag                | PHP definiert Felder, Regeln, Enums und Relationen; der native Details-Adapter ergänzt die UI-Registry, TypeScript beschreibt die Präsentation. Neue Module brauchen weiterhin einen Integrationscheck für Metadaten, erlaubte Filter/Sortierungen, Mutationsantworten und Serverfehler.                                              |
 
 ### Architekturentscheidung für weitere Module
 
 1. Model, Migration und REST-Resource für Daten, Beziehungen und Validierung; keine zusätzlichen Domain-Klassen für bloßes CRUD. Die installierte REST-Bibliothek besitzt bereits Generatoren (`rest:resource`, `rest:controller`, `rest:action`). Deren Standard-Policy ist keine produktive Rechtekonfiguration.
 2. Domain-Actions für echte fachliche Operationen wie Vertragsaktivierung oder Kündigungsbestätigung behalten. Deren Transaktions- und Konsistenzregeln gehören nicht in ein generisches Rest-Model oder in die React-Konfiguration.
 3. Im Frontend eine `ResourceDefinition` unter `modules/<modul>` registrieren: Felder, Gruppen, Columns/Defaults, Filter, Actions und Relationen. Den gemeinsamen Editor/Grid verwenden; eigene Pages nur für fachlich abweichende Detailübersichten.
-4. Vor größeren Erweiterungen lieber einen kleinen Integrationsvertrag mit realen API-Tests pro Modul ergänzen als ein zweites Metadaten-Framework bauen. Ein vollautomatischer Generator mit Schreibzugriff auf Fachregeln ist aktuell nicht nötig.
+4. Den vorhandenen nativen Details-Vertrag durch API-Tests absichern. Der Adapter liest die REST-Resource, verändert aber keine Fachregeln und ersetzt weder Policies noch serverseitige Mutationsvalidierung.
 
-Die aktualisierte Browser-Suite kontrolliert horizontal angeordnete Schritte **im Header**, unveränderte Headerposition beim Scrollen, volle Formularbreite, die mobile Variante sowie das Dialog-Pendant. `12-wizard-dialog.png` und `13-grid-keine-treffer.png` ergänzen die bisherigen Aufnahmen. Die UI-Tests decken den gruppierten Leerzustand, den Reset bei festem Relationsbezug und deterministische Sortier-Payloads ab.
+Die Browser-Suite kontrolliert horizontal angeordnete Schritte **im Header**, unveränderte Headerposition beim Scrollen, die responsive Formular-/Zusammenfassungsanordnung, die mobile Variante sowie das Dialog-Pendant. `12-wizard-dialog.png` und `13-grid-keine-treffer.png` ergänzen die bisherigen Aufnahmen. Die UI-Tests decken den gruppierten Leerzustand, den Reset bei festem Relationsbezug und deterministische Sortier-Payloads ab.
 
 ## 32. Zentrierter Wizard, Rich-Controls, Sheet-Tabs und Tabellen-KPIs
 
@@ -981,7 +990,7 @@ Die neue Komposition orientiert sich an den gezeigten REUI-Beispielen und der ö
 
 ### Wizard und Zahlen-Stepper
 
-`WizardProgress` zentriert die Schrittnavigation horizontal und vertikal im festen Header, begrenzt sie auf 42 rem und verteilt die Schritte gleichmäßig. Der zusätzliche Erläuterungssatz unter den Schritten entfällt. Verbindungslinien, abgeschlossene Schritte und die bestehende serverseitige Weiter-/Speicherlogik bleiben erhalten. Formulargruppen verwenden weiterhin nur bereits erreichte Schritte als Sprungziele; gespeicherte Flows durchlaufen ihre Mutationen.
+`WizardProgress` zentriert die Schrittnavigation horizontal und vertikal im festen Header, begrenzt sie auf 42 rem und verteilt die Schritte gleichmäßig. Bei breiten Containern stehen Nummer und Label nebeneinander, bei schmalen übereinander. Der zusätzliche Erläuterungssatz unter den Schritten entfällt. Verbindungslinien, abgeschlossene Schritte und die bestehende serverseitige Weiter-/Speicherlogik bleiben erhalten. Formulargruppen verwenden weiterhin nur bereits erreichte Schritte als Sprungziele; gespeicherte Flows durchlaufen ihre Mutationen.
 
 `kind: "number"` verwendet zentral den vorhandenen REUI `NumberField` als Minus/Plus-Control: `min`, `max`, `step`, `locale` und `steppers` (Standard `true`, mit `false` ausblendbar). Leeren ergibt `null`, ein Wert eine Zahl. Die Input-Grenzen unterstützen die Bedienung; Laravel entscheidet weiterhin über fachliche Gültigkeit. Feld-Actions bleiben über `prefixActions`/`suffixActions` möglich.
 
@@ -1077,13 +1086,13 @@ Nach einer Standardmutation werden aktive Kennzahlen der Resource gezielt invali
 
 ### Nachweise
 
-PHP-Tests prüfen Auth, Filterfreigaben, Textsuche kombiniert mit Relationsfiltern, Summen über mehr als eine Standard-Metric-Seite sowie leere Ergebnisse. React-Tests prüfen Rich-Select-Tastatursuche, Zahlungsart-Tastatursteuerung, Zahlen-Stepper, Tabwechsel mit erhaltenen Eingaben, Serverfehler-Tabwechsel, verzögerte Relationsabfragen und gezielte Kennzahlenaktualisierung ohne Listenreload. Der Screenshot-Job ergänzt `14-sheet-zahlung.png`, `15-komponenten-rich.png` und `16-komponenten-mobil.png`; die bestehende Aufnahme `05-vertrag-bearbeiten.png` zeigt Rich-Relation, Tabs und Karten.
+PHP-Tests prüfen Auth, Filterfreigaben, Textsuche kombiniert mit Relationsfiltern, Summen über mehr als eine Standard-Metric-Seite sowie leere Ergebnisse. React-Tests prüfen Rich-Select-Tastatursuche, Zahlungsart-Tastatursteuerung, Zahlen-Stepper, Tabwechsel mit erhaltenen Eingaben, Serverfehler-Tabwechsel, verzögerte Relationsabfragen und gezielte Kennzahlenaktualisierung ohne Listenreload. Der Screenshot-Job ergänzt `14-sheet-zahlung.png`, `15-komponenten-rich.png` und `16-komponenten-mobil.png`; die Aufnahme `05-vertrag-bearbeiten.png` zeigt das kompakte Einheitenfeld, Tabs und Karten.
 
 ## 33. Spaltenschema, stabile Tabellen und gemeinsame Karten (14.11.2026)
 
 ### Filter vollständig im Schema definieren
 
-Jede Tabellenspalte ist standardmäßig filterbar, auch eine per `defaultVisible: false` ausgeblendete Spalte. Write-only-Felder werden ausgeschlossen. `columnFilters(resource)` leitet Typ, Beschriftung und Auswahlwerte aus Spalte/Feld ab. Bestehende `resource.filters` bleiben für zusätzliche Relationsfilter und Überschreibungen erhalten. Jede angebotene API-Eigenschaft muss weiterhin in der PHP-Resource filterbar sein; eine Frontend-Deklaration erweitert keine Serverfreigabe.
+Jede Tabellenspalte mit nativer Filterfreigabe ist standardmäßig filterbar, auch eine per `defaultVisible: false` ausgeblendete Spalte. Write-only-Felder werden ausgeschlossen. `columnFilters(resource)` verwendet die durch PHP-Metadaten ergänzten Typen, Optionen, Relationspicker und Operatoren aus Spalte/Feld. Bestehende `resource.filters` bleiben für zusätzliche Relationsfilter und Überschreibungen erhalten. Jede angebotene API-Eigenschaft muss weiterhin in der PHP-Resource filterbar sein; eine Frontend-Deklaration erweitert keine Serverfreigabe.
 
 ```ts
 columns: [
@@ -1139,12 +1148,198 @@ Initiales Datenladen nutzt konkrete Skeleton-Zellen für Text, Badge, Zahl, Ausw
 
 ### Eine Karten- und Detaildarstellung
 
-`ContentCard` ist die gemeinsame Komposition für Dashboard-, Formular-, Detail- und Tabellenkarten. Props: `title`, `description`, `icon`, `actions`, `footer`, `compact`, `flush`, `grow`, `fill`. Titel/Actions erzeugen eine REUI-Kopfzeile; ohne Kopf bleibt ein einzelnes weißes Panel ohne leeren Header. Bestehende `WorkspaceCard`, `SectionCard`, `DetailCard` und `FormSection` delegieren dorthin. Formulargruppen verwenden standardmäßig Karten; `sectionStyle: "plain"` bleibt eine bewusste Ausnahme.
+`ContentCard` ist die gemeinsame Komposition für Dashboard-, Formular-, Detail- und Tabellenkarten. Props: `title`, `description`, `icon`, `actions`, `footer`, `compact`, `flush`, `grow`, `fill`. Titel/Actions erzeugen eine REUI-Kopfzeile; ohne Kopf bleibt ein einzelnes weißes Panel ohne leeren Header. Bestehende `WorkspaceCard`, `SectionCard`, `DetailCard` und `FormSection` delegieren dorthin. Formulargruppen verwenden standardmäßig Karten; `sectionStyle: "plain"` und `sectionStyle: "collapsible"` sind explizite Alternativen.
 
 `KeyValueRows` übernimmt das gemeinsame semantische `dl`-Raster für lesende und direkt editierbare Werte. Labels und Werte stehen nebeneinander, lange Inhalte umbrechen, Summen dürfen über `align="spread"` rechts ausgerichtet werden. `formatFieldValue` teilt Datum-/Currency-/Options-/Relationsdarstellung zwischen Detail und Inline-Editor. Eingeladene Geschäftspartner zeigen ihren Namen statt nur der ID. Die vorhandene Einzelproperty-Mutation mit Serverprüfung und Versionskontrolle bleibt unverändert.
 
-`DetailPageLayout` begrenzt die Akte auf 72rem und zentriert sie. `DetailColumns` trennt Grunddaten von ergänzenden Angaben und Metadaten; mobil stapeln die Karten. Standard-Edit-Sheets sind maximal 48rem breit, explizite breite Sheets bleiben möglich. Pages komponieren diese Bausteine ohne eigene Layoutstyles.
+`PageWrapper` in der AppShell bestimmt die gemeinsame Breite für Dashboard, Collections und Akten: standardmäßig maximal 1440 px, optional `width: "reading"` mit 64rem. `DetailPageLayout` füllt diese Breite; einzelne Tabs setzen keine eigene Maximalbreite. `DetailColumns` trennt Grunddaten von ergänzenden Angaben und Metadaten, mobil stapeln die Karten. Standard-Edit-Sheets sind maximal 48rem breit; Wizards mit Zusammenfassung und explizit breite Sheets verwenden das breite Overlay. Pages komponieren die Bausteine ohne eigene Layoutstyles.
 
 Die redundante Rücksprung-/Statuszeile und der Kategorie-/Code-Eyebrow im Page-Header entfallen global. Navigation bleibt im AppShell-Menü/Breadcrumb-Kontext. Die Sheet-/Dialog-Umschalter und ihr altes `presentationToggle`-Prop sind entfernt; `presentation` bleibt Bestandteil der Formular-API und Direktlinks. Alle aktuellen Module erlauben in der Mehrfachauswahl nur Löschen.
 
 `BaseField` kapselt den eigentlichen Control-Bereich. Portal-Fokuswächter sind dadurch keine zusätzlichen Abstands-Geschwister des Feldrasters. `PopoverContent` verwendet einen festen Portal-Positioner; ein Kalender vergrößert weder die Feldzeile noch den Scrollbereich des Formulars. Die Screenshot-Suite prüft die Y-Position des folgenden Datumsfelds vor/nach dem Öffnen in Sheet und Dialog sowie kompakte Statusspalten und sichtbare Lade-Skeletons.
+
+## 34. Native Metadaten, Query-Views und gemeinsame Formularflächen
+
+### Ein Schema für Auswahlwerte und Relationen
+
+Die PHP-REST-Resource ist die Quelle für Felder, zulässige Werte, Relationen und Filterfreigaben. Dafür wird der vorhandene authentifizierte Lomkit-Details-Endpunkt verwendet:
+
+```http
+GET /api/v1/units?with=fields.capabilities,fields.filter,fields.rules,fields.meta,relations
+```
+
+`App\Rest\Resources\Resource::detailsMeta()` ergänzt `data.meta.ui` mit `version: 1`, `fields`, `relations` und `labels`. `ResourceMetadata` liest native Felder, Regeln und registrierte `BelongsTo`-Relationen. Es existiert keine zweite Liste der erlaubten Enum-Werte und kein paralleles CRUD-Schema.
+
+| Quelle in PHP                                                                            | Verwendung im Frontend                                                                                                 |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `Enum::make('status', UnitStatus::class)` oder native `rules('in:...')`                  | `options` für Filter/Anzeige, `offeredOptions` für auswählbare Formularwerte, Default aus Feldmetadaten/Model          |
+| `config/ui.php` → `options`                                                              | Gemeinsame übersetzte Optionslabels; feldbezogene Abweichung mit `meta(['ui' => ['optionLabels' => [...] ]])`          |
+| Native Feld-Capabilities, Filteroperatoren, Nullbarkeit und einfache `min`-/`max`-Regeln | Schreibschutz, angebotene Filter, Pflichtmarkierung und Bediengrenzen; keine Ausführung von Geschäftsregeln im Browser |
+| `BelongsTo` plus Eloquent-Relation                                                       | Fremdschlüssel, Ressourcenname, Response-Key und Titelfeld des Relationspickers                                        |
+| `meta.ui.picker` am Fremdschlüsselfeld                                                   | Auswahl-Scope des Formulars, `creatable`, optional `labelField`, `multiple`, `clearable`                               |
+| `meta.ui.filter.filters` am Fremdschlüsselfeld                                           | Separater Such-Scope für Relationsfilter in Tabellen                                                                   |
+
+Standard-Ressourcenname und Titelfeld können über `uiResourceName()` und `uiTitleField()` in PHP überschrieben werden. Abgeleitet werden registrierte `BelongsTo`-Fremdschlüssel; Array-/m:n-Felder benötigen weiterhin einen dazu passenden API-Vertrag.
+
+Beispiel für **Objekt in Einheit**:
+
+```php
+Integer::make('property_id')
+    ->rules(Rule::exists('properties', 'id')->whereNull('deleted_at')->where('status', 'active'))
+    ->meta(['ui' => [
+        'picker' => [
+            'filters' => [['field' => 'status', 'value' => 'active']],
+            'creatable' => false,
+        ],
+        'filter' => ['filters' => []],
+    ]]);
+
+Enum::make('type', UnitType::class);
+Enum::make('status', UnitStatus::class);
+
+// In relations():
+BelongsTo::make('property', PropertyResource::class)->onlyOperations();
+```
+
+```ts
+// resources/js/modules/units/units-resource.ts
+fields: [
+    relation("property_id", "Objekt"),
+    select("type", "Einheitenart"),
+    select("status", "Zustand"),
+],
+columns: [{ field: "property.name", label: "Objekt", sortable: false }],
+toolbarFilters: ["property_id"],
+```
+
+Das Formular sucht aktive Objekte auf dem Server und speichert deren ID. Die Tabellenspalte `property.name` wird automatisch zu einem suchbaren `property_id`-Filter. Der Tabellenfilter verwendet den separaten Filter-Scope, damit auch Einheiten eines archivierten Objekts auffindbar bleiben. Bereits gewählte Datensätze werden für die Anzeige anhand ihrer IDs geladen. Soll ausdrücklich der Name statt die ID verglichen werden, bleibt `filter: { field: "property.name", kind: "text" }` möglich. Such-Scope und gesperrter Formularkontext sind Bedienhilfen; Existenz, Status und Mutationsfreigabe müssen weiterhin serverseitig abgesichert sein.
+
+`ResourceSchemaProvider` lädt nach der Anmeldung alle registrierten Ressourcenbeschreibungen und hydratisiert die Registry atomar, bevor Formulare oder Workbench mounten. Fehlende/ungültige Metadaten zeigen einen Fehler mit Wiederholen statt leerer Optionslisten. Der optionale SessionStorage-Cache gilt fünf Minuten, getrennt nach Benutzer und Frontend-Build; Login, Logout und HTTP 401 entfernen ihn. Gespeichert werden Metadaten, keine Datensätze oder Ausweisinhalte. Native Capabilities sind UI-Hinweise und ersetzen keine Autorisierung.
+
+TypeScript bleibt für Feldreihenfolge, Gruppen, Formularart, Beschriftungen, Hilfetexte, Icons, Rich-Darstellung und React-Renderer zuständig. Der Einheitenpicker im Vertrag verwendet `selectedDisplay: "title"`: eine kompakte Zeile ohne ausgewählten Untertitel oder Badge. Rich-Auswahl bleibt als zentrale Option verfügbar.
+
+### Collection-Views und direkte Filter
+
+```ts
+views: [
+    { id: "all", label: "Alle", count: true },
+    { id: "active", label: "Aktiv", filters: [{ field: "status", value: "active" }], count: true },
+    { id: "draft", label: "Entwürfe", filters: [{ field: "status", value: "draft" }], count: true },
+],
+// Optional zusätzlich: query: "Suchtext" pro View.
+collection: {
+    filterable: false,
+    groupable: false,
+    toolbarFilters: ["unit_id"],
+},
+```
+
+`CollectionViewDefinition` besitzt `id`, `label`, optionale `filters`, `query` und `count`. Die Vertragsliste zeigt Alle/Aktiv/Entwürfe/Beendet, die Einheitenliste Alle/Nutzbar/Instandhaltung. `CollectionOptions.views` kann die Resource-Views ersetzen oder mit `false` abschalten; in kompakten Relationslisten sind sie standardmäßig aus. Der aktive View steht in der URL. Ein Wechsel setzt Seite und Auswahl zurück.
+
+Für die Zeilenabfrage gelten feste Elternfilter **und** View-Filter **und** Benutzerfilter. Eine View-`query` wird mit dem eingegebenen Suchtext kombiniert. Reset entfernt Benutzerkriterien, nicht den Elternbezug oder den gewählten View. Optionale Tab-Zähler verwenden den festen Eltern-Scope und die jeweilige View-Definition; sie bleiben unabhängig von Benutzerchips, Seitengröße und aktueller Seite. Die KPI-Leiste dagegen folgt der gesamten aktuellen Such-/Filterauswahl. Fehlende Zähler werden nicht als Null dargestellt.
+
+`toolbarFilters: ["property_id"]` referenziert dieselben Filterdefinitionen wie der Builder und unterstützt direkte Options- und Relationspicker. Es werden keine zweiten Optionen gepflegt. Ein direkter Filter wird nicht zusätzlich im Builder angeboten. `filterable: false` blendet den Builder aus; explizite Toolbar-Filter bleiben bedienbar. `groupable: false` blendet Gruppieren unabhängig davon aus und wendet keine alte URL-Gruppierung an. Suche, Pagination, Spaltenauswahl, Actions und Export bleiben separat konfigurierbar, auch in `relation.collection` und `relation.editorCollection`.
+
+### Deklarative Zelltypen und Export
+
+`column.cell` verwendet denselben Renderer in normalen und gruppierten Tabellenzeilen. Daten bleiben API-Werte; Komponenten legen keine neuen Datenbankfelder an.
+
+```ts
+columns: [
+    {
+        field: "display_name", label: "Kontakt",
+        cell: { type: "avatar", primary: "display_name", secondary: "email", image: "avatar_url" },
+        exportValue: (row) => String(row.display_name ?? ""),
+    },
+    {
+        field: "parties", label: "Beteiligte",
+        cell: { type: "avatars", items: "parties", nameField: "display_name", imageField: "avatar_url", max: 3 },
+    },
+    { field: "tags", label: "Tags", cell: { type: "tags", items: "tags", max: 3 } },
+    { field: "name", label: "Objekt", cell: { type: "icon-text", icon: Building2 } },
+    { field: "code", label: "Vertrag", cell: { type: "text", primary: "code", secondary: "unit.name" } },
+],
+```
+
+Die Beispiele mit `avatar_url`, `parties` oder `tags` setzen entsprechende API-Ausgabefelder voraus. `primary` und `secondary` akzeptieren einen Feldpfad oder eine Funktion `(row) => string`; `items` akzeptiert einen Pfad oder eine Funktion mit Array-Rückgabe. `nameField`, `imageField` und `max` konfigurieren Mehrfachdarstellungen. Bilder besitzen einen Initialen-Fallback, Avatargruppen und Tags eine begrenzte Anzahl mit Restanzeige. Ein frei definierter `column.render` bleibt möglich. `exportValue(row)` trennt den fachlichen CSV-Wert von der visuellen Darstellung; ohne Override werden Avatargruppen/Tags zu Namenslisten, andere Zelltypen verwenden den API-Wert der Spalte.
+
+`/components` zeigt die Zelltypen mit fiktiven Daten in `CellTypesDemo`. Für kleine bereits geladene Listen gibt es `RecordTable` in `framework/tables/record-table.tsx`:
+
+```tsx
+<RecordTable
+    label="Kontakte"
+    columns={columns}
+    rows={rows}
+    dense={false}
+    emptyMessage="Keine Einträge vorhanden."
+/>
+```
+
+Diese lesende Tabelle teilt REUI-Grid, Zellrenderer und Prozent-/Min-/Max-Spaltenbreiten. Sie führt keine API-Abfragen, Mutationen, Pagination oder Zeilenauswahl aus; dafür ist `ResourceCollection` zuständig.
+
+### Echter Lesemodus und Abschnittsbearbeitung
+
+```ts
+collection: { viewMode: "sheet" }, // alternativ "page" (Standard) oder "dialog"
+view: { sectionStyle: "collapsible" },
+```
+
+Die Einheitenliste demonstriert diesen Modus live. Ein Klick auf den Datensatz öffnet `ResourceView` mit semantischen `KeyValueRows`, Datum-/Currency-/Optionsformatierung und Relationsnamen. Es werden keine deaktivierten Eingabecontrols als Leseansicht verwendet; Write-only-Felder werden nie angezeigt. Doppelklick zum Bearbeiten bleibt über `doubleClickEdit` separat steuerbar.
+
+```ts
+workbench.openForm({
+    resource: units,
+    mode: "view",
+    row: unit,
+    presentation: "sheet",
+});
+```
+
+Der Bearbeiten-Button öffnet das vollständige Formular im selben Panel. Der Stift einer Gruppe startet gezielt die bearbeitbaren Gruppenfelder. Dieser Abschnittsmodus nutzt `FormRequest.fields`; die Workbench serialisiert Feldliste und Rückkehr zur Ansicht im Panel-Descriptor. Der Editor sendet nur die gewählten Attribute plus ID/Version, keine versteckten Änderungen aus anderen Gruppen. Servervalidierung, unveränderbare Fremdschlüssel und gesperrter Elternkontext bleiben wirksam. Nach Speichern oder Abbrechen erscheint wieder die Leseansicht; der Dirty-Check gilt weiterhin. Die vorhandene Mutation aktualisiert betroffene Cache-Zeilen statt die gesamte Tabelle neu zu laden.
+
+### Klappbare Gruppen und Wizard-Zusammenfassung
+
+```ts
+groups: [
+    { id: "general", label: "Stammdaten" },
+    {
+        id: "details", label: "Ausstattung",
+        collapsible: true,
+        defaultOpen: false,
+        summary: (values) => values.has_balcony ? "Mit Balkon" : "Ohne Balkon",
+    },
+],
+editor: {
+    sectionStyle: "collapsible",
+    summary: {
+        title: "Objektübersicht",
+        items: (values) => [
+            { id: "name", label: "Objekt", value: String(values.name || "—") },
+            { id: "city", label: "Ort", value: String(values.city || "—") },
+        ],
+    },
+},
+```
+
+`sectionStyle` unterstützt `card` (Standard), `plain` und `collapsible`; `view.sectionStyle` überschreibt die Darstellung für den Lesemodus, andernfalls gilt der Editor-Stil. Gruppen sind standardmäßig offen. `group.collapsible` überschreibt den Gruppenstil, `defaultOpen` bestimmt den Anfangszustand und `summary(values)` die kompakte Zusammenfassung im Kopf. `FormSection` kapselt Header, Actions, Auf-/Zuklappen und Inhalt. Ein Serverfehler öffnet den betroffenen Tab und Abschnitt und fokussiert das Feld; eingeklappte Regionen verlieren keine Eingaben.
+
+Der Header-Stepper orientiert sich an Wizard-4: zentrierte horizontale Schrittnavigation, aktuelle/abgeschlossene Schritte, klare Footer-Actions ohne zusätzlichen Schrittzähler. Im Wizard bleibt die aktive Gruppe offen. `editor.summary` liefert die gemeinsame Key-Value-Zusammenfassung; `editor.wizardSummary` kann alternativ ausschließlich für Wizard/Flow gesetzt werden und hat dort Vorrang. Der Vertrag verwendet diese Variante, damit im normalen Grunddaten-Edit keine zusätzliche Wizard-Karte erscheint.
+
+Die Wizard-Zusammenfassung wird mit `FormSummary` im gemeinsamen `FormLayout` umgesetzt: bei ausreichender Containerbreite rechts neben den Feldern sticky, bei schmalem Platz darunter. Wizards mit Zusammenfassung verwenden ein breites Overlay. `items(values, record)` liest Formularwerte lokal; es entstehen keine API-Requests bei jeder Eingabe. Objekte demonstrieren die Zusammenfassung von Bezeichnung, Nummer und Ort. Precognition, Zurück-Navigation und die Speicherung pro Flow-Schritt bleiben unverändert; dies ist keine neue fachliche Transaktionsgrenze.
+
+### Gemeinsame Shell, Frames und Seitenbreite
+
+`AppShell` komponiert die Navigation im Stil der Shell-7-Vorschau mit zentraler Suche, hierarchischen Menüpunkten und einer ruhigen Breadcrumb-Topbar ohne zusätzlichen Produktiv-/Statusblock rechts. `PageWrapper` liegt außerhalb der einzelnen Seiten-Tabs und verantwortet Breite, Seitenabstände und die verfügbare Collection-Höhe:
+
+```tsx
+<PageWrapper mode="page" width="workspace">
+    {children}
+</PageWrapper>
+// mode: "page" | "collection"; width: "workspace" | "reading"
+```
+
+Die AppShell setzt ihn bereits; normale Pages sollen keinen zweiten Wrapper ergänzen. `workspace` ist maximal 1440 px, `reading` maximal 64rem. `DetailPageLayout`, `LazyTabs`, `WorkspaceColumns` und Tabellen füllen denselben Elterncontainer. Ein Wechsel zwischen Übersicht und Einheiten-/Vertragstab verändert deshalb keine seitenweite Maximalbreite. Horizontales Grid-Scrolling bleibt innerhalb der Tabelle.
+
+`ContentCard`, `FormSection`, `KeyValueCard` und `KeyValueRows` nutzen gemeinsame REUI-Frame- und Feldkomponenten im Aufbau der Form-/Form-6-Vorschauen: ruhiger Rahmen, klar getrennte Titel-/Inhaltsbereiche, kurze lesbare Werte und zentrale Action-Slots. Die Login-Komponente orientiert sich an Auth-8 mit einer zentrierten Karte vor dem lokal ausgelieferten Bild `public/images/auth-residence.webp`; kein Split-Layout und keine externe Bildanfrage beim Login. Farben, Abstände und Größen bleiben in Tokens und gemeinsamen Komponenten, nicht in Pages.
+
+Die benannten REUI-Blockvorschauen sind Gestaltungsreferenzen, keine Behauptung einer Übernahme lizenzpflichtiger Blockquellen. Die konkreten Quellen und Assets stehen in [ui-sources.json](ui-sources.json). Der Ausbau erleichtert weitere CRUD-Module; die Freigabegrenzen aus Abschnitt 31 bleiben bestehen.

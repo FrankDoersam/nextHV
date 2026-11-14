@@ -259,7 +259,14 @@ it("accepts a new property without an optional energy class", async () => {
         city: "Berlin",
     });
     expect(values.energy_class).toBeNull();
-    expect(schemaFor(properties.fields).safeParse(values).success).toBe(true);
+    // REST defaults/options arrive via metadata; this unit test concerns only the optional control.
+    const energy = properties.fields.find(
+        (field) => field.name === "energy_class",
+    )!;
+    expect(
+        schemaFor([energy]).safeParse({ energy_class: values.energy_class })
+            .success,
+    ).toBe(true);
 });
 
 describe("rich business controls", () => {

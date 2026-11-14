@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ListFilter, X, RotateCcw, Check } from "lucide-react";
 import { ChoicePicker } from "@/components/fields/choice-picker";
+import { RelationPicker } from "@/components/fields/entity-picker";
 import { DatePicker } from "@/components/fields/pickers";
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group";
 import { Button } from "@/components/ui/button";
@@ -147,7 +148,32 @@ export function ResourceFilters({
                         {!nullOperator(rule.operator) && (
                             <>
                                 <span className="h-4 border-l" aria-hidden />
-                                {!field.kind || field.kind === "choice" ? (
+                                {field.kind === "relation" && field.resource ? (
+                                    <div className="w-52 min-w-0">
+                                        <RelationPicker
+                                            presentation="chip"
+                                            aria-label={`${field.label} Werte`}
+                                            placeholder="Auswählen …"
+                                            resource={field.resource}
+                                            labelField={field.labelField}
+                                            filters={field.filters}
+                                            creatable={false}
+                                            multiple
+                                            clearable={false}
+                                            value={rule.values.map(Number)}
+                                            onChange={(selected) => {
+                                                const values = (
+                                                    selected as (
+                                                        string | number
+                                                    )[]
+                                                ).map(String);
+                                                if (values.length)
+                                                    commit(values);
+                                                else remove(field.field);
+                                            }}
+                                        />
+                                    </div>
+                                ) : !field.kind || field.kind === "choice" ? (
                                     <ChoicePicker
                                         presentation="chip"
                                         aria-label={`${field.label} Werte`}
@@ -196,7 +222,16 @@ export function ResourceFilters({
                     aria-label={`Alle ${active.length} Filter zurücksetzen`}
                     title={`Alle ${active.length} Filter zurücksetzen`}
                     onClick={() => {
-                        onChange({});
+                        const builderFields = new Set(
+                            definitions.map((field) => field.field),
+                        );
+                        onChange(
+                            Object.fromEntries(
+                                Object.entries(value).filter(
+                                    ([field]) => !builderFields.has(field),
+                                ),
+                            ),
+                        );
                         setDraft(null);
                     }}
                 >

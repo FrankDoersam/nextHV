@@ -22,11 +22,17 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 export { ContentCard as SectionCard } from "./content-card";
-export function StatusBadge({ value }: { value: unknown }) {
+export function StatusBadge({
+    value,
+    displayLabel,
+}: {
+    value: unknown;
+    displayLabel?: string;
+}) {
     return (
         <Badge
             variant="secondary"
-            title={label(value)}
+            title={displayLabel ?? label(value)}
             className={cn(
                 "max-w-full gap-1.5 font-medium",
                 ["active", "ready", "received"].includes(String(value))

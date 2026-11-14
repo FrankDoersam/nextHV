@@ -185,5 +185,31 @@
         "file": "resources/js/framework/forms/editable-key-value-list.tsx",
         "source": "https://reui.io/blocks/application/form",
         "note": "Eigenes Property-Editor-Konzept mit RHF/Provider; nur öffentliche Muster analysiert, kein kostenpflichtiger Quellcode übernommen."
+    },
+    {
+        "file": "resources/js/components/blocks/auth-screen.tsx",
+        "source": "https://reui.io/blocks/application/auth/auth-8",
+        "note": "Eigenständige Adaption der öffentlich beschriebenen Komposition auf vorhandenen REUI/Base-Nova-Primitiven. Pro/Ultimate-Quellcode wurde nicht übernommen."
+    },
+    {
+        "file": "resources/js/components/blocks/layout.tsx",
+        "source": "https://reui.io/blocks/application/app-shell/app-shell-7",
+        "note": "Eigenständige Adaption der öffentlich beschriebenen Komposition auf vorhandenen REUI/Base-Nova-Primitiven. Pro/Ultimate-Quellcode wurde nicht übernommen."
+    },
+    {
+        "file": "resources/js/framework/forms/resource-editor.tsx",
+        "source": "https://reui.io/blocks/application/wizard/wizard-4",
+        "note": "Eigenständige Adaption der öffentlich beschriebenen Komposition auf vorhandenen REUI/Base-Nova-Primitiven. Pro/Ultimate-Quellcode wurde nicht übernommen."
+    },
+    {
+        "file": "resources/js/framework/forms/resource-view.tsx",
+        "source": "https://reui.io/blocks/application/form/form-6",
+        "note": "Eigenständige Adaption der öffentlich beschriebenen Komposition auf vorhandenen REUI/Base-Nova-Primitiven. Pro/Ultimate-Quellcode wurde nicht übernommen."
+    },
+    {
+        "file": "public/images/auth-residence.webp",
+        "source": "OpenAI image generation",
+        "note": "Generiertes Architekturfoto, lokal als WebP eingebunden. Keine Personen oder reale verwaltete Immobilie.",
+        "prompt": "Premium editorial photoreal contemporary German residential courtyard, pale limestone and light grey stucco, large windows and balconies, tree and landscaping, soft early morning light, calm center for a white login card, neutral slate and warm light, no people, cars, text or logos."
     }
 ]

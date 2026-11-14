@@ -12,15 +12,11 @@ export const parties: ResourceDefinition = {
     navigation: false,
     fields: [
         {
-            ...relation("contract_id", "Vertrag", "contracts"),
+            ...relation("contract_id", "Vertrag"),
             readonlyOnEdit: true,
         },
-        relation(
-            "business_partner_id",
-            "Geschäftspartner",
-            "business-partners",
-        ),
-        select("role", "Rolle", ["tenant", "owner", "guarantor"]),
+        relation("business_partner_id", "Geschäftspartner"),
+        select("role", "Rolle"),
         {
             name: "is_primary",
             label: "Hauptansprechpartner",

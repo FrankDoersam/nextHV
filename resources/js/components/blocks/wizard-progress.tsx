@@ -8,7 +8,7 @@ import {
 } from "@/components/reui/stepper";
 import { cn } from "@/lib/utils";
 
-/** Horizontal progress for the fixed overlay header, shared by forms and saved flows. */
+/** Header navigation only: server-validated steps control progression; completed steps remain revisitable. */
 export function WizardProgress({
     steps,
     active,
@@ -35,32 +35,22 @@ export function WizardProgress({
                 value={active + 1}
                 indicators={{ completed: <Check className="size-3.5" /> }}
             >
-                <StepperNav className="items-start gap-0">
+                <StepperNav className="items-stretch gap-0">
                     {steps.map((step, index) => {
                         const current = index === active;
                         const completed = index < active;
                         const content = (
                             <>
-                                <span className="flex w-full items-center justify-center">
-                                    <StepperIndicator className="size-7 border border-border bg-card font-semibold text-muted-foreground data-[state=active]:border-primary data-[state=active]:ring-4 data-[state=active]:ring-primary/10 data-[state=completed]:border-primary/20 data-[state=completed]:bg-primary/10 data-[state=completed]:text-primary">
-                                        {index + 1}
-                                    </StepperIndicator>
-                                    {index < steps.length - 1 && (
-                                        <StepperSeparator
-                                            className={cn(
-                                                "absolute top-3.5 right-[calc(-50%+1.25rem)] left-[calc(50%+1.25rem)] m-0 h-px rounded-none bg-border",
-                                                completed && "bg-primary/40",
-                                            )}
-                                        />
-                                    )}
-                                </span>
+                                <StepperIndicator className="size-7 border border-border bg-card font-semibold text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:shadow-xs data-[state=completed]:border-primary/20 data-[state=completed]:bg-primary/10 data-[state=completed]:text-primary">
+                                    {index + 1}
+                                </StepperIndicator>
                                 <span
                                     className={cn(
-                                        "line-clamp-2 text-center text-xs leading-5 font-medium",
+                                        "line-clamp-2 min-w-0 text-center text-[11px] leading-4 font-medium @min-[32rem]/wizard:text-left @min-[32rem]/wizard:text-xs",
                                         current
-                                            ? "text-primary"
+                                            ? "text-foreground"
                                             : completed
-                                              ? "text-foreground"
+                                              ? "text-foreground/80"
                                               : "text-muted-foreground",
                                     )}
                                 >
@@ -69,13 +59,13 @@ export function WizardProgress({
                             </>
                         );
                         const classes =
-                            "flex w-full min-w-0 flex-col items-center justify-center gap-2 rounded-md px-2 outline-offset-4";
+                            "relative z-10 flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-2 rounded-lg px-1.5 py-1 outline-offset-2 @min-[32rem]/wizard:flex-row @min-[32rem]/wizard:gap-2.5";
                         return (
                             <StepperItem
                                 key={step.id}
                                 step={index + 1}
                                 aria-current={current ? "step" : undefined}
-                                className="relative min-w-0 flex-1 items-start"
+                                className="relative min-w-0 flex-1 items-center"
                             >
                                 {onSelect && completed ? (
                                     <button
@@ -85,7 +75,7 @@ export function WizardProgress({
                                         onClick={() => onSelect(index)}
                                         className={cn(
                                             classes,
-                                            "hover:opacity-80 focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50",
+                                            "hover:bg-muted/70 focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50",
                                         )}
                                     >
                                         {content}
@@ -97,6 +87,14 @@ export function WizardProgress({
                                     >
                                         {content}
                                     </div>
+                                )}
+                                {index < steps.length - 1 && (
+                                    <StepperSeparator
+                                        className={cn(
+                                            "absolute top-[1.125rem] right-[calc(-50%+1.25rem)] left-[calc(50%+1.25rem)] m-0 rounded-none bg-border group-data-[orientation=horizontal]/stepper-nav:h-px group-data-[orientation=horizontal]/stepper-nav:flex-none @min-[32rem]/wizard:static @min-[32rem]/wizard:mx-1 @min-[32rem]/wizard:w-6 @min-[32rem]/wizard:flex-none",
+                                            completed && "bg-primary/30",
+                                        )}
+                                    />
                                 )}
                             </StepperItem>
                         );

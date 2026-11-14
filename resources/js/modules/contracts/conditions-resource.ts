@@ -61,7 +61,7 @@ export const conditions: ResourceDefinition = {
     },
     fields: [
         {
-            ...relation("contract_id", "Vertrag", "contracts"),
+            ...relation("contract_id", "Vertrag"),
             readonlyOnEdit: true,
         },
         dateField("effective_from", "Gültig ab", "general", true),

@@ -18,46 +18,11 @@ export const date = (value: unknown) => {
               year: "numeric",
           }).format(parsed);
 };
-export const labels: Record<string, string> = {
-    month_end: "Monatsende",
-    quarter_end: "Quartalsende",
-    year_end: "Jahresende",
-    any: "vereinbarten Tag",
-    active: "Aktiv",
-    archived: "Archiviert",
-    draft: "Entwurf",
-    ended: "Beendet",
-    ready: "Nutzbar",
-    maintenance: "Instandhaltung",
-    residential: "Wohnen",
-    commercial: "Gewerbe",
-    mixed: "Gemischt",
-    rental: "Mietverwaltung",
-    condominium: "WEG",
-    apartment: "Wohnung",
-    garage: "Garage",
-    parking: "Stellplatz",
-    storage: "Lager",
-    person: "Privatperson",
-    company: "Unternehmen",
-    tenant: "Mieter",
-    owner: "Eigentümer",
-    supplier: "Dienstleister",
-    caretaker: "Hausmeister",
-    guarantor: "Bürge",
-    residential_lease: "Wohnraummiete",
-    commercial_lease: "Gewerbemiete",
-    garage_lease: "Garagenmiete",
-    parking_lease: "Stellplatzmiete",
-    storage_lease: "Lagermiete",
-    outstanding: "Offen",
-    partial: "Teilweise",
-    received: "Erhalten",
-    returned: "Zurückgezahlt",
-    identity_card: "Personalausweis",
-    passport: "Reisepass",
-    residence_permit: "Aufenthaltstitel",
-    other: "Sonstiges",
-};
+/** Domain value labels are loaded from PHP REST metadata before resources mount. */
+export const labels: Record<string, string> = {};
+export function registerLabels(values: Record<string, string>) {
+    for (const key of Object.keys(labels)) delete labels[key];
+    Object.assign(labels, values);
+}
 export const label = (value: unknown) =>
     labels[String(value)] ?? String(value ?? "—");

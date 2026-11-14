@@ -30,6 +30,14 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         await expect(
             page.getByRole("status", { name: "Wird geladen", exact: true }),
         ).toHaveCount(0);
+        if (name !== "17-grid-loading") {
+            await expect(
+                page.getByRole("status", {
+                    name: "Tabelle wird geladen",
+                    exact: true,
+                }),
+            ).toHaveCount(0);
+        }
         await checkPageWidth();
         await page.screenshot({
             path: `screenshots/${name}.png`,
@@ -38,6 +46,10 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         });
     };
     await page.goto("/");
+    await capture("00-anmeldung");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await capture("00-anmeldung-mobil");
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page.getByLabel("E-Mail-Adresse").fill("e2e@example.test");
     await page
         .getByLabel("Passwort", { exact: true })
@@ -50,7 +62,18 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         page.getByRole("combobox", { name: "Vorschau-Zeitraum" }),
     ).toHaveText("Dieser Monat");
     await checkTabLayout();
+    await page.setViewportSize({ width: 1440, height: 1200 });
     await capture("01-dashboard");
+    const dashboardWidth = (await page
+        .locator('[data-slot="page-wrapper"]')
+        .boundingBox())!.width;
+    await page.getByRole("tab", { name: "Bestand", exact: true }).click();
+    expect(
+        (await page.locator('[data-slot="page-wrapper"]').boundingBox())!.width,
+    ).toBe(dashboardWidth);
+    await capture("22-dashboard-bestand");
+    await page.getByRole("tab", { name: "Übersicht", exact: true }).click();
+    await page.setViewportSize({ width: 1440, height: 1000 });
 
     await page.getByRole("link", { name: "Verträge", exact: true }).click();
     await page
@@ -92,6 +115,14 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(
         kpis.getByText("Vereinbarte Kaution", { exact: true }),
     ).toBeVisible();
+    await page.getByRole("tab", { name: /^Aktiv/ }).click();
+    await expect(page).toHaveURL(/view=active/);
+    await expect(
+        page.locator('[data-slot="resource-collection"]'),
+    ).not.toHaveAttribute("aria-busy", "true");
+    await expect(page.getByRole("tab", { name: /^Aktiv/ })).not.toContainText(
+        "—",
+    );
     await capture("02-vertraege-tabelle");
     await page
         .getByRole("combobox", { name: "Status Werte", exact: true })
@@ -175,9 +206,18 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(
         editSheet.getByRole("tab", { name: "Grunddaten" }),
     ).toHaveAttribute("aria-selected", "true");
-    await expect(
-        editSheet.locator('[data-slot="choice-selection"]'),
-    ).toContainText("Wohnung 01");
+    const unitPicker = editSheet.getByRole("combobox", { name: /Einheit/ });
+    await expect(unitPicker).toHaveValue("Wohnung 01");
+    await expect(unitPicker).not.toContainText("Nutzbar");
+    const unitBox = await unitPicker
+        .locator('xpath=ancestor::*[@data-slot="input-group"][1]')
+        .boundingBox();
+    const numberBox = await editSheet
+        .getByLabel("Nummer", { exact: false })
+        .boundingBox();
+    expect(Math.abs(unitBox!.height - numberBox!.height)).toBeLessThanOrEqual(
+        2,
+    );
     const activeTabUnderline = await editSheet
         .getByRole("tab", { name: "Grunddaten" })
         .evaluate((element) => {
@@ -333,6 +373,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
             name: "Ein Baukasten. Klare Konventionen.",
         }),
     ).toBeVisible();
+    await capture("27-zelltypen");
     await expect(page.locator('[data-slot="choice-selection"]')).toContainText(
         "Verwaltungspaket",
     );
@@ -396,6 +437,59 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         .boundingBox();
     expect(statusColumn!.width).toBeLessThan(titleColumn!.width);
     await capture("18-einheiten-spalten");
+    await page
+        .getByRole("combobox", { name: "Objekt filtern", exact: true })
+        .click();
+    await page
+        .getByRole("combobox", { name: "Objekt filtern", exact: true })
+        .fill("Linden");
+    await page.getByRole("option", { name: /Lindenhöfe/ }).click();
+    await page.keyboard.press("Escape");
+    await expect(
+        page.locator('[data-slot="resource-collection"]'),
+    ).not.toHaveAttribute("aria-busy", "true");
+    await expect(page).toHaveURL(/property_id/);
+    await capture("23-einheiten-objektfilter");
+    await page.getByRole("button", { name: "Wohnung 01", exact: true }).click();
+    const unitView = page.getByRole("dialog");
+    await expect(
+        unitView.getByRole("heading", { name: "Wohnung 01", exact: true }),
+    ).toBeVisible();
+    await expect(
+        unitView.locator('[data-slot="form-section"]').getByRole("textbox"),
+    ).toHaveCount(0);
+    await expect(page).toHaveURL(/view/);
+    await capture("24-einheit-view-sheet");
+    await unitView
+        .getByRole("button", { name: "Ausstattung bearbeiten", exact: true })
+        .click();
+    await expect(
+        unitView.getByRole("heading", { name: "Einheit bearbeiten" }),
+    ).toBeVisible();
+    await expect(
+        unitView.getByRole("checkbox", { name: "Balkon", exact: true }),
+    ).toBeVisible();
+    await expect(unitView.getByLabel("Nummer", { exact: false })).toHaveCount(
+        0,
+    );
+    await capture("25-einheit-abschnitt-edit");
+    await unitView
+        .getByRole("button", { name: "Abbrechen", exact: true })
+        .click();
+    await expect(
+        unitView.getByRole("heading", { name: "Wohnung 01", exact: true }),
+    ).toBeVisible();
+    await unitView
+        .getByRole("button", { name: "Bearbeiten", exact: true })
+        .click();
+    await capture("26-einheit-edit-regionen");
+    await unitView
+        .getByRole("button", { name: "Abbrechen", exact: true })
+        .click();
+    await unitView
+        .getByRole("button", { name: "Schließen", exact: true })
+        .last()
+        .click();
     await page.goto("/identity-documents");
     await page
         .getByRole("button", { name: "Browser-Nachweis", exact: true })
