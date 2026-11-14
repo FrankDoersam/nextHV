@@ -45,7 +45,7 @@ function ApplicationWorkspace() {
                     <Suspense
                         fallback={
                             loadingResource ? (
-                                <CollectionLoading resource={loadingResource} />
+                                <CollectionLoading resource={loadingResource} activeView={new URLSearchParams(location.search).get("view")} />
                             ) : (
                                 <Loading />
                             )
