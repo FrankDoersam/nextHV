@@ -13,7 +13,8 @@ import { useCollectionSummary } from "../data/hooks";
 import { BulkActionBar } from "@/components/blocks/bulk-action-bar";
 import { ActionMenu, ActionButtons } from "../action-controls";
 import type { ActionPlacement } from "../actions";
-import { useGridState, defaultColumnVisibility } from "./grid-state";
+import { defaultColumnVisibility } from "./grid-state";
+import { useResourceTable } from "./use-resource-table";
 import { exportRows } from "./export";
 import { cn } from "@/lib/utils";
 import { isRowActivationEvent } from "@/lib/row-interaction";
@@ -33,7 +34,7 @@ import {
 } from "@/components/reui/data-grid/data-grid";
 import { ChoicePicker } from "@/components/fields/choice-picker";
 import { ResourceFilters } from "./resource-filters";
-import { columnFilters, compileGridFilters } from "./filter-rules";
+
 import { DataGridTableVirtual } from "@/components/reui/data-grid/data-grid-table-virtual";
 import { DataGridColumnHeader } from "@/components/reui/data-grid/data-grid-column-header";
 import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
@@ -57,7 +58,7 @@ import { ListFilter, Plus, RefreshCw, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useNavigate } from "react-router";
-import { useDebounced, useReload, useResourceList } from "../data/hooks";
+import { useReload } from "../data/hooks";
 import { can } from "../permissions";
 import type {
     Filter,
@@ -135,7 +136,11 @@ export function ResourceCollection({
     context,
     searchable = true,
     virtualized = "auto",
-    pagination: paging = true,
+    pagination: paginationConfig = true,
+    filters: filterPresets,
+    sorters: sortPresets,
+    queryOptions,
+    selectAllFiltered: allowAllFiltered = true,
     rowSelection = "multiple",
     selectAll = true,
     doubleClickEdit = true,
@@ -176,31 +181,18 @@ export function ResourceCollection({
     const panelId = useId();
     const workbench = useWorkbench();
     const reload = useReload();
-    const prefix =
-        urlKey ??
-        (compact
-            ? `${resource.name}.${fixedFilters.map((f) => ("field" in f ? `${f.field}-${f.value}` : "relation")).join(".")}.`
-            : "");
-    const views = configuredViews || [];
-    const stateResource = useMemo(
-        () => ({ ...resource, views }),
-        [resource, configuredViews],
-    );
-    const { state, update, clearQuery } = useGridState(stateResource, {
-        sync: syncWithLocation,
-        prefix,
-        pageSize: compact ? 10 : 25,
+    const controller = useResourceTable({
+        resource, fixedFilters, views: configuredViews, pagination: paginationConfig,
+        filters: filterPresets, sorters: sortPresets, queryOptions, compact,
+        syncWithLocation, urlKey, searchable, filterable, groupable,
+        toolbarFilters: directFields,
     });
     const {
-        search,
-        view,
-        pagination,
-        sorting,
-        columnVisibility,
-        filters,
-        group,
-        dense,
-    } = state;
+        state, update, clearQuery, query, activeView, views, scopedQuery,
+        filterDefinitions, apiFilters, result, groupResult, effectiveGroup,
+    } = controller;
+    const paging = controller.paginationEnabled;
+    const { search, view, pagination, sorting, columnVisibility, filters, group, dense } = state;
     const viewport = useRef<HTMLDivElement>(null);
     const [width, setWidth] = useState(0);
     const [columnPinning, setColumnPinning] = useState<ColumnPinningState>({
@@ -260,77 +252,25 @@ export function ResourceCollection({
             ),
         [resource, width, columnVisibility, reservedWidth, preferredSizes],
     );
-    const query = useDebounced(searchable ? search : "");
-    const activeView =
-        views.find((candidate) => candidate.id === view) ?? views[0];
-    const scopedQuery = [activeView?.query, query].filter(Boolean).join(" ");
     const hasQuery =
         !!(searchable && search.trim()) ||
-        Object.keys(filters).some(
-            (field) => filterable || directFields.includes(field),
-        );
-    const effectiveGroup = groupable ? group : "none";
-    const setSorting = (
-        value: import("@tanstack/react-table").Updater<SortingState>,
-    ) => update("sorting", value, true);
+        Object.keys(filters).some((field) => filterable || directFields.includes(field));
+    const setSorting = controller.setSorters;
     const setColumnVisibility = (
         value: import("@tanstack/react-table").Updater<ColumnVisibilityState>,
     ) => update("columnVisibility", value);
     const [selection, setSelection] = useState<RowSelectionState>({});
+    const [selectingAll, setSelectingAll] = useState(false);
+    const [selectionError, setSelectionError] = useState<string>();
     const pendingRowOpen = useRef<ReturnType<typeof setTimeout> | null>(null);
-    useEffect(
-        () => () => {
-            if (pendingRowOpen.current) clearTimeout(pendingRowOpen.current);
-        },
-        [],
-    );
-    const filterDefinitions = useMemo(
-        () => columnFilters(resource),
-        [resource],
-    );
+    useEffect(() => () => {
+        if (pendingRowOpen.current) clearTimeout(pendingRowOpen.current);
+    }, []);
     const directDefinitions = filterDefinitions.filter(
-        (definition) =>
-            directFields.includes(definition.field) &&
-            supportsDirectFilter(definition),
+        (definition) => directFields.includes(definition.field) && supportsDirectFilter(definition),
     );
     const builderDefinitions = filterDefinitions.filter(
-        (definition) =>
-            !directDefinitions.some(
-                (direct) => direct.field === definition.field,
-            ),
-    );
-    const userFilters = Object.fromEntries(
-        Object.entries(filters).filter(
-            ([field]) => filterable || directFields.includes(field),
-        ),
-    );
-    const apiFilters = [
-        ...fixedFilters,
-        ...(activeView?.filters ?? []),
-        ...compileGridFilters(userFilters, filterDefinitions),
-    ];
-    const sort = [
-        ...(effectiveGroup !== "none"
-            ? [{ field: effectiveGroup, direction: "asc" as const }]
-            : []),
-        ...sorting.map((s) => ({
-            field:
-                resource.columns.find((column) => column.field === s.id)
-                    ?.sortField ?? s.id,
-            direction: s.desc ? ("desc" as const) : ("asc" as const),
-        })),
-    ];
-    const result = useResourceList(
-        resource,
-        {
-            query: scopedQuery,
-            page: paging ? pagination.pageIndex + 1 : 1,
-            limit: paging ? pagination.pageSize : 100,
-            filters: apiFilters,
-            sort: sort.length ? sort : undefined,
-        },
-        true,
-        true,
+        (definition) => !directDefinitions.some((direct) => direct.field === definition.field),
     );
     const rollups = useCollectionSummary(
         resource,
@@ -358,7 +298,8 @@ export function ResourceCollection({
     ]);
     const previousPage = useRef(pagination.pageIndex);
     useEffect(() => {
-        setSelection({});
+        if (!controller.globalSelection.length) setSelection({});
+        setSelectionError(undefined);
         if (
             !compact &&
             previousPage.current !== pagination.pageIndex &&
@@ -715,23 +656,26 @@ export function ResourceCollection({
         enableMultiRowSelection: rowSelection !== "single",
     });
     tableRef.current = table;
-    const selectedRows = rows.filter(
-        (r) =>
-            selection[String(r.id)] &&
-            (typeof rowSelection !== "function" || rowSelection(r)),
-    );
+    const selectedRows = controller.globalSelection.length
+        ? controller.globalSelection
+        : rows.filter(
+              (r) => selection[String(r.id)] &&
+                  (typeof rowSelection !== "function" || rowSelection(r)),
+          );
     const tableActions = resource.actions.filter(
         (action) =>
             actions !== false && (!actions || actions.includes(action.id)),
     );
-    const grouped =
-        effectiveGroup === "none" || result.isPending
-            ? null
-            : rows.reduce<Record<string, RecordData[]>>((groups, row) => {
-                  const key = String(row[effectiveGroup] ?? "—");
-                  (groups[key] ??= []).push(row);
-                  return groups;
-              }, {});
+    const grouped = effectiveGroup === "none" || !groupResult.data
+        ? null
+        : Object.fromEntries(groupResult.data.groups.flatMap((entry): [string, { total: number; items: RecordData[] }][] => {
+              const key = String(entry.value ?? "—");
+              const items = rows.filter((record) =>
+                  String(record[effectiveGroup] ?? "—") === key,
+              );
+              // Do not mount hundreds of empty grids for groups absent from this page.
+              return items.length ? [[key, { total: entry.count, items }]] : [];
+          }));
     const emptyState = (
         <EmptyState
             title={hasQuery ? "Keine Treffer" : "Noch keine Einträge"}
@@ -1186,7 +1130,19 @@ export function ResourceCollection({
                                                   : "min-h-24 md:flex-1 md:overflow-hidden",
                                         )}
                                     >
-                                        {grouped && rows.length > 0 ? (
+                                        {effectiveGroup !== "none" && groupResult.isError && (
+                                            <div role="alert" className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/30 px-4 py-2 text-sm">
+                                                <span>Serverweite Gruppierung nicht verfügbar. Die Tabelle zeigt die normale Seitenansicht.</span>
+                                                <Button type="button" size="sm" variant="outline" onClick={() => void groupResult.refetch()}>
+                                                    Erneut versuchen
+                                                </Button>
+                                            </div>
+                                        )}
+                                        {effectiveGroup !== "none" && groupResult.isPending ? (
+                                            <div role="status" className="p-5 text-sm text-muted-foreground">
+                                                Gruppen werden serverseitig berechnet …
+                                            </div>
+                                        ) : grouped && rows.length > 0 ? (
                                             <TableViewport
                                                 compact={compact}
                                                 pageFlow={!compact}
@@ -1225,16 +1181,14 @@ export function ResourceCollection({
                                                                 </span>
                                                                 <span className="font-normal text-muted-foreground">
                                                                     {
-                                                                        items!
-                                                                            .length
+                                                                        items!.items.length
                                                                     }{" "}
-                                                                    auf dieser
-                                                                    Seite
+                                                                    auf dieser Seite · {items!.total} insgesamt
                                                                 </span>
                                                             </div>
                                                             {stackedRows ? (
                                                                 recordCards(
-                                                                    items!,
+                                                                    items!.items,
                                                                 )
                                                             ) : (
                                                                 <GroupedGrid
@@ -1242,7 +1196,7 @@ export function ResourceCollection({
                                                                         columns
                                                                     }
                                                                     rows={
-                                                                        items!
+                                                                        items!.items
                                                                     }
                                                                     selection={
                                                                         selection
@@ -1352,8 +1306,45 @@ export function ResourceCollection({
                     <BulkActionBar
                         count={selectedRows.length}
                         pageFlow={!compact}
-                        onClear={() => setSelection({})}
+                        onClear={() => {
+                            setSelection({});
+                            controller.clearGlobalSelection();
+                            setSelectionError(undefined);
+                        }}
                     >
+                        {allowAllFiltered &&
+                            rowSelection === "multiple" &&
+                            paging &&
+                            !controller.globalSelection.length &&
+                            rows.length > 0 &&
+                            rows.every((row) => !!selection[String(row.id)]) &&
+                            (result.data?.total ?? 0) > rows.length && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    disabled={selectingAll}
+                                    onClick={async () => {
+                                        setSelectionError(undefined);
+                                        setSelectingAll(true);
+                                        try {
+                                            const all = await controller.selectAllFiltered();
+                                            setSelection(Object.fromEntries(
+                                                all.map((record) => [String(record.id), true]),
+                                            ));
+                                        } catch (error) {
+                                            setSelectionError(error instanceof Error ? error.message : "Auswahl fehlgeschlagen.");
+                                        } finally {
+                                            setSelectingAll(false);
+                                        }
+                                    }}
+                                >
+                                    {selectingAll ? "Wird ausgewählt …" : `Alle ${result.data?.total ?? 0} Treffer auswählen`}
+                                </Button>
+                            )}
+                        {selectionError && (
+                            <span role="alert" className="max-w-xs text-xs">{selectionError}</span>
+                        )}
                         <ActionButtons
                             actions={tableActions.filter((action) =>
                                 resource.bulkActions === false

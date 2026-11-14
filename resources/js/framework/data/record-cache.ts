@@ -1,15 +1,18 @@
 import type { QueryClient } from "@tanstack/react-query";
-import type { PageResult, RecordData } from "../types";
+import type { PageResult, RecordData, ResourceDefinition } from "../types";
+import { resourceKey } from "./resource-key";
 
 /** Keep unrelated rows and pages referentially stable, including filtered lists. */
 export function patchRecord(
     client: QueryClient,
-    resource: string,
+    resource: string | ResourceDefinition,
     record: RecordData,
 ) {
-    client.setQueryData(["resources", resource, "detail", record.id], record);
+    const name = typeof resource === "string" ? resource : resource.name;
+    const base = resourceKey(resource);
+    client.setQueryData([...base, "detail", record.id], record);
     client.setQueriesData<PageResult>(
-        { queryKey: ["resources", resource, "list"] },
+        { queryKey: [...base, "list"] },
         (page) => {
             if (!page?.data.some((row) => row.id === record.id)) return page;
             return {
@@ -25,7 +28,7 @@ export function patchRecord(
         {
             predicate: (query) =>
                 query.queryKey[0] === "panel" &&
-                query.queryKey[2] === resource &&
+                query.queryKey[2] === name &&
                 query.queryKey[3] === record.id,
         },
         () => record,

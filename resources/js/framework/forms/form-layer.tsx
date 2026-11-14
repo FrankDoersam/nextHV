@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ErrorState, Loading } from "@/components/blocks/content";
 import { Overlay } from "@/components/blocks/overlay";
 import { getResource } from "@/modules/registry";
-import { dataProvider } from "../data/provider";
+import { resolveDataProvider } from "../data/provider-registry";
 import type { FormRequest, RecordData } from "../types";
 import type { PanelLink } from "../navigation/panels";
 import { ResourceEditor } from "./resource-editor";
@@ -70,7 +70,7 @@ export function FormLayer({
                         f.resource === panel.context!.resource,
                 );
                 if (!field) throw new Error("Der Formularbezug ist ungültig.");
-                await dataProvider.one(
+                await resolveDataProvider(getResource(panel.context.resource)).one(
                     getResource(panel.context.resource),
                     panel.context.id,
                 );
@@ -78,7 +78,7 @@ export function FormLayer({
             const row =
                 panel.mode !== "create"
                     ? (cached?.row ??
-                      (await dataProvider.one(resource!, panel.id!)))
+                      (await resolveDataProvider(resource!).one(resource!, panel.id!)))
                     : null;
             if (
                 row &&

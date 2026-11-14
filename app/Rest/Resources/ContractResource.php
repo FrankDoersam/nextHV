@@ -6,6 +6,7 @@ use App\Models\Contract;
 use App\Rest\Actions\ActivateContract;
 use App\Rest\Fields\Currency;
 use App\Rest\Metrics\CollectionSummary;
+use App\Rest\Metrics\GroupedCounts;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
@@ -79,7 +80,7 @@ class ContractResource extends Resource
             'active' => fn (Builder $query): int => $query->where('status', 'active')->count(),
             'draft' => fn (Builder $query): int => $query->where('status', 'draft')->count(),
             'deposits' => fn (Builder $query): float => (float) $query->sum('deposit'),
-        ])];
+        ]), new GroupedCounts(['status', 'type'])];
     }
 
     public function actions(): array

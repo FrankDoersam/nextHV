@@ -1563,3 +1563,52 @@ Die Shell folgt dem Aufbau von REUI `app-shell-7` in heller Darstellung: durchge
 Prüfung: Die Browser-Tour ergänzt Aufnahmen `46`–`55` für Objekte und Einheiten auf dem iPhone, letzten Datensatz/Paging, iPad, Desktop-Shell, mobiles Menü sowie Vertragslisten mit KPI-Karten. Sie prüft unter anderem die KPI-Höhe, einzeilige Tabs, die Toolbar-Höhe, vollständige erste/letzte Datensätze, fehlende innere mobile Scrollbereiche, horizontale Überläufe und sichtbares Desktop-Paging. Ein Interaktionstest deckt die schmale Aktionsleiste und serverseitiges Paging mit erhaltenem URL-Zustand ab. Die Prüfung umfasst Backend- und React-Tests, Produktionsbuild, Browser-Funktionstest und alle 55 Screenshot-Aufnahmen.
 
 Die Screenshot-Action läuft auch auf `codex/ui-shell-*`, damit echte Browseraufnahmen vor der zusammengefassten Übernahme nach `main` geprüft werden können. KPI- und Tab-Konfigurationen sind weiterhin optional: deaktivierte Blöcke werden nicht durch die Layoutkomponenten erzwungen.
+
+## 38. Headless Tabellen-Controller, Pagination, Gruppierung und Provider
+
+**Öffentliche API:** `useResourceTable<TRecord>` liegt unter `framework/tables/use-resource-table.ts`. Er bündelt URL-State, Suche, Filter, Sortierungen, Paging, gruppierte Serverzahlen und eine ausdrücklich ausgelöste Auswahl über Seiten hinweg. `ResourceCollection` verwendet denselben Controller und stellt weiterhin die REUI-Darstellung bereit. Der Hook ist auch ohne DataGrid in individuellen Ansichten verwendbar.
+
+```tsx
+const table = useResourceTable<UnitRecord>({
+    resource: units,
+    pagination: { mode: "server", currentPage: 1, pageSize: 25 },
+    filters: {
+        initial: { status: { operator: "in", values: ["ready"] } },
+        permanent: [{ field: "property_id", value: 42 }],
+        defaultBehavior: "merge",
+    },
+    sorters: {
+        initial: [{ id: "name", desc: false }],
+        permanent: [{ field: "property.name", direction: "asc" }],
+    },
+    queryOptions: { staleTime: 30_000, retry: 2 },
+});
+// table.state, table.update, table.setFilters(next, "merge" | "replace"),
+// table.setSorters, table.result, table.groupResult, table.selectAllFiltered
+```
+
+Die für Filter-/Sortier-Vorgaben verwendeten Felder und Operatoren unterliegen weiterhin dem nativen REST-Schema. `filters.initial` ist ein sanitisierter benutzereditierbarer Anfangszustand, `filters.permanent` wird serverseitig jeder Abfrage hinzugefügt und **nicht** in veränderbaren URL-Parametern gehalten. `sorters.permanent` wird nur auf deklarierte sortierbare Spalten angewendet; Gruppierung und ID-Tie-Break bleiben deterministisch. `fixedFilters` und View-Scopes gelten zusätzlich und können durch `setFilters` weder gelöscht noch ersetzt werden.
+
+### Paging-Vertrag
+
+- **`server`** (Standard): Seitengröße 10/25/50/100, Server sortiert und filtert. URL, First/Last und serverseitige Gesamtzahl bleiben konsistent.
+- **`client`**: die API lädt maximal 100 Datensätze in einer Anfrage, die lokale Ansicht paginiert. Mehr Treffer als `maxRecords` führen **zu einem sichtbaren Fehler**, niemals zu einem unbemerkt unvollständigen Resultat.
+- **`off`**: nur für eine ausdrücklich kleine vollständige Datenmenge (max. 100). Besteht der gefilterte Bestand aus mehr Datensätzen, wird die Anfrage abgewiesen, statt alle Datensätze im Browser anzudeuten.
+
+`ResourceCollection` akzeptiert dieselben `pagination`, `filters`, `sorters`, `queryOptions`-Props; alte `pagination={true|false}`-Aufrufe bleiben kompatibel. `pagination={false}` ist somit bewusst als **begrenzt vollständig** definiert, nicht mehr als stillschweigend erste 100.
+
+### Serverseitige Gruppierung
+
+`App\\Rest\\Metrics\\GroupedCounts` liefert `POST /api/v1/{resource}/metrics/groups` mit `group` und derselben `search.filters`/`search.text`-Struktur wie die REST-Suche. Die Auswertung erhält den bereits gefilterten Lomkit-Querybuilder und verwendet ausschließlich explizit deklarierte physische Spalten. Objekte (`city`, `type`), Einheiten (`type`, `status`), Verträge (`status`, `type`) und Partner (`kind`, `city`) sind freigegeben. Gruppenköpfe zeigen die **Gesamtzahl** im Filter-Scope; Zeilen darunter bleiben die Datensätze der gewählten Seite. Das ist explizit beschriftet. Komplexe serverseitig unabhängig paginierte Gruppen (mit eigener Cursorposition) sind weiterhin eine eigenständige nächste Stufe.
+
+### Alle gefilterten Datensätze auswählen
+
+Erst wenn der Benutzer die aktuell geladene Seite ausgewählt hat, kann er zusätzlich **Alle N Treffer auswählen** auslösen. Der Controller löst die vollständige, identische serverseitige Suchabfrage mit echten Zeilen, IDs und Versionen auf. Maximal **100 eindeutige Datensätze**, keine ungeprüfte Hintergrund-Selektion. Ändert sich die Trefferzahl oder Filtermenge zwischen den Anfragen, wird die Auswahl verworfen. Bulk-Actions erhalten danach konkrete Records und durchlaufen weiterhin ihre bestehenden Laravel-Autorisierungen, Transaktionen und fachlichen Limits. Für mehr als 100 Treffer ist eine separate serverseitige Job-/Confirmation-Action nötig; die UI behauptet dann **keine** Vollauswahl.
+
+### Zusätzliche Backends und Infinite Lists
+
+`registerDataProvider("secondary", adapter)` registriert einen **vollständigen** Adapter mit demselben Vertrag wie der Laravel-Provider. Eine Resource kann `dataProvider: "secondary"` deklarieren; Read-/Write-Hooks und Cache-Namensräume bleiben getrennt. `unregisterDataProvider` ist für Tests/Unmount vorgesehen. Moduleigene Laravel-spezifische Actions müssen bei anderen Backends ausdrücklich durch passende Actions ersetzt werden.
+
+`useInfiniteResourceList<TRecord>(resource, { limit: 25, filters })` stellt `records`, `fetchNextPage`, `hasNextPage`, `total` und die übrigen TanStack-Infinite-Query-Zustände zur Verfügung. Der Hook lädt nur die jeweils angeforderte native REST-Seite, nicht alle Records auf einmal.
+
+Tests: `use-resource-table.test.tsx` prüft URL-/Filter-Presets, Client/Off-Grenzen, Provider-Isolation, Infinite-Paging, serverweite Counts und begrenzte Auswahl. `GroupedCountsTest.php` prüft Counts jenseits der ersten Seite sowie das Feld-Whitelisting. Diese Tests ergänzen die bestehenden End-to-End-Prüfungen für REUI-Grid und Formulare.

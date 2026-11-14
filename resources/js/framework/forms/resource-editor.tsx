@@ -25,7 +25,8 @@ import {
 } from "react-hook-form";
 import { useReload, useSaveRecord } from "../data/hooks";
 import { ApiError } from "../data/http";
-import { dataProvider, normalizeValidationErrors } from "../data/provider";
+import { normalizeValidationErrors } from "../data/provider";
+import { resolveDataProvider } from "../data/provider-registry";
 import { RowActions } from "../tables/resource-collection";
 import { RelationCollection } from "../tables/relation-collection";
 import type { FlowControls } from "./flow";
@@ -131,7 +132,7 @@ export function ResourceEditor({
     };
     const refresh = async () => {
         if (!row) return;
-        const latest = await dataProvider.one(resource, row.id);
+        const latest = await resolveDataProvider(resource).one(resource, row.id);
         setVersion(latest);
         form.reset(
             initialValues(
@@ -239,7 +240,7 @@ export function ResourceEditor({
         form.clearErrors(names);
         try {
             if (names.length)
-                await dataProvider.validate(
+                await resolveDataProvider(resource).validate(
                     resource,
                     form.getValues(),
                     version,
