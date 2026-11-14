@@ -2,7 +2,7 @@ import { BulkActionBar } from "@/components/blocks/bulk-action-bar";
 import { ActionMenu, ActionButtons } from "../action-controls";
 import type { ActionPlacement } from "../actions";
 import { PresentationToggle } from "../presentation-toggle";
-import { useGridState } from "./grid-state";
+import { useGridState, defaultColumnVisibility } from "./grid-state";
 import { exportRows } from "./export";
 import { cn } from "@/lib/utils";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
@@ -358,6 +358,7 @@ export function ResourceCollection({
                     />
                 ),
                 enableSorting: c.sortable !== false,
+                enableHiding: c.hideable !== false,
                 cell: ({
                     row,
                 }: {
@@ -417,6 +418,9 @@ export function ResourceCollection({
         [resource, navigate, rowSelection, actions, detailLink, columnChooser],
     );
     const table = useTable({
+        initialState: {
+            columnVisibility: defaultColumnVisibility(resource),
+        },
         features: dataGridFeatures,
         columns,
         data: rows,
@@ -743,6 +747,9 @@ export function ResourceCollection({
                                                     }
                                                     selectionMode={rowSelection}
                                                     dense={dense}
+                                                    defaultVisibility={defaultColumnVisibility(
+                                                        resource,
+                                                    )}
                                                 />
                                             </section>
                                         ),
@@ -826,6 +833,7 @@ function GroupedGrid({
     onVisibility,
     selectionMode,
     dense,
+    defaultVisibility,
 }: {
     columns: ColumnDef<DataGridFeatures, RecordData>[];
     rows: RecordData[];
@@ -838,8 +846,10 @@ function GroupedGrid({
     selectionMode:
         false | "single" | "multiple" | ((row: RecordData) => boolean);
     dense: boolean;
+    defaultVisibility: ColumnVisibilityState;
 }) {
     const table = useTable({
+        initialState: { columnVisibility: defaultVisibility },
         features: dataGridFeatures,
         columns,
         data: rows,

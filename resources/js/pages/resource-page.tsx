@@ -14,7 +14,6 @@ export default function ResourcePage({
             <PageHeader
                 eyebrow="Verwaltung"
                 title={resource.label}
-                description={resource.description}
                 actions={
                     resource.presentationToggle !== false ? (
                         <PresentationToggle />
@@ -22,11 +21,7 @@ export default function ResourcePage({
                 }
             />
             {resource.name === "properties" && <OverviewMetrics compact />}
-            <SectionCard
-                grow
-                title={`${resource.label} verwalten`}
-                description="Finde Datensätze, passe die Ansicht an und bearbeite mehrere Einträge gemeinsam."
-            >
+            <SectionCard grow>
                 <ResourceCollection resource={resource} />
             </SectionCard>
         </CollectionPage>

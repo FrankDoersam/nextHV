@@ -31,6 +31,11 @@ export function Overlay({
     busy = false,
     size = "form",
     fill = false,
+    titleBadge,
+    icon,
+    actions,
+    footerStart,
+    sidebar,
 }: {
     open: boolean;
     onClose: () => void;
@@ -45,12 +50,17 @@ export function Overlay({
     busy?: boolean;
     size?: "form" | "compact" | "wide";
     fill?: boolean;
+    titleBadge?: ReactNode;
+    icon?: ReactNode;
+    actions?: ReactNode;
+    footerStart?: ReactNode;
+    sidebar?: ReactNode;
 }) {
     const close = () => {
         if (!busy) onClose();
     };
     const headClass =
-        "relative shrink-0 gap-1.5 border-b bg-card px-5 py-5 pr-14 sm:px-7 sm:pr-16";
+        "relative shrink-0 gap-0 border-b bg-card px-5 py-5 sm:px-6";
     const closeButton = (
         <Button
             type="button"
@@ -59,27 +69,86 @@ export function Overlay({
             disabled={busy}
             onClick={close}
             aria-label="Schließen"
-            className="absolute right-4 top-4"
+            className="shrink-0"
         >
             <X />
         </Button>
     );
     const body = (
-        <div className="@container/form min-h-0 flex-1 overflow-y-auto overscroll-contain bg-background px-5 py-5 sm:px-7">
-            {children}
+        <div className="@container/overlay flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="flex min-h-0 flex-1 flex-col @min-[40rem]/overlay:flex-row">
+                {sidebar && (
+                    <aside className="shrink-0 border-b bg-muted/40 px-5 py-4 @min-[40rem]/overlay:w-52 @min-[40rem]/overlay:overflow-y-auto @min-[40rem]/overlay:border-r @min-[40rem]/overlay:border-b-0 @min-[40rem]/overlay:py-7">
+                        {sidebar}
+                    </aside>
+                )}
+                <div
+                    data-slot="overlay-body"
+                    className="@container/form min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain bg-card px-5 py-6 sm:px-6"
+                >
+                    {children}
+                </div>
+            </div>
         </div>
     );
     const accessory = header && (
-        <div className="min-w-0 shrink-0 border-b bg-card px-5 py-4 sm:px-7">
+        <div className="min-w-0 shrink-0 border-b bg-card px-5 py-3 sm:px-6">
             {header}
         </div>
     );
-    const bottom = footer && (
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t bg-card px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-7">
-            {footer}
+    const bottom = (footer || footerStart) && (
+        <div
+            data-slot="overlay-footer"
+            className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t bg-muted/30 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6"
+        >
+            <div className="flex min-w-0 flex-wrap items-center gap-3">
+                {footerStart}
+            </div>
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                {footer}
+            </div>
+        </div>
+    );
+    const controls = (
+        <div className="flex shrink-0 items-center gap-1">
+            {actions}
+            {actions && <span className="mx-1 h-5 border-l" />}
+            {closeButton}
         </div>
     );
     const caption = description ?? "";
+    const Title = presentation === "dialog" ? DialogTitle : SheetTitle;
+    const Description =
+        presentation === "dialog" ? DialogDescription : SheetDescription;
+    const heading = (
+        <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-1 basis-48 items-start gap-3">
+                {icon && (
+                    <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl border bg-muted/50 [&_svg]:size-5">
+                        {icon}
+                    </span>
+                )}
+                <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Title className="text-base leading-6 font-semibold">
+                            {title}
+                        </Title>
+                        {titleBadge}
+                    </div>
+                    <Description
+                        className={
+                            caption
+                                ? "mt-1 max-w-xl break-words text-xs leading-5"
+                                : "sr-only"
+                        }
+                    >
+                        {caption || title}
+                    </Description>
+                </div>
+            </div>
+            <div className="ml-auto">{controls}</div>
+        </div>
+    );
     if (presentation === "dialog")
         return (
             <Dialog open={open} onOpenChange={(v) => !v && close()}>
@@ -96,21 +165,7 @@ export function Overlay({
                               : "sm:max-w-3xl",
                     )}
                 >
-                    <DialogHeader className={headClass}>
-                        <DialogTitle className="text-lg leading-6 font-semibold">
-                            {title}
-                        </DialogTitle>
-                        <DialogDescription
-                            className={
-                                caption
-                                    ? "max-w-xl text-sm leading-5"
-                                    : "sr-only"
-                            }
-                        >
-                            {caption || title}
-                        </DialogDescription>
-                        {closeButton}
-                    </DialogHeader>
+                    <DialogHeader className={headClass}>{heading}</DialogHeader>
                     {accessory}
                     {body}
                     {bottom}
@@ -124,24 +179,12 @@ export function Overlay({
                 showCloseButton={false}
                 data-stacked={stacked || undefined}
                 className={cn(
-                    "crud-sheet flex flex-col gap-0 overflow-hidden p-0 shadow-2xl data-[side=right]:w-full data-[side=right]:sm:max-w-[min(52rem,calc(100vw-3rem))]",
+                    "crud-sheet flex flex-col gap-0 overflow-hidden p-0 shadow-2xl data-[side=right]:w-full data-[side=right]:sm:inset-y-3 data-[side=right]:sm:right-3 data-[side=right]:sm:h-[calc(100dvh-1.5rem)] data-[side=right]:sm:rounded-2xl data-[side=right]:sm:max-w-[min(56rem,calc(100vw-3rem))]",
                     size === "wide" &&
                         "data-[side=right]:sm:max-w-[min(64rem,calc(100vw-3rem))]",
                 )}
             >
-                <SheetHeader className={headClass}>
-                    <SheetTitle className="text-lg font-semibold">
-                        {title}
-                    </SheetTitle>
-                    <SheetDescription
-                        className={
-                            caption ? "max-w-xl text-sm leading-5" : "sr-only"
-                        }
-                    >
-                        {caption || title}
-                    </SheetDescription>
-                    {closeButton}
-                </SheetHeader>
+                <SheetHeader className={headClass}>{heading}</SheetHeader>
                 {accessory}
                 {body}
                 {bottom}

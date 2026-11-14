@@ -634,4 +634,89 @@ describe("relation capabilities and server facets", () => {
             new URLSearchParams(router.state.location.search).has("filters"),
         ).toBe(false);
     });
+    it("commits related text filters explicitly, persists them and clears only filters", async () => {
+        const router = mount(
+            <ResourceCollection
+                resource={{
+                    ...resource,
+                    filters: [
+                        {
+                            field: "unit.name",
+                            label: "Einheit · Name",
+                            kind: "text",
+                        },
+                    ],
+                }}
+            />,
+            "/properties?q=Linden",
+        );
+        const user = userEvent.setup();
+        await screen.findByText("Lindenhöfe");
+        await user.click(
+            screen.getByRole("combobox", { name: "Filter hinzufügen" }),
+        );
+        await user.click(
+            await screen.findByRole("option", { name: "Einheit · Name" }),
+        );
+        await user.type(
+            screen.getByRole("textbox", { name: "Einheit · Name Wert" }),
+            "Wohnung 01",
+        );
+        expect(
+            vi.mocked(dataProvider.list).mock.calls.at(-1)![1]?.filters,
+        ).toEqual([]);
+        await user.keyboard("{Enter}");
+        await waitFor(() =>
+            expect(
+                vi.mocked(dataProvider.list).mock.calls.at(-1)![1]?.filters,
+            ).toEqual([
+                { field: "unit.name", operator: "=", value: "Wohnung 01" },
+            ]),
+        );
+        expect(
+            readGridState(new URLSearchParams(router.state.location.search), {
+                ...resource,
+                filters: [
+                    { field: "unit.name", label: "Einheit", kind: "text" },
+                ],
+            }).filters,
+        ).toEqual({ "unit.name": { operator: "=", values: ["Wohnung 01"] } });
+        await user.click(
+            screen.getByRole("button", { name: "Alle 1 Filter zurücksetzen" }),
+        );
+        await waitFor(() =>
+            expect(
+                new URLSearchParams(router.state.location.search).has(
+                    "filters",
+                ),
+            ).toBe(false),
+        );
+        expect(new URLSearchParams(router.state.location.search).get("q")).toBe(
+            "Linden",
+        );
+    });
+    it("applies default column visibility, honors URL choices and protects mandatory columns", () => {
+        const configured = {
+            ...resource,
+            columns: [
+                { field: "name", label: "Name", hideable: false },
+                { field: "city", label: "Ort", defaultVisible: false },
+            ],
+        };
+        expect(
+            readGridState(new URLSearchParams(), configured).columnVisibility,
+        ).toEqual({ city: false });
+        expect(
+            readGridState(
+                new URLSearchParams({
+                    columns: JSON.stringify({
+                        city: true,
+                        name: false,
+                        unknown: true,
+                    }),
+                }),
+                configured,
+            ).columnVisibility,
+        ).toEqual({ city: true });
+    });
 });

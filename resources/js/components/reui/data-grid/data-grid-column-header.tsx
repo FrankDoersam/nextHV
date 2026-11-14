@@ -389,6 +389,12 @@ function DataGridColumnHeaderInner<TData extends object, TValue>({
                                     {getColumnHeaderLabel(col)}
                                 </DropdownMenuCheckboxItem>
                             ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            onClick={() => table.resetColumnVisibility()}
+                        >
+                            Standardspalten wiederherstellen
+                        </DropdownMenuItem>
                     </DropdownMenuSubContent>
                 </DropdownMenuSub>,
             );

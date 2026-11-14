@@ -35,7 +35,7 @@ export function SectionCard({
     flush = false,
     grow = false,
 }: {
-    title: string;
+    title?: string;
     description?: string;
     actions?: ReactNode;
     children: ReactNode;
@@ -44,13 +44,15 @@ export function SectionCard({
 }) {
     return (
         <Card className={grow ? "min-h-0 flex-1 overflow-hidden" : undefined}>
-            <CardHeader className="shrink-0">
-                <CardTitle>{title}</CardTitle>
-                {description && (
-                    <CardDescription>{description}</CardDescription>
-                )}
-                {actions && <CardAction>{actions}</CardAction>}
-            </CardHeader>
+            {(title || description || actions) && (
+                <CardHeader className="shrink-0">
+                    <CardTitle>{title}</CardTitle>
+                    {description && (
+                        <CardDescription>{description}</CardDescription>
+                    )}
+                    {actions && <CardAction>{actions}</CardAction>}
+                </CardHeader>
+            )}
             <CardContent
                 className={cn(
                     flush && "p-0",

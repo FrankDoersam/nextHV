@@ -87,7 +87,7 @@ export const contracts: ResourceDefinition = {
         notes,
     ],
     columns: [
-        col("code", "Vertrag"),
+        { ...col("code", "Vertrag"), hideable: false },
         {
             field: "unit.name",
             label: "Einheit",
@@ -99,6 +99,10 @@ export const contracts: ResourceDefinition = {
         col("starts_on", "Beginn", "date"),
         col("ends_on", "Ende", "date"),
         col("status", "Status", "badge"),
+        {
+            ...col("signed_on", "Unterzeichnet am", "date"),
+            defaultVisible: false,
+        },
     ],
     includes: [{ relation: "unit" }],
     aggregates: [
@@ -113,6 +117,7 @@ export const contracts: ResourceDefinition = {
         { value: "type", label: "Vertragsart" },
     ],
     filters: [
+        { field: "unit.name", label: "Einheit · Name", kind: "text" },
         {
             field: "status",
             label: "Status",

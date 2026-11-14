@@ -1,6 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ListFilter, X } from "lucide-react";
+import { ListFilter, X, RotateCcw, Check } from "lucide-react";
 import { ChoicePicker } from "@/components/fields/choice-picker";
+import {
+    InputGroup,
+    InputGroupInput,
+    InputGroupAddon,
+} from "@/components/ui/input-group";
 import { Button } from "@/components/ui/button";
 import type {
     GridFilterDefinition,
@@ -52,7 +57,14 @@ export function ResourceFilters({
             clearable={false}
             value={null}
             onChange={(field) =>
-                setDraft({ field: String(field), operator: "in" })
+                setDraft({
+                    field: String(field),
+                    operator:
+                        definitions.find((d) => d.field === field)?.kind ===
+                        "text"
+                            ? "="
+                            : "in",
+                })
             }
             options={definitions.map((field) => ({
                 value: field.field,
@@ -88,7 +100,14 @@ export function ResourceFilters({
                             aria-label={`${field.label} Operator`}
                             clearable={false}
                             value={rule.operator}
-                            options={operators}
+                            options={
+                                field.kind === "text"
+                                    ? [
+                                          { value: "=", label: "ist gleich" },
+                                          { value: "!=", label: "ist nicht" },
+                                      ]
+                                    : operators
+                            }
                             onChange={(operator) => {
                                 if (rule.values.length)
                                     onChange({
@@ -108,24 +127,42 @@ export function ResourceFilters({
                             }}
                         />
                         <span className="h-4 border-l" aria-hidden />
-                        <ChoicePicker
-                            presentation="chip"
-                            aria-label={`${field.label} Werte`}
-                            placeholder="Wert wählen"
-                            clearable={false}
-                            multiple
-                            value={rule.values}
-                            options={field.options}
-                            onChange={(selected) => {
-                                const values = selected as string[];
-                                if (values.length) {
-                                    onChange({
-                                        ...value,
-                                        [field.field]: { ...rule, values },
-                                    });
-                                } else remove(field.field);
-                            }}
-                        />
+                        {field.kind === "text" ? (
+                            <TextFilterValue
+                                label={field.label}
+                                value={rule.values[0] ?? ""}
+                                onCommit={(text) => {
+                                    if (text.trim())
+                                        onChange({
+                                            ...value,
+                                            [field.field]: {
+                                                ...rule,
+                                                values: [text.trim()],
+                                            },
+                                        });
+                                    else remove(field.field);
+                                }}
+                            />
+                        ) : (
+                            <ChoicePicker
+                                presentation="chip"
+                                aria-label={`${field.label} Werte`}
+                                placeholder="Wert wählen"
+                                clearable={false}
+                                multiple
+                                value={rule.values}
+                                options={field.options}
+                                onChange={(selected) => {
+                                    const values = selected as string[];
+                                    if (values.length) {
+                                        onChange({
+                                            ...value,
+                                            [field.field]: { ...rule, values },
+                                        });
+                                    } else remove(field.field);
+                                }}
+                            />
+                        )}
                         <Button
                             type="button"
                             variant="ghost"
@@ -143,17 +180,63 @@ export function ResourceFilters({
                 <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
-                    className="px-2 text-muted-foreground"
+                    size="icon-sm"
+                    className="shrink-0 text-muted-foreground"
+                    aria-label={`Alle ${active.length} Filter zurücksetzen`}
+                    title={`Alle ${active.length} Filter zurücksetzen`}
                     onClick={() => {
                         onChange({});
                         setDraft(null);
                     }}
                 >
-                    Zurücksetzen
+                    <RotateCcw className="size-3.5" />
                 </Button>
             )}
         </div>
     );
     return renderToolbar ? renderToolbar(controls) : controls;
+}
+
+/** Explicit commit keeps typing local and prevents a request for each character. */
+function TextFilterValue({
+    label,
+    value,
+    onCommit,
+}: {
+    label: string;
+    value: string;
+    onCommit: (value: string) => void;
+}) {
+    const [draft, setDraft] = useState(value);
+    useEffect(() => setDraft(value), [value]);
+    return (
+        <InputGroup className="h-8 w-44 rounded-none border-0 shadow-none">
+            <InputGroupInput
+                aria-label={`${label} Wert`}
+                placeholder="Wert eingeben …"
+                value={draft}
+                maxLength={200}
+                onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        onCommit(draft);
+                    }
+                }}
+                className="h-full text-xs"
+            />
+            <InputGroupAddon align="inline-end">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label={`${label} Filter anwenden`}
+                    disabled={!draft.trim() && !value}
+                    onClick={() => onCommit(draft)}
+                >
+                    <Check />
+                </Button>
+            </InputGroupAddon>
+        </InputGroup>
+    );
 }

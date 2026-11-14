@@ -158,10 +158,10 @@ Tabellenspalten mit `kind: "date"` werden zentral als **dd.MM.yyyy** dargestellt
 
 ## 6. Sheet, Dialog, Wizard und Direktlinks
 
-- Formular-Sheets bis 48rem breit, auf kleineren Bildschirmen an den Viewport angepasst.
-- Fester Header, optionaler Werkzeug-/Wizard-Bereich, eigener scrollbarer Inhalt und fester Footer.
+- Formular-Sheets bis 56rem breit, auf Desktop eingerückt und abgerundet, mobil bildschirmbreit. `size: "wide"` erlaubt bis 64rem.
+- Fester Header mit Icon, Titel, optionalem Badge/Subtext sowie Werkzeugen rechts; eigener scrollbarer Inhalt und fester Footer. Wizard-Schritte stehen in einer seitlichen Navigation, auf schmalen Ansichten kompakt oberhalb des Inhalts.
 - Dialoggrößen `compact`, `form`, `wide`; kompakt für Bestätigungen, breit für PDF-Vorschauen.
-- Speichern rechts, Abbrechen daneben; Statushinweise links nur bei normalen Formularen. Im Wizard steht kein zusätzlicher Schritttext im Footer. Schließen, Escape und Abbrechen durchlaufen denselben Dirty-Check; laufendes Speichern blockiert Schließen.
+- Speichern/Weiter rechts, Abbrechen daneben, Zurück links. Im Wizard steht kein zusätzlicher Schritttext im Footer. Schließen, Escape und Abbrechen durchlaufen denselben Dirty-Check; laufendes Speichern blockiert Schließen.
 - Wizard validiert den aktuellen Schritt mit Laravel Precognition vor Weiter, bewahrt Werte beim Zurückgehen und springt bei Fehlern in den betreffenden Schritt.
 - Mehrere Serverfehler erscheinen gesammelt ohne identische Wiederholungen; konkrete Feldfehler bleiben am Feld sichtbar.
 - Jede Neu-/Bearbeiten-Ansicht wird standardmäßig als `panels`-Descriptor in der URL abgebildet. Ein neu geladener Link lädt den Datensatz erneut über die API.
@@ -659,8 +659,8 @@ Die Auswertung der echten CI-Aufnahmen zeigte vier gemeinsame Ursachen: falsche 
 | Dashboard           | Der Zeitraum verwendet denselben durchsuchbaren `ChoicePicker` im Menümodus wie Gruppierung und Filter. Bereits vor dem Öffnen erscheinen übersetzte Labels. Monats-/Quartalsauswahl passt Betrag, Titel und Balkenauswahl an. Die Demo-Kennzeichnung bleibt sichtbar.                                                                                                                                                                                                                                        |
 | Balkendiagramm      | Gemeinsame gerundete Skala, dezente Hilfslinien, Planlinie und Blau-Hervorhebung. Mini-Diagramme zeigen ersten und letzten Monat außerhalb der schmalen Balkenspalten, ohne abgeschnittene Monatslabels. Tastaturfokus liefert dieselben Werte wie Hover.                                                                                                                                                                                                                                                     |
 | Tabellen-Toolbar    | Gemeinsame, bei Platzmangel umbrechende Zeile: Suche → Filter hinzufügen / aktive Filter-Chips → kompakte Gruppierung; rechts Ressourcen-Actions → Export → Aktualisieren → Anlegen. Keine separaten Buttons „Spalten“ oder „Zeilendichte“. `columnChooser` steuert das Spalten-Untermenü in den Tabellenköpfen. `densityToggle` entfällt; die bestehende `dense`-URL-Einstellung bleibt lesbar. Auswahl und Zeilenaktionen haben feste, nicht skalierbare Spaltenbreiten; Badge-Spalten bekommen mehr Platz. |
-| Overlay / FieldGrid | Sheet, Dialog, Header, scrollender Inhalt und Footer teilen dieselben Abstände. Standard-Sheets bis 52 rem. Das Feldraster richtet sich per Container Query nach seiner eigenen Breite; breite Felder belegen `col-span-full` und erzeugen bei schmalen Formularen keine zusätzliche Spalte.                                                                                                                                                                                                                  |
-| WizardProgress      | Eine gemeinsame Komposition auf REUI-Stepper für Formulargruppen und gespeicherte Multi-Entity-Flows. Eine über die gesamte Breite gleichmäßig aufgeteilte Schrittnavigation mit Nummer bzw. Haken, weißem aktiven Segment, blauem Akzent und mobiler Kurzansicht. Nur bereits erreichbare Formulargruppen sind anklickbar. Persistierte Flows behalten ihre vorhandene Zurück-/Speicherlogik; der Fortschritt springt nicht über notwendige Mutationen hinweg.                                               |
+| Overlay / FieldGrid | Sheet, Dialog, Header, scrollender Inhalt und Footer teilen dieselben Abstände. Standard-Sheets bis 56 rem, auf Desktop eingerückt und abgerundet. Das Feldraster richtet sich per Container Query nach seiner eigenen Breite; breite Felder belegen `col-span-full` und erzeugen bei schmalen Formularen keine zusätzliche Spalte.                                                                                                                                                                           |
+| WizardProgress      | Eine gemeinsame Komposition auf REUI-Stepper für Formulargruppen und gespeicherte Multi-Entity-Flows. Eine seitliche Schrittnavigation mit Nummer bzw. Haken, Verbindungslinien, Status und blauem aktivem Schritt; unter 40 rem Containerbreite kompakt oberhalb des Formulars. Nur bereits erreichbare Formulargruppen sind anklickbar. Persistierte Flows behalten ihre vorhandene Zurück-/Speicherlogik; der Fortschritt springt nicht über notwendige Mutationen hinweg.                                 |
 
 API-Projektionen verwenden bei Includes und Aggregaten snake_case: `business_partner`, `related_contract`, `incoming_links_count`. Eloquent-Relationsnamen in Suchanfragen bleiben camelCase. Die Vertragsansichten verwenden die tatsächlichen Antwortschlüssel, damit Kontakte, Verknüpfungen und Zähler sichtbar werden.
 
@@ -670,7 +670,7 @@ Orientierung an den öffentlichen [REUI-Data-Grid-Kompositionen](https://reui.io
 
 Die öffentlichen [REUI-Filters](https://reui.io/docs/components/base/filters) und [Wizard-Kompositionen](https://reui.io/blocks/application/wizard/wizard-1) dienen als Interaktionsvorbild. Die Umsetzung besteht aus den bereits installierten REUI-/Base-UI-Primitives. Es wird kein lizenzpflichtiger Pro-Block eingebunden und kein neues Paket benötigt.
 
-`ResourceFilters` wird automatisch aus `resource.filters` aufgebaut. „Filter“ öffnet eine durchsuchbare Feldauswahl. Pro Feld entsteht ein Chip mit Feldname, **ist / ist nicht**, durchsuchbarer Mehrfachauswahl und Entfernen. „Zurücksetzen“ entfernt sämtliche Filter. Unvollständige Chips sind nur lokale Entwürfe und erzeugen keinen Serverfilter. Nach Auswahl des ersten Werts bleibt das Menü offen, auch während die URL asynchron aktualisiert wird. Ein Feld kann nur einmal vorkommen; mehrere Werte werden innerhalb dieses Feldes als Menge behandelt, verschiedene Felder per AND kombiniert.
+`ResourceFilters` wird automatisch aus `resource.filters` aufgebaut. „Filter“ öffnet eine durchsuchbare Feldauswahl. Pro Feld entsteht ein Chip mit Feldname, **ist / ist nicht**, durchsuchbarer Mehrfachauswahl und Entfernen. Ein kompakter Reset-Iconbutton erscheint nur bei vorhandenen Filtern und nennt die Filteranzahl in Tooltip/Accessible Name. Er entfernt sämtliche Filter und Entwürfe; Suchtext, Sortierung und Spalten bleiben erhalten. Einzelne Filter lassen sich weiterhin am jeweiligen Chip entfernen. Unvollständige Chips sind nur lokale Entwürfe und erzeugen keinen Serverfilter. Nach Auswahl des ersten Werts bleibt das Menü offen, auch während die URL asynchron aktualisiert wird. Ein Feld kann nur einmal vorkommen; mehrere Werte werden innerhalb dieses Feldes als Menge behandelt, verschiedene Felder per AND kombiniert.
 
 ```ts
 filters: [
@@ -687,13 +687,13 @@ filters: [
 ];
 ```
 
-Die Felder und Werte müssen zum tatsächlichen REST-Resource passen. Das Beispiel beschreibt die Konfiguration; es erweitert nicht automatisch das Backend-Enum. Der aktuelle Builder unterstützt diskrete Optionsfelder. Datums-, Betragsbereiche und verschachtelte OR-Gruppen bleiben bewusst separate Erweiterungen, statt einen unvollständigen generischen Query-Editor vorzutäuschen.
+Die Felder und Werte müssen zum tatsächlichen REST-Resource passen. Das Beispiel beschreibt die Konfiguration; es erweitert nicht automatisch das Backend-Enum. Der Builder unterstützt diskrete Optionsfelder sowie Textfilter (`kind: "text"`) mit „ist gleich“ / „ist nicht“, auch auf freigegebenen Relationspfaden wie `unit.name`. Text wird erst per Enter oder Anwenden-Icon übernommen; Tippen allein löst keine Anfrage aus. Datums-, Betragsbereiche und verschachtelte OR-Gruppen bleiben bewusst separate Erweiterungen, statt einen unvollständigen generischen Query-Editor vorzutäuschen.
 
 ```json
 { "status": { "operator": "not in", "values": ["draft", "ended"] } }
 ```
 
-So wird `filters` URL-kodiert gespeichert. `sanitizeGridFilters` akzeptiert nur registrierte Felder, bekannte Werte und die beiden unterstützten Operatoren; Duplikate und leere Regeln werden entfernt. Alte Links mit `{"status":"active"}` oder `{"status":["active"]}` bleiben gültig. `compileGridFilters` übersetzt in Lomkit-Filter mit `operator: "in" | "not in"` und `value: string[]`. Die Datenbank filtert den gesamten Bestand; der Browser filtert nicht nur die aktuell geladene Seite. Filteränderungen setzen die Seite auf 1 und heben Zeilenauswahl auf. `filterable={false}` deaktiviert die UI und URL-Filter, erhält aber die fest vorgegebenen Relationsfilter.
+So wird `filters` URL-kodiert gespeichert. `sanitizeGridFilters` akzeptiert nur registrierte Felder, bekannte Optionswerte beziehungsweise nicht leere Texte bis 200 Zeichen und die zum Feldtyp passenden Operatoren; Duplikate und leere Regeln werden entfernt. Alte Links mit `{"status":"active"}` oder `{"status":["active"]}` bleiben gültig. `compileGridFilters` übersetzt Optionsfilter in Lomkit-Filter mit `operator: "in" | "not in"` und `value: string[]`; Textfilter erhalten `operator: "=" | "!="` und einen skalaren String. Die Datenbank filtert den gesamten Bestand; der Browser filtert nicht nur die aktuell geladene Seite. Filteränderungen setzen die Seite auf 1 und heben Zeilenauswahl auf. `filterable={false}` deaktiviert die UI und URL-Filter, erhält aber die fest vorgegebenen Relationsfilter.
 
 `ChoicePicker` besitzt jetzt drei Präsentationen mit derselben Auswahl-, Such- und Tastaturlogik:
 
@@ -863,3 +863,63 @@ Neue Ressourcen werden weiterhin mit Model/Migration, einer REST-Resource samt v
 Ein späterer Metadaten-Adapter könnte REST-Enums, Labels und Eingabegrenzen in TypeScript generieren. Das ist **noch nicht implementiert**; derzeit werden UI-Feldtypen und Labels ausdrücklich definiert. Die Geschäftsvalidierung wird bereits heute nicht doppelt ausgeführt. Ebenso bleiben Organisationsgrenzen wie vereinbart verschoben.
 
 Orientierung: [REUI Stepper](https://reui.io/docs/components/base/stepper), [öffentliche REUI-Wizard-Komposition](https://reui.io/blocks/application/wizard/wizard-1), [Filament Actions](https://filamentphp.com/docs/5.x/actions/overview), [Refine Forms](https://refine.dev/core/docs/guides-concepts/forms/) und [Laravel Precognition](https://github.com/laravel/docs/blob/13.x/precognition.md). Bestehende Bibliotheken werden genutzt; keine neue Laufzeit-Abhängigkeit.
+
+## 30. Wizard, Sheet und zentrale Konfiguration von Filtern/Spalten
+
+Die neue Komposition orientiert sich an den öffentlich sichtbaren [REUI Wizard 2](https://reui.io/blocks/application/wizard/wizard-2) und [inset Sheet 8](https://reui.io/blocks/application/sheet/sheet-8). Sie verwendet die vorhandenen Primitives; kein kostenpflichtiger Blockcode und keine neue Abhängigkeit. Die echte serverseitige Schrittvalidierung, Dirty-Checks, Direktlinks und gespeicherten Flows bleiben erhalten.
+
+### Overlay-Slots und Standardverhalten
+
+`Overlay` bietet `icon`, `titleBadge`, `actions`, `sidebar`, `header`, `footerStart` und `footer`. Sheet und Dialog verwenden denselben Header: Icon und Titel links, Badge direkt am Titel, Subtext darunter, Direktlink/Aktualisieren/weitere Actions rechts neben Schließen. Die Sidebar enthält bei Wizards den REUI-Stepper; nur vorherige Formularschritte sind direkt anwählbar. Zurück liegt links im Footer, Abbrechen und Speichern/Weiter rechts. Kein zusätzlicher Schrittzähler im Footer. Der Inhalt scrollt zwischen Header und Footer.
+
+Auf Ressourcenebene sind die Defaults zentral konfigurierbar:
+
+```ts
+editor: {
+    titleBadge: true, // Default; false blendet es aus
+    // description: "Eigener Subtext", // false blendet den Subtext aus
+},
+```
+
+Ohne Override zeigt das Badge den übersetzten Status, ansonsten „Neu“/„Bearbeiten“. Der Subtext zeigt beim Bearbeiten den Datensatztitel, beim Anlegen einen kurzen Kontext. Fachliche Actions werden weiterhin über ihre Placements gesteuert. `Overlay.titleBadge` akzeptiert für eigene Dialoge beliebigen React-Inhalt. Die allgemeine Seite und Relationskarten zeigen keinen redundanten Erklärungstext mehr zwischen Überschrift und Tabelle.
+
+### Relationsfilter: PHP erlaubt, TypeScript präsentiert
+
+Für **Vertrag → Einheit → Name ist gleich** ist ein Beispiel bereits in `contracts-resource.ts` aktiviert. Es wird über die Relation auf dem Server gefiltert, ohne Einheiten zunächst in den Browser zu laden.
+
+```php
+// app/Rest/Resources/ContractResource.php: Relation registrieren
+BelongsTo::make('unit', UnitResource::class)->onlyOperations(),
+
+// app/Rest/Resources/UnitResource.php: Feld und erlaubte Operatoren
+Text::make('name')->searchable()
+    ->filterable(['=', '!=', 'in', 'not in', 'like', 'not like']),
+```
+
+```ts
+// resources/js/modules/contracts/contracts-resource.ts
+filters: [
+    { field: "status", label: "Status", options: opts(["draft", "active", "ended"]) },
+    { field: "unit.name", label: "Einheit · Name", kind: "text" },
+],
+```
+
+Der API-Filter lautet `{ field: "unit.name", operator: "=", value: "Wohnung 01" }`. Die REST-Bibliothek löst nur registrierte Relationen/Felder auf und prüft deren Filterfreigabe, Operatoren und bestehende Policies. Nicht freigegebene Pfade oder Operatoren führen zu HTTP 422. Die vorhandene Permission-/Organisationsarchitektur wird dadurch nicht um neue Mandantengrenzen erweitert. Eine UI-Definition ist keine Berechtigung.
+
+**Die PHP-Definition erzeugt aktuell kein UI-Schema.** PHP bleibt verantwortlich für API-Felder, Geschäftsregeln, Relationspfade und erlaubte Operationen; TypeScript beschreibt Labels, Filter-Steuerelemente und Rendering. So muss nicht jede React-Darstellung in PHP nachgebaut werden. Weitere registrierte Relationspfade lassen sich nach demselben Muster konfigurieren. Bereichsfilter und verschachtelte OR-Gruppen sind noch nicht Teil des UI-Builders; die unterstützten Textoperatoren sind bewusst explizit.
+
+### Spalten und Standardspalten
+
+Spalten stehen pro Ressource unter `resources/js/modules/<modul>/<modul>-resource.ts` in `columns`. Die Reihenfolge des Arrays bestimmt die anfängliche Reihenfolge; API-Ausgabefelder stehen in der zugehörigen PHP-REST-Resource. Eine ausgeblendete Spalte ist keine Datensicherheitsgrenze.
+
+```ts
+columns: [
+    { field: "code", label: "Vertrag", hideable: false },
+    { field: "status", label: "Status", kind: "badge" },
+    { field: "signed_on", label: "Unterzeichnet am", kind: "date", defaultVisible: false },
+],
+```
+
+`defaultVisible` ist standardmäßig `true`; `hideable` ebenfalls. `hideable: false` hält eine Spalte sichtbar und nimmt sie aus dem Ausblendmenü. Die Vertragsnummer und das zunächst ausgeblendete Unterzeichnungsdatum demonstrieren beide Optionen. Ein gültiger `columns`-URL-Zustand überschreibt die Defaults für ausblendbare Spalten; unbekannte Spalten und Versuche, Pflichtspalten auszublenden, werden verworfen. Im Spalten-Untermenü setzt **„Standardspalten wiederherstellen“** die Sichtbarkeit auf die Ressourcendefinition zurück, auch in gruppierten Tabellen. Reihenfolge, Breite und Fixierung werden dabei nicht zurückgesetzt.
+
+Die Tests prüfen Relationsfilter über die echte API, abgewiesene Pfade/Operatoren, URL-Sichtbarkeitsdefaults, Pflichtspalten sowie Textfilter-Übernahme und Filterreset ohne Verlust des Suchtexts. Die Screenshot-Suite ergänzt `10-relationsfilter.png` und `11-wizard-mobil.png`, prüft die überlappungsfreie Schrittnavigation auf Desktop/Mobil und zeigt Wizard und Edit-Sheet im neuen Aufbau.

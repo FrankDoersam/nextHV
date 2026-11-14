@@ -94,6 +94,38 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await page.keyboard.press("Escape");
 
     await page
+        .getByRole("combobox", { name: "Filter hinzufügen", exact: true })
+        .click();
+    await page
+        .getByRole("option", { name: "Einheit · Name", exact: true })
+        .click();
+    await page
+        .getByRole("textbox", { name: "Einheit · Name Wert", exact: true })
+        .fill("Wohnung 01");
+    await page
+        .getByRole("textbox", { name: "Einheit · Name Wert", exact: true })
+        .press("Enter");
+    await expect(
+        page.locator('[data-slot="resource-collection"]'),
+    ).not.toHaveAttribute("aria-busy", "true");
+    await expect(
+        page.getByRole("button", { name: "MV-001-01", exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole("button", { name: "MV-001-02", exact: true }),
+    ).toHaveCount(0);
+    await capture("10-relationsfilter");
+    await page
+        .getByRole("button", {
+            name: "Einheit · Name Filter entfernen",
+            exact: true,
+        })
+        .click();
+    await expect(
+        page.getByRole("button", { name: "MV-001-02", exact: true }),
+    ).toBeVisible();
+
+    await page
         .getByRole("checkbox", { name: "Alle Zeilen dieser Seite auswählen" })
         .click();
     const bulkBar = page.getByRole("region", { name: "Auswahlaktionen" });
@@ -145,7 +177,29 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByLabel("Nummer", { exact: false })).toBeVisible();
     await expect(page.getByText(/^Schritt \d+ von \d+$/)).toHaveCount(0);
+    const wizardSteps = page.locator('[data-slot="stepper-item"]');
+    const firstStep = await wizardSteps.nth(0).boundingBox();
+    const secondStep = await wizardSteps.nth(1).boundingBox();
+    expect(secondStep!.y).toBeGreaterThanOrEqual(
+        firstStep!.y + firstStep!.height - 1,
+    );
+    expect(Math.abs(secondStep!.x - firstStep!.x)).toBeLessThanOrEqual(1);
     await capture("04-vertrag-anlegen");
+    await page.setViewportSize({ width: 390, height: 844 });
+    const mobileFirstStep = await wizardSteps.nth(0).boundingBox();
+    const mobileSecondStep = await wizardSteps.nth(1).boundingBox();
+    expect(mobileSecondStep!.x).toBeGreaterThanOrEqual(
+        mobileFirstStep!.x + mobileFirstStep!.width - 1,
+    );
+    const wizardSheet = page.locator('[data-slot="sheet-content"]');
+    expect(
+        await wizardSheet.evaluate(
+            (element) => element.scrollWidth - element.clientWidth,
+        ),
+    ).toBeLessThanOrEqual(1);
+    await capture("11-wizard-mobil");
+    await page.setViewportSize({ width: 1440, height: 1000 });
+
     await page.getByRole("button", { name: "Abbrechen", exact: true }).click();
 
     await page.getByRole("link", { name: "Objekte", exact: true }).click();

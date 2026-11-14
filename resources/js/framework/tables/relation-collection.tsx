@@ -26,7 +26,7 @@ export function RelationCollection({
         ...(surface === "editor" ? relation.editorCollection : {}),
     };
     return (
-        <SectionCard title={relation.label} description={relation.description}>
+        <SectionCard title={relation.label}>
             <ResourceCollection
                 resource={getResource(relation.resource)}
                 compact

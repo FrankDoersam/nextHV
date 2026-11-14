@@ -84,6 +84,8 @@ export interface ColumnDefinition {
     label: string;
     kind?: "currency" | "date" | "number" | "badge";
     sortable?: boolean;
+    defaultVisible?: boolean;
+    hideable?: boolean;
     render?: (row: RecordData) => ReactNode;
 }
 export interface ResourceDefinition {
@@ -100,7 +102,8 @@ export interface ResourceDefinition {
     filters?: {
         field: string;
         label: string;
-        options: { value: string; label: string }[];
+        kind?: "choice" | "text";
+        options?: { value: string; label: string }[];
     }[];
     includes?: { relation: string; includes?: { relation: string }[] }[];
     aggregates?: { relation: string; type: string; field?: string }[];
@@ -108,6 +111,7 @@ export interface ResourceDefinition {
     navigationGroup?: string;
     deletionCheck?: boolean;
     actions: ResourceAction[];
+    editor?: { titleBadge?: boolean; description?: string | false };
     supportsClone?: boolean;
     presentationToggle?: boolean;
     bulkEditable?: string[];

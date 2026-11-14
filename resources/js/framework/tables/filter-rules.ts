@@ -1,6 +1,6 @@
 import type { Filter, ResourceDefinition } from "../types";
 
-export type GridFilterOperator = "in" | "not in";
+export type GridFilterOperator = "in" | "not in" | "=" | "!=";
 export interface GridFilter {
     operator: GridFilterOperator;
     values: string[];
@@ -23,8 +23,9 @@ export function sanitizeGridFilters(
                 entry && typeof entry === "object" && !Array.isArray(entry)
                     ? (entry as Record<string, unknown>)
                     : undefined;
-            if (rule && rule.operator !== "in" && rule.operator !== "not in")
-                return [];
+            const allowed =
+                definition.kind === "text" ? ["=", "!="] : ["in", "not in"];
+            if (rule && !allowed.includes(String(rule.operator))) return [];
             const candidates = rule
                 ? rule.values
                 : typeof entry === "string"
@@ -36,9 +37,12 @@ export function sanitizeGridFilters(
                           candidates.filter(
                               (value): value is string =>
                                   typeof value === "string" &&
-                                  definition.options.some(
-                                      (option) => option.value === value,
-                                  ),
+                                  (definition.kind === "text"
+                                      ? value.trim().length > 0 &&
+                                        value.length <= 200
+                                      : !!definition.options?.some(
+                                            (option) => option.value === value,
+                                        )),
                           ),
                       ),
                   ]
@@ -48,11 +52,14 @@ export function sanitizeGridFilters(
                       [
                           definition.field,
                           {
-                              operator:
-                                  rule?.operator === "not in"
-                                      ? ("not in" as const)
-                                      : ("in" as const),
-                              values,
+                              operator: (rule?.operator ??
+                                  (definition.kind === "text"
+                                      ? "="
+                                      : "in")) as GridFilterOperator,
+                              values:
+                                  definition.kind === "text"
+                                      ? values.slice(0, 1)
+                                      : values,
                           },
                       ],
                   ]
@@ -65,7 +72,15 @@ export function sanitizeGridFilters(
 export function compileGridFilters(filters: GridFilters): Filter[] {
     return Object.entries(filters).flatMap(([field, rule]) =>
         rule.values.length
-            ? [{ field, operator: rule.operator, value: rule.values }]
+            ? [
+                  {
+                      field,
+                      operator: rule.operator,
+                      value: ["=", "!="].includes(rule.operator)
+                          ? rule.values[0]
+                          : rule.values,
+                  },
+              ]
             : [],
     );
 }

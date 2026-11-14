@@ -24,6 +24,19 @@ function json(value: string | null, fallback: unknown) {
         return fallback;
     }
 }
+export function defaultColumnVisibility(
+    resource: ResourceDefinition,
+): ColumnVisibilityState {
+    return Object.fromEntries(
+        resource.columns
+            .filter(
+                (column) =>
+                    column.defaultVisible === false &&
+                    column.hideable !== false,
+            )
+            .map((column) => [column.field, false]),
+    );
+}
 export function readGridState(
     url: URLSearchParams,
     resource: ResourceDefinition,
@@ -60,13 +73,20 @@ export function readGridState(
                   .slice(0, 3)
             : [],
         filters: sanitizeGridFilters(rawFilters, resource.filters),
-        columnVisibility: Object.fromEntries(
-            rawColumns && typeof rawColumns === "object"
-                ? Object.entries(rawColumns).filter(
-                      ([key, v]) => columns.has(key) && typeof v === "boolean",
-                  )
-                : [],
-        ) as ColumnVisibilityState,
+        columnVisibility: {
+            ...defaultColumnVisibility(resource),
+            ...Object.fromEntries(
+                rawColumns && typeof rawColumns === "object"
+                    ? Object.entries(rawColumns).filter(
+                          ([key, v]) =>
+                              columns.has(key) &&
+                              typeof v === "boolean" &&
+                              resource.columns.find((c) => c.field === key)
+                                  ?.hideable !== false,
+                      )
+                    : [],
+            ),
+        } as ColumnVisibilityState,
         group: resource.groupBy?.some((g) => g.value === value("group"))
             ? value("group")!
             : "none",

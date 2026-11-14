@@ -1,7 +1,9 @@
 import { FormActionScope } from "./form-action-scope";
+import { Badge } from "@/components/ui/badge";
+import { label } from "@/lib/format";
 import { ErrorState, SectionCard } from "@/components/blocks/content";
 import { FieldGrid, Stack } from "@/components/blocks/layout";
-import { Overlay, OverlayFooterHint } from "@/components/blocks/overlay";
+import { Overlay } from "@/components/blocks/overlay";
 import { ResourceField } from "@/components/fields/field";
 import { WizardProgress } from "@/components/blocks/wizard-progress";
 import { Button } from "@/components/ui/button";
@@ -154,69 +156,51 @@ export function ResourceEditor({
             setValidating(false);
         }
     };
-    const navigation = request.wizard ? (
-        <WizardProgress
-            steps={groups}
-            active={step}
-            onSelect={setStep}
-            busy={busy}
-        />
-    ) : (
-        <div className="flex items-center justify-between gap-2">
-            <span className="text-xs text-muted-foreground">
-                {row
-                    ? String(row[resource.titleField] ?? `#${row.id}`)
-                    : request.context
-                      ? "Bezug aus dem übergeordneten Datensatz"
-                      : "Neuer Datensatz"}
-            </span>
-            <div className="flex gap-1">
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Direktlink kopieren"
-                    onClick={() =>
-                        navigator.clipboard
-                            .writeText(window.location.href)
-                            .then(
-                                () => toast.success("Direktlink kopiert"),
-                                () =>
-                                    toast.error(
-                                        "Direktlink konnte nicht kopiert werden.",
-                                    ),
-                            )
-                    }
-                >
-                    <Link />
-                </Button>
-                {row && (
-                    <>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            disabled={busy}
-                            aria-label="Formular aktualisieren"
-                            onClick={() => refresh().catch(setError)}
-                        >
-                            <RefreshCw />
-                        </Button>
-                        <RowActions
-                            resource={resource}
-                            row={version!}
-                            instance={{
-                                form,
-                                formResource: resource,
-                                refreshForm: refresh,
-                                reload,
-                            }}
-                            exclude={["edit", "delete"]}
-                            placement="form"
-                        />
-                    </>
-                )}
-            </div>
+    const headerActions = (
+        <div className="flex gap-1">
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Direktlink kopieren"
+                onClick={() =>
+                    navigator.clipboard.writeText(window.location.href).then(
+                        () => toast.success("Direktlink kopiert"),
+                        () =>
+                            toast.error(
+                                "Direktlink konnte nicht kopiert werden.",
+                            ),
+                    )
+                }
+            >
+                <Link />
+            </Button>
+            {row && (
+                <>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={busy}
+                        aria-label="Formular aktualisieren"
+                        onClick={() => refresh().catch(setError)}
+                    >
+                        <RefreshCw />
+                    </Button>
+                    <RowActions
+                        resource={resource}
+                        row={version!}
+                        instance={{
+                            form,
+                            formResource: resource,
+                            refreshForm: refresh,
+                            reload,
+                        }}
+                        exclude={["edit", "delete"]}
+                        placement="form"
+                    />
+                </>
+            )}
         </div>
     );
     const discardDialog = (
@@ -273,44 +257,31 @@ export function ResourceEditor({
                 </>
             }
             title={`${resource.singular} ${row ? "bearbeiten" : "anlegen"}`}
-            description={
-                request.reduced
-                    ? "Schnellerfassung · weitere Angaben später ergänzen"
-                    : resource.description
-            }
-            presentation={request.presentation}
-            header={
-                flow ? (
-                    <WizardProgress
-                        label={flow.label}
-                        steps={flow.steps.map((label, index) => ({
-                            id: String(index),
-                            label,
-                        }))}
-                        active={flow.index}
-                        description="Jeder Schritt wird gespeichert. Beim Abbrechen bleiben gespeicherte Datensätze erhalten."
-                    />
-                ) : (
-                    navigation
+            icon={<resource.icon />}
+            titleBadge={
+                resource.editor?.titleBadge !== false && (
+                    <Badge variant="secondary">
+                        {version?.status
+                            ? label(String(version.status))
+                            : row
+                              ? "Bearbeiten"
+                              : "Neu"}
+                    </Badge>
                 )
             }
-            footer={
+            actions={headerActions}
+            description={
+                resource.editor?.description === false
+                    ? undefined
+                    : (resource.editor?.description ??
+                      (row
+                          ? String(row[resource.titleField] ?? `#${row.id}`)
+                          : request.context
+                            ? "Mit dem aktuellen Datensatz verknüpft"
+                            : "Neuen Datensatz erfassen"))
+            }
+            footerStart={
                 <>
-                    {!flow && !request.wizard && (
-                        <OverlayFooterHint>
-                            {dirty
-                                ? "Ungespeicherte Änderungen"
-                                : "Änderungen mit Speichern übernehmen"}
-                        </OverlayFooterHint>
-                    )}
-                    <Button
-                        type="button"
-                        variant="outline"
-                        disabled={busy}
-                        onClick={close}
-                    >
-                        Abbrechen
-                    </Button>
                     {request.wizard && step > 0 && (
                         <Button
                             type="button"
@@ -337,6 +308,39 @@ export function ResourceEditor({
                             <ChevronLeft /> Zurück
                         </Button>
                     )}
+                </>
+            }
+            presentation={request.presentation}
+            sidebar={
+                flow ? (
+                    <WizardProgress
+                        label={flow.label}
+                        steps={flow.steps.map((label, index) => ({
+                            id: String(index),
+                            label,
+                        }))}
+                        active={flow.index}
+                        description="Jeder Schritt wird gespeichert. Beim Abbrechen bleiben gespeicherte Datensätze erhalten."
+                    />
+                ) : request.wizard ? (
+                    <WizardProgress
+                        steps={groups}
+                        active={step}
+                        onSelect={setStep}
+                        busy={busy}
+                    />
+                ) : undefined
+            }
+            footer={
+                <>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={busy}
+                        onClick={close}
+                    >
+                        Abbrechen
+                    </Button>
                     {request.wizard && step < groups.length - 1 ? (
                         <Button
                             key="wizard-next"
