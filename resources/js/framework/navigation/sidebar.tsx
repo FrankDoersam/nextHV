@@ -100,6 +100,7 @@ function NavCount({ item }: { item: NavigationItem }) {
         );
 }
 function NavBadge({ item }: { item: NavigationItem }) {
+    if (item.disabledReason) return null;
     if (item.count && item.resource?.views?.some((candidate) => candidate.id === item.view && candidate.count)) {
         return <NavCount item={item} />;
     }
