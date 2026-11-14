@@ -19,29 +19,6 @@ export const properties: ResourceDefinition = {
     description: "Stammdaten, Verwaltung und Einheiten eines Objekts.",
     icon: Building2,
     navigationGroup: "Stammdaten",
-    navigationItem: {
-        description: "Portfolio & Objektverwaltung",
-        tooltip: "Alle Objekte und gefilterte Bestandsansichten",
-        defaultOpen: true,
-        children: [
-            {
-                id: "active",
-                label: "Aktiv",
-                view: "active",
-                icon: CircleCheck,
-                count: true,
-                tooltip: "Bewirtschaftete Objekte",
-            },
-            {
-                id: "archived",
-                label: "Inaktiv",
-                view: "archived",
-                icon: Archive,
-                count: true,
-                tooltip: "Archivierte Objekte",
-            },
-        ],
-    },
     views: [
         { id: "all", label: "Alle", count: true },
         {
