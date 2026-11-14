@@ -43,7 +43,7 @@ export function ResourceFilters({
     definitions: GridFilterDefinition[];
     value: GridFilters;
     onChange: (filters: GridFilters) => void;
-    renderToolbar?: (trigger: ReactNode) => ReactNode;
+    renderToolbar?: (trigger: ReactNode, activeFilters: ReactNode) => ReactNode;
 }) {
     const [draft, setDraft] = useState<{
         field: string;
@@ -62,185 +62,211 @@ export function ResourceFilters({
         onChange(next);
         if (draft?.field === field) setDraft(null);
     };
-    const controls = (
-        <div
-            className="flex min-w-0 max-w-full flex-wrap items-center gap-2"
-            aria-label="Tabellenfilter"
-        >
-            <ChoicePicker
-                presentation="menu"
-                triggerIcon={<ListFilter />}
-                aria-label="Filter hinzufügen"
-                placeholder="Filter"
-                clearable={false}
-                value={null}
-                onChange={(field) =>
-                    setDraft({
-                        field: String(field),
-                        operator: filterOperators(
-                            definitions.find((d) => d.field === field)!,
-                        )[0],
-                    })
-                }
-                options={definitions.map((field) => ({
-                    value: field.field,
-                    label: field.label,
-                    disabled:
-                        !!value[field.field] || draft?.field === field.field,
-                }))}
-            />
-            {active.map((field) => {
-                const rule =
-                    draft?.field === field.field &&
-                    value[field.field]?.operator !== draft.operator
-                        ? { operator: draft.operator, values: [] }
-                        : (value[field.field] ?? {
-                              operator: filterOperators(field)[0],
-                              values: [],
-                          });
-                const commit = (values: string[]) =>
-                    onChange({ ...value, [field.field]: { ...rule, values } });
-                return (
-                    <div
-                        key={field.field}
-                        data-slot="filter-chip"
-                        role="group"
-                        aria-label={`Filter ${field.label}`}
-                        className="inline-flex min-w-0 max-w-full items-center rounded-lg border bg-card shadow-xs"
-                    >
-                        <span className="shrink-0 border-r px-2.5 text-xs font-medium">
-                            {field.label}
-                        </span>
-                        <ChoicePicker
-                            presentation="chip"
-                            aria-label={`${field.label} Operator`}
-                            clearable={false}
-                            value={rule.operator}
-                            options={filterOperators(field).map((operator) => ({
-                                value: operator,
-                                label:
-                                    field.kind === "date"
-                                        ? (dateCaptions[operator] ??
-                                          captions[operator])
-                                        : captions[operator],
-                            }))}
-                            onChange={(valueOperator) => {
-                                const operator =
-                                    valueOperator as GridFilterOperator;
-                                setDraft({ field: field.field, operator });
-                                const values =
-                                    operator === "between"
-                                        ? rule.values.length === 2
-                                            ? rule.values
-                                            : []
-                                        : rule.values;
-                                onChange({
-                                    ...value,
-                                    [field.field]: {
-                                        operator,
-                                        values: nullOperator(operator)
-                                            ? []
-                                            : values,
-                                    },
-                                });
-                            }}
-                        />
-                        {!nullOperator(rule.operator) && (
-                            <>
-                                <span className="h-4 border-l" aria-hidden />
-                                {field.kind === "relation" && field.resource ? (
-                                    <div className="flex min-w-0 max-w-52 flex-1 [&>div]:w-full">
-                                        <RelationPicker
+    const trigger = (
+        <ChoicePicker
+            presentation="menu"
+            triggerIcon={<ListFilter />}
+            aria-label="Filter hinzufügen"
+            placeholder="Filter"
+            clearable={false}
+            value={null}
+            onChange={(field) =>
+                setDraft({
+                    field: String(field),
+                    operator: filterOperators(
+                        definitions.find((d) => d.field === field)!,
+                    )[0],
+                })
+            }
+            options={definitions.map((field) => ({
+                value: field.field,
+                label: field.label,
+                disabled: !!value[field.field] || draft?.field === field.field,
+            }))}
+        />
+    );
+    const controls =
+        active.length > 0 ? (
+            <div
+                data-slot="collection-active-filters"
+                className="@container/filters flex min-w-0 max-w-full flex-wrap items-start gap-2 border-t pt-3"
+                aria-label="Aktive Tabellenfilter"
+            >
+                {active.map((field) => {
+                    const rule =
+                        draft?.field === field.field &&
+                        value[field.field]?.operator !== draft.operator
+                            ? { operator: draft.operator, values: [] }
+                            : (value[field.field] ?? {
+                                  operator: filterOperators(field)[0],
+                                  values: [],
+                              });
+                    const commit = (values: string[]) =>
+                        onChange({
+                            ...value,
+                            [field.field]: { ...rule, values },
+                        });
+                    return (
+                        <div
+                            key={field.field}
+                            data-slot="filter-chip"
+                            role="group"
+                            aria-label={`Filter ${field.label}`}
+                            className="grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)_auto] items-center rounded-lg border bg-card shadow-xs @min-[40rem]/filters:w-auto @min-[40rem]/filters:grid-cols-[auto_minmax(0,1fr)_auto]"
+                        >
+                            <div className="col-start-1 row-start-1 flex min-w-0 items-center">
+                                <span
+                                    title={field.label}
+                                    className="max-w-48 truncate border-r px-2.5 text-xs font-medium"
+                                >
+                                    {field.label}
+                                </span>
+                                <ChoicePicker
+                                    presentation="chip"
+                                    aria-label={`${field.label} Operator`}
+                                    clearable={false}
+                                    value={rule.operator}
+                                    options={filterOperators(field).map(
+                                        (operator) => ({
+                                            value: operator,
+                                            label:
+                                                field.kind === "date"
+                                                    ? (dateCaptions[operator] ??
+                                                      captions[operator])
+                                                    : captions[operator],
+                                        }),
+                                    )}
+                                    onChange={(valueOperator) => {
+                                        const operator =
+                                            valueOperator as GridFilterOperator;
+                                        setDraft({
+                                            field: field.field,
+                                            operator,
+                                        });
+                                        const values =
+                                            operator === "between"
+                                                ? rule.values.length === 2
+                                                    ? rule.values
+                                                    : []
+                                                : rule.values;
+                                        onChange({
+                                            ...value,
+                                            [field.field]: {
+                                                operator,
+                                                values: nullOperator(operator)
+                                                    ? []
+                                                    : values,
+                                            },
+                                        });
+                                    }}
+                                />
+                            </div>
+                            {!nullOperator(rule.operator) && (
+                                <div className="col-span-2 col-start-1 row-start-2 min-w-0 border-t @min-[40rem]/filters:col-span-1 @min-[40rem]/filters:col-start-2 @min-[40rem]/filters:row-start-1 @min-[40rem]/filters:border-l @min-[40rem]/filters:border-t-0">
+                                    {field.kind === "relation" &&
+                                    field.resource ? (
+                                        <div className="flex min-w-0 @min-[40rem]/filters:max-w-52 [&>div]:w-full">
+                                            <RelationPicker
+                                                presentation="chip"
+                                                aria-label={`${field.label} Werte`}
+                                                placeholder="Auswählen …"
+                                                resource={field.resource}
+                                                labelField={field.labelField}
+                                                filters={field.filters}
+                                                creatable={false}
+                                                multiple
+                                                clearable={false}
+                                                value={rule.values.map(Number)}
+                                                onChange={(selected) => {
+                                                    const values = (
+                                                        selected as (
+                                                            string | number
+                                                        )[]
+                                                    ).map(String);
+                                                    if (values.length)
+                                                        commit(values);
+                                                    else remove(field.field);
+                                                }}
+                                            />
+                                        </div>
+                                    ) : !field.kind ||
+                                      field.kind === "choice" ? (
+                                        <ChoicePicker
                                             presentation="chip"
                                             aria-label={`${field.label} Werte`}
-                                            placeholder="Auswählen …"
-                                            resource={field.resource}
-                                            labelField={field.labelField}
-                                            filters={field.filters}
-                                            creatable={false}
-                                            multiple
+                                            placeholder="Wert wählen"
                                             clearable={false}
-                                            value={rule.values.map(Number)}
+                                            multiple
+                                            value={rule.values}
+                                            options={field.options}
                                             onChange={(selected) => {
-                                                const values = (
-                                                    selected as (
-                                                        string | number
-                                                    )[]
-                                                ).map(String);
+                                                const values =
+                                                    selected as string[];
                                                 if (values.length)
                                                     commit(values);
                                                 else remove(field.field);
                                             }}
                                         />
-                                    </div>
-                                ) : !field.kind || field.kind === "choice" ? (
-                                    <ChoicePicker
-                                        presentation="chip"
-                                        aria-label={`${field.label} Werte`}
-                                        placeholder="Wert wählen"
-                                        clearable={false}
-                                        multiple
-                                        value={rule.values}
-                                        options={field.options}
-                                        onChange={(selected) => {
-                                            const values = selected as string[];
-                                            if (values.length) commit(values);
-                                            else remove(field.field);
-                                        }}
-                                    />
-                                ) : (
-                                    <ScalarFilterValue
-                                        key={rule.operator}
-                                        definition={field}
-                                        operator={rule.operator}
-                                        values={rule.values}
-                                        onCommit={commit}
-                                        onClear={() => remove(field.field)}
-                                    />
-                                )}
-                            </>
-                        )}
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            className="mx-1 shrink-0"
-                            aria-label={`${field.label} Filter entfernen`}
-                            onClick={() => remove(field.field)}
-                        >
-                            <X />
-                        </Button>
-                    </div>
-                );
-            })}
-            {active.length > 0 && (
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-lg"
-                    className="shrink-0 text-muted-foreground"
-                    aria-label={`Alle ${active.length} Filter zurücksetzen`}
-                    title={`Alle ${active.length} Filter zurücksetzen`}
-                    onClick={() => {
-                        const builderFields = new Set(
-                            definitions.map((field) => field.field),
-                        );
-                        onChange(
-                            Object.fromEntries(
-                                Object.entries(value).filter(
-                                    ([field]) => !builderFields.has(field),
+                                    ) : (
+                                        <ScalarFilterValue
+                                            key={rule.operator}
+                                            definition={field}
+                                            operator={rule.operator}
+                                            values={rule.values}
+                                            onCommit={commit}
+                                            onClear={() => remove(field.field)}
+                                        />
+                                    )}
+                                </div>
+                            )}
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-xs"
+                                className="col-start-2 row-start-1 mx-1 shrink-0 justify-self-end @min-[40rem]/filters:col-start-3"
+                                aria-label={`${field.label} Filter entfernen`}
+                                onClick={() => remove(field.field)}
+                            >
+                                <X />
+                            </Button>
+                        </div>
+                    );
+                })}
+                {active.length > 0 && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="shrink-0 text-muted-foreground"
+                        aria-label={`Alle ${active.length} Filter zurücksetzen`}
+                        title={`Alle ${active.length} Filter zurücksetzen`}
+                        onClick={() => {
+                            const builderFields = new Set(
+                                definitions.map((field) => field.field),
+                            );
+                            onChange(
+                                Object.fromEntries(
+                                    Object.entries(value).filter(
+                                        ([field]) => !builderFields.has(field),
+                                    ),
                                 ),
-                            ),
-                        );
-                        setDraft(null);
-                    }}
-                >
-                    <RotateCcw />
-                </Button>
-            )}
+                            );
+                            setDraft(null);
+                        }}
+                    >
+                        <RotateCcw /> Zurücksetzen
+                    </Button>
+                )}
+            </div>
+        ) : null;
+    return renderToolbar ? (
+        renderToolbar(trigger, controls)
+    ) : (
+        <div className="flex min-w-0 flex-col items-start gap-3">
+            {trigger}
+            {controls}
         </div>
     );
-    return renderToolbar ? renderToolbar(controls) : controls;
 }
 /** Editing a chip is local until Apply/Enter. Date ranges commit together. */
 function ScalarFilterValue({
@@ -287,7 +313,7 @@ function ScalarFilterValue({
     return (
         <div className="min-w-0 max-w-full">
             <div
-                className="flex min-w-0 flex-wrap items-center"
+                className="flex min-w-0 items-center"
                 onKeyDown={(event) => {
                     if (event.key === "Enter" && !event.defaultPrevented) {
                         event.preventDefault();
@@ -297,7 +323,10 @@ function ScalarFilterValue({
             >
                 {Array.from({ length: count }, (_, index) =>
                     definition.kind === "date" ? (
-                        <div key={index} className="w-36 p-0.5">
+                        <div
+                            key={index}
+                            className="min-w-0 flex-1 basis-36 p-0.5"
+                        >
                             <DatePicker
                                 aria-label={`${definition.label} ${count === 2 ? (index ? "Bis" : "Von") : "Wert"}`}
                                 value={draft[index]}
@@ -320,7 +349,7 @@ function ScalarFilterValue({
                     ) : (
                         <InputGroup
                             key={index}
-                            className="h-8 w-36 rounded-none border-0 shadow-none"
+                            className="h-8 min-w-0 flex-1 basis-36 rounded-none border-0 shadow-none"
                         >
                             <InputGroupInput
                                 aria-label={`${definition.label} ${count === 2 ? (index ? "Bis" : "Von") : "Wert"}`}
@@ -354,6 +383,7 @@ function ScalarFilterValue({
                     type="button"
                     variant="ghost"
                     size="icon-xs"
+                    className="shrink-0"
                     aria-label={`${definition.label} Filter anwenden`}
                     onClick={commit}
                 >

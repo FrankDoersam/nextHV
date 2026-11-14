@@ -754,62 +754,76 @@ export function ResourceCollection({
             }
         />
     );
-    const renderToolbar = (filterTrigger?: ReactNode) => (
-        <div className="flex flex-wrap items-center gap-2.5">
-            <DirectFilters
-                definitions={directDefinitions}
-                value={filters}
-                onChange={(next) => update("filters", next, true)}
-            />
-            {searchable && (
-                <div className="relative min-w-48 flex-1 sm:max-w-72">
-                    <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
-                    <Input
-                        value={search}
-                        onChange={(e) => {
-                            update("search", e.target.value, true);
-                        }}
-                        className="h-9 bg-card pl-9 pr-9"
-                        aria-label={`${resource.label} durchsuchen`}
-                        placeholder={`${resource.label} durchsuchen …`}
+    const renderToolbar = (
+        filterTrigger?: ReactNode,
+        activeFilters?: ReactNode,
+    ) => (
+        <div
+            data-slot="collection-toolbar"
+            className="flex min-w-0 flex-col gap-3"
+        >
+            <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+                <div
+                    data-slot="collection-controls"
+                    className="flex min-w-0 flex-1 basis-[32rem] flex-wrap items-center gap-2.5"
+                >
+                    <DirectFilters
+                        definitions={directDefinitions}
+                        value={filters}
+                        onChange={(next) => update("filters", next, true)}
                     />
-                    {search && (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            className="absolute right-1.5 top-1.5"
-                            aria-label="Suche leeren"
-                            onClick={() => update("search", "", true)}
-                        >
-                            <X />
-                        </Button>
+                    {searchable && (
+                        <div className="relative min-w-0 basis-full sm:min-w-48 sm:flex-1 sm:basis-48 sm:max-w-72">
+                            <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
+                            <Input
+                                value={search}
+                                onChange={(e) => {
+                                    update("search", e.target.value, true);
+                                }}
+                                className="h-9 bg-card pl-9 pr-9"
+                                aria-label={`${resource.label} durchsuchen`}
+                                placeholder={`${resource.label} durchsuchen …`}
+                            />
+                            {search && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    className="absolute right-1.5 top-1.5"
+                                    aria-label="Suche leeren"
+                                    onClick={() => update("search", "", true)}
+                                >
+                                    <X />
+                                </Button>
+                            )}
+                        </div>
+                    )}
+                    {filterTrigger}
+                    {groupable && resource.groupBy && (
+                        <ChoicePicker
+                            presentation="menu"
+                            triggerIcon={<ListFilter />}
+                            aria-label="Gruppierung"
+                            placeholder="Gruppieren"
+                            clearable={false}
+                            value={group === "none" ? null : group}
+                            onChange={(value) =>
+                                update("group", String(value ?? "none"), true)
+                            }
+                            options={[
+                                {
+                                    value: "none",
+                                    label: "Keine Gruppierung",
+                                },
+                                ...resource.groupBy,
+                            ]}
+                        />
                     )}
                 </div>
-            )}
-            {filterTrigger}
-            <div className="flex flex-1 flex-wrap items-center gap-2">
-                {groupable && resource.groupBy && (
-                    <ChoicePicker
-                        presentation="menu"
-                        triggerIcon={<ListFilter />}
-                        aria-label="Gruppierung"
-                        placeholder="Gruppieren"
-                        clearable={false}
-                        value={group === "none" ? null : group}
-                        onChange={(value) =>
-                            update("group", String(value ?? "none"), true)
-                        }
-                        options={[
-                            {
-                                value: "none",
-                                label: "Keine Gruppierung",
-                            },
-                            ...resource.groupBy,
-                        ]}
-                    />
-                )}
-                <div className="ml-auto flex items-center gap-2">
+                <div
+                    data-slot="collection-actions"
+                    className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2"
+                >
                     <ActionButtons
                         actions={tableActions}
                         target={{ resource, rows: [], instance }}
@@ -867,6 +881,7 @@ export function ResourceCollection({
                     )}
                 </div>
             </div>
+            {activeFilters}
         </div>
     );
     return (

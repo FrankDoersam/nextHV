@@ -166,6 +166,35 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         page.getByRole("button", { name: "MV-001-02", exact: true }),
     ).toHaveCount(0);
     await capture("10-relationsfilter");
+    // Active criteria must not push grouping above a detached row of actions.
+    await page.setViewportSize({ width: 1180, height: 900 });
+    const groupingBox = await page
+        .getByRole("combobox", { name: "Gruppierung", exact: true })
+        .boundingBox();
+    const createBox = await page
+        .getByRole("button", { name: "Vertrag anlegen", exact: true })
+        .boundingBox();
+    const activeFilterRow = page.locator(
+        '[data-slot="collection-active-filters"]',
+    );
+    const activeFilterBox = await activeFilterRow.boundingBox();
+    expect(Math.abs(groupingBox!.y - createBox!.y)).toBeLessThanOrEqual(1);
+    expect(activeFilterBox!.y).toBeGreaterThanOrEqual(
+        groupingBox!.y + groupingBox!.height,
+    );
+    await capture("35-filter-toolbar-umbruch");
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const chip of await activeFilterRow
+        .locator('[data-slot="filter-chip"]')
+        .all()) {
+        expect(
+            await chip.evaluate(
+                (element) => element.scrollWidth - element.clientWidth,
+            ),
+        ).toBeLessThanOrEqual(1);
+    }
+    await capture("36-filter-toolbar-mobil");
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page
         .getByRole("button", {
             name: "Einheit · Name Filter entfernen",

@@ -42,6 +42,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->app->setLocale(config('ui.locale', 'de'));
+        $this->app->setFallbackLocale('de');
+
         Validator::resolver(fn (Translator $translator, array $data, array $rules, array $messages, array $attributes): LocalizedValidator => new LocalizedValidator($translator, $data, $rules, $messages, $attributes));
         Property::observe(PropertyObserver::class);
         Unit::observe(UnitObserver::class);
