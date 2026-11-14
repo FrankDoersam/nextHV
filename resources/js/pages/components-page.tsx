@@ -1,3 +1,6 @@
+import { CreditCard, Banknote, Wallet, Building2 } from "lucide-react";
+import { FormSummary } from "@/framework/forms/form-summary";
+import { money } from "@/lib/format";
 import { DynamicList, ListRow, SectionCard } from "@/components/blocks/content";
 import { FieldGrid, PageHeader, Stack } from "@/components/blocks/layout";
 import { ResourceField } from "@/components/fields/field";
@@ -10,6 +13,53 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 const fields: FieldDefinition[] = [
+    {
+        name: "product",
+        label: "Auswahl mit Bild & Status",
+        kind: "select",
+        selectedDisplay: "rich",
+        default: "service",
+        options: [
+            {
+                value: "service",
+                label: "Verwaltungspaket",
+                description: "Hausverwaltung · monatliche Abrechnung",
+                image: "/images/building.svg",
+                badge: "Verfügbar",
+                badgeTone: "success",
+            },
+            {
+                value: "inspection",
+                label: "Objektbegehung",
+                description: "Termin nach Vereinbarung",
+                icon: <Building2 />,
+                badge: "Auf Anfrage",
+                badgeTone: "warning",
+            },
+        ],
+    },
+    {
+        name: "quantity",
+        label: "Anzahl",
+        kind: "number",
+        default: 1,
+        min: 1,
+        max: 50,
+        step: 1,
+    },
+    {
+        name: "payment_method",
+        label: "Zahlungsart",
+        kind: "choice-buttons",
+        default: "card",
+        options: [
+            { value: "card", label: "Karte", icon: <CreditCard /> },
+            { value: "cash", label: "Bar", icon: <Banknote /> },
+            { value: "wallet", label: "Wallet", icon: <Wallet /> },
+        ],
+        description:
+            "Interaktive Komponentenvorschau, keine Zahlungsabwicklung.",
+    },
     {
         name: "memo",
         label: "Notiz mit Zeichenanzeige",
@@ -111,12 +161,48 @@ export default function ComponentsPage() {
                             toast.success("Alle Felder sind gültig."),
                         )}
                     >
-                        <FieldGrid>
-                            {fields.map((f) => (
-                                <ResourceField key={f.name} definition={f} />
-                            ))}
-                        </FieldGrid>
-                        <Button type="submit">Validierung prüfen</Button>
+                        <Stack>
+                            <FieldGrid>
+                                {fields.map((f) => (
+                                    <ResourceField
+                                        key={f.name}
+                                        definition={f}
+                                    />
+                                ))}
+                            </FieldGrid>
+                            <FormSummary
+                                definition={{
+                                    title: "Zusammenfassung",
+                                    items: (values) => [
+                                        {
+                                            id: "unit",
+                                            label: "Einzelbetrag",
+                                            value: money(values.currency),
+                                        },
+                                        {
+                                            id: "quantity",
+                                            label: "Anzahl",
+                                            value: String(
+                                                values.quantity ?? "—",
+                                            ),
+                                        },
+                                        {
+                                            id: "total",
+                                            label: "Gesamt",
+                                            value: money(
+                                                Number(values.currency ?? 0) *
+                                                    Number(
+                                                        values.quantity ?? 0,
+                                                    ),
+                                            ),
+                                            emphasis: true,
+                                            separator: true,
+                                        },
+                                    ],
+                                }}
+                            />
+                            <Button type="submit">Validierung prüfen</Button>
+                        </Stack>
                     </form>
                 </FormProvider>
             </SectionCard>

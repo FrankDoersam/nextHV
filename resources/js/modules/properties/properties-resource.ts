@@ -12,7 +12,7 @@ import {
     select,
     text,
 } from "@/modules/fields";
-import { Building2 } from "lucide-react";
+import { Building2, CircleCheck, DoorOpen, Ruler } from "lucide-react";
 export const properties: ResourceDefinition = {
     name: "properties",
     label: "Objekte",
@@ -22,6 +22,25 @@ export const properties: ResourceDefinition = {
     navigationGroup: "Stammdaten",
     titleField: "name",
     supportsClone: true,
+    summary: {
+        metric: "summary",
+        items: [
+            {
+                key: "total",
+                label: "Objekte",
+                icon: Building2,
+                description: "Gesamte gefilterte Auswahl",
+            },
+            { key: "active", label: "Aktiv", icon: CircleCheck },
+            { key: "units", label: "Einheiten", icon: DoorOpen },
+            {
+                key: "area",
+                label: "Grundstücksfläche",
+                suffix: "m²",
+                icon: Ruler,
+            },
+        ],
+    },
     bulkEditable: [
         "manager_name",
         "manager_email",

@@ -1,3 +1,4 @@
+import { money } from "@/lib/format";
 import type { ResourceDefinition } from "@/framework/types";
 import {
     col,
@@ -19,6 +20,45 @@ export const conditions: ResourceDefinition = {
     navigationGroup: "Vermietung",
     titleField: "effective_from",
     navigation: false,
+    editor: {
+        summary: {
+            title: "Monatliche Kondition",
+            items: (values) => {
+                const net =
+                    Number(values.base_rent ?? 0) +
+                    Number(values.service_charge ?? 0) +
+                    Number(values.heating_cost ?? 0);
+                const vat = (net * Number(values.vat_rate ?? 0)) / 100;
+                return [
+                    {
+                        id: "base",
+                        label: "Grundmiete",
+                        value: money(values.base_rent),
+                    },
+                    {
+                        id: "charges",
+                        label: "Neben- & Heizkosten",
+                        value: money(
+                            Number(values.service_charge ?? 0) +
+                                Number(values.heating_cost ?? 0),
+                        ),
+                    },
+                    {
+                        id: "vat",
+                        label: `Umsatzsteuer (${values.vat_rate ?? 0} %)`,
+                        value: money(vat),
+                    },
+                    {
+                        id: "total",
+                        label: "Monatlich brutto",
+                        value: money(net + vat),
+                        emphasis: true,
+                        separator: true,
+                    },
+                ];
+            },
+        },
+    },
     fields: [
         {
             ...relation("contract_id", "Vertrag", "contracts"),

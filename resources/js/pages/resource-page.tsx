@@ -1,5 +1,4 @@
 import { PresentationToggle } from "@/framework/presentation-toggle";
-import { OverviewMetrics } from "@/modules/properties/property-overview";
 import { SectionCard } from "@/components/blocks/content";
 import { PageHeader, CollectionPage } from "@/components/blocks/layout";
 import { ResourceCollection } from "@/framework/tables/resource-collection";
@@ -20,7 +19,6 @@ export default function ResourcePage({
                     ) : undefined
                 }
             />
-            {resource.name === "properties" && <OverviewMetrics compact />}
             <SectionCard grow>
                 <ResourceCollection resource={resource} />
             </SectionCard>

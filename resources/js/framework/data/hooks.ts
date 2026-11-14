@@ -21,6 +21,28 @@ export function useResourceList(
             : undefined,
     });
 }
+export function useCollectionSummary(
+    resource: ResourceDefinition,
+    params: Pick<ListParams, "query" | "filters">,
+    enabled = true,
+) {
+    return useQuery({
+        queryKey: [
+            ...resourceKey(resource.name),
+            "metric",
+            resource.summary?.metric,
+            params,
+        ],
+        queryFn: ({ signal }) =>
+            dataProvider.summary(
+                resource,
+                resource.summary!.metric,
+                params,
+                signal,
+            ),
+        enabled: enabled && !!resource.summary,
+    });
+}
 export function useResource(resource: ResourceDefinition, id: number) {
     return useQuery({
         queryKey: [...resourceKey(resource.name), "detail", id],
@@ -72,6 +94,9 @@ export function useSaveRecord(resource: ResourceDefinition) {
                 queryKey: [...resourceKey(resource.name), "list"],
             });
         }
+        await client.invalidateQueries({
+            queryKey: [...resourceKey(resource.name), "metric"],
+        });
         // Recount only cached foreign-key parents (e.g. contract after adding a condition).
         const parents = new Map<
             string,
@@ -113,6 +138,12 @@ export function useSaveRecord(resource: ResourceDefinition) {
                         queryKey: resourceKey(parent.resource.name),
                     });
                     patchRecord(client, parent.resource.name, refreshed);
+                    await client.invalidateQueries({
+                        queryKey: [
+                            ...resourceKey(parent.resource.name),
+                            "metric",
+                        ],
+                    });
                 } catch {
                     // The mutation already succeeded. A failed optional parent refresh must not invite resubmission.
                     await client.invalidateQueries({

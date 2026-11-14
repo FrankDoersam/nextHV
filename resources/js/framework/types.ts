@@ -1,3 +1,5 @@
+import type { KeyValueItem } from "@/components/blocks/key-value-card";
+import type { ChoiceOption } from "@/components/fields/choice-picker";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
@@ -18,6 +20,7 @@ export type FieldKind =
     | "textarea"
     | "number"
     | "currency"
+    | "choice-buttons"
     | "select"
     | "multiselect"
     | "checkbox-group"
@@ -36,14 +39,12 @@ export interface FieldDefinition {
     required?: boolean;
     nullable?: boolean;
     default?: unknown;
-    options?: {
-        value: string;
-        label: string;
-        description?: string;
-        icon?: ReactNode;
-        badge?: string;
-        disabled?: boolean;
-    }[];
+    options?: ChoiceOption[];
+    selectedDisplay?: "title" | "rich";
+    optionMeta?: (
+        row: RecordData,
+    ) => Pick<ChoiceOption, "image" | "icon" | "badge" | "badgeTone">;
+    steppers?: boolean;
     resource?: string;
     labelField?: string;
     displayText?: (row: RecordData) => string;
@@ -88,6 +89,30 @@ export interface ColumnDefinition {
     hideable?: boolean;
     render?: (row: RecordData) => ReactNode;
 }
+export interface FormSummaryDefinition {
+    title?: string;
+    description?: string;
+    variant?: "summary" | "framed";
+    items: (values: Values, record?: RecordData) => KeyValueItem[];
+}
+export interface EditorTabDefinition {
+    id: string;
+    label: string;
+    groups?: string[];
+    relations?: boolean;
+    summary?: FormSummaryDefinition;
+}
+export interface CollectionSummaryDefinition {
+    metric: string;
+    items: {
+        key: string;
+        label: string;
+        kind?: "number" | "currency";
+        suffix?: string;
+        icon?: LucideIcon;
+        description?: string;
+    }[];
+}
 export interface ResourceDefinition {
     name: string;
     label: string;
@@ -111,15 +136,23 @@ export interface ResourceDefinition {
     navigationGroup?: string;
     deletionCheck?: boolean;
     actions: ResourceAction[];
-    editor?: { titleBadge?: boolean; description?: string | false };
+    editor?: {
+        titleBadge?: boolean;
+        description?: string | false;
+        tabs?: EditorTabDefinition[];
+        sectionStyle?: "plain" | "card";
+        summary?: FormSummaryDefinition;
+    };
     supportsClone?: boolean;
     presentationToggle?: boolean;
     bulkEditable?: string[];
     createFlow?: string;
+    summary?: CollectionSummaryDefinition;
     relations?: RelationDefinition[];
 }
 /** The same capabilities apply to full-page grids and embedded relations. */
 export interface CollectionOptions {
+    summary?: boolean;
     virtualized?: boolean | "auto";
     searchable?: boolean;
     filterable?: boolean;

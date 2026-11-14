@@ -62,7 +62,7 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     await dialog.getByLabel("Ort", { exact: false }).fill("Berlin");
     await dialog.getByRole("button", { name: "Weiter", exact: true }).click();
     await dialog.getByRole("button", { name: "Weiter", exact: true }).click();
-    await expect(dialog.getByLabel("Baujahr", { exact: false })).toBeVisible();
+    await expect(dialog.getByLabel("Baujahr", { exact: true })).toBeVisible();
     expect(propertyWrites).toBe(0);
     await dialog
         .getByRole("button", { name: "Speichern", exact: true })

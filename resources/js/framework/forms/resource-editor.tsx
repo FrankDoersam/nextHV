@@ -1,3 +1,4 @@
+import { FormSummary } from "./form-summary";
 import { FormActionScope } from "./form-action-scope";
 import { Badge } from "@/components/ui/badge";
 import { label } from "@/lib/format";
@@ -43,6 +44,20 @@ export function ResourceEditor({
     const groups = resource.groups?.filter((g) =>
         fields.some((f) => (f.group ?? "general") === g.id),
     ) ?? [{ id: "general", label: "Grunddaten" }];
+    const editorTabs =
+        !request.wizard && !flow
+            ? resource.editor?.tabs?.filter(
+                  (tab) =>
+                      (tab.relations && !!row) ||
+                      tab.groups?.some((id) =>
+                          groups.some((group) => group.id === id),
+                      ) ||
+                      !!tab.summary,
+              )
+            : undefined;
+    const [tab, setTab] = useState(editorTabs?.[0]?.id ?? "");
+    const activeTab =
+        editorTabs?.find((item) => item.id === tab) ?? editorTabs?.[0];
     const form = useForm<Values>({
         defaultValues: initialValues(resource.fields, row, request.defaults),
         shouldUnregister: false,
@@ -98,7 +113,13 @@ export function ResourceEditor({
                 (f) => (f.group ?? "general") === g.id && errors[f.name],
             ),
         );
-        if (index >= 0) setStep(index);
+        if (index >= 0) {
+            setStep(index);
+            const errorTab = editorTabs?.find((tab) =>
+                tab.groups?.includes(groups[index].id),
+            );
+            if (errorTab) setTab(errorTab.id);
+        }
     };
     const save = form.handleSubmit(async (values) => {
         setError(undefined);
@@ -271,6 +292,18 @@ export function ResourceEditor({
                 )
             }
             actions={headerActions}
+            tabs={
+                activeTab && editorTabs
+                    ? {
+                          value: activeTab.id,
+                          onValueChange: setTab,
+                          items: editorTabs.map((tab) => ({
+                              value: tab.id,
+                              label: tab.label,
+                          })),
+                      }
+                    : undefined
+            }
             description={
                 resource.editor?.description === false
                     ? undefined
@@ -321,7 +354,6 @@ export function ResourceEditor({
                             label,
                         }))}
                         active={flow.index}
-                        description="Schrittweise gespeichert. Abbrechen behält bereits gespeicherte Datensätze."
                     />
                 ) : request.wizard ? (
                     <WizardProgress
@@ -422,7 +454,12 @@ export function ResourceEditor({
                             {groups.map((g, i) => (
                                 <FormSection
                                     key={g.id}
-                                    hidden={request.wizard && step !== i}
+                                    hidden={
+                                        (request.wizard && step !== i) ||
+                                        (!!activeTab &&
+                                            !activeTab.groups?.includes(g.id))
+                                    }
+                                    variant={resource.editor?.sectionStyle}
                                     title={g.label}
                                     description={g.description}
                                 >
@@ -456,11 +493,22 @@ export function ResourceEditor({
                                     </FieldGrid>
                                 </FormSection>
                             ))}
+                            {(activeTab?.summary ??
+                                resource.editor?.summary) && (
+                                <FormSummary
+                                    definition={
+                                        (activeTab?.summary ??
+                                            resource.editor?.summary)!
+                                    }
+                                    record={version}
+                                />
+                            )}
                         </form>
                     </FormProvider>
                 </FormActionScope>
                 {row &&
                     !flow &&
+                    (!activeTab || activeTab.relations) &&
                     resource.relations?.map((relation) => (
                         <RelationCollection
                             key={relation.resource + relation.field}

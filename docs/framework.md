@@ -328,7 +328,7 @@ Text::make('full_address')
 
 ## 11. Objektseiten und wiederverwendbare Blöcke
 
-Die Objektliste besitzt dieselbe kompakte KPI-Bar wie die Detailseite: monatliche Grundmiete und Jahreshochrechnung, Belegung, Nebenkosten/Heizung sowie durchschnittliche Mietdauer laufender Verträge. Die Werte gelten für das Portfolio; Listenfilter ändern diese KPI-Bar derzeit nicht. Die Detailseite filtert die Berechnung auf das Objekt. Die Zahlen beruhen auf heute gültigen Vertragskonditionen, nicht auf verbuchten Zahlungseingängen.
+Objekt- und Vertragsliste besitzen eine gemeinsame, such- und filterabhängige KPI-Leiste oberhalb ihrer Toolbar (siehe Abschnitt 32). Die Objekt-Detailseite zeigt weiterhin monatliche Grundmiete und Jahreshochrechnung, Belegung, Nebenkosten/Heizung sowie durchschnittliche Mietdauer laufender Verträge und filtert die Berechnung auf das Objekt. Die Zahlen beruhen auf heute gültigen Vertragskonditionen, nicht auf verbuchten Zahlungseingängen.
 
 Die Detailseite priorisiert Einheiten, Belegung, nächste Prüfung und Verantwortliche. Grunddaten bleiben kompakt. Relations-Tabs werden erst beim Öffnen geladen; `countRelation` kann vorher nur die Anzahl anzeigen. Zähler, Prüfungsfachmodul, Projekte und Zahlungen sind beschriftete Erweiterungspunkte, keine fertigen Fachmodule.
 
@@ -553,17 +553,17 @@ Zusätzliche Primärquellen: [REUI Frame](https://reui.io/docs/components/base/f
 
 `ChoicePicker` kapselt die bereits installierte Base-UI-Combobox und die Base-Nova-InputGroup. `RelationPicker` in `entity-picker.tsx` ergänzt nur den Datenprovider und die Neuanlage. Keine zweite Select-/Suchbibliothek wurde installiert. `MultiSelect` bleibt ein Kompatibilitätswrapper.
 
-| Prop                              | Vertrag                                                                                                  |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `multiple`                        | Einzelwert oder Array; auch bei `kind: "select"` und `kind: "relation"`                                  |
-| `clearable`                       | Löschsymbol/-aktion sichtbar; die Formularpflicht bleibt separat durch `required` definiert              |
-| `creatable`                       | Nur Entity-Picker: reduzierte Neuanlage aktivieren/deaktivieren; prüft zusätzlich den Permission-Adapter |
-| `filters`                         | Lomkit-Filter im Backend-Suchrequest; AND mit Suchtext, keine rein lokale Filterung                      |
-| `displayText(row)` / `labelField` | Titel der Entity; Standard ist `resource.titleField`                                                     |
-| `secondaryText(row)`              | Zusatztext ausschließlich im geöffneten Dropdown; standardmäßig eine abweichende Nummer                  |
-| `maxSelected`                     | Auswahlgrenze; Entity-Picker höchstens 100, passend zum API-Seitenlimit                                  |
-| `options`                         | Statische Werte mit `value`, `label`, optional `description`, `icon`, `badge`, `disabled`                |
-| `placeholder`, `disabled`         | Platzhalter und vollständige Eingabesicherung                                                            |
+| Prop                              | Vertrag                                                                                                         |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `multiple`                        | Einzelwert oder Array; auch bei `kind: "select"` und `kind: "relation"`                                         |
+| `clearable`                       | Löschsymbol/-aktion sichtbar; die Formularpflicht bleibt separat durch `required` definiert                     |
+| `creatable`                       | Nur Entity-Picker: reduzierte Neuanlage aktivieren/deaktivieren; prüft zusätzlich den Permission-Adapter        |
+| `filters`                         | Lomkit-Filter im Backend-Suchrequest; AND mit Suchtext, keine rein lokale Filterung                             |
+| `displayText(row)` / `labelField` | Titel der Entity; Standard ist `resource.titleField`                                                            |
+| `secondaryText(row)`              | Zusatztext im Dropdown; mit `selectedDisplay: "rich"` auch geschlossen, standardmäßig eine abweichende Nummer   |
+| `maxSelected`                     | Auswahlgrenze; Entity-Picker höchstens 100, passend zum API-Seitenlimit                                         |
+| `options`                         | Statische Werte mit `value`, `label`, optional `description`, `icon`, `image`, `badge`, `badgeTone`, `disabled` |
+| `placeholder`, `disabled`         | Platzhalter und vollständige Eingabesicherung                                                                   |
 
 ```ts
 {
@@ -578,7 +578,7 @@ Zusätzliche Primärquellen: [REUI Frame](https://reui.io/docs/components/base/f
 
 Das Beispiel ist eine **Felddefinition für einen passenden Array-Endpunkt**. Die vorhandenen skalaren `contract_id`-/`unit_id`-Fremdschlüssel bleiben skalar. Mehrfachauswahl erzeugt keine m:n-Persistierung und darf dort nicht einfach eingeschaltet werden. Der Backend-Endpunkt muss Array und Relation explizit unterstützen/validieren. Suchfilter sind Auswahlhilfe, keine Autorisierung oder serverseitige Mutationsregel. Organisationsgrenzen und aktivierte Permission-Adapter bleiben wie vereinbart einem späteren Ausbau vorbehalten.
 
-Tab fokussiert das Suchfeld; Tippen startet direkt die Suche, ohne einen weiteren Klick. Nach dem Schließen stehen ausschließlich Titel im Eingabefeld. Mehrfachwerte werden als einzeilige, abgeschnittene Liste dargestellt; das Feld wächst nicht. Beim Wiederöffnen bleiben die tatsächlichen Werte selektiert. Der Löschbereich reserviert bei `clearable: true` dauerhaft seinen Platz. Mehrfach-Entities werden über **einen gebündelten ID-Filter** geladen, nicht über eine Anfrage je Auswahl. Suchergebnisse werden mit Debounce und AbortSignal geladen. Eine Neuanlage wird vor Übernahme gegen denselben Backend-Filter geprüft.
+Tab fokussiert das Suchfeld; Tippen startet direkt die Suche, ohne einen weiteren Klick. Nach dem Schließen stehen standardmäßig nur Titel im Eingabefeld; `selectedDisplay: "rich"` ergänzt bei Einzelauswahl die konfigurierten Bild-/Badge-/Beschreibungselemente. Mehrfachwerte werden als einzeilige, abgeschnittene Liste dargestellt; das Feld wächst nicht. Beim Wiederöffnen bleiben die tatsächlichen Werte selektiert. Der Löschbereich reserviert bei `clearable: true` dauerhaft seinen Platz. Mehrfach-Entities werden über **einen gebündelten ID-Filter** geladen, nicht über eine Anfrage je Auswahl. Suchergebnisse werden mit Debounce und AbortSignal geladen. Eine Neuanlage wird vor Übernahme gegen denselben Backend-Filter geprüft.
 
 ```ts
 { name: "starts_on", label: "Beginn", kind: "date", required: true,
@@ -621,7 +621,7 @@ Nach erfolgreichem Speichern werden laufende Requests derselben Ressource abgebr
 
 Bei Änderung eines sortierten/gefilterten Werts bleibt die Zeile bis zum nächsten bewussten Aktualisieren, Seitenwechsel oder erneuten Aufruf an ihrer bisherigen Position. Die betroffenen Listen sind als veraltet markiert und werden dann serverseitig neu geordnet/gefiltert. Das verhindert ein überraschendes Verschwinden während der Bearbeitung. Erstellen invalidiert die Listen **der betroffenen Ressource**, weil sich deren Anzahl und Seitengrenzen ändern. Die generische Bulk-Bearbeitung übernimmt ebenfalls projizierte Zeilen in den Cache. Löschen und Fachaktionen ohne Zeilenprojektion behalten ihre explizite Reload-Strategie.
 
-Bereits im Cache vorhandene Fremdschlüssel-Eltern werden gezielt als einzelne Datensätze nachgeladen und gepatcht, z. B. der Vertrag nach einer neuen Kondition. Ein fehlgeschlagener optionaler Elternrefresh macht eine bereits erfolgreiche Speicherung nicht rückgängig; der Cache wird dann als veraltet markiert. Im geöffneten Elternformular ergänzt `onSaved` den bestehenden Refresh mit `keepDirtyValues`. Kennzahlen werden als veraltet markiert und bei erneutem Aufruf oder explizitem Refresh neu geladen.
+Bereits im Cache vorhandene Fremdschlüssel-Eltern werden gezielt als einzelne Datensätze nachgeladen und gepatcht, z. B. der Vertrag nach einer neuen Kondition. Ein fehlgeschlagener optionaler Elternrefresh macht eine bereits erfolgreiche Speicherung nicht rückgängig; der Cache wird dann als veraltet markiert. Im geöffneten Elternformular ergänzt `onSaved` den bestehenden Refresh mit `keepDirtyValues`. Aktive Collection-Kennzahlen werden nach dem Speichern gezielt neu geladen; die übrigen Overview-Kennzahlen werden als veraltet markiert und beim erneuten Aufruf oder expliziten Refresh geladen.
 
 ## 22. GitHub Action für echte Screenshots
 
@@ -703,7 +703,7 @@ So wird `filters` URL-kodiert gespeichert. `sanitizeGridFilters` akzeptiert nur 
 | `menu`            | Gruppierung, Dashboard-Zeitraum und Filterauswahl; Button mit Suchfeld im Popup |
 | `chip`            | Kompakte Operator-/Wertauswahl innerhalb eines Filter-Chips                     |
 
-`triggerIcon` ist optional. Single/Multiple, Clearable, Disabled, Preselection, Optionsuche und Beschriftungen bleiben dieselben Props. Tab + Tippen öffnet auch Toolbar-Menüs direkt mit der Suche. Escape schließt ohne gespeicherte Auswahl zu löschen. Geschlossen erscheinen nur Titel; lange Mehrfachauswahlen werden innerhalb einer begrenzten Breite abgeschnitten und um die Anzahl ergänzt. Styles liegen ausschließlich in der gemeinsamen Komponente.
+`triggerIcon` ist optional. Single/Multiple, Clearable, Disabled, Preselection, Optionsuche und Beschriftungen bleiben dieselben Props. Tab + Tippen öffnet auch Toolbar-Menüs direkt mit der Suche. Escape schließt ohne gespeicherte Auswahl zu löschen. Geschlossen erscheinen standardmäßig nur Titel; Eingabefelder unterstützen optional `selectedDisplay: "rich"` für eine einzelne Auswahl; lange Mehrfachauswahlen werden innerhalb einer begrenzten Breite abgeschnitten und um die Anzahl ergänzt. Styles liegen ausschließlich in der gemeinsamen Komponente.
 
 Das Theme verwendet Blau für Primäraktionen, Fokus, aktive Navigation und Diagramm-Akzente; neutrale Grau-/Weißflächen für Sidebar und Inhalt. Erfolgszustände sind blau, Warnungen amber, Fehler rot. Die zentrale Token-Datei gilt auch für Login und Overlays. Der Objektbericht behält seine eigenständige Berichtsvorlage.
 
@@ -961,3 +961,107 @@ Die Tests prüfen Relationsfilter über die echte API, abgewiesene Pfade/Operato
 4. Vor größeren Erweiterungen lieber einen kleinen Integrationsvertrag mit realen API-Tests pro Modul ergänzen als ein zweites Metadaten-Framework bauen. Ein vollautomatischer Generator mit Schreibzugriff auf Fachregeln ist aktuell nicht nötig.
 
 Die aktualisierte Browser-Suite kontrolliert horizontal angeordnete Schritte **im Header**, unveränderte Headerposition beim Scrollen, volle Formularbreite, die mobile Variante sowie das Dialog-Pendant. `12-wizard-dialog.png` und `13-grid-keine-treffer.png` ergänzen die bisherigen Aufnahmen. Die UI-Tests decken den gruppierten Leerzustand, den Reset bei festem Relationsbezug und deterministische Sortier-Payloads ab.
+
+## 32. Zentrierter Wizard, Rich-Controls, Sheet-Tabs und Tabellen-KPIs
+
+Die neue Komposition orientiert sich an den gezeigten REUI-Beispielen und der öffentlichen Vorschau [Data Grid Advanced 1](https://reui.io/blocks/data-grid/advanced/data-grid-advanced-1). Es wurden keine zusätzlichen Bibliotheken installiert und keine lizenzpflichtigen Blockquellen eingebunden.
+
+### Wizard und Zahlen-Stepper
+
+`WizardProgress` zentriert die Schrittnavigation horizontal und vertikal im festen Header, begrenzt sie auf 42 rem und verteilt die Schritte gleichmäßig. Der zusätzliche Erläuterungssatz unter den Schritten entfällt. Verbindungslinien, abgeschlossene Schritte und die bestehende serverseitige Weiter-/Speicherlogik bleiben erhalten. Formulargruppen verwenden weiterhin nur bereits erreichte Schritte als Sprungziele; gespeicherte Flows durchlaufen ihre Mutationen.
+
+`kind: "number"` verwendet zentral den vorhandenen REUI `NumberField` als Minus/Plus-Control: `min`, `max`, `step`, `locale` und `steppers` (Standard `true`, mit `false` ausblendbar). Leeren ergibt `null`, ein Wert eine Zahl. Die Input-Grenzen unterstützen die Bedienung; Laravel entscheidet weiterhin über fachliche Gültigkeit. Feld-Actions bleiben über `prefixActions`/`suffixActions` möglich.
+
+### Rich-Select und Zahlungsart-Control
+
+```tsx
+{
+    name: "unit_id", label: "Einheit", kind: "relation", resource: "units",
+    selectedDisplay: "rich", clearable: true, creatable: false,
+    displayText: row => String(row.name),
+    secondaryText: row => `${row.code} · ${label(row.type)}`,
+    optionMeta: row => ({
+        icon: <Building2 />,
+        // image: row.thumbnail_url, // optional, nur tatsächlich vorhandene Bild-URLs
+        badge: label(row.status),
+        badgeTone: row.status === "ready" ? "success" : "warning",
+    }),
+}
+```
+
+Statische `options` verwenden dieselben Eigenschaften: `label` als erste Zeile, `description` als zweite, `image` oder `icon`, `badge` und `badgeTone` (`neutral`, `success`, `warning`, `danger`). Die gemeinsame `ChoiceContent`-Komponente verhindert unterschiedliche Darstellung in Dropdown, Auswahl und Buttons. `selectedDisplay: "rich"` gilt für ein einzelnes Eingabefeld. Standard bleibt `title`; Toolbar-Menüs und Mehrfachauswahl bleiben kompakt. Bei mehreren ausgewählten Werten werden weiterhin nur Titel begrenzt dargestellt. Tab + Tippen sucht sofort; beim Öffnen ist die bestehende Auswahl vorausgewählt. Ein fehlgeschlagenes Bild erhält einen Initialen-Fallback.
+
+```tsx
+{
+    name: "payment_method", label: "Zahlungsart", kind: "choice-buttons",
+    default: "card",
+    options: [
+        { value: "card", label: "Karte", icon: <CreditCard /> },
+        { value: "cash", label: "Bar", icon: <Banknote /> },
+        { value: "wallet", label: "Wallet", icon: <Wallet /> },
+    ],
+}
+```
+
+`ChoiceButtons` ist eine echte Base-UI-Radiogruppe: ein Wert, Pfeiltastensteuerung, gesperrte Optionen und gemeinsamer Feldfehler-/Beschreibungskontext. Die Zahlungsart unter `/components` ist eine interaktive Vorschau, keine Zahlungsabwicklung und kein zusätzliches Vertragsdatenbankfeld. Bei einem produktiven Modul gehören Feld, zulässige Werte und Persistierung in dessen PHP-Resource.
+
+### Tabs und Karten in beiden Editor-Oberflächen
+
+```ts
+editor: {
+    sectionStyle: "card", // "plain" bleibt der Standard
+    tabs: [
+        { id: "general", label: "Grunddaten", groups: ["general", "term"] },
+        { id: "finance", label: "Zahlung", groups: ["finance"], summary: paymentSummary },
+        { id: "details", label: "Hinweise", groups: ["details"] },
+        { id: "relations", label: "Beziehungen", relations: true },
+    ],
+}
+```
+
+Der Vertrag demonstriert diese Konfiguration. `Overlay.tabs` erzeugt die Unterstreichungsnavigation zwischen Titel und Scrollbereich für Sheet **und** Dialog. Die zentralen Tabs verwenden ihre eigenen Base-UI-Orientierungsattribute, damit die aktive Unterstreichung auch in portalierten Sheets sichtbar bleibt. `groups` referenziert die bestehenden Formgruppen; alle sichtbaren Gruppen sollten einem Tab zugeordnet sein. Die Tab-Auswahl ist lokaler UI-Zustand; der bestehende Deep Link öffnet den Datensatz, nicht einen bestimmten Editor-Tab. Wizard/Flow behalten ihre eigene Schrittnavigation und verwenden keine zusätzlichen Editor-Tabs. Reine Relationstabs erscheinen erst für gespeicherte Datensätze.
+
+Felder bleiben beim Wechsel registriert, Dirty-Werte erhalten. Ein Serverfehler öffnet den Tab der ersten fehlerhaften Gruppe. Der bestehende Speicherweg, Dirty-Check, Sperrbezüge und geschachtelte Sheets bleiben gleich. Relationslisten werden erst beim Öffnen eines Tabs mit `relations: true` gemountet; ihre eigenen Collection-Props gelten weiter.
+
+`DetailCard` verwendet REUI `Frame`, `FrameHeader` und `FramePanel`: dezenter Titelbereich, abgesetzter weißer Inhalt, optionale Actions rechts. `KeyValueCard` bietet `summary` (kompakte Formsumme) und `framed` (Detailkarte). Einträge besitzen `id`, `label`, `value`, optional `description`, `emphasis`, `separator`. Diese Karten sind rein darstellend; direkte Property-Mutationen bleiben Aufgabe der vorhandenen `EditableKeyValueList`.
+
+`editor.summary` oder `editor.tabs[].summary` erhält mit `items(values, record)` die aktuellen Formularwerte. `FormSummary` abonniert sie isoliert; Änderungen führen nicht zu API-Aufrufen oder einer Neudarstellung der ganzen Tabelle. Konditionen zeigen Grundmiete, Neben-/Heizkosten, Umsatzsteuer und monatlichen Gesamtbetrag. Speichern und endgültige Berechnung bleiben im Backend.
+
+### KPI-Leiste über der Table-Toolbar
+
+`ResourceDefinition.summary` beschreibt Darstellung und Metric-Key; `CollectionOptions.summary` aktiviert/deaktiviert sie (Standard: Hauptliste an, kompakte Relation aus).
+
+```ts
+summary: {
+    metric: "summary",
+    items: [
+        { key: "total", label: "Verträge", icon: FileText },
+        { key: "active", label: "Aktiv", icon: CircleCheck },
+        { key: "draft", label: "Entwürfe", icon: FilePenLine },
+        { key: "deposits", label: "Vereinbarte Kaution", kind: "currency", icon: Wallet },
+    ],
+}
+```
+
+PHP registriert die Berechnungen direkt an der REST-Resource, ohne neue Domain-Klassen für bloße Summen:
+
+```php
+public function metrics(): array
+{
+    return [new CollectionSummary([
+        'total' => fn (Builder $query): int => $query->count(),
+        'active' => fn (Builder $query): int => $query->where('status', 'active')->count(),
+        'deposits' => fn (Builder $query): float => (float) $query->sum('deposit'),
+    ])];
+}
+```
+
+`POST /api/v1/{resource}/metrics/summary` erhält dieselbe debouncte Suche, freigegebenen Filter und festen Relationsfilter wie die Liste. Paging, Sortierung, Includes und Zeilenauswahl werden nicht übertragen. Der native REST-Query bleibt Ausgangspunkt jeder Berechnung; jede Closure bekommt einen unabhängigen Clone ohne Sortierung. Kennzahlen gelten damit für die **gesamte gefilterte Auswahl**, nicht nur die aktuelle Seite. Bestehende Rechte-/Perimeter-Konfiguration wird unverändert übernommen; die zuvor vertagten Organisationsgrenzen werden dadurch nicht nachgerüstet.
+
+Objekte zeigen Anzahl, aktive Objekte, zugehörige Einheiten und Grundstücksfläche. Verträge zeigen Anzahl, aktive Verträge, Entwürfe und vereinbarte Kautionen. Vier Aggregationsabfragen je Metric, keine Abfrage je Tabellenzeile. `CollectionKpis` stellt initial Skeletons, Zahlen/Euro/Einheiten sowie Fehler mit Wiederholen dar. Es gibt keine erfundenen Trends oder Zahlungseingänge. Kleine Viewports verwenden zwei Spalten.
+
+Nach einer Standardmutation werden aktive Kennzahlen der Resource gezielt invalidiert; die Tabellenzeile wird wie bisher aus der Mutationsantwort gepatcht. Das Grid wird beim Edit nicht komplett nachgeladen. Bei gecachten Eltern werden deren Datensatz und aktive Kennzahlen aktualisiert. Neue Einträge und expliziter Tabellen-Refresh laden die entsprechende Liste weiter regulär.
+
+### Nachweise
+
+PHP-Tests prüfen Auth, Filterfreigaben, Textsuche kombiniert mit Relationsfiltern, Summen über mehr als eine Standard-Metric-Seite sowie leere Ergebnisse. React-Tests prüfen Rich-Select-Tastatursuche, Zahlungsart-Tastatursteuerung, Zahlen-Stepper, Tabwechsel mit erhaltenen Eingaben, Serverfehler-Tabwechsel, verzögerte Relationsabfragen und gezielte Kennzahlenaktualisierung ohne Listenreload. Der Screenshot-Job ergänzt `14-sheet-zahlung.png`, `15-komponenten-rich.png` und `16-komponenten-mobil.png`; die bestehende Aufnahme `05-vertrag-bearbeiten.png` zeigt Rich-Relation, Tabs und Karten.

@@ -5,6 +5,8 @@ namespace App\Rest\Resources;
 use App\Models\Contract;
 use App\Rest\Actions\ActivateContract;
 use App\Rest\Fields\Currency;
+use App\Rest\Metrics\CollectionSummary;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -65,6 +67,16 @@ class ContractResource extends Resource
             HasMany::make('incomingLinks', ContractLinkResource::class)->onlyOperations(),
             HasMany::make('terminations', TerminationNoticeResource::class)->onlyOperations(),
         ];
+    }
+
+    public function metrics(): array
+    {
+        return [new CollectionSummary([
+            'total' => fn (Builder $query): int => $query->count(),
+            'active' => fn (Builder $query): int => $query->where('status', 'active')->count(),
+            'draft' => fn (Builder $query): int => $query->where('status', 'draft')->count(),
+            'deposits' => fn (Builder $query): float => (float) $query->sum('deposit'),
+        ])];
     }
 
     public function actions(): array

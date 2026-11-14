@@ -1,3 +1,4 @@
+import { ChoiceContent } from "./choice-content";
 import { Combobox } from "@base-ui/react/combobox";
 import { Check, ChevronDown, ChevronsUpDown, Search, X } from "lucide-react";
 import {
@@ -21,6 +22,8 @@ export interface ChoiceOption {
     description?: string;
     icon?: ReactNode;
     badge?: string;
+    badgeTone?: "neutral" | "success" | "warning" | "danger";
+    image?: string;
     disabled?: boolean;
 }
 export interface ChoicePickerProps extends AriaAttributes {
@@ -43,6 +46,7 @@ export interface ChoicePickerProps extends AriaAttributes {
     maxSelected?: number;
     /** One selection model for form inputs, toolbar menus and filter chips. */
     presentation?: "input" | "menu" | "chip";
+    selectedDisplay?: "title" | "rich";
     triggerIcon?: ReactNode;
     size?: "default" | "sm";
 }
@@ -68,6 +72,7 @@ export function ChoicePicker({
     maxSelected,
     presentation = "input",
     triggerIcon,
+    selectedDisplay = "title",
     size = "default",
     ...aria
 }: ChoicePickerProps) {
@@ -84,6 +89,8 @@ export function ChoicePicker({
     const selected = ids
         .map((id) => options.find((option) => option.value === id))
         .filter((o): o is ChoiceOption => !!o);
+    const richSelection =
+        selectedDisplay === "rich" && !multiple ? selected[0] : undefined;
     const caption = selected.map((option) => option.label).join(", ");
     const updateQuery = (text: string) => {
         setQuery(text);
@@ -206,7 +213,27 @@ export function ChoicePicker({
                     )}
                 </div>
             ) : (
-                <InputGroup ref={anchor} className="h-9 min-w-0 bg-card">
+                <InputGroup
+                    ref={anchor}
+                    className={cn(
+                        "relative min-w-0 bg-card",
+                        selectedDisplay === "rich" && !multiple
+                            ? "h-14"
+                            : "h-9",
+                    )}
+                >
+                    {richSelection && !open && (
+                        <span
+                            data-slot="choice-selection"
+                            aria-hidden="true"
+                            className={cn(
+                                "pointer-events-none absolute inset-y-0 left-3 flex min-w-0 items-center gap-2.5",
+                                clearable ? "right-18" : "right-10",
+                            )}
+                        >
+                            <ChoiceContent option={richSelection} />
+                        </span>
+                    )}
                     <Combobox.Input
                         render={<InputGroupInput />}
                         id={id}
@@ -215,7 +242,12 @@ export function ChoicePicker({
                         onBlur={onBlur}
                         placeholder={placeholder}
                         title={caption || undefined}
-                        className="min-w-0 flex-1 truncate"
+                        className={cn(
+                            "min-w-0 flex-1 truncate",
+                            richSelection &&
+                                !open &&
+                                "text-transparent caret-transparent",
+                        )}
                         onFocus={(event) => event.currentTarget.select()}
                     />
                     <InputGroupAddon
@@ -313,26 +345,7 @@ export function ChoicePicker({
                                     }
                                     className="relative flex cursor-default items-center gap-2 rounded-md py-2 pr-8 pl-2 text-sm outline-none select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50"
                                 >
-                                    {option.icon && (
-                                        <span className="shrink-0 [&>svg]:size-4">
-                                            {option.icon}
-                                        </span>
-                                    )}
-                                    <span className="min-w-0 flex-1">
-                                        <span className="block truncate">
-                                            {option.label}
-                                        </span>
-                                        {option.description && (
-                                            <span className="block truncate text-xs text-muted-foreground">
-                                                {option.description}
-                                            </span>
-                                        )}
-                                    </span>
-                                    {option.badge && (
-                                        <span className="shrink-0 text-xs text-muted-foreground">
-                                            {option.badge}
-                                        </span>
-                                    )}
+                                    <ChoiceContent option={option} />
                                     <Combobox.ItemIndicator className="absolute right-2">
                                         <Check className="size-4" />
                                     </Combobox.ItemIndicator>

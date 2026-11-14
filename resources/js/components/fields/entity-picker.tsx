@@ -7,7 +7,11 @@ import { can } from "@/framework/permissions";
 import type { Filter, RecordData } from "@/framework/types";
 import { useWorkbench } from "@/framework/workbench";
 import { getResource } from "@/modules/registry";
-import { ChoicePicker, type ChoicePickerProps } from "./choice-picker";
+import {
+    ChoicePicker,
+    type ChoicePickerProps,
+    type ChoiceOption,
+} from "./choice-picker";
 
 export interface EntityPickerProps extends Omit<
     ChoicePickerProps,
@@ -25,6 +29,9 @@ export interface EntityPickerProps extends Omit<
     creatable?: boolean;
     displayText?: (row: RecordData) => string;
     secondaryText?: (row: RecordData) => string;
+    optionMeta?: (
+        row: RecordData,
+    ) => Pick<ChoiceOption, "image" | "icon" | "badge" | "badgeTone">;
 }
 export function RelationPicker({
     resource: name,
@@ -33,6 +40,7 @@ export function RelationPicker({
     creatable = true,
     displayText,
     secondaryText,
+    optionMeta,
     maxSelected = 100,
     ...props
 }: EntityPickerProps) {
@@ -73,7 +81,8 @@ export function RelationPicker({
     const displayRows = !open
         ? (selected.data?.data ?? [])
         : [...rows.values()];
-    const options = displayRows.map((row) => ({
+    const options: ChoiceOption[] = displayRows.map((row) => ({
+        ...optionMeta?.(row),
         value: row.id,
         label:
             displayText?.(row) ??
@@ -89,6 +98,7 @@ export function RelationPicker({
         if (!options.some((option) => option.value === id)) {
             const row = selected.data?.data.find((record) => record.id === id);
             options.push({
+                ...(row ? optionMeta?.(row) : {}),
                 value: id,
                 label: row
                     ? (displayText?.(row) ??
@@ -96,7 +106,10 @@ export function RelationPicker({
                     : selected.isFetching
                       ? "Wird geladen …"
                       : `#${id} · nicht verfügbar`,
-                description: undefined,
+                description: row
+                    ? (secondaryText?.(row) ??
+                      (row.code ? String(row.code) : undefined))
+                    : undefined,
             });
         }
     return (

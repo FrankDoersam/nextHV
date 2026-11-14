@@ -11,7 +11,15 @@ import {
     relation,
     select,
 } from "@/modules/fields";
-import { FileText } from "lucide-react";
+import { createElement } from "react";
+import { label, money } from "@/lib/format";
+import {
+    FileText,
+    Building2,
+    CircleCheck,
+    FilePenLine,
+    Wallet,
+} from "lucide-react";
 export const contracts: ResourceDefinition = {
     name: "contracts",
     label: "Verträge",
@@ -24,6 +32,63 @@ export const contracts: ResourceDefinition = {
     presentationToggle: false,
     bulkEditable: ["deposit_status", "notes"],
     createFlow: "new-contract",
+    summary: {
+        metric: "summary",
+        items: [
+            {
+                key: "total",
+                label: "Verträge",
+                icon: FileText,
+                description: "Gesamte gefilterte Auswahl",
+            },
+            { key: "active", label: "Aktiv", icon: CircleCheck },
+            { key: "draft", label: "Entwürfe", icon: FilePenLine },
+            {
+                key: "deposits",
+                label: "Vereinbarte Kaution",
+                kind: "currency",
+                icon: Wallet,
+            },
+        ],
+    },
+    editor: {
+        sectionStyle: "card",
+        tabs: [
+            { id: "general", label: "Grunddaten", groups: ["general", "term"] },
+            {
+                id: "finance",
+                label: "Zahlung",
+                groups: ["finance"],
+                summary: {
+                    title: "Zahlungsvereinbarung",
+                    variant: "framed",
+                    items: (values) => [
+                        {
+                            id: "day",
+                            label: "Monatliche Fälligkeit",
+                            value: values.payment_day
+                                ? `Am ${values.payment_day}. des Monats`
+                                : "—",
+                        },
+                        {
+                            id: "status",
+                            label: "Kautionsstatus",
+                            value: label(values.deposit_status),
+                        },
+                        {
+                            id: "deposit",
+                            label: "Vereinbarte Kaution",
+                            value: money(values.deposit),
+                            emphasis: true,
+                            separator: true,
+                        },
+                    ],
+                },
+            },
+            { id: "details", label: "Hinweise", groups: ["details"] },
+            { id: "relations", label: "Beziehungen", relations: true },
+        ],
+    },
     groups: [
         { id: "general", label: "Vertragsgrundlagen" },
         { id: "term", label: "Laufzeit & Kündigung" },
@@ -32,7 +97,16 @@ export const contracts: ResourceDefinition = {
     ],
     fields: [
         code,
-        relation("unit_id", "Einheit", "units"),
+        {
+            ...relation("unit_id", "Einheit", "units"),
+            selectedDisplay: "rich",
+            secondaryText: (row) => `${row.code} · ${label(row.type)}`,
+            optionMeta: (row) => ({
+                icon: createElement(Building2),
+                badge: label(row.status),
+                badgeTone: row.status === "ready" ? "success" : "warning",
+            }),
+        },
         select("type", "Vertragsart", [
             "residential_lease",
             "commercial_lease",

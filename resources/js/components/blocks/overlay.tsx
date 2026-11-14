@@ -1,3 +1,4 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Dialog,
     DialogContent,
@@ -36,6 +37,7 @@ export function Overlay({
     actions,
     footerStart,
     sidebar,
+    tabs,
 }: {
     open: boolean;
     onClose: () => void;
@@ -55,6 +57,11 @@ export function Overlay({
     actions?: ReactNode;
     footerStart?: ReactNode;
     sidebar?: ReactNode;
+    tabs?: {
+        value: string;
+        onValueChange: (value: string) => void;
+        items: { value: string; label: string; count?: number }[];
+    };
 }) {
     const close = () => {
         if (!busy) onClose();
@@ -86,7 +93,11 @@ export function Overlay({
                     data-slot="overlay-body"
                     className="@container/form min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain bg-card px-5 py-6 sm:px-6"
                 >
-                    {children}
+                    {tabs ? (
+                        <TabsContent value={tabs.value}>{children}</TabsContent>
+                    ) : (
+                        children
+                    )}
                 </div>
             </div>
         </div>
@@ -97,6 +108,28 @@ export function Overlay({
             className="min-w-0 shrink-0 border-b bg-muted/20 px-5 py-4 sm:px-6"
         >
             {header}
+        </div>
+    );
+    const tabBar = tabs && (
+        <div
+            data-slot="overlay-tabs"
+            className="min-w-0 shrink-0 overflow-x-auto border-b bg-card px-5 sm:px-6"
+        >
+            <TabsList
+                variant="line"
+                className="data-[orientation=horizontal]:h-12 min-w-max gap-3 [&_[data-slot=tabs-trigger][data-active]]:text-foreground [&_[data-slot=tabs-trigger]]:after:bg-foreground"
+            >
+                {tabs.items.map((tab) => (
+                    <TabsTrigger key={tab.value} value={tab.value}>
+                        {tab.label}
+                        {tab.count != null && (
+                            <span className="text-xs text-muted-foreground tabular-nums">
+                                {tab.count}
+                            </span>
+                        )}
+                    </TabsTrigger>
+                ))}
+            </TabsList>
         </div>
     );
     const bottom = (footer || footerStart) && (
@@ -152,8 +185,8 @@ export function Overlay({
             <div className="ml-auto">{controls}</div>
         </div>
     );
-    if (presentation === "dialog")
-        return (
+    const surface =
+        presentation === "dialog" ? (
             <Dialog open={open} onOpenChange={(v) => !v && close()}>
                 <DialogContent
                     showCloseButton={false}
@@ -170,30 +203,42 @@ export function Overlay({
                 >
                     <DialogHeader className={headClass}>{heading}</DialogHeader>
                     {accessory}
+                    {tabBar}
                     {body}
                     {bottom}
                     {nested}
                 </DialogContent>
             </Dialog>
+        ) : (
+            <Sheet open={open} onOpenChange={(v) => !v && close()}>
+                <SheetContent
+                    showCloseButton={false}
+                    data-stacked={stacked || undefined}
+                    className={cn(
+                        "crud-sheet flex flex-col gap-0 overflow-hidden p-0 shadow-2xl data-[side=right]:w-full data-[side=right]:sm:inset-y-3 data-[side=right]:sm:right-3 data-[side=right]:sm:h-[calc(100dvh-1.5rem)] data-[side=right]:sm:rounded-2xl data-[side=right]:sm:max-w-[min(56rem,calc(100vw-3rem))]",
+                        size === "wide" &&
+                            "data-[side=right]:sm:max-w-[min(64rem,calc(100vw-3rem))]",
+                    )}
+                >
+                    <SheetHeader className={headClass}>{heading}</SheetHeader>
+                    {accessory}
+                    {tabBar}
+                    {body}
+                    {bottom}
+                    {nested}
+                </SheetContent>
+            </Sheet>
         );
-    return (
-        <Sheet open={open} onOpenChange={(v) => !v && close()}>
-            <SheetContent
-                showCloseButton={false}
-                data-stacked={stacked || undefined}
-                className={cn(
-                    "crud-sheet flex flex-col gap-0 overflow-hidden p-0 shadow-2xl data-[side=right]:w-full data-[side=right]:sm:inset-y-3 data-[side=right]:sm:right-3 data-[side=right]:sm:h-[calc(100dvh-1.5rem)] data-[side=right]:sm:rounded-2xl data-[side=right]:sm:max-w-[min(56rem,calc(100vw-3rem))]",
-                    size === "wide" &&
-                        "data-[side=right]:sm:max-w-[min(64rem,calc(100vw-3rem))]",
-                )}
-            >
-                <SheetHeader className={headClass}>{heading}</SheetHeader>
-                {accessory}
-                {body}
-                {bottom}
-                {nested}
-            </SheetContent>
-        </Sheet>
+    return tabs ? (
+        <Tabs
+            value={tabs.value}
+            onValueChange={(value) => tabs.onValueChange(String(value))}
+            className="contents"
+        >
+            {surface}
+        </Tabs>
+    ) : (
+        surface
     );
 }
 export function OverlayFooterHint({ children }: { children: ReactNode }) {

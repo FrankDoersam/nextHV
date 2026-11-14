@@ -7,11 +7,14 @@ use App\Domain\Property\Enums\ManagementType;
 use App\Domain\Property\Enums\PropertyStatus;
 use App\Domain\Property\Enums\PropertyType;
 use App\Models\Property;
+use App\Models\Unit;
 use App\Rest\Actions\ArchiveProperties;
 use App\Rest\Actions\CloneProperty;
 use App\Rest\Actions\CreatePropertyReport;
 use App\Rest\Actions\InspectProperty;
+use App\Rest\Metrics\CollectionSummary;
 use App\Rest\Metrics\PropertyOverview;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Lomkit\Rest\Confirmation\Confirmation;
@@ -60,7 +63,12 @@ class PropertyResource extends Resource
 
     public function metrics(): array
     {
-        return [PropertyOverview::class];
+        return [PropertyOverview::class, new CollectionSummary([
+            'total' => fn (Builder $query): int => $query->count(),
+            'active' => fn (Builder $query): int => $query->where('status', 'active')->count(),
+            'units' => fn (Builder $query): int => Unit::whereIn('property_id', $query->select('properties.id'))->count(),
+            'area' => fn (Builder $query): float => (float) $query->sum('land_area'),
+        ])];
     }
 
     public function destroyConfirmation(Collection $models): ?Confirmation

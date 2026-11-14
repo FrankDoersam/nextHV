@@ -146,6 +146,23 @@ export const dataProvider = {
             })),
             ...(confirmation ? { confirmation } : {}),
         }),
+    summary: (
+        resource: ResourceDefinition,
+        metric: string,
+        params: Pick<ListParams, "query" | "filters">,
+        signal?: AbortSignal,
+    ) =>
+        request<{ data: Record<string, number | null> }>(
+            `/api/v1/${resource.name}/metrics/${metric}`,
+            {
+                search: {
+                    filters: params.filters ?? [],
+                    ...(params.query ? { text: { value: params.query } } : {}),
+                },
+            },
+            "POST",
+            signal,
+        ),
     overview: (id?: number) =>
         request<{ data: Record<string, number | null> }>(
             "/api/v1/properties/metrics/overview",

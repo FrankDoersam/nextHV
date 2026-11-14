@@ -83,6 +83,13 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         .getByRole("combobox", { name: "Filter hinzufügen" })
         .boundingBox();
     expect(Math.abs(searchBox!.y - filterBox!.y)).toBeLessThanOrEqual(4);
+    const kpis = page.getByRole("region", {
+        name: "Kennzahlen der gefilterten Auswahl",
+    });
+    await expect(kpis).not.toHaveAttribute("aria-busy", "true");
+    await expect(
+        kpis.getByText("Vereinbarte Kaution", { exact: true }),
+    ).toBeVisible();
     await capture("02-vertraege-tabelle");
     await page
         .getByRole("combobox", { name: "Status Werte", exact: true })
@@ -164,7 +171,28 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         "MV-001-01",
     );
     await expect(page).toHaveURL(/panels=/);
+    const editSheet = page.getByRole("dialog");
+    await expect(
+        editSheet.getByRole("tab", { name: "Grunddaten" }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(
+        editSheet.locator('[data-slot="choice-selection"]'),
+    ).toContainText("Wohnung 01");
+    const activeTabUnderline = await editSheet
+        .getByRole("tab", { name: "Grunddaten" })
+        .evaluate((element) => {
+            const style = getComputedStyle(element, "::after");
+            return { height: parseFloat(style.height), opacity: style.opacity };
+        });
+    expect(activeTabUnderline.height).toBeGreaterThanOrEqual(2);
+    expect(activeTabUnderline.opacity).toBe("1");
     await capture("05-vertrag-bearbeiten");
+    await editSheet.getByRole("tab", { name: "Zahlung", exact: true }).click();
+    await expect(
+        editSheet.getByText("Zahlungsvereinbarung", { exact: true }),
+    ).toBeVisible();
+    await capture("14-sheet-zahlung");
+    await editSheet.getByRole("tab", { name: "Grunddaten" }).click();
     await page.getByRole("button", { name: "Abbrechen", exact: true }).click();
 
     await page
@@ -188,7 +216,23 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(
         wizardHeader.locator('[data-slot="stepper-item"]'),
     ).toHaveCount(3);
+    const progress = wizardHeader.locator('[data-slot="stepper"]');
+    const progressBox = await progress.boundingBox();
     const headerBox = await wizardHeader.boundingBox();
+    expect(
+        Math.abs(
+            progressBox!.x +
+                progressBox!.width / 2 -
+                (headerBox!.x + headerBox!.width / 2),
+        ),
+    ).toBeLessThanOrEqual(2);
+    expect(
+        Math.abs(
+            progressBox!.y +
+                progressBox!.height / 2 -
+                (headerBox!.y + headerBox!.height / 2),
+        ),
+    ).toBeLessThanOrEqual(2);
     const body = page.locator('[data-slot="overlay-body"]');
     const bodyBox = await body.boundingBox();
     expect(bodyBox!.y).toBeGreaterThanOrEqual(
@@ -285,5 +329,27 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(
         page.getByRole("textbox", { name: "Verträge durchsuchen" }),
     ).toHaveValue("");
+    await page.goto("/components");
+    await expect(
+        page.getByRole("heading", {
+            name: "Ein Baukasten. Klare Konventionen.",
+        }),
+    ).toBeVisible();
+    await expect(page.locator('[data-slot="choice-selection"]')).toContainText(
+        "Verwaltungspaket",
+    );
+    await expect(
+        page.locator('[data-slot="choice-selection"] img'),
+    ).toHaveJSProperty("complete", true);
+    await page.getByRole("radio", { name: "Wallet", exact: true }).click();
+    await expect(
+        page.getByRole("radio", { name: "Wallet", exact: true }),
+    ).toBeChecked();
+    await page.getByRole("button", { name: "Anzahl erhöhen" }).click();
+    await expect(page.getByLabel("Anzahl", { exact: true })).toHaveValue("2");
+    await capture("15-komponenten-rich");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await checkPageWidth();
+    await capture("16-komponenten-mobil");
     expect(errors).toEqual([]);
 });

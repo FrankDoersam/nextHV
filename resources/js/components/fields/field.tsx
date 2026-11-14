@@ -20,6 +20,8 @@ import {
 import { BaseField } from "./base-field";
 import { CurrencyField } from "./currency-field";
 import { ChoicePicker } from "./choice-picker";
+import { NumberStepper } from "./number-stepper";
+import { ChoiceButtons } from "./choice-buttons";
 import { CheckboxList } from "./checkbox-list";
 export function ResourceField({
     definition: d,
@@ -71,6 +73,8 @@ export function ResourceField({
                                 creatable={d.creatable}
                                 displayText={d.displayText}
                                 secondaryText={d.secondaryText}
+                                optionMeta={d.optionMeta}
+                                selectedDisplay={d.selectedDisplay}
                                 maxSelected={d.maxSelected}
                                 placeholder={d.placeholder}
                                 inputRef={field.ref}
@@ -113,12 +117,24 @@ export function ResourceField({
                             />
                         );
                         break;
+                    case "choice-buttons":
+                        input = (
+                            <ChoiceButtons
+                                {...picker}
+                                aria-label={d.label}
+                                options={d.options}
+                                inputRef={field.ref}
+                                onBlur={field.onBlur}
+                            />
+                        );
+                        break;
                     case "select":
                     case "multiselect":
                         input = (
                             <ChoicePicker
                                 {...picker}
                                 options={d.options}
+                                selectedDisplay={d.selectedDisplay}
                                 multiple={
                                     d.kind === "multiselect" || d.multiple
                                 }
@@ -190,32 +206,17 @@ export function ResourceField({
                         break;
                     case "number":
                         input = (
-                            <TextInput
-                                {...common}
+                            <NumberStepper
+                                {...picker}
                                 ref={field.ref}
-                                type="number"
-                                inputMode="decimal"
-                                step={d.step ?? "any"}
+                                onBlur={field.onBlur}
                                 min={d.min}
                                 max={d.max}
-                                value={
-                                    field.value == null
-                                        ? ""
-                                        : String(field.value)
-                                }
-                                onChange={(e) =>
-                                    field.onChange(
-                                        e.target.value === ""
-                                            ? null
-                                            : Number(e.target.value),
-                                    )
-                                }
-                                onBlur={field.onBlur}
-                                className={
-                                    hasActions
-                                        ? "h-full bg-transparent"
-                                        : "h-9 bg-card"
-                                }
+                                step={d.step}
+                                locale={d.locale}
+                                steppers={d.steppers}
+                                embedded={hasActions}
+                                label={d.label}
                             />
                         );
                         break;

@@ -7,6 +7,8 @@ import {
     ChoicePicker,
     type ChoicePickerProps,
 } from "@/components/fields/choice-picker";
+import { ChoiceButtons } from "@/components/fields/choice-buttons";
+import { NumberStepper } from "@/components/fields/number-stepper";
 import { CheckboxList } from "@/components/fields/checkbox-list";
 import { DatePicker } from "@/components/fields/pickers";
 import { schemaFor } from "./forms/schema";
@@ -258,4 +260,121 @@ it("accepts a new property without an optional energy class", async () => {
     });
     expect(values.energy_class).toBeNull();
     expect(schemaFor(properties.fields).safeParse(values).success).toBe(true);
+});
+
+describe("rich business controls", () => {
+    it("renders rich captions when closed but keeps keyboard search, clearing and preselection", async () => {
+        const user = userEvent.setup();
+        render(
+            <SelectDemo
+                selectedDisplay="rich"
+                options={[
+                    {
+                        value: "active",
+                        label: "Aktiv",
+                        description: "Vermietung",
+                        image: "/images/building.svg",
+                        badge: "Bereit",
+                        badgeTone: "success",
+                    },
+                    {
+                        value: "draft",
+                        label: "Entwurf",
+                        description: "In Vorbereitung",
+                    },
+                ]}
+            />,
+        );
+        expect(screen.getByText("Vermietung")).toBeVisible();
+        expect(screen.getByText("Bereit")).toBeVisible();
+        await user.tab();
+        await user.keyboard("Entw");
+        expect(
+            await screen.findByRole("option", { name: /Entwurf/ }),
+        ).toBeVisible();
+        expect(
+            screen.queryByRole("option", { name: /Aktiv/ }),
+        ).not.toBeInTheDocument();
+        await user.keyboard("{ArrowDown}{Enter}");
+        await waitFor(() =>
+            expect(
+                screen.getByRole("combobox", { name: "Status" }),
+            ).toHaveValue("Entwurf"),
+        );
+        expect(
+            document.querySelector('[data-slot="choice-selection"]'),
+        ).toHaveTextContent("In Vorbereitung");
+        await user.click(
+            screen.getByRole("button", { name: "Auswahl öffnen" }),
+        );
+        expect(
+            await screen.findByRole("option", { name: /Entwurf/ }),
+        ).toHaveAttribute("aria-selected", "true");
+        await user.keyboard("{Escape}");
+        await user.click(
+            screen.getByRole("button", { name: "Auswahl entfernen" }),
+        );
+        expect(screen.queryByText("In Vorbereitung")).not.toBeInTheDocument();
+    });
+    it("changes a payment-style radio group with keyboard and skips disabled choices", async () => {
+        const user = userEvent.setup();
+        function Demo() {
+            const [value, setValue] = useState<unknown>("card");
+            return (
+                <ChoiceButtons
+                    aria-label="Zahlungsart"
+                    value={value}
+                    onChange={setValue}
+                    options={[
+                        { value: "card", label: "Karte" },
+                        { value: "cash", label: "Bar", disabled: true },
+                        { value: "wallet", label: "Wallet" },
+                    ]}
+                />
+            );
+        }
+        render(<Demo />);
+        expect(screen.getByRole("radio", { name: "Karte" })).toBeChecked();
+        await user.tab();
+        await user.keyboard("{ArrowRight}");
+        await waitFor(() =>
+            expect(screen.getByRole("radio", { name: "Wallet" })).toBeChecked(),
+        );
+        expect(screen.getByRole("radio", { name: "Bar" })).toHaveAttribute(
+            "aria-disabled",
+            "true",
+        );
+    });
+    it("increments, respects limits and allows clearing the numeric value", async () => {
+        const user = userEvent.setup();
+        function Demo() {
+            const [value, setValue] = useState<number | null>(1);
+            return (
+                <>
+                    <NumberStepper
+                        aria-label="Anzahl"
+                        label="Anzahl"
+                        value={value}
+                        onChange={setValue}
+                        min={1}
+                        max={2}
+                    />
+                    <output>{JSON.stringify(value)}</output>
+                </>
+            );
+        }
+        render(<Demo />);
+        expect(
+            screen.getByRole("button", { name: "Anzahl verringern" }),
+        ).toBeDisabled();
+        await user.click(
+            screen.getByRole("button", { name: "Anzahl erhöhen" }),
+        );
+        expect(screen.getByRole("status")).toHaveTextContent("2");
+        expect(
+            screen.getByRole("button", { name: "Anzahl erhöhen" }),
+        ).toBeDisabled();
+        await user.clear(screen.getByLabelText("Anzahl", { exact: true }));
+        expect(screen.getByRole("status")).toHaveTextContent("null");
+    });
 });

@@ -1,3 +1,5 @@
+import { CollectionKpis } from "@/components/blocks/collection-kpis";
+import { useCollectionSummary } from "../data/hooks";
 import { BulkActionBar } from "@/components/blocks/bulk-action-bar";
 import { ActionMenu, ActionButtons } from "../action-controls";
 import type { ActionPlacement } from "../actions";
@@ -135,6 +137,7 @@ export function ResourceCollection({
     refreshable = true,
     presentationToggle = false,
     toolbar = true,
+    summary = !compact,
     actions,
     detailLink = true,
     create: creatable = true,
@@ -211,6 +214,11 @@ export function ResourceCollection({
         },
         true,
         true,
+    );
+    const rollups = useCollectionSummary(
+        resource,
+        { query, filters: apiFilters },
+        summary,
     );
     const rows = result.data?.data ?? EMPTY_ROWS;
     useEffect(() => {
@@ -598,7 +606,11 @@ export function ResourceCollection({
                         <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => result.refetch()}
+                            onClick={() => {
+                                void result.refetch();
+                                if (summary && resource.summary)
+                                    void rollups.refetch();
+                            }}
                             aria-label="Aktualisieren"
                         >
                             <RefreshCw
@@ -675,6 +687,16 @@ export function ResourceCollection({
                             Daten werden aktualisiert
                         </span>
                     </div>
+                )}
+                {summary && resource.summary && (
+                    <CollectionKpis
+                        definition={resource.summary}
+                        values={rollups.data?.data}
+                        loading={rollups.isPending}
+                        refreshing={rollups.isFetching}
+                        error={rollups.error}
+                        retry={() => rollups.refetch()}
+                    />
                 )}
                 {toolbar && (
                     <div className="space-y-3">

@@ -12,7 +12,12 @@ import {
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Building2 } from "lucide-react";
-import { useResource, useResourceList, useSaveRecord } from "./data/hooks";
+import {
+    useCollectionSummary,
+    useResource,
+    useResourceList,
+    useSaveRecord,
+} from "./data/hooks";
 import { dataProvider } from "./data/provider";
 import { ApiError } from "./data/http";
 import {
@@ -113,6 +118,57 @@ describe("standard record mutations", () => {
         expect(
             client.getQueryData(["resources", "properties", "detail", 1]),
         ).toEqual(saved);
+        expect(list).not.toHaveBeenCalled();
+    });
+    it("refreshes filtered rollups on save while the table keeps its other rows and makes no list request", async () => {
+        const { client, key, wrapper } = setup();
+        const definition = {
+            ...resource,
+            summary: {
+                metric: "summary",
+                items: [{ key: "total", label: "Objekte" }],
+            },
+        };
+        const metricKey = [
+            "resources",
+            "properties",
+            "metric",
+            "summary",
+            { query: "Linden", filters: [] },
+        ];
+        client.setQueryData(metricKey, { data: { total: 2 } });
+        const summary = vi
+            .spyOn(dataProvider, "summary")
+            .mockResolvedValue({ data: { total: 1 } });
+        const list = vi.spyOn(dataProvider, "list");
+        vi.spyOn(dataProvider, "save").mockResolvedValue({
+            ...old,
+            name: "Neu",
+        });
+        const { result } = renderHook(
+            () => {
+                useResourceList(definition);
+                useCollectionSummary(definition, {
+                    query: "Linden",
+                    filters: [],
+                });
+                return useSaveRecord(definition);
+            },
+            { wrapper },
+        );
+        await act(async () => {
+            await result.current({ name: "Neu" }, old);
+        });
+        expect(summary).toHaveBeenCalledExactlyOnceWith(
+            definition,
+            "summary",
+            { query: "Linden", filters: [] },
+            expect.any(AbortSignal),
+        );
+        expect(client.getQueryData(metricKey)).toEqual({ data: { total: 1 } });
+        expect(client.getQueryData<{ data: unknown[] }>(key)!.data[1]).toEqual(
+            other,
+        );
         expect(list).not.toHaveBeenCalled();
     });
     it("refreshes only a cached foreign-key parent after a child save", async () => {

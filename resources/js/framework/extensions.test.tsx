@@ -16,6 +16,7 @@ import { csvCell } from "./tables/export";
 import { safeDocumentUrl, actionResult } from "./action-results";
 import { schemaFor } from "./forms/schema";
 import { ErrorState } from "@/components/blocks/content";
+import { ResourceEditor } from "./forms/resource-editor";
 import { ResourceField } from "@/components/fields/field";
 import { ApiError } from "./data/http";
 import { DeleteAction, EditAction, ResourceAction } from "./actions";
@@ -767,6 +768,126 @@ describe("relation capabilities and server facets", () => {
                 filters: [{ field: "property_id", value: 7 }],
             }),
             expect.anything(),
+        );
+    });
+});
+
+describe("shared editor tabs and summary cards", () => {
+    it("preserves inputs across tabs and moves to a server-rejected field without losing other values", async () => {
+        const user = userEvent.setup();
+        const save = vi.spyOn(dataProvider, "save").mockRejectedValue(
+            new ApiError(422, "Serverprüfung", {
+                "mutate.0.attributes.name": ["Name bereits vergeben"],
+            }),
+        );
+        const definition: ResourceDefinition = {
+            ...resource,
+            fields: [
+                { name: "name", label: "Name", group: "general" },
+                { name: "notes", label: "Notiz", group: "details" },
+            ],
+            groups: [
+                { id: "general", label: "Stammdaten" },
+                { id: "details", label: "Hinweise" },
+            ],
+            editor: {
+                sectionStyle: "card",
+                tabs: [
+                    { id: "general", label: "Grunddaten", groups: ["general"] },
+                    {
+                        id: "details",
+                        label: "Hinweise",
+                        groups: ["details"],
+                        summary: {
+                            title: "Vorschau",
+                            items: (values) => [
+                                {
+                                    id: "notes",
+                                    label: "Eingabe",
+                                    value: String(values.notes),
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        };
+        mount(
+            <ResourceEditor
+                request={{ resource: definition, mode: "edit", row: rows[0] }}
+                onClose={vi.fn()}
+            />,
+        );
+        await user.clear(screen.getByLabelText("Name", { exact: true }));
+        await user.type(
+            screen.getByLabelText("Name", { exact: true }),
+            "Neue Bezeichnung",
+        );
+        await user.click(screen.getByRole("tab", { name: "Hinweise" }));
+        await user.type(
+            screen.getByLabelText("Notiz", { exact: true }),
+            "Bleibt erhalten",
+        );
+        expect(
+            screen.getByRole("region", { name: "Vorschau" }),
+        ).toHaveTextContent("Bleibt erhalten");
+        await user.click(screen.getByRole("button", { name: "Speichern" }));
+        await waitFor(() =>
+            expect(
+                screen.getByRole("tab", { name: "Grunddaten" }),
+            ).toHaveAttribute("aria-selected", "true"),
+        );
+        expect(screen.getByLabelText("Name", { exact: true })).toHaveValue(
+            "Neue Bezeichnung",
+        );
+        expect(save).toHaveBeenCalledWith(
+            definition,
+            { name: "Neue Bezeichnung", notes: "Bleibt erhalten" },
+            rows[0],
+        );
+        await user.click(screen.getByRole("tab", { name: "Hinweise" }));
+        expect(screen.getByLabelText("Notiz", { exact: true })).toHaveValue(
+            "Bleibt erhalten",
+        );
+    });
+    it("defers relation list queries until its editor tab is opened", async () => {
+        const user = userEvent.setup();
+        const definition: ResourceDefinition = {
+            ...resource,
+            name: "contracts",
+            singular: "Vertrag",
+            editor: {
+                tabs: [
+                    { id: "general", label: "Grunddaten", groups: ["general"] },
+                    { id: "relations", label: "Beziehungen", relations: true },
+                ],
+            },
+            relations: [
+                {
+                    resource: "rent-conditions",
+                    label: "Konditionen",
+                    field: "contract_id",
+                },
+            ],
+        };
+        mount(
+            <ResourceEditor
+                request={{ resource: definition, mode: "edit", row: rows[0] }}
+                onClose={vi.fn()}
+            />,
+        );
+        expect(
+            vi
+                .mocked(dataProvider.list)
+                .mock.calls.some(([r]) => r.name === "rent-conditions"),
+        ).toBe(false);
+        await user.click(screen.getByRole("tab", { name: "Beziehungen" }));
+        await waitFor(() =>
+            expect(
+                vi
+                    .mocked(dataProvider.list)
+                    .mock.calls.some(([r]) => r.name === "rent-conditions"),
+            ).toBe(true),
         );
     });
 });
