@@ -244,6 +244,26 @@ describe("collection scopes and cells", () => {
             { field: "property_id", operator: "in", value: [9, 12] },
         ]);
     });
+    it("renders related table values as plain text without automatic Cell navigation", () => {
+        render(
+            <CellRenderer
+                row={{
+                    id: 18,
+                    updated_at: "2026-11-14",
+                    property_id: 4,
+                    property: { name: "Objekt Nord" },
+                }}
+                column={{
+                    field: "property.name",
+                    label: "Objekt",
+                    reference: { resource: "properties", idField: "property_id" },
+                }}
+            />,
+        );
+        expect(screen.getByText("Objekt Nord")).toBeVisible();
+        expect(screen.queryByRole("link")).not.toBeInTheDocument();
+        expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    });
     it("renders avatar/tag overflow and exports scalar labels independently of visual cells", () => {
         const row = {
             id: 1,
