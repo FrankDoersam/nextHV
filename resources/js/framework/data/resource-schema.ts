@@ -251,9 +251,8 @@ function columnSort(
         (entry) => [entry.relation, entry.responseKey].includes(prefix),
     );
     if (!relation) return { sortable: false };
-    const related = nativeField(
-        schemas[relation.resource] ?? { fields: [] } as ResourceSchema,
-        parts.join("."),
+    const related = schemas[relation.resource]?.fields.find(
+        (field) => field.name === parts.join("."),
     );
     return related?.sort === true
         ? {
