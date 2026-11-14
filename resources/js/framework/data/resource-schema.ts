@@ -234,6 +234,34 @@ function inferFilterKind(field: NativeField): FilterDefinition["kind"] {
 function nativeField(schema: ResourceSchema, name: string) {
     return schema.fields.find((field) => field.name === name);
 }
+/** Hydrate a nested sort only when the related REST field explicitly permits it.
+ *  Response aliases are translated to the declared relation name for the API. */
+function columnSort(
+    column: ColumnDefinition,
+    schema: ResourceSchema,
+    schemas: Record<string, ResourceSchema>,
+): Pick<ColumnDefinition, "sortable" | "sortField"> {
+    if (column.sortable === false) return { sortable: false };
+    const native = nativeField(schema, column.field);
+    if (native) return { sortable: native.sort };
+
+    const [prefix, ...parts] = column.field.split(".");
+    if (!prefix || !parts.length) return { sortable: false };
+    const relation = Object.values(schema.meta.ui.relations).find(
+        (entry) => [entry.relation, entry.responseKey].includes(prefix),
+    );
+    if (!relation) return { sortable: false };
+    const related = nativeField(
+        schemas[relation.resource] ?? { fields: [] } as ResourceSchema,
+        parts.join("."),
+    );
+    return related?.sort === true
+        ? {
+              sortable: true,
+              sortField: `${relation.relation}.${parts.join(".")}`,
+          }
+        : { sortable: false };
+}
 function hydrateField(
     field: FieldDefinition,
     schema: ResourceSchema,
@@ -416,24 +444,7 @@ export function hydrateResources(
             ...column,
             options:
                 schema.meta.ui.fields[column.field]?.options ?? column.options,
-            sortable:
-                column.sortable !== false &&
-                (() => {
-                    const direct = nativeField(schema, column.field);
-                    if (direct) return direct.sort;
-                    const [relationName, ...fieldParts] = column.field.split(".");
-                    if (!relationName || fieldParts.length === 0) return false;
-                    const relation = Object.values(schema.meta.ui.relations).find(
-                        (entry) =>
-                            entry.relation === relationName ||
-                            entry.responseKey === relationName,
-                    );
-                    if (!relation) return false;
-                    const relatedField = schemas[relation.resource]?.fields.find(
-                        (field) => field.name === fieldParts.join("."),
-                    );
-                    return relatedField?.sort === true;
-                })(),
+            ...columnSort(column, schema, schemas),
             filter:
                 column.filter === false
                     ? false
