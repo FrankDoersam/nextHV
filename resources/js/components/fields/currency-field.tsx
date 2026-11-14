@@ -3,7 +3,7 @@ import {
     NumberFieldGroup,
     NumberFieldInput,
 } from "@/components/reui/number-field";
-import type { ComponentProps } from "react";
+import { useId, type ComponentProps } from "react";
 /** Locale formatting belongs to Base UI. Form/API state remains a numeric Euro amount. */
 export function CurrencyField({
     value,
@@ -26,6 +26,7 @@ export function CurrencyField({
     min?: number;
     max?: number;
 }) {
+    const currencyId = useId();
     return (
         <NumberField
             id={id}
@@ -41,14 +42,26 @@ export function CurrencyField({
             step={0.01}
             disabled={disabled}
             format={{
-                style: "currency",
-                currency,
+                style: "decimal",
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
             }}
         >
             <NumberFieldGroup className="h-9 bg-card">
-                <NumberFieldInput {...input} className="text-left" />
+                <NumberFieldInput
+                    {...input}
+                    aria-describedby={[input["aria-describedby"], currencyId]
+                        .filter(Boolean)
+                        .join(" ")}
+                    className="text-left"
+                />
+                <span
+                    id={currencyId}
+                    data-slot="currency-suffix"
+                    className="flex shrink-0 items-center pr-3 text-xs font-medium text-muted-foreground select-none"
+                >
+                    {currency}
+                </span>
             </NumberFieldGroup>
         </NumberField>
     );

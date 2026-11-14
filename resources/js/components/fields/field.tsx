@@ -16,6 +16,8 @@ import {
     RangePicker,
     RelationPicker,
     TimeField,
+    dateControlError,
+    dateRangeControlError,
 } from "./pickers";
 import { BaseField } from "./base-field";
 import { CurrencyField } from "./currency-field";
@@ -37,6 +39,18 @@ export function ResourceField({
         <Controller
             name={d.name}
             control={control}
+            rules={
+                d.kind === "date" || d.kind === "date-range"
+                    ? {
+                          validate: (value) =>
+                              disabled ||
+                              (d.kind === "date"
+                                  ? dateControlError(value, d)
+                                  : dateRangeControlError(value, d)) ||
+                              true,
+                      }
+                    : undefined
+            }
             render={({ field, fieldState }) => {
                 const common = {
                     id,
@@ -86,6 +100,9 @@ export function ResourceField({
                         input = (
                             <DatePicker
                                 {...picker}
+                                inputRef={field.ref}
+                                onBlur={field.onBlur}
+                                onInvalidInput={field.onChange}
                                 clearable={d.clearable}
                                 minDate={d.minDate}
                                 maxDate={d.maxDate}
@@ -110,6 +127,9 @@ export function ResourceField({
                         input = (
                             <RangePicker
                                 {...picker}
+                                inputRef={field.ref}
+                                onBlur={field.onBlur}
+                                onInvalidInput={field.onChange}
                                 month={d.kind === "month-range"}
                                 clearable={d.clearable}
                                 minDate={d.minDate}

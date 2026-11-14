@@ -23,23 +23,6 @@ export const properties: ResourceDefinition = {
     supportsClone: true,
     editor: {
         sectionStyle: "collapsible",
-        summary: {
-            title: "Objektübersicht",
-            items: (values) => [
-                {
-                    id: "name",
-                    label: "Objekt",
-                    value: String(values.name || "Noch ohne Bezeichnung"),
-                    emphasis: true,
-                },
-                {
-                    id: "code",
-                    label: "Nummer",
-                    value: String(values.code || "—"),
-                },
-                { id: "city", label: "Ort", value: String(values.city || "—") },
-            ],
-        },
     },
     summary: {
         metric: "summary",

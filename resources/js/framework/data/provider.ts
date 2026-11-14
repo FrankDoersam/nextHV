@@ -6,6 +6,7 @@ import type {
     Values,
 } from "../types";
 import { request } from "./http";
+import { creationFields } from "../forms/create-relations";
 export interface ListParams {
     page?: number;
     limit?: number;
@@ -50,11 +51,42 @@ export function mutationPayload(
                 values[f.name] === "" && f.nullable ? null : values[f.name],
             ]),
     );
+    const relations = !rows
+        ? Object.fromEntries(
+              (resource.createRelations ?? [])
+                  .filter((definition) =>
+                      Array.isArray(values[definition.relation]),
+                  )
+                  .map((definition) => [
+                      definition.relation,
+                      (values[definition.relation] as Values[]).map(
+                          (entry) => ({
+                              operation: "create",
+                              attributes: Object.fromEntries(
+                                  creationFields(definition)
+                                      .filter(
+                                          (field) =>
+                                              entry[field.name] !== undefined,
+                                      )
+                                      .map((field) => [
+                                          field.name,
+                                          entry[field.name] === "" &&
+                                          field.nullable
+                                              ? null
+                                              : entry[field.name],
+                                      ]),
+                              ),
+                          }),
+                      ),
+                  ]),
+          )
+        : {};
     return {
         mutate: (rows ?? [undefined]).map((row) => ({
             operation: row ? "update" : "create",
             ...(row ? { key: row.id, version: row.updated_at } : {}),
             attributes,
+            ...(Object.keys(relations).length ? { relations } : {}),
         })),
         response: {
             ...(resource.includes ? { includes: resource.includes } : {}),
@@ -105,7 +137,7 @@ export const dataProvider = {
                 ...(only?.length
                     ? {
                           "Precognition-Validate-Only": only
-                              .map((name) => `mutate.0.attributes.${name}`)
+                              .map((name) => validationPath(resource, name))
                               .join(","),
                       }
                     : {}),
@@ -175,9 +207,21 @@ export function normalizeValidationErrors(
     return Object.fromEntries(
         Object.entries(errors).map(([key, value]) => [
             key
-                .replace(/^mutate\.\d+\.attributes\./, "")
+                .replace(/^mutate\.\d+\./, "")
+                .replace(/^relations\./, "")
+                .replace(/(?:^|\.)attributes\./g, (match) =>
+                    match.startsWith(".") ? "." : "",
+                )
                 .replace(/^fields\./, ""),
             value[0],
         ]),
     );
+}
+function validationPath(resource: ResourceDefinition, name: string): string {
+    const relation = resource.createRelations?.find((entry) =>
+        name.startsWith(`${entry.relation}.`),
+    );
+    if (!relation) return `mutate.0.attributes.${name}`;
+    const [, index, ...field] = name.split(".");
+    return `mutate.0.relations.${relation.relation}.${index}.attributes.${field.join(".")}`;
 }

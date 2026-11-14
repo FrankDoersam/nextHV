@@ -365,7 +365,7 @@ describe("navigation and results", () => {
         ).toBeVisible();
         expect(
             screen.getByLabelText("Gültig ab", { exact: false }),
-        ).toHaveTextContent("02.01.2026");
+        ).toHaveValue("02.01.2026");
         expect(
             screen.getByRole("combobox", { name: /Vertrag/ }),
         ).toBeDisabled();
@@ -510,7 +510,8 @@ describe("standard fields", () => {
         const user = userEvent.setup();
         mount(<Fields />);
         const input = screen.getByRole("textbox", { name: "Miete" });
-        expect(input).toHaveValue("1.234,50 €");
+        expect(input).toHaveValue("1.234,50");
+        expect(screen.getByText("EUR")).toBeVisible();
         await user.clear(input);
         await user.type(input, "99,25");
         await user.tab();

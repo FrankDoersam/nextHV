@@ -48,6 +48,7 @@ class UnitResource extends Resource
 
     public function mutating(MutationNode $entry, Model $model): void
     {
+        parent::mutating($entry, $model);
         $propertyId = $entry->attributes['property_id'] ?? $model->property_id;
         if ($propertyId && isset($entry->attributes['code']) && Unit::withTrashed()->where('property_id', $propertyId)->where('code', $entry->attributes['code'])->when($model->exists, fn ($q) => $q->whereKeyNot($model->id))->exists()) {
             throw ValidationException::withMessages(['code' => 'Diese Nummer ist im Objekt bereits vergeben.']);

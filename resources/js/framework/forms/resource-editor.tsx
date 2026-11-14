@@ -32,6 +32,8 @@ import { RelationCollection } from "../tables/relation-collection";
 import type { FlowControls } from "./flow";
 import type { FormGroupDefinition, FormRequest, Values } from "../types";
 import { initialValues } from "./initial-values";
+import { creationDefaults, creationNames } from "./create-relations";
+import { RelationRepeater } from "./relation-repeater";
 export function ResourceEditor({
     request,
     onClose,
@@ -49,13 +51,17 @@ export function ResourceEditor({
 }) {
     const formId = useId();
     const { resource, row } = request;
+    const createRelations =
+        !row && !flow ? (resource.createRelations ?? []) : [];
     const fields = resource.fields.filter(
         (f) =>
             (!request.fields || request.fields.includes(f.name)) &&
             (!request.reduced || f.required || f.reduced),
     );
-    const groups = resource.groups?.filter((g) =>
-        fields.some((f) => (f.group ?? "general") === g.id),
+    const groups = resource.groups?.filter(
+        (g) =>
+            fields.some((f) => (f.group ?? "general") === g.id) ||
+            createRelations.some((relation) => relation.group === g.id),
     ) ?? [{ id: "general", label: "Grunddaten" }];
     const editorTabs =
         !request.wizard && !flow && !request.fields
@@ -78,8 +84,12 @@ export function ResourceEditor({
           activeTab?.summary ??
           resource.editor?.summary)
         : undefined;
+    const defaults = initialValues(resource.fields, row, request.defaults);
     const form = useForm<Values>({
-        defaultValues: initialValues(resource.fields, row, request.defaults),
+        defaultValues: {
+            ...defaults,
+            ...(!row && !flow ? creationDefaults(resource, defaults) : {}),
+        },
         shouldUnregister: false,
         mode: "onBlur",
     });
@@ -136,22 +146,30 @@ export function ResourceEditor({
         );
     };
     const errorStep = (errors: Record<string, unknown>) => {
-        const rejectedGroups = groups.filter((g) =>
-            fields.some(
-                (f) => (f.group ?? "general") === g.id && errors[f.name],
-            ),
+        errors = Object.fromEntries(
+            errorPaths(errors).map((name) => [name, true]),
         );
+        const groupHasError = (group: FormGroupDefinition) =>
+            fields.some(
+                (f) => (f.group ?? "general") === group.id && errors[f.name],
+            ) ||
+            createRelations.some(
+                (relation) =>
+                    relation.group === group.id &&
+                    Object.keys(errors).some(
+                        (name) =>
+                            name === relation.relation ||
+                            name.startsWith(`${relation.relation}.`),
+                    ),
+            );
+        const rejectedGroups = groups.filter((g) => groupHasError(g));
         setOpenGroups((current) => ({
             ...current,
             ...Object.fromEntries(
                 rejectedGroups.map((group) => [group.id, true]),
             ),
         }));
-        const index = groups.findIndex((g) =>
-            fields.some(
-                (f) => (f.group ?? "general") === g.id && errors[f.name],
-            ),
-        );
+        const index = groups.findIndex((g) => groupHasError(g));
         if (index >= 0) {
             setStep(index);
             const errorTab = editorTabs?.find((tab) =>
@@ -159,7 +177,10 @@ export function ResourceEditor({
             );
             if (errorTab) setTab(errorTab.id);
         }
-        setFocusField(fields.find((field) => errors[field.name])?.name);
+        setFocusField(
+            fields.find((field) => errors[field.name])?.name ??
+                Object.keys(errors)[0],
+        );
     };
     const save = form.handleSubmit(async (values) => {
         setError(undefined);
@@ -204,19 +225,28 @@ export function ResourceEditor({
     }, errorStep);
     const next = async () => {
         if (busy) return;
-        const names = fields
-            .filter((f) => (f.group ?? "general") === groups[step].id)
-            .map((f) => f.name);
+        const names = [
+            ...fields
+                .filter((f) => (f.group ?? "general") === groups[step].id)
+                .map((f) => f.name),
+            ...createRelations
+                .filter((relation) => relation.group === groups[step].id)
+                .flatMap((relation) =>
+                    creationNames(relation, form.getValues()),
+                ),
+        ];
+        if (!(await form.trigger(names, { shouldFocus: true }))) return;
         setValidating(true);
         setError(undefined);
         form.clearErrors(names);
         try {
-            await dataProvider.validate(
-                resource,
-                form.getValues(),
-                version,
-                names,
-            );
+            if (names.length)
+                await dataProvider.validate(
+                    resource,
+                    form.getValues(),
+                    version,
+                    names,
+                );
             setStep((current) => Math.min(current + 1, groups.length - 1));
         } catch (e) {
             setError(e);
@@ -575,6 +605,18 @@ export function ResourceEditor({
                                                     />
                                                 ))}
                                         </FieldGrid>
+                                        {createRelations
+                                            .filter(
+                                                (relation) =>
+                                                    relation.group === g.id,
+                                            )
+                                            .map((relation) => (
+                                                <RelationRepeater
+                                                    key={relation.relation}
+                                                    definition={relation}
+                                                    disabled={busy}
+                                                />
+                                            ))}
                                     </EditorSection>
                                 ))}
                             </FormLayout>
@@ -599,6 +641,20 @@ export function ResourceEditor({
             </Stack>
         </Overlay>
     );
+}
+
+function errorPaths(errors: Record<string, unknown>, prefix = ""): string[] {
+    return Object.entries(errors).flatMap(([key, value]) => {
+        const path = prefix ? `${prefix}.${key}` : key;
+        if (
+            typeof value === "string" ||
+            (value && typeof value === "object" && "message" in value)
+        )
+            return [path];
+        return value && typeof value === "object"
+            ? errorPaths(value as Record<string, unknown>, path)
+            : [];
+    });
 }
 
 /** Watch summaries inside their region, keeping field editing isolated. */

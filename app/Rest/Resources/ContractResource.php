@@ -14,6 +14,7 @@ use Lomkit\Rest\Fields\Date;
 use Lomkit\Rest\Fields\DateTime;
 use Lomkit\Rest\Fields\ID;
 use Lomkit\Rest\Fields\Integer;
+use Lomkit\Rest\Fields\MutationOperation;
 use Lomkit\Rest\Fields\Text;
 use Lomkit\Rest\Mutations\Contextual;
 use Lomkit\Rest\Mutations\MutationContext;
@@ -27,6 +28,8 @@ class ContractResource extends Resource
 
     public function mutating(MutationNode $entry, Model $model): void
     {
+        parent::mutating($entry, $model);
+
         $candidate = clone $model;
         $candidate->fill($entry->attributes ?? []);
         if ($model->exists && $model->status !== 'draft' && $candidate->isDirty(['unit_id', 'starts_on', 'ends_on', 'type', 'deposit', 'notice_period_months', 'payment_day', 'signed_on', 'minimum_term_until', 'notice_to'])) {
@@ -61,8 +64,8 @@ class ContractResource extends Resource
     {
         return [
             BelongsTo::make('unit', UnitResource::class)->onlyOperations(),
-            HasMany::make('parties', ContractPartyResource::class)->onlyOperations(),
-            HasMany::make('conditions', RentConditionResource::class)->onlyOperations(),
+            HasMany::make('parties', ContractPartyResource::class)->onlyOperations(MutationOperation::Create),
+            HasMany::make('conditions', RentConditionResource::class)->onlyOperations(MutationOperation::Create),
             HasMany::make('links', ContractLinkResource::class)->onlyOperations(),
             HasMany::make('incomingLinks', ContractLinkResource::class)->onlyOperations(),
             HasMany::make('terminations', TerminationNoticeResource::class)->onlyOperations(),

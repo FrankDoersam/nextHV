@@ -10,8 +10,10 @@ import {
     relation,
     select,
 } from "@/modules/fields";
-import { date, label, money } from "@/lib/format";
+import { label, money } from "@/lib/format";
 import { FileText, CircleCheck, FilePenLine, Wallet } from "lucide-react";
+import { parties } from "./parties-resource";
+import { conditions } from "./conditions-resource";
 export const contracts: ResourceDefinition = {
     name: "contracts",
     label: "Verträge",
@@ -22,7 +24,6 @@ export const contracts: ResourceDefinition = {
     navigationGroup: "Vermietung",
     titleField: "code",
     bulkActions: ["delete"],
-    createFlow: "new-contract",
     views: [
         { id: "all", label: "Alle", count: true },
         {
@@ -64,29 +65,6 @@ export const contracts: ResourceDefinition = {
         ],
     },
     editor: {
-        wizardSummary: {
-            title: "Vertragsübersicht",
-            items: (values) => [
-                {
-                    id: "code",
-                    label: "Vertrag",
-                    value: String(values.code || "Neuer Entwurf"),
-                    emphasis: true,
-                },
-                { id: "type", label: "Art", value: label(values.type) },
-                {
-                    id: "starts_on",
-                    label: "Beginn",
-                    value: date(values.starts_on),
-                },
-                {
-                    id: "deposit",
-                    label: "Kaution",
-                    value: money(values.deposit),
-                    separator: true,
-                },
-            ],
-        },
         sectionStyle: "card",
         tabs: [
             { id: "general", label: "Grunddaten", groups: ["general", "term"] },
@@ -129,6 +107,30 @@ export const contracts: ResourceDefinition = {
         { id: "term", label: "Laufzeit & Kündigung" },
         { id: "finance", label: "Zahlung & Kaution" },
         { id: "details", label: "Hinweise" },
+        { id: "parties", label: "Beteiligte" },
+        { id: "conditions", label: "Konditionen" },
+    ],
+    createRelations: [
+        {
+            relation: "parties",
+            resource: () => parties,
+            foreignKey: "contract_id",
+            label: "Vertragsbeteiligte",
+            singular: "Beteiligter",
+            group: "parties",
+            defaults: () => ({ role: "tenant" }),
+        },
+        {
+            relation: "conditions",
+            resource: () => conditions,
+            foreignKey: "contract_id",
+            label: "Konditionen",
+            singular: "Kondition",
+            group: "conditions",
+            defaults: (parent) => ({
+                effective_from: parent.starts_on || null,
+            }),
+        },
     ],
     fields: [
         code,

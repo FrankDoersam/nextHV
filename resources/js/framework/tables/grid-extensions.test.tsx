@@ -157,6 +157,26 @@ describe("collection scopes and cells", () => {
             screen.getByRole("tab", { name: "Aktive Verträge" }).id,
         );
     });
+    it("keeps column headers and pagination visible when the server returns no matching rows", async () => {
+        vi.mocked(dataProvider.list).mockResolvedValue({
+            data: [],
+            total: 0,
+            current_page: 1,
+            last_page: 1,
+        });
+        mount();
+        await screen.findByRole("heading", { name: "Noch keine Einträge" });
+        expect(
+            screen.getByRole("columnheader", { name: /Name/ }),
+        ).toBeVisible();
+        expect(
+            screen.getByRole("columnheader", { name: /Status/ }),
+        ).toBeVisible();
+        expect(
+            screen.getByRole("combobox", { name: "Zeilen pro Seite" }),
+        ).toBeVisible();
+        expect(screen.getByText("0–0 von 0")).toBeVisible();
+    });
     it("validates configured view IDs and keeps unrelated nested-panel URL state", () => {
         const state = readGridState(
             new URLSearchParams("view=active&q=Haus"),

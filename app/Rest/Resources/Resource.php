@@ -3,11 +3,15 @@
 namespace App\Rest\Resources;
 
 use App\Rest\Ui\ResourceMetadata;
+use App\Support\Validation\MutationValidationContext;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Lomkit\Rest\Attributes\WithoutPerimeter;
 use Lomkit\Rest\Confirmation\Confirmation;
+use Lomkit\Rest\Fields\Field;
 use Lomkit\Rest\Http\Resource as RestResource;
+use Lomkit\Rest\Mutations\MutationNode;
 use Lomkit\Rest\Text\Contains;
 use Lomkit\Rest\Text\TextSearch;
 
@@ -15,6 +19,16 @@ use Lomkit\Rest\Text\TextSearch;
 abstract class Resource extends RestResource
 {
     public int $defaultLimit = 25;
+
+    public function mutating(MutationNode $entry, Model $model): void
+    {
+        MutationValidationContext::enter(request(), $entry, array_map(fn (Field $field): string => $field->name, iterator_to_array($this->definition()->fields(), false)));
+    }
+
+    public function mutated(MutationNode $entry, Model $model): void
+    {
+        MutationValidationContext::leave(request());
+    }
 
     public function detailsMeta(): array
     {

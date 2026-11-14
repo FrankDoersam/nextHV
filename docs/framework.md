@@ -5,7 +5,7 @@ Dieses Dokument beschreibt den aktuellen Framework-Stand einschließlich nativer
 ## 1. Einstieg und Betriebsmodell
 
 - Laravel 13 + `lomkit/laravel-rest-api` 3, Sanctum-Session, Scramble/OpenAPI.
-- React 19, React Router 7, TanStack Query, TanStack Table 9, React Hook Form; REST-Formulare verwenden ausschließlich Laravel-Servervalidierung. Zod bleibt nur für die isolierte Komponenten-Demo und deren Tests.
+- React 19, React Router 7, TanStack Query, TanStack Table 9, React Hook Form; Geschäftsregeln der REST-Formulare werden ausschließlich auf dem Laravel-Server geprüft; Controls prüfen Eingabeformat und Bediengrenzen. Zod bleibt nur für die isolierte Komponenten-Demo und deren Tests.
 - REUI Base Nova, Base UI, Tailwind 4; gemeinsame Farben und Abstände in `resources/css/app.css` und zentralen Komponenten.
 - PHP 8.3+, Composer 2, Node 22.12+; CI verwendet Node 24/PHP 8.5. SQLite für lokale Entwicklung und Tests.
 - `setasign/tfpdf` erzeugt Unicode-PDFs; keine externe PDF-Website und kein HTML-Renderer erforderlich.
@@ -151,7 +151,7 @@ Ob leere Felder und Mehrfachwerte zulässig sind, entscheiden die PHP-Regeln. Pf
 
 ### CurrencyField
 
-`1.234,50 €` wird im Feld angezeigt, `1234.5` im Formular und JSON geführt und als `DECIMAL(12,2)` gespeichert. Kein Cent-Multiplikator. Die REUI/Base-UI-Komponente übernimmt Parsing, Gruppierung und Darstellung, React Hook Form den numerischen Zustand. Leeren ergibt `null`; Nullbetrag `0` bleibt erhalten. Laravel prüft beim Speichern den Wertebereich und maximal zwei Nachkommastellen. Die Eingabekomponente übernimmt ausschließlich Zahlenformat und Bediengrenzen.
+Die editierbare Zahl erscheint als `1.234,50`; daneben steht `EUR` als eigener, nicht bearbeitbarer Suffix außerhalb des Inputs. `1234.5` wird im Formular und JSON geführt und als `DECIMAL(12,2)` gespeichert. Das Suffix ist über `aria-describedby` zugeordnet. Kein Cent-Multiplikator. Die REUI/Base-UI-Komponente übernimmt Parsing, Gruppierung und Darstellung, React Hook Form den numerischen Zustand. Leeren ergibt `null`; Nullbetrag `0` bleibt erhalten. Laravel prüft beim Speichern den Wertebereich und maximal zwei Nachkommastellen. Die Eingabekomponente übernimmt ausschließlich Zahlenformat und Bediengrenzen.
 
 Alle bestehenden Geldfelder, darunter Miete, Nebenkosten, Heizung und Kaution, verwenden diesen Baustein. `currency` und `locale` sind konfigurierbar. Die Komponentenseite demonstriert auch Counter, Hilfetext, Checkboxgruppe und Mehrfachauswahl.
 
@@ -223,7 +223,7 @@ Relationstabellen im Bearbeitungsformular verwenden denselben Ablauf für Kondit
 
 Weitere Funktionen: serverseitige Sortierung, registrierte Filter, Spaltenauswahl und Spaltenverschiebung über das REUI-Kopfmenü, Refresh, Lade-/Fehlerzustände und explizite Bulk-Actions. Die Spaltenreihenfolge/-breite/-fixierung bleiben sitzungsbezogener Tabellenzustand; die URL persistiert View, Suche, Seite, Seitengröße, Sortierung, Filter, Gruppierung, Sichtbarkeit und Dichte.
 
-Die Hauptliste füllt die nach Header, KPI-Bar, Abständen und Toolbar verfügbare Höhe. Zeilen scrollen intern; der Footer bleibt außerhalb der Scrollfläche, mit Seitenauswahl rechts. Relationslisten verwenden eine kompaktere maximale Höhe. Auf sehr niedrigen Viewports kann der Inhaltsbereich entsprechend klein werden.
+Die Hauptliste füllt die nach Header, KPI-Bar, Abständen und Toolbar verfügbare Höhe. `TableViewport` ist der einzige native vertikale Scrollbereich; der Kopf bleibt sticky, der Footer mit Seitenauswahl rechts liegt außerhalb. Relationslisten verwenden eine kompaktere maximale Höhe. Leere Ergebnisse ersetzen nur den Tabellenkörper; Kopf, Toolbar und Footer bleiben stehen. Eine schwebende Auswahlleiste ist ein Overlay und ändert weder Höhe noch Padding. Auf sehr niedrigen Viewports kann der Inhaltsbereich entsprechend klein werden.
 
 Gruppierung bezieht sich auf die aktuell serverseitig geladene Seite und nennt ausdrücklich die Anzahl **auf dieser Seite**. Es wird nicht der gesamte Datenbestand in den Browser geladen. Zeilenauswahl wird bei Wechsel von Seite, Suche, Sortierung oder Filtern aufgehoben. Bulk-Actions erhalten nur die tatsächlich ausgewählten Zeilen der geladenen Seite.
 
@@ -468,9 +468,9 @@ Bei einem Edit-Direktlink lädt das Framework den Datensatz und prüft, ob sein 
 
 CSV exportiert die aktuelle Seite bzw. Auswahl, nicht stillschweigend den gesamten Datenbestand. Paging aus bedeutet bewusst keinen unbegrenzten Download. Für umfangreiche Historien kann dieselbe Relation Paging aktivieren.
 
-### Mehrere gespeicherte Schritte als Flow
+### Legacy-Flows mit gespeicherten Zwischenschritten
 
-`framework/forms/flow.ts` definiert das Ablaufmodell; Fachdefinitionen liegen im jeweiligen Modul und werden in `modules/flows.ts` registriert. `modules/contracts/contract-flow.ts` demonstriert einen echten Ablauf:
+`framework/forms/flow.ts` definiert das optionale Ablaufmodell; Fachdefinitionen liegen im jeweiligen Modul und werden in `modules/flows.ts` registriert. `modules/contracts/contract-flow.ts` bleibt für bestehende `new-contract`-Direktlinks registriert. Der normale Anlegen-Button verwendet diesen Flow nicht mehr, sondern `createRelations` und eine gemeinsame atomare Mutation (siehe unten). Nur ein ausdrücklich geöffneter Legacy-Flow arbeitet wie bisher:
 
 1. Vertragsentwurf speichern; optional die aktuelle Einheit als gesperrten Elternbezug übernehmen.
 2. Einen Geschäftspartner als Vertragsbeteiligten zuordnen.
@@ -506,7 +506,7 @@ workbench.openFlow("new-contract", {
 // In einer Fachaktion auch über context.instance.openFlow?.(...).
 ```
 
-`source` referenziert einen gespeicherten Schritt oder `parent`. Darstellung, Wizard und reduzierte Erfassung sind pro Schritt konfigurierbar. `ResourceDefinition.createFlow` startet den Flow beim Anlegen aus einer Collection; `RelationDefinition.createForm.flow` kann ihn relationsspezifisch überschreiben oder mit `false` für eine einfache Erfassung deaktivieren.
+`source` referenziert einen gespeicherten Schritt oder `parent`. Darstellung, Wizard und reduzierte Erfassung sind pro Schritt konfigurierbar. Ein ausdrücklich gesetztes `ResourceDefinition.createFlow` startet den Flow beim Anlegen aus einer Collection; der aktuelle Vertrag setzt dieses Prop nicht mehr. `RelationDefinition.createForm.flow` kann ihn relationsspezifisch überschreiben oder mit `false` für eine einfache Erfassung deaktivieren.
 
 - Vorwärts validiert und speichert den aktuellen Schritt. Fehler halten den Ablauf an.
 - Zurück öffnet den bereits gespeicherten Datensatz zum Bearbeiten; es entsteht kein zweiter Vertragsentwurf. Ungespeicherte Änderungen erfordern eine Verwerfentscheidung.
@@ -514,6 +514,91 @@ workbench.openFlow("new-contract", {
 - Nach Browser-Reload werden Bezüge und Datensätze neu geladen. Ein verlassenes Formular verwirft seinen Hydrierungscache; das Zurückkehren verwendet den aktuellen Stand.
 - Oberste Flows können nach Abschluss zu einem gespeicherten Datensatz navigieren. Geschachtelte Flows schließen sich und kehren zum Elternformular zurück. Ressourcen- und KPI-Queries werden invalidiert.
 - Ein Flow ist **keine Transaktion über mehrere HTTP-Aufrufe**: gespeicherte Zwischenschritte bleiben beim Abbruch erhalten. Die Oberfläche weist darauf hin. Automatische Kompensation, beliebige Verzweigungen, Freigabestufen und persistierte serverseitige Workflow-Instanzen sind nicht implementiert.
+
+### Wiederholbare Unterdatensätze bei der Anlage: `createRelations`
+
+Der Standard-Button **Vertrag anlegen** öffnet den normalen Resource-Editor mit wiederholbaren Beteiligten und Konditionen. Die Kinder bleiben bis zum abschließenden Speichern Formularwerte. Weiter/Zurück im Wizard speichert keine Zwischendatensätze. Eine neue Resource braucht dafür weder eine eigene Formularseite noch kopierte Felddefinitionen:
+
+```ts
+createRelations: [
+    {
+        relation: "parties",
+        resource: () => parties,
+        foreignKey: "contract_id",
+        label: "Vertragsbeteiligte",
+        singular: "Beteiligter",
+        group: "parties",
+        defaults: () => ({ role: "tenant" }),
+    },
+    {
+        relation: "conditions",
+        resource: () => conditions,
+        foreignKey: "contract_id",
+        label: "Konditionen",
+        singular: "Kondition",
+        group: "conditions",
+        defaults: (parent) => ({ effective_from: parent.starts_on || null }),
+    },
+],
+```
+
+| `CreateRelationDefinition`      | Bedeutung                                                                                               |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `relation`                      | Name der nativen PHP-Relation und des Arrays im Formular                                                |
+| `resource: () => childResource` | Vorhandene, mit PHP-Metadaten ergänzte Child-Resource; keine doppelte Feld-/Optionspflege               |
+| `foreignKey`                    | Vom Parent abgeleiteter Bezug; wird weder als Repeater-Feld angezeigt noch in Child-Attributes gesendet |
+| `label`, `singular`             | Bereichstitel und Beschriftung von Zeile/Hinzufügen/Entfernen                                           |
+| `group`                         | Einordnung in die vorhandene Formular-/Wizard-Gruppe                                                    |
+| `initialRows`                   | Anfangszahl, Standard `1`; `0` startet leer                                                             |
+| `fields`                        | Optionale Feld-Allowlist aus der Child-Resource                                                         |
+| `defaults(parent)`              | Vorbelegung beim Erzeugen einer neuen Zeile aus den aktuellen Parent-Werten                             |
+
+`RelationRepeater` verwendet die zentralen `ResourceField`-Komponenten und stabile `useFieldArray`-Zeilen. Hinzufügen und Entfernen ändern nur den Formularzustand. Defaults sind eine Vorbelegung, keine dauerhafte Synchronisierung, die spätere Eingaben überschreibt. Alle Zeilen dürfen entfernt werden; ein Vertragsentwurf kann später vervollständigt werden. Die Aktivierungs-Action fordert weiterhin Mieter und Anfangskondition.
+
+`mutationPayload` sendet Parent und Kinder über den vorhandenen Endpunkt, zum Beispiel:
+
+```json
+{
+    "mutate": [
+        {
+            "operation": "create",
+            "attributes": {
+                "code": "MV-NEU",
+                "unit_id": 1,
+                "starts_on": "2026-01-01"
+            },
+            "relations": {
+                "parties": [
+                    {
+                        "operation": "create",
+                        "attributes": {
+                            "business_partner_id": 1,
+                            "role": "tenant",
+                            "is_primary": true
+                        }
+                    }
+                ],
+                "conditions": [
+                    {
+                        "operation": "create",
+                        "attributes": {
+                            "effective_from": "2026-01-01",
+                            "base_rent": 800
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "response": {}
+}
+```
+
+Die Beispiel-IDs setzen bestehende Einheit und Geschäftspartner voraus. PHP erlaubt an `ContractResource` ausschließlich `MutationOperation::Create` für die beiden `HasMany`-Relationen. Lomkit bindet `contract_id` aus dem neu angelegten Parent. `Contextual::rule` macht den Bezug bei eigenständigen Child-Anlagen weiterhin verpflichtend und bei verschachtelten Child-Anlagen verboten; `updatable(false)` bleibt erhalten. Eine mitgesendete fremde Vertrags-ID kann die Zuordnung nicht umleiten.
+
+Die native REST-Transaktion umfasst Vertrag, sämtliche Beteiligten und Konditionen sowie automatisch ergänzte Partnerrollen. Bei einem Validierungs-/Observerfehler wird alles zurückgerollt. Fachliche Regeln bleiben in ihren bisherigen Observern: keine doppelte Beteiligung, höchstens ein Hauptkontakt pro Rolle, keine doppelten Konditionsstichtage und kein Stichtag außerhalb der Vertragslaufzeit. Ein neu angelegter Vertrag bleibt Entwurf.
+
+Fehler behalten ihre Zeilenadresse, etwa `mutate.0.relations.conditions.1.attributes.effective_from`. Der Datenprovider normalisiert sie zu `conditions.1.effective_from`; der Editor öffnet die betroffene Gruppe und fokussiert das konkrete Feld. Auch Precognition verwendet die nativen verschachtelten Pfade. Die endgültige Mutation prüft Observer, Transaktion und aktuellen Datenbankzustand erneut. Bestehende Verträge verwenden weiter ihre separat ladenden Relationslisten; `createRelations` wirkt ausschließlich bei der Parent-Neuanlage.
 
 ## 17. Vertragsakte, Dashboard und gemeinsame Gestaltung
 
@@ -594,7 +679,9 @@ Tab fokussiert das Suchfeld; Tippen startet direkt die Suche, ohne einen weitere
   minDate: "2026-01-01", maxDate: "2026-12-31" }
 ```
 
-`minDate`/`maxDate` sind inklusive ISO-Grenzen, begrenzen die Kalenderbedienung; dieselben fachlichen Grenzen müssen in der REST-Resource als Laravel-Regeln definiert sein. Monatspicker verwenden `YYYY-MM` bzw. den Monatsanteil einer ISO-Datumsgrenze. Bei Bereichen begrenzen Beginn/Ende einander. Die isolierte Komponenten-Demo prüft zudem vollständige Bereiche. Eine persistierte Fachressource muss vollständige/optionale Bereiche in ihren Serverregeln abbilden. Anzeige bleibt `dd.MM.yyyy`, Übertragung ISO. `clearable: false` unterdrückt Leeren und Abwahl desselben Kalendertags; es verhindert keine programmgesteuerten Defaults.
+`minDate`/`maxDate` sind inklusive ISO-Grenzen für Kalender und freie Texteingabe; dieselben fachlichen Grenzen müssen in der REST-Resource als Laravel-Regeln definiert sein. Monatspicker verwenden `YYYY-MM` bzw. den Monatsanteil einer ISO-Datumsgrenze. Bei Bereichen begrenzen Beginn/Ende einander. `dateRangeControlError` prüft außerdem die Eingabeformate und die zeitliche Reihenfolge; die isolierte Komponenten-Demo prüft auch die Vollständigkeit. Eine persistierte Fachressource muss vollständige/optionale Bereiche in ihren Serverregeln abbilden. Anzeige bleibt `dd.MM.yyyy`, Übertragung ISO. `clearable: false` unterdrückt die Löschaktion und Abwahl desselben Kalendertags; ein manuell geleertes Control zeigt einen Eingabefehler. Programmatische Defaults bleiben möglich.
+
+`DatePicker` ist ein editierbares Textfeld mit separatem Kalenderbutton. Es akzeptiert `1.2.2026` und normalisiert beim Verlassen zu `01.02.2026`; an Formular/API gehen gültige Daten als `2026-02-01`. Ungültige Entwürfe bleiben sichtbar und im Dirty-State erhalten, statt stillschweigend auf den vorherigen Wert zurückzufallen. `dateControlError` prüft Format, tatsächliches Kalenderdatum, Min-/Max-Grenzen und die Leeren-Option am Control; der Kalender respektiert dieselben Grenzen. `Alt` + Pfeil nach unten öffnet ihn. Diese Eingabeprüfung ersetzt keine Vertrags-/Konditionsregeln auf dem Server und führt keinen Zod-Geschäftsvalidator ein.
 
 ## 20. Key-Value-Liste und geschäftliche Checkbox-Komponenten
 
@@ -658,11 +745,7 @@ Bereits im Cache vorhandene Fremdschlüssel-Eltern werden gezielt als einzelne D
 20. `20-date-picker-sheet.png`
 21. `21-date-picker-dialog.png`
 
-<<<<<<< HEAD
-Zusätzliche Aufnahmen zeigen `00-anmeldung.png`, `00-anmeldung-mobil.png`, `22-dashboard-bestand.png`, `23-einheiten-objektfilter.png`, `24-einheit-view-sheet.png`, `25-einheit-abschnitt-edit.png` und `26-einheit-edit-regionen.png`. Die verbindliche Liste steht in `tests/e2e/screenshots.spec.ts`; die Dateinamen dokumentieren geplante Aufnahmen, keinen Nachweis eines bereits erfolgreichen Jobs.
-=======
 Zusätzliche Aufnahmen zeigen `00-anmeldung.png`, `00-anmeldung-mobil.png`, `22-dashboard-bestand.png`, `23-einheiten-objektfilter.png`, `24-einheit-view-sheet.png`, `25-einheit-abschnitt-edit.png`, `26-einheit-edit-regionen.png` und `27-zelltypen.png`. Die verbindliche Liste steht in `tests/e2e/screenshots.spec.ts`; die Dateinamen dokumentieren geplante Aufnahmen, keinen Nachweis eines bereits erfolgreichen Jobs.
->>>>>>> d84bd32fabc2088ed0399211f16344a01eaf917d
 
 Die Suite prüft außerdem, dass der aktive Tab-Inhalt unterhalb der Tab-Leiste die verfügbare Breite nutzt, kein horizontaler Seitenüberlauf entsteht und die Vertragsansicht samt Edit-Sheet bei 390 px funktioniert. Der Zeitraum muss vor dem ersten Öffnen „Dieser Monat“ anzeigen.
 
@@ -790,6 +873,14 @@ Precognition-Validate-Only: mutate.0.attributes.code,mutate.0.attributes.name
 
 Die PHP-Regression prüft Teilvalidierung ohne Speicherung, fehlende Anmeldung, kontextuelle Eindeutigkeitsregeln beim Update sowie unveränderte Daten nach der Vorschau. `tests/e2e/workspace.spec.ts` zählt nur persistierende Anfragen als Schreibzugriff.
 
+### Deutsche Fehlermeldungen und verschachtelte Zeilen
+
+`LocalizedValidator` ist zentral über `AppServiceProvider` registriert. `lang/de/validation.php` enthält deutsche Regeltexte, Feldnamen unter `attributes` sowie Relationstitel unter `relations`; ein PHP-Feld kann mit `->label('Objektreferenz')` seine Anzeige ausdrücklich überschreiben. Native REST-Texte stehen in `lang/vendor/rest/de/validation.php`. Die technischen Fehlerkeys bleiben stabil, während Meldungen zum Beispiel **„Konditionen, Zeile 2 · Gültig ab“** benennen. Unbekannte Payload-Keys fallen auf eine verständliche allgemeine Bezeichnung zurück.
+
+Vorhandenseinsregeln (`required`, `filled`, `present`) werden vor Typprüfungen angeordnet; `bail` begrenzt die Regelmeldungen pro Feld auf den ersten hilfreichen Fehler. Damit produziert ein leeres Pflichtfeld nicht mehrere widersprüchliche Typ-/Wertebereichsmeldungen. Dies verändert weder erlaubte Werte noch die zugrunde liegenden Laravel-Regeln.
+
+`MutationValidationContext` merkt den aktuellen Mutationspfad requestlokal über `Resource::mutating`/`mutated`. Bei verschachtelten Observerfehlern ergänzt er nur nackte, deklarierte Feldkeys um die aktuelle Zeilenadresse. Bereits qualifizierte native Fehlerkeys sowie bestehende Top-Level-/Delete-Keys bleiben unverändert. Eigene Overrides der beiden Resource-Hooks müssen jeweils `parent::mutating(...)` bzw. `parent::mutated(...)` aufrufen. Es gibt keine parallele Kopie der Fachregeln im Parent oder Frontend.
+
 ## 27. Eine Action-API für Feld, Formular, Detail, Tabelle und Auswahl
 
 | API                               | Bedeutung                                                                                                                                                                                     |
@@ -856,7 +947,7 @@ Für Datenbankänderungen weiterhin den Provider oder die Backend-Action aufrufe
 
 ## 28. Schwebende Auswahlleiste und native Mehrfachbearbeitung
 
-`BulkActionBar` sitzt zentriert über dem Tabellenfooter, mit abgerundeter dunkler Fläche, Auswahlzahl, Actions und Aufheben-Button. Sie bleibt innerhalb der Collection; kleine Viewports dürfen umbrechen. Auswahl bleibt auf die aktuelle geladene Seite begrenzt und wird bei Wechsel von Suche/Sortierung/Filter/Seite zurückgesetzt.
+`BulkActionBar` sitzt zentriert über dem Tabellenfooter, mit abgerundeter dunkler Fläche, Auswahlzahl, Actions und Aufheben-Button. Sie ist ein Overlay innerhalb der Collection und verändert beim Ein-/Ausblenden weder die Grid-Höhe noch dessen Padding; kleine Viewports dürfen umbrechen. Auswahl bleibt auf die aktuelle geladene Seite begrenzt und wird bei Wechsel von Suche/Sortierung/Filter/Seite zurückgesetzt.
 
 In allen aktuell registrierten Fachmodulen ist ausschließlich `bulkActions: ["delete"]` freigegeben. Mehrfachbearbeitung ist dort entfernt. Die generische `BulkEditAction` bleibt als explizite Framework-Erweiterung verfügbar; ein neues Modul kann sie bei fachlichem Bedarf so aktivieren:
 
@@ -1084,7 +1175,7 @@ public function metrics(): array
 
 `POST /api/v1/{resource}/metrics/summary` erhält dieselbe debouncte Suche, freigegebenen Filter und festen Relationsfilter wie die Liste. Paging, Sortierung, Includes und Zeilenauswahl werden nicht übertragen. Der native REST-Query bleibt Ausgangspunkt jeder Berechnung; jede Closure bekommt einen unabhängigen Clone ohne Sortierung. Kennzahlen gelten damit für die **gesamte gefilterte Auswahl**, nicht nur die aktuelle Seite. Bestehende Rechte-/Perimeter-Konfiguration wird unverändert übernommen; die zuvor vertagten Organisationsgrenzen werden dadurch nicht nachgerüstet.
 
-Objekte zeigen Anzahl, aktive Objekte, zugehörige Einheiten und Grundstücksfläche. Verträge zeigen Anzahl, aktive Verträge, Entwürfe und vereinbarte Kautionen. Vier Aggregationsabfragen je Metric, keine Abfrage je Tabellenzeile. `CollectionKpis` stellt initial Skeletons, Zahlen/Euro/Einheiten sowie Fehler mit Wiederholen dar. Es gibt keine erfundenen Trends oder Zahlungseingänge. Kleine Viewports verwenden zwei Spalten.
+Objekte zeigen Anzahl, aktive Objekte, zugehörige Einheiten und Grundstücksfläche. Verträge zeigen Anzahl, aktive Verträge, Entwürfe und vereinbarte Kautionen. Vier Aggregationsabfragen je Metric, keine Abfrage je Tabellenzeile. `CollectionKpis` verwendet einheitliche Stat-Karten mit Icon, Label und klarer Wert-Hierarchie; initial Skeletons und bei Fehlern Wiederholen. Zahlen, Euro und Einheiten werden zentral formatiert. Es gibt keine erfundenen Trends oder Zahlungseingänge. Kleine Viewports verwenden zwei Spalten.
 
 Nach einer Standardmutation werden aktive Kennzahlen der Resource gezielt invalidiert; die Tabellenzeile wird wie bisher aus der Mutationsantwort gepatcht. Das Grid wird beim Edit nicht komplett nachgeladen. Bei gecachten Eltern werden deren Datensatz und aktive Kennzahlen aktualisiert. Neue Einträge und expliziter Tabellen-Refresh laden die entsprechende Liste weiter regulär.
 
@@ -1146,7 +1237,7 @@ Berechnete Felder verwenden die native Lomkit-Schnittstelle `filterUsing`: `full
 
 Filter hinzufügen und Gruppieren verwenden denselben `ChoicePicker` im Menümodus, dieselbe Höhe, Ränder, Icons und Tastatursuche. Aktive Filter bleiben Chips. Reset erscheint nur bei aktiven Filtern/Entwürfen. Gruppierung bleibt bewusst auf die aktuelle geladene Seite beschränkt.
 
-`ColumnDefinition.size` akzeptiert Pixel oder Prozent der verfügbaren Datenbreite. `minSize`, `maxSize`, `grow` bestimmen Grenzen und Verteilung. `column-layout.ts` vergibt freien Platz bevorzugt an Titel-/Adressspalten; Status, Beträge, Zahlen und Checkbox-/Action-Spalten wachsen nicht pauschal mit. Bei enger Breite werden bevorzugte Größen bis zu ihren Minima verkleinert, danach scrollt die Tabelle horizontal. Ein `ResizeObserver` misst nur den Collection-Container, Änderungen werden über Animation Frames zusammengefasst. Manuell gezogene Spaltenbreiten bleiben Tabellenzustand.
+`ColumnDefinition.size` akzeptiert Pixel oder Prozent der verfügbaren Datenbreite. `minSize`, `maxSize` und `grow` beschreiben bevorzugte Desktop-Breiten und Verteilung; das tatsächliche Containerbudget hat Vorrang. `column-layout.ts` gibt freien Platz bevorzugt Titel-/Adressspalten; Status, Beträge, Zahlen und Checkbox-/Action-Spalten wachsen nicht pauschal mit. Manuelle Resize-Breiten werden ebenfalls in das Budget eingepasst. Reicht die Breite für die bevorzugte Tabellenaufteilung nicht aus, zeigt `ResponsiveRecordList` alle sichtbaren Spalten als beschriftete Datensatzwerte. Es werden nicht stillschweigend Spalten versteckt, und horizontales Scrollen entfällt. Ein `ResizeObserver` misst den Collection-Container; Layoutstyles bleiben im Framework.
 
 Initiales Datenladen nutzt konkrete Skeleton-Zellen für Text, Badge, Zahl, Auswahl und Actions mit stabiler Zeilenhöhe; maximal 16 Skeleton-Zeilen, unabhängig von einer Seitengröße von 100. Beim verzögerten Laden des Routenmoduls erscheint `CollectionLoading` mit passender Header-/KPI-/Toolbar-/Grid-/Footer-Struktur. Es gibt keine künstliche Mindestwartezeit. Bei Hintergrundabfragen bleiben vorhandene Zeilen sichtbar und vor veralteten Aktionen geschützt. Der Footer bleibt außerhalb der scrollenden Zeilenfläche.
 
@@ -1213,16 +1304,18 @@ fields: [
     select("status", "Zustand"),
 ],
 columns: [{ field: "property.name", label: "Objekt", sortable: false }],
-toolbarFilters: ["property_id"],
+// Optionaler direkter Filter: toolbarFilters: ["property_id"],
 ```
 
-Das Formular sucht aktive Objekte auf dem Server und speichert deren ID. Die Tabellenspalte `property.name` wird automatisch zu einem suchbaren `property_id`-Filter. Der Tabellenfilter verwendet den separaten Filter-Scope, damit auch Einheiten eines archivierten Objekts auffindbar bleiben. Bereits gewählte Datensätze werden für die Anzeige anhand ihrer IDs geladen. Soll ausdrücklich der Name statt die ID verglichen werden, bleibt `filter: { field: "property.name", kind: "text" }` möglich. Such-Scope und gesperrter Formularkontext sind Bedienhilfen; Existenz, Status und Mutationsfreigabe müssen weiterhin serverseitig abgesichert sein.
+Das Formular sucht aktive Objekte auf dem Server und speichert deren ID. Die Tabellenspalte `property.name` wird automatisch zu einem suchbaren `property_id`-Filter. In der Einheitenliste wird er über **Filter → Objekt** geöffnet; es gibt dort keinen zusätzlichen direkten Objektpicker. Der Tabellenfilter verwendet den separaten Filter-Scope, damit auch Einheiten eines archivierten Objekts auffindbar bleiben. Bereits gewählte Datensätze werden für die Anzeige anhand ihrer IDs geladen. Soll ausdrücklich der Name statt die ID verglichen werden, bleibt `filter: { field: "property.name", kind: "text" }` möglich. Such-Scope und gesperrter Formularkontext sind Bedienhilfen; Existenz, Status und Mutationsfreigabe müssen weiterhin serverseitig abgesichert sein.
 
 `ResourceSchemaProvider` lädt nach der Anmeldung alle registrierten Ressourcenbeschreibungen und hydratisiert die Registry atomar, bevor Formulare oder Workbench mounten. Fehlende/ungültige Metadaten zeigen einen Fehler mit Wiederholen statt leerer Optionslisten. Der optionale SessionStorage-Cache gilt fünf Minuten, getrennt nach Benutzer und Frontend-Build; Login, Logout und HTTP 401 entfernen ihn. Gespeichert werden Metadaten, keine Datensätze oder Ausweisinhalte. Native Capabilities sind UI-Hinweise und ersetzen keine Autorisierung.
 
 TypeScript bleibt für Feldreihenfolge, Gruppen, Formularart, Beschriftungen, Hilfetexte, Icons, Rich-Darstellung und React-Renderer zuständig. Der Einheitenpicker im Vertrag verwendet `selectedDisplay: "title"`: eine kompakte Zeile ohne ausgewählten Untertitel oder Badge. Rich-Auswahl bleibt als zentrale Option verfügbar.
 
-### Collection-Views und direkte Filter
+### Collection-Views und optionale direkte Filter
+
+Die aktuellen Module verwenden die gemeinsame Suche-/Filter-/Gruppieren-Toolbar. Direkte `toolbarFilters` sind eine optionale Konfiguration für eigene Module, kein zweiter Standardfilter.
 
 ```ts
 views: [
@@ -1301,7 +1394,9 @@ workbench.openForm({
 
 Der Bearbeiten-Button öffnet das vollständige Formular im selben Panel. Der Stift einer Gruppe startet gezielt die bearbeitbaren Gruppenfelder. Dieser Abschnittsmodus nutzt `FormRequest.fields`; die Workbench serialisiert Feldliste und Rückkehr zur Ansicht im Panel-Descriptor. Der Editor sendet nur die gewählten Attribute plus ID/Version, keine versteckten Änderungen aus anderen Gruppen. Servervalidierung, unveränderbare Fremdschlüssel und gesperrter Elternkontext bleiben wirksam. Nach Speichern oder Abbrechen erscheint wieder die Leseansicht; der Dirty-Check gilt weiterhin. Die vorhandene Mutation aktualisiert betroffene Cache-Zeilen statt die gesamte Tabelle neu zu laden.
 
-### Klappbare Gruppen und Wizard-Zusammenfassung
+### Klappbare Gruppen und optionale Wizard-Zusammenfassung
+
+Das folgende Beispiel zeigt die Erweiterungs-API. Die aktuellen Objekt-/Vertragswizards verwenden keine zusätzliche Summary-Karte.
 
 ```ts
 groups: [
@@ -1327,9 +1422,9 @@ editor: {
 
 `sectionStyle` unterstützt `card` (Standard), `plain` und `collapsible`; `view.sectionStyle` überschreibt die Darstellung für den Lesemodus, andernfalls gilt der Editor-Stil. Gruppen sind standardmäßig offen. `group.collapsible` überschreibt den Gruppenstil, `defaultOpen` bestimmt den Anfangszustand und `summary(values)` die kompakte Zusammenfassung im Kopf. `FormSection` kapselt Header, Actions, Auf-/Zuklappen und Inhalt. Ein Serverfehler öffnet den betroffenen Tab und Abschnitt und fokussiert das Feld; eingeklappte Regionen verlieren keine Eingaben.
 
-Der Header-Stepper orientiert sich an Wizard-4: zentrierte horizontale Schrittnavigation, aktuelle/abgeschlossene Schritte, klare Footer-Actions ohne zusätzlichen Schrittzähler. Im Wizard bleibt die aktive Gruppe offen. `editor.summary` liefert die gemeinsame Key-Value-Zusammenfassung; `editor.wizardSummary` kann alternativ ausschließlich für Wizard/Flow gesetzt werden und hat dort Vorrang. Der Vertrag verwendet diese Variante, damit im normalen Grunddaten-Edit keine zusätzliche Wizard-Karte erscheint.
+Der Header-Stepper orientiert sich an Wizard-4: zentrierte horizontale Schrittnavigation, aktuelle/abgeschlossene Schritte, klare Footer-Actions ohne zusätzlichen Schrittzähler. Im Wizard bleibt die aktive Gruppe offen. `editor.summary` liefert die gemeinsame Key-Value-Zusammenfassung; `editor.wizardSummary` kann alternativ ausschließlich für Wizard/Flow gesetzt werden und hat dort Vorrang. Beide Summary-Props sind optionale Erweiterungspunkte; sie sind in der aktuellen Objekt- und Vertragsanlage nicht gesetzt.
 
-Die Wizard-Zusammenfassung wird mit `FormSummary` im gemeinsamen `FormLayout` umgesetzt: bei ausreichender Containerbreite rechts neben den Feldern sticky, bei schmalem Platz darunter. Wizards mit Zusammenfassung verwenden ein breites Overlay. `items(values, record)` liest Formularwerte lokal; es entstehen keine API-Requests bei jeder Eingabe. Objekte demonstrieren die Zusammenfassung von Bezeichnung, Nummer und Ort. Precognition, Zurück-Navigation und die Speicherung pro Flow-Schritt bleiben unverändert; dies ist keine neue fachliche Transaktionsgrenze.
+Die Wizard-Zusammenfassung wird mit `FormSummary` im gemeinsamen `FormLayout` umgesetzt: bei ausreichender Containerbreite rechts neben den Feldern sticky, bei schmalem Platz darunter. Wizards mit Zusammenfassung verwenden ein breites Overlay. `items(values, record)` liest Formularwerte lokal; es entstehen keine API-Requests bei jeder Eingabe. Objekt- und Vertragswizard verwenden aktuell keine zusätzliche Zusammenfassung. Die Zahlungskarte im Vertrags-Edit bleibt aktiv; auch die Collection-KPIs sind davon unabhängig. Die Standardvertragsanlage speichert erst am Ende gemeinsam; gespeicherte Zwischenschritte gelten nur für ausdrücklich verwendete Legacy-Flows.
 
 ### Gemeinsame Shell, Frames und Seitenbreite
 
@@ -1342,8 +1437,8 @@ Die Wizard-Zusammenfassung wird mit `FormSummary` im gemeinsamen `FormLayout` um
 // mode: "page" | "collection"; width: "workspace" | "reading"
 ```
 
-Die AppShell setzt ihn bereits; normale Pages sollen keinen zweiten Wrapper ergänzen. `workspace` ist maximal 1440 px, `reading` maximal 64rem. `DetailPageLayout`, `LazyTabs`, `WorkspaceColumns` und Tabellen füllen denselben Elterncontainer. Ein Wechsel zwischen Übersicht und Einheiten-/Vertragstab verändert deshalb keine seitenweite Maximalbreite. Horizontales Grid-Scrolling bleibt innerhalb der Tabelle.
+Die AppShell setzt ihn bereits; normale Pages sollen keinen zweiten Wrapper ergänzen. `workspace` ist maximal 1440 px, `reading` maximal 64rem. `DetailPageLayout`, `LazyTabs`, `WorkspaceColumns` und Tabellen füllen denselben Elterncontainer. Ein Wechsel zwischen Übersicht und Einheiten-/Vertragstab verändert deshalb keine seitenweite Maximalbreite. Bei schmalem Platz wechselt das Grid in beschriftete Datensatzzeilen; ein horizontaler Scrollbereich ist nicht vorgesehen.
 
-`ContentCard`, `FormSection`, `KeyValueCard` und `KeyValueRows` nutzen gemeinsame REUI-Frame- und Feldkomponenten im Aufbau der Form-/Form-6-Vorschauen: ruhiger Rahmen, klar getrennte Titel-/Inhaltsbereiche, kurze lesbare Werte und zentrale Action-Slots. Die Login-Komponente orientiert sich an Auth-8 mit einer zentrierten Karte vor dem lokal ausgelieferten Bild `public/images/auth-residence.webp`; kein Split-Layout und keine externe Bildanfrage beim Login. Farben, Abstände und Größen bleiben in Tokens und gemeinsamen Komponenten, nicht in Pages.
+`ContentCard`, `FormSection`, `KeyValueCard` und `KeyValueRows` nutzen gemeinsame REUI-Frame- und Feldkomponenten im Aufbau der Form-/Form-6-Vorschauen: ruhiger Rahmen, klar getrennte Titel-/Inhaltsbereiche, kurze lesbare Werte und zentrale Action-Slots. Die Login-Komponente orientiert sich an Auth-8 mit einer zentrierten Karte vor dem lokal ausgelieferten Bild `public/images/auth-residence.webp`; kein Split-Layout, kein zusätzliches Logo, kein äußerer Footer und keine externe Bildanfrage beim Login. Farben, Abstände und Größen bleiben in Tokens und gemeinsamen Komponenten, nicht in Pages.
 
 Die benannten REUI-Blockvorschauen sind Gestaltungsreferenzen, keine Behauptung einer Übernahme lizenzpflichtiger Blockquellen. Die konkreten Quellen und Assets stehen in [ui-sources.json](ui-sources.json). Der Ausbau erleichtert weitere CRUD-Module; die Freigabegrenzen aus Abschnitt 31 bleiben bestehen.
