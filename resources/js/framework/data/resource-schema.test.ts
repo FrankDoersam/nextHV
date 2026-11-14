@@ -159,6 +159,40 @@ describe("native REST description adapter", () => {
             kind: "relation",
         });
     });
+    it("enables explicitly opted-in sorting through an authorized belongs-to field", () => {
+        const definition = resource();
+        definition.columns[1].sortable = true;
+        const target = { ...schema(), fields: [field("name")] };
+        hydrateResources([definition], { units: schema(), properties: target });
+        expect(definition.columns[1]).toMatchObject({
+            sortable: true,
+            sortField: "property.name",
+        });
+        expect(definition.columns[1]).not.toHaveProperty("reference");
+        target.fields[0].sort = false;
+        hydrateResources([definition], { units: schema(), properties: target });
+        expect(definition.columns[1].sortable).toBe(false);
+    });
+
+    it("maps related response aliases to canonical server sort paths", () => {
+        const definition = resource();
+        definition.columns[1] = {
+            field: "property_record.name",
+            label: "Objekt",
+            sortable: true,
+        };
+        const metadata = schema();
+        metadata.meta.ui.relations.property_id.responseKey = "property_record";
+        hydrateResources([definition], {
+            units: metadata,
+            properties: { ...schema(), fields: [field("name")] },
+        });
+        expect(definition.columns[1]).toMatchObject({
+            sortable: true,
+            sortField: "property.name",
+        });
+    });
+
     it("honors native readonly fields and input hints without enabling client business validation", () => {
         const definition = resource();
         const metadata = schema();
