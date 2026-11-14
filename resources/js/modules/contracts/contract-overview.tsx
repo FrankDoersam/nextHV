@@ -13,6 +13,7 @@ import {
     EmptyState,
     ErrorState,
     Loading,
+    MetricGrid,
 } from "@/components/blocks/content";
 import { Stack } from "@/components/blocks/layout";
 import {
@@ -62,42 +63,48 @@ export default function ContractOverview({ record }: { record: RecordData }) {
     }));
     return (
         <Stack>
-            <WorkspaceColumns variant="metrics">
-                <ContractMetric
-                    title="Monatliche Kondition"
-                    value={
-                        current.isPending
-                            ? "…"
+            <MetricGrid
+                items={[
+                    {
+                        label: "Monatliche Kondition",
+                        value: current.error
+                            ? "—"
                             : condition
                               ? money(condition.monthly_total)
-                              : "—"
-                    }
-                    description={
-                        condition
-                            ? `Gültig seit ${date(condition.effective_from)}`
-                            : "Keine zum heutigen Datum gültige Kondition"
-                    }
-                />
-                <ContractMetric
-                    title="Kaution"
-                    value={money(record.deposit)}
-                    description={label(record.deposit_status)}
-                />
-                <ContractMetric
-                    title="Vertragsbeginn"
-                    value={date(record.starts_on)}
-                    description={
-                        record.ends_on
+                              : "—",
+                        loading: current.isPending,
+                        icon: WalletCards,
+                        hint: current.isPending
+                            ? "Kondition wird geladen"
+                            : current.error
+                              ? "Kondition nicht verfügbar"
+                              : condition
+                                ? `Gültig seit ${date(condition.effective_from)}`
+                                : "Keine gültige Kondition",
+                    },
+                    {
+                        label: "Kaution",
+                        value: money(record.deposit),
+                        icon: WalletCards,
+                        hint: label(record.deposit_status),
+                    },
+                    {
+                        label: "Vertragsbeginn",
+                        value: date(record.starts_on),
+                        icon: CalendarClock,
+                        hint: record.ends_on
                             ? `Endet am ${date(record.ends_on)}`
-                            : "Unbefristeter Vertrag"
-                    }
-                />
-                <ContractMetric
-                    title="Kündigungsfrist"
-                    value={`${record.notice_period_months ?? "—"} Monate`}
-                    description={`Zum ${label(record.notice_to)}`}
-                />
-            </WorkspaceColumns>
+                            : "Unbefristeter Vertrag",
+                    },
+                    {
+                        label: "Kündigungsfrist",
+                        value: String(record.notice_period_months ?? "—"),
+                        suffix: "Monate",
+                        icon: FileX2,
+                        hint: `Zum ${label(record.notice_to)}`,
+                    },
+                ]}
+            />
             <WorkspaceColumns>
                 <WorkspaceCard
                     title="Vertrag & Laufzeit"
@@ -159,7 +166,7 @@ export default function ContractOverview({ record }: { record: RecordData }) {
                                     record.parties_count ??
                                     0,
                             )}{" "}
-                            Beteiligte · vollständig im Tab „Vertragsbeteiligte“
+                            Beteiligte · vollständig im Tab „Beteiligte“
                         </span>
                     }
                 >
@@ -314,23 +321,5 @@ export default function ContractOverview({ record }: { record: RecordData }) {
                 />
             </WorkspaceCard>
         </Stack>
-    );
-}
-function ContractMetric({
-    title,
-    value,
-    description,
-}: {
-    title: string;
-    value: string;
-    description: string;
-}) {
-    return (
-        <WorkspaceCard title={title} compact>
-            <p className="text-2xl font-medium tracking-tight tabular-nums">
-                {value}
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">{description}</p>
-        </WorkspaceCard>
     );
 }

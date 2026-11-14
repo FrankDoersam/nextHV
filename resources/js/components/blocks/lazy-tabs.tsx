@@ -1,4 +1,5 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { ResponsiveTabList } from "./responsive-tab-list";
 import type { LucideIcon } from "lucide-react";
 import { type ReactNode } from "react";
 import { useSearchParams } from "react-router";
@@ -22,42 +23,24 @@ export function LazyTabs({
 }) {
     const [params, setParams] = useSearchParams();
     const selected = params.get(urlKey) ?? initial;
-    const active = tabs.some((t) => t.id === selected) ? selected : initial;
+    const active = tabs.some((t) => t.id === selected)
+        ? selected
+        : (tabs.find((t) => t.id === initial)?.id ?? tabs[0]?.id ?? "");
+    const select = (id: string) =>
+        setParams((current) => {
+            const next = new URLSearchParams(current);
+            if (id === initial) next.delete(urlKey);
+            else next.set(urlKey, id);
+            return next;
+        });
     return (
-        <Tabs
-            value={active}
-            onValueChange={(v) =>
-                setParams((current) => {
-                    const next = new URLSearchParams(current);
-                    if (String(v) === initial) next.delete(urlKey);
-                    else next.set(urlKey, String(v));
-                    return next;
-                })
-            }
-        >
-            <div className="w-full min-w-0 max-w-full border-b">
-                <TabsList
-                    responsive
-                    variant="line"
-                    className="h-11 min-w-0 gap-1"
-                >
-                    {tabs.map((tab) => (
-                        <TabsTrigger
-                            key={tab.id}
-                            value={tab.id}
-                            icon={tab.icon}
-                            icons={icons}
-                        >
-                            {tab.label}
-                            {tab.count != null && (
-                                <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] leading-4 text-muted-foreground tabular-nums in-data-active:bg-primary/10 in-data-active:text-primary">
-                                    {tab.count}
-                                </span>
-                            )}
-                        </TabsTrigger>
-                    ))}
-                </TabsList>
-            </div>
+        <Tabs value={active} onValueChange={(v) => select(String(v))}>
+            <ResponsiveTabList
+                tabs={tabs}
+                active={active}
+                onChange={select}
+                icons={icons}
+            />
             {tabs.map((tab) => (
                 <TabsContent key={tab.id} value={tab.id}>
                     {active === tab.id && tab.render()}

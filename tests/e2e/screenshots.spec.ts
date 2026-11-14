@@ -843,8 +843,6 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(lockedProperty).toBeDisabled();
     await expect(lockedProperty).toHaveValue("Lindenhöfe");
     await capture("34-einheit-kontext-link");
-<<<<<<< HEAD
-=======
     // The capture tour is faster than human navigation. Respect the server's
     // remaining request budget before starting the next batch of scenarios.
     if (apiRemaining < 60 && apiResetAt > Date.now()) {
@@ -852,7 +850,6 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
             setTimeout(resolve, apiResetAt - Date.now() + 250),
         );
     }
->>>>>>> a566580e7c7c9b6eee1aa32aa50049663d8432e7
     await page.goto("/business-partners");
     await page
         .getByRole("textbox", { name: "Geschäftspartner durchsuchen" })
@@ -941,6 +938,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         await page.setViewportSize({ width, height: 900 });
         await checkTabLayout();
         const tabList = page.getByRole("tablist");
+        expect((await tabList.boundingBox())!.height).toBeLessThanOrEqual(45);
         expect(
             await tabList.evaluate(
                 (element) => element.scrollWidth - element.clientWidth,
@@ -954,7 +952,25 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         await capture(
             width === 390 ? "42-vertrag-tabs-iphone" : "43-vertrag-tabs-ipad",
         );
+        const metrics = page.locator('[data-slot="metric-card"]');
+        await expect(metrics).toHaveCount(4);
+        const firstMetric = (await metrics.nth(0).boundingBox())!;
+        const secondMetric = (await metrics.nth(1).boundingBox())!;
+        expect(Math.abs(firstMetric.y - secondMetric.y)).toBeLessThan(2);
+        expect(secondMetric.x).toBeGreaterThan(firstMetric.x);
     }
+    await page.getByRole("button", { name: "Weitere Bereiche" }).click();
+    await page.getByRole("menuitem", { name: /Eingehende Links/ }).click();
+    await expect(page).toHaveURL(/tab=incoming-links/);
+    await expect(
+        page.getByRole("tab", { name: /Eingehende Links/ }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(
+        page
+            .getByRole("tabpanel")
+            .getByText("Eingehende Verknüpfungen", { exact: true }),
+    ).toBeVisible();
+    await capture("45-vertrag-navigation-mobil");
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto("/contracts?panel=contracts/new");
     const createContract = page.getByRole("dialog", {

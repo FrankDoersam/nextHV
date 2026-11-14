@@ -72,7 +72,7 @@ export default function ContractDetailPage() {
                         },
                         ...contracts.relations!.map((relation) => ({
                             id: relation.resource,
-                            label: relation.label,
+                            label: relation.navigationLabel ?? relation.label,
                             icon:
                                 relation.icon ??
                                 getResource(relation.resource).icon,
@@ -89,7 +89,7 @@ export default function ContractDetailPage() {
                         {
                             id: "incoming-links",
                             icon: Link2,
-                            label: "Eingehende Verknüpfungen",
+                            label: "Eingehende Links",
                             count: Number(record.incoming_links_count ?? 0),
                             render: () => (
                                 <RelationCollection
