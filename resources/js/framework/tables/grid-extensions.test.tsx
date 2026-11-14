@@ -177,6 +177,35 @@ describe("collection scopes and cells", () => {
         ).toBeVisible();
         expect(screen.getByText("0–0 von 0")).toBeVisible();
     });
+    it("shows refresh progress inside the tab panel, never above the tab strip", async () => {
+        const sample = {
+            data: [{ id: 1, name: "Haus", status: "active", updated_at: "2026-01-01" }],
+            total: 1,
+            current_page: 1,
+            last_page: 1,
+        };
+        let finishRefresh!: (value: typeof sample) => void;
+        vi.mocked(dataProvider.list)
+            .mockResolvedValueOnce(sample)
+            .mockImplementationOnce(
+                () => new Promise<typeof sample>((resolve) => {
+                    finishRefresh = resolve;
+                }),
+            );
+        mount();
+        await screen.findByText("Haus");
+
+        await userEvent.setup().click(screen.getByRole("button", { name: "Aktualisieren" }));
+        const panel = screen.getByRole("tabpanel");
+        await waitFor(() => {
+            expect(panel.querySelector('[data-slot="collection-table-progress"]')).not.toBeNull();
+        });
+        expect(document.querySelectorAll('[data-slot="collection-table-progress"]')).toHaveLength(1);
+        finishRefresh(sample);
+        await waitFor(() => {
+            expect(panel.querySelector('[data-slot="collection-table-progress"]')).toBeNull();
+        });
+    });
     it("validates configured view IDs and keeps unrelated nested-panel URL state", () => {
         const state = readGridState(
             new URLSearchParams("view=active&q=Haus"),
