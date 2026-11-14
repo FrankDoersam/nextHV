@@ -50,7 +50,7 @@ const resource: ResourceDefinition = {
 function Location() {
     return <output aria-label="URL">{useLocation().search}</output>;
 }
-function mount(initialEntry = "/?page=3") {
+function mount(initialEntry = "/?page=3", selectedResource: ResourceDefinition = resource) {
     return render(
         <MemoryRouter initialEntries={[initialEntry]}>
             <QueryClientProvider
@@ -62,7 +62,7 @@ function mount(initialEntry = "/?page=3") {
             >
                 <WorkbenchProvider>
                     <ResourceCollection
-                        resource={resource}
+                        resource={selectedResource}
                         fixedFilters={[{ field: "property_id", value: 9 }]}
                         filterable={false}
                         groupable={false}
@@ -243,6 +243,45 @@ describe("collection scopes and cells", () => {
         expect(compileGridFilters(state, definitions)).toEqual([
             { field: "property_id", operator: "in", value: [9, 12] },
         ]);
+    });
+    it("sends the related name's canonical API sort path without client-side sorting", async () => {
+        const custom: ResourceDefinition = {
+            ...resource,
+            columns: [
+                ...resource.columns,
+                {
+                    field: "property_record.name",
+                    label: "Objekt",
+                    sortable: true,
+                    sortField: "property.name",
+                },
+            ],
+        };
+        vi.mocked(dataProvider.list).mockResolvedValue({
+            data: [{
+                id: 1,
+                name: "Wohnung 01",
+                status: "active",
+                property_record: { name: "Birkenhof" },
+                updated_at: "2026-11-14",
+            }],
+            total: 1,
+            current_page: 1,
+            last_page: 1,
+        });
+        const encoded = encodeURIComponent(
+            JSON.stringify([{ id: "property_record.name", desc: false }]),
+        );
+        mount(`/?sort=${encoded}`, custom);
+
+        await screen.findByText("Birkenhof");
+        await waitFor(() => expect(dataProvider.list).toHaveBeenCalledWith(
+            custom,
+            expect.objectContaining({
+                sort: [{ field: "property.name", direction: "asc" }],
+            }),
+            expect.any(AbortSignal),
+        ));
     });
     it("renders related table values as plain text without automatic Cell navigation", () => {
         render(
