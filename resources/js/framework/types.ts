@@ -1,4 +1,5 @@
 import type { KeyValueItem } from "@/components/blocks/key-value-card";
+import type { NavigationItemDefinition } from "./navigation/sidebar-model";
 import type { ChoiceOption } from "@/components/fields/choice-picker";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
@@ -215,6 +216,18 @@ export interface ResourceDefinition {
     aggregates?: { relation: string; type: string; field?: string }[];
     navigation?: boolean;
     navigationGroup?: string;
+    /** Optional nested/sidebar behaviors; resource CRUD metadata stays in this registry. */
+    navigationItem?: Pick<
+        NavigationItemDefinition,
+        | "description"
+        | "tooltip"
+        | "badge"
+        | "defaultOpen"
+        | "visible"
+        | "enabled"
+        | "permission"
+        | "children"
+    >;
     deletionCheck?: boolean;
     actions: ResourceAction[];
     bulkActions?: false | string[];
