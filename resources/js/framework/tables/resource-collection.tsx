@@ -765,11 +765,7 @@ export function ResourceCollection({
             <div className="flex min-w-0 flex-wrap items-center gap-2.5">
                 <div
                     data-slot="collection-controls"
-<<<<<<< HEAD
-                    className="flex min-w-0 flex-1 basis-[32rem] flex-wrap items-center gap-2.5"
-=======
                     className="flex min-w-0 max-w-full flex-auto flex-wrap items-center gap-2.5"
->>>>>>> 295ac0c2347dca2a96344398238933dbbe2db4f7
                 >
                     <DirectFilters
                         definitions={directDefinitions}
