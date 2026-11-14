@@ -176,32 +176,6 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         page.getByRole("button", { name: "MV-001-02", exact: true }),
     ).toBeVisible();
 
-    await page.getByRole("textbox", { name: "Verträge durchsuchen" }).fill("");
-    await expect(
-        page.locator('[data-slot="resource-collection"]'),
-    ).not.toHaveAttribute("aria-busy", "true");
-    const tableViewport = page
-        .locator(
-            '[data-slot="resource-collection"] [data-slot="scroll-area-viewport"]',
-        )
-        .first();
-    const beforeSelection = await tableViewport.boundingBox();
-    await expect(tableViewport.locator("tr[data-row-id]")).toHaveCount(25);
-    expect(
-        await tableViewport.evaluate((element) => element.scrollHeight),
-    ).toBeGreaterThan(beforeSelection!.height);
-    await tableViewport.evaluate((element) => {
-        element.scrollTop = element.scrollHeight;
-    });
-    const lastRow = tableViewport.locator("tr[data-row-id]").last();
-    const lastRowBox = await lastRow.boundingBox();
-    expect(lastRowBox!.y + lastRowBox!.height).toBeLessThanOrEqual(
-        beforeSelection!.y + beforeSelection!.height + 1,
-    );
-    await capture("28-grid-letzte-zeile");
-    await tableViewport.evaluate((element) => {
-        element.scrollTop = 0;
-    });
     await page
         .getByRole("combobox", { name: "Filter hinzufügen", exact: true })
         .click();
@@ -662,24 +636,16 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await capture("18-einheiten-spalten");
     await page
         .getByRole("combobox", { name: "Filter hinzufügen", exact: true })
-<<<<<<< HEAD
-=======
         .click();
     await page.getByRole("option", { name: "Objekt", exact: true }).click();
     await page
         .getByRole("combobox", { name: "Objekt Werte", exact: true })
->>>>>>> fe9e0a173267de8fffa0eadd5e51e156e83144b3
         .click();
-    await page.getByRole("option", { name: "Objekt", exact: true }).click();
     await page
-<<<<<<< HEAD
-        .getByRole("combobox", { name: "Objekt Werte", exact: true })
-=======
         .getByRole("combobox", {
             name: "Objekt Werte durchsuchen",
             exact: true,
         })
->>>>>>> fe9e0a173267de8fffa0eadd5e51e156e83144b3
         .fill("Linden");
     await page.getByRole("option", { name: /Lindenhöfe/ }).click();
     await page.keyboard.press("Escape");

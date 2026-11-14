@@ -1099,14 +1099,7 @@ export function ResourceCollection({
                                     </TableViewport>
                                 ) : (
                                     <DataGridContainer
-<<<<<<< HEAD
-                                        className={cn(
-                                            "[&_[data-slot=data-grid-table-viewport]]:overflow-x-hidden! [&_[data-slot=data-grid-table-viewport]]:[scrollbar-gutter:stable]",
-                                            !compact && "h-full",
-                                        )}
-=======
                                         className={cn(!compact && "h-full")}
->>>>>>> fe9e0a173267de8fffa0eadd5e51e156e83144b3
                                     >
                                         {!stackedRows &&
                                         rows.length > 0 &&
