@@ -53,8 +53,22 @@ const valid = (
     context: NavigationContext,
 ) => typeof condition === "function" ? condition(context) : condition !== false;
 
+export type NavigationGroupSettings = Partial<Pick<
+    NavigationItemDefinition,
+    | "description"
+    | "tooltip"
+    | "badge"
+    | "defaultOpen"
+    | "visible"
+    | "enabled"
+    | "permission"
+>>;
+
 /** Keep the existing resource registry as the source of truth; declarations only enrich its navigation. */
-export function defaultNavigation(resources: ResourceDefinition[]): NavigationItemDefinition[] {
+export function defaultNavigation(
+    resources: ResourceDefinition[],
+    groupSettings: Record<string, NavigationGroupSettings> = {},
+): NavigationItemDefinition[] {
     const groups = new Map<string, NavigationItemDefinition[]>();
     for (const resource of resources) {
         if (resource.navigation === false) continue;
@@ -79,12 +93,12 @@ export function defaultNavigation(resources: ResourceDefinition[]): NavigationIt
     return [
         { id: "home", label: "Übersicht", icon: House, to: "/" },
         ...[...groups].map(([group, children]) => ({
+            ...groupSettings[group],
             id: `group:${group}`,
             label: group,
-            description: group === "Stammdaten"
-                ? "Objekte, Einheiten und Geschäftspartner"
-                : undefined,
-            defaultOpen: true,
+            description: groupSettings[group]?.description ??
+                (group === "Stammdaten" ? "Objekte, Einheiten und Geschäftspartner" : undefined),
+            defaultOpen: groupSettings[group]?.defaultOpen ?? true,
             children,
         })),
     ];
