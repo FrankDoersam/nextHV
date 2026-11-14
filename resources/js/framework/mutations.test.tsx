@@ -202,6 +202,13 @@ describe("standard record mutations", () => {
         const { wrapper } = setup();
         const save = vi
             .spyOn(dataProvider, "save")
+            .mockRejectedValueOnce(
+                new ApiError(422, "Serverprüfung", {
+                    "mutate.0.attributes.name": [
+                        "Dieses Feld ist erforderlich.",
+                    ],
+                }),
+            )
             .mockResolvedValue({ ...old, name: "Lindenhof" });
         const user = userEvent.setup();
         render(
@@ -221,9 +228,9 @@ describe("standard record mutations", () => {
         await user.clear(screen.getByRole("textbox", { name: /Bezeichnung/ }));
         await user.click(screen.getByRole("button", { name: "Speichern" }));
         expect(
-            await screen.findByText("Dieses Feld ist erforderlich."),
+            (await screen.findAllByText("Dieses Feld ist erforderlich."))[0],
         ).toBeVisible();
-        expect(save).not.toHaveBeenCalled();
+        expect(save).toHaveBeenCalledWith(resource, { name: "" }, old);
         await user.type(
             screen.getByRole("textbox", { name: /Bezeichnung/ }),
             "Lindenhof",

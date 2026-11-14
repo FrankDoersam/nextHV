@@ -73,6 +73,16 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         page.locator('[data-slot="resource-collection"]'),
     ).not.toHaveAttribute("aria-busy", "true");
     await expect(page).toHaveURL(/filters=/);
+    await expect(
+        page.getByRole("button", { name: "Sheet", exact: true }),
+    ).toHaveCount(0);
+    const searchBox = await page
+        .getByRole("textbox", { name: "Verträge durchsuchen" })
+        .boundingBox();
+    const filterBox = await page
+        .getByRole("combobox", { name: "Filter hinzufügen" })
+        .boundingBox();
+    expect(Math.abs(searchBox!.y - filterBox!.y)).toBeLessThanOrEqual(4);
     await capture("02-vertraege-tabelle");
     await page
         .getByRole("combobox", { name: "Status Werte", exact: true })
@@ -82,6 +92,23 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     ).toHaveAttribute("aria-selected", "true");
     await capture("06-grid-filter");
     await page.keyboard.press("Escape");
+
+    await page
+        .getByRole("checkbox", { name: "Alle Zeilen dieser Seite auswählen" })
+        .click();
+    const bulkBar = page.getByRole("region", { name: "Auswahlaktionen" });
+    await expect(bulkBar).toBeVisible();
+    await capture("07-bulk-auswahl");
+    await bulkBar
+        .getByRole("button", { name: "Bearbeiten", exact: true })
+        .click();
+    await expect(
+        page.getByRole("heading", { name: "Bearbeiten", exact: true }),
+    ).toBeVisible();
+    await page.getByRole("checkbox", { name: "Kautionsstatus ändern" }).click();
+    await capture("08-bulk-bearbeiten");
+    await page.getByRole("button", { name: "Abbrechen", exact: true }).click();
+    await bulkBar.getByRole("button", { name: "Auswahl aufheben" }).click();
 
     await page.getByRole("button", { name: "MV-001-01", exact: true }).click();
     await expect(
@@ -117,7 +144,27 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         .click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByLabel("Nummer", { exact: false })).toBeVisible();
+    await expect(page.getByText(/^Schritt \d+ von \d+$/)).toHaveCount(0);
     await capture("04-vertrag-anlegen");
+    await page.getByRole("button", { name: "Abbrechen", exact: true }).click();
+
+    await page.getByRole("link", { name: "Objekte", exact: true }).click();
+    await page
+        .getByRole("textbox", { name: "Objekte durchsuchen" })
+        .fill("Linden");
+    await expect(
+        page.getByRole("button", { name: "Lindenhöfe", exact: true }),
+    ).toBeVisible();
+    await page.getByRole("cell", { name: "OBJ-001", exact: true }).dblclick();
+    await expect(
+        page.getByRole("heading", { name: "Objekt bearbeiten" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Bezeichnung aufbereiten" }).click();
+    await expect(
+        page.getByRole("menuitem", { name: /Adresse übernehmen/ }),
+    ).toBeVisible();
+    await capture("09-feldaktionen");
+    await page.keyboard.press("Escape");
     await page.getByRole("button", { name: "Abbrechen", exact: true }).click();
 
     await page.setViewportSize({ width: 390, height: 844 });

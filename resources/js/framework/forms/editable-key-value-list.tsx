@@ -2,7 +2,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { patchRecord } from "../data/record-cache";
 import { useEffect, useState, type ReactNode } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,7 @@ import type {
     ResourceDefinition,
     Values,
 } from "../types";
-import { initialValues, schemaFor } from "./schema";
+import { initialValues } from "./initial-values";
 import { date, label, money } from "@/lib/format";
 
 export interface KeyValueProperty {
@@ -143,7 +142,6 @@ function PropertyEditor({
     const [error, setError] = useState<unknown>();
     const form = useForm<Values>({
         defaultValues: initialValues(resource.fields, snapshot),
-        resolver: zodResolver(schemaFor([field])),
         mode: "onBlur",
     });
     const save = useSaveRecord(resource);
@@ -151,6 +149,7 @@ function PropertyEditor({
     return (
         <FormProvider {...form}>
             <form
+                noValidate
                 className="space-y-3"
                 aria-label={`${field.label} ändern`}
                 onSubmit={form.handleSubmit(async (values) => {

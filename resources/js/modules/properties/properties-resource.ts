@@ -1,5 +1,6 @@
+import { PropertyNameActions } from "./name-actions";
 import { InspectPropertyAction, PropertyReportAction } from "./inspect-action";
-import { DeleteAction, EditAction } from "@/framework/actions";
+import { BulkEditAction, DeleteAction, EditAction } from "@/framework/actions";
 import type { ResourceDefinition } from "@/framework/types";
 import {
     code,
@@ -21,6 +22,12 @@ export const properties: ResourceDefinition = {
     navigationGroup: "Stammdaten",
     titleField: "name",
     supportsClone: true,
+    bulkEditable: [
+        "manager_name",
+        "manager_email",
+        "manager_phone",
+        "next_inspection_on",
+    ],
     groups: [
         { id: "general", label: "Objekt" },
         { id: "address", label: "Adresse" },
@@ -29,7 +36,10 @@ export const properties: ResourceDefinition = {
     ],
     fields: [
         code,
-        text("name", "Bezeichnung", "general", true),
+        {
+            ...text("name", "Bezeichnung", "general", true),
+            suffixActions: [new PropertyNameActions()],
+        },
         select("type", "Nutzung", ["residential", "commercial", "mixed"]),
         select("management_type", "Verwaltungsart", [
             "rental",
@@ -106,6 +116,7 @@ export const properties: ResourceDefinition = {
     ],
     deletionCheck: true,
     actions: [
+        new BulkEditAction(),
         new InspectPropertyAction(),
         new PropertyReportAction(),
         new EditAction(),

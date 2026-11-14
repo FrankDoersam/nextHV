@@ -74,6 +74,9 @@ export interface FieldDefinition {
     readonlyOnEdit?: boolean;
     writeOnly?: boolean;
     reduced?: boolean;
+    prefixActions?: ResourceAction[];
+    suffixActions?: ResourceAction[];
+    /** Demo-only schemaFor extension. REST forms do not run client business rules. */
     validate?: (value: unknown, values: Values) => string | undefined;
 }
 export interface ColumnDefinition {
@@ -106,6 +109,8 @@ export interface ResourceDefinition {
     deletionCheck?: boolean;
     actions: ResourceAction[];
     supportsClone?: boolean;
+    presentationToggle?: boolean;
+    bulkEditable?: string[];
     createFlow?: string;
     relations?: RelationDefinition[];
 }

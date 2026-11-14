@@ -13,9 +13,8 @@ import {
     UNSAFE_DataRouterContext,
 } from "react-router";
 import { toast } from "sonner";
-import type { ResourceAction } from "./actions";
+import { actionAvailability, type ResourceAction } from "./actions";
 import { useReload } from "./data/hooks";
-import { can } from "./permissions";
 import { readPanels, panelSearch, type PanelLink } from "./navigation/panels";
 import { NavigationGuard } from "./navigation/navigation-guard";
 import { advanceFlow, flowPanel, type RecordReference } from "./forms/flow";
@@ -173,17 +172,8 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
                       },
         });
     };
+    const immediateRunning = useRef(false);
     const runAction: Workbench["runAction"] = (definition, context) => {
-        if (
-            !context.rows.length ||
-            (!definition.bulk && context.rows.length !== 1) ||
-            !context.rows.every(
-                (row) =>
-                    definition.visible(row) &&
-                    can(context.resource.name, definition.id, row),
-            )
-        )
-            return;
         const instance: ResourceInstance = {
             reload,
             openForm,
@@ -193,8 +183,34 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
             ...context.instance,
         };
         const fullContext = { ...context, instance, values: {} };
-        if (definition.id === "edit") {
-            void definition.execute(fullContext);
+        const availability = actionAvailability(definition, fullContext);
+        if (availability !== true || definition.children.length) {
+            if (typeof availability === "string") toast.error(availability);
+            return;
+        }
+        if (definition.interaction === "immediate") {
+            if (immediateRunning.current) return;
+            immediateRunning.current = true;
+            void (async () => {
+                try {
+                    completed(
+                        await definition.execute(fullContext),
+                        fullContext,
+                    );
+                    if (definition.refresh) {
+                        await instance.reload();
+                        await instance.refreshForm?.();
+                    }
+                } catch (error) {
+                    toast.error(
+                        error instanceof Error
+                            ? error.message
+                            : "Die Action ist fehlgeschlagen.",
+                    );
+                } finally {
+                    immediateRunning.current = false;
+                }
+            })();
             return;
         }
         setAction({ definition, context: fullContext });

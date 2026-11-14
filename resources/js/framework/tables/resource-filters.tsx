@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ListFilter, X } from "lucide-react";
 import { ChoicePicker } from "@/components/fields/choice-picker";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,12 @@ export function ResourceFilters({
     definitions,
     value,
     onChange,
+    renderToolbar,
 }: {
     definitions: GridFilterDefinition[];
     value: GridFilters;
     onChange: (filters: GridFilters) => void;
+    renderToolbar?: (trigger: ReactNode) => ReactNode;
 }) {
     const [draft, setDraft] = useState<{
         field: string;
@@ -41,28 +43,30 @@ export function ResourceFilters({
         onChange(next);
         if (draft?.field === field) setDraft(null);
     };
-    return (
+    const trigger = (
+        <ChoicePicker
+            presentation="menu"
+            triggerIcon={<ListFilter />}
+            aria-label="Filter hinzufügen"
+            placeholder="Filter"
+            clearable={false}
+            value={null}
+            onChange={(field) =>
+                setDraft({ field: String(field), operator: "in" })
+            }
+            options={definitions.map((field) => ({
+                value: field.field,
+                label: field.label,
+                disabled: !!value[field.field] || draft?.field === field.field,
+            }))}
+        />
+    );
+    const controls = (
         <div
-            className="flex min-w-0 flex-wrap items-center gap-2"
+            className="flex min-w-0 max-w-full flex-wrap items-center gap-2"
             aria-label="Tabellenfilter"
         >
-            <ChoicePicker
-                presentation="menu"
-                triggerIcon={<ListFilter />}
-                aria-label="Filter hinzufügen"
-                placeholder="Filter"
-                clearable={false}
-                value={null}
-                onChange={(field) =>
-                    setDraft({ field: String(field), operator: "in" })
-                }
-                options={definitions.map((field) => ({
-                    value: field.field,
-                    label: field.label,
-                    disabled:
-                        !!value[field.field] || draft?.field === field.field,
-                }))}
-            />
+            {trigger}
             {active.map((field) => {
                 const rule = value[field.field] ?? {
                     operator: draft?.operator ?? "in",
@@ -151,4 +155,5 @@ export function ResourceFilters({
             )}
         </div>
     );
+    return renderToolbar ? renderToolbar(controls) : controls;
 }

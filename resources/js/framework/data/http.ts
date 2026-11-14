@@ -27,12 +27,14 @@ export async function request<T>(
     body?: unknown,
     method = body === undefined ? "GET" : "POST",
     signal?: AbortSignal,
+    extraHeaders: Record<string, string> = {},
 ): Promise<T> {
     const token = document.cookie
         .split("; ")
         .find((c) => c.startsWith("XSRF-TOKEN="))
         ?.slice(11);
     const headers: Record<string, string> = {
+        ...extraHeaders,
         Accept: "application/json",
         "X-Requested-With": "XMLHttpRequest",
     };
@@ -51,6 +53,7 @@ export async function request<T>(
                   ? body
                   : JSON.stringify(body),
     });
+    if (response.status === 204) return undefined as T;
     const result = await response
         .json()
         .catch(() => ({ message: "Die Antwort konnte nicht gelesen werden." }));

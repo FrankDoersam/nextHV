@@ -30,6 +30,7 @@ export function Overlay({
     stacked = false,
     busy = false,
     size = "form",
+    fill = false,
 }: {
     open: boolean;
     onClose: () => void;
@@ -43,6 +44,7 @@ export function Overlay({
     stacked?: boolean;
     busy?: boolean;
     size?: "form" | "compact" | "wide";
+    fill?: boolean;
 }) {
     const close = () => {
         if (!busy) onClose();
@@ -86,6 +88,7 @@ export function Overlay({
                     data-stacked={stacked || undefined}
                     className={cn(
                         "crud-dialog flex max-h-[92dvh] flex-col gap-0 overflow-hidden p-0 shadow-2xl",
+                        fill && "h-[min(52rem,92dvh)]",
                         size === "compact"
                             ? "sm:max-w-lg"
                             : size === "wide"

@@ -1,3 +1,9 @@
+import {
+    InputGroup,
+    InputGroupInput,
+    InputGroupAddon,
+} from "@/components/ui/input-group";
+import { FieldActions } from "@/framework/forms/form-action-scope";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,6 +53,10 @@ export function ResourceField({
                     value: field.value,
                     onChange: field.onChange,
                 };
+                const hasActions = !!(
+                    d.prefixActions?.length || d.suffixActions?.length
+                );
+                const TextInput = hasActions ? InputGroupInput : Input;
                 let input;
                 switch (d.kind) {
                     case "relation":
@@ -180,7 +190,7 @@ export function ResourceField({
                         break;
                     case "number":
                         input = (
-                            <Input
+                            <TextInput
                                 {...common}
                                 ref={field.ref}
                                 type="number"
@@ -201,13 +211,17 @@ export function ResourceField({
                                     )
                                 }
                                 onBlur={field.onBlur}
-                                className="h-9 bg-card"
+                                className={
+                                    hasActions
+                                        ? "h-full bg-transparent"
+                                        : "h-9 bg-card"
+                                }
                             />
                         );
                         break;
                     default:
                         input = (
-                            <Input
+                            <TextInput
                                 {...common}
                                 ref={field.ref}
                                 type={d.kind === "email" ? "email" : "text"}
@@ -217,7 +231,11 @@ export function ResourceField({
                                 maxLength={d.maxLength}
                                 minLength={d.minLength}
                                 placeholder={d.placeholder}
-                                className="h-9 bg-card"
+                                className={
+                                    hasActions
+                                        ? "h-full bg-transparent"
+                                        : "h-9 bg-card"
+                                }
                             />
                         );
                 }
@@ -241,7 +259,32 @@ export function ResourceField({
                         }
                         counter={counter}
                     >
-                        {input}
+                        {hasActions &&
+                        [undefined, "text", "email", "number"].includes(
+                            d.kind,
+                        ) ? (
+                            <InputGroup className="h-9 bg-card">
+                                {d.prefixActions?.length ? (
+                                    <InputGroupAddon align="inline-start">
+                                        <FieldActions
+                                            actions={d.prefixActions}
+                                            disabled={disabled}
+                                        />
+                                    </InputGroupAddon>
+                                ) : null}
+                                {input}
+                                {d.suffixActions?.length ? (
+                                    <InputGroupAddon align="inline-end">
+                                        <FieldActions
+                                            actions={d.suffixActions}
+                                            disabled={disabled}
+                                        />
+                                    </InputGroupAddon>
+                                ) : null}
+                            </InputGroup>
+                        ) : (
+                            input
+                        )}
                     </BaseField>
                 );
             }}

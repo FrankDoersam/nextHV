@@ -29,6 +29,35 @@ export function searchPayload(
         },
     };
 }
+/** Use exactly the same native REST payload for validation, single saves and atomic bulk updates. */
+export function mutationPayload(
+    resource: ResourceDefinition,
+    values: Values,
+    rows?: RecordData[],
+) {
+    const attributes = Object.fromEntries(
+        resource.fields
+            .filter(
+                (f) =>
+                    !(rows && f.readonlyOnEdit) && values[f.name] !== undefined,
+            )
+            .map((f) => [
+                f.name,
+                values[f.name] === "" && f.nullable ? null : values[f.name],
+            ]),
+    );
+    return {
+        mutate: (rows ?? [undefined]).map((row) => ({
+            operation: row ? "update" : "create",
+            ...(row ? { key: row.id, version: row.updated_at } : {}),
+            attributes,
+        })),
+        response: {
+            ...(resource.includes ? { includes: resource.includes } : {}),
+            ...(resource.aggregates ? { aggregates: resource.aggregates } : {}),
+        },
+    };
+}
 export const dataProvider = {
     list: (
         resource: ResourceDefinition,
@@ -50,39 +79,43 @@ export const dataProvider = {
         return result.data[0];
     },
     async save(resource: ResourceDefinition, values: Values, row?: RecordData) {
-        const attributes = Object.fromEntries(
-            resource.fields
-                .filter((f) => !(row && f.readonlyOnEdit))
-                .filter((f) => values[f.name] !== undefined)
-                .map((f) => [
-                    f.name,
-                    values[f.name] === "" && f.nullable ? null : values[f.name],
-                ]),
-        );
         const result = await request<{ records: RecordData[] }>(
             `/api/v1/${resource.name}/mutate`,
-            {
-                mutate: [
-                    {
-                        operation: row ? "update" : "create",
-                        ...(row
-                            ? { key: row.id, version: row.updated_at }
-                            : {}),
-                        attributes,
-                    },
-                ],
-                response: {
-                    ...(resource.includes
-                        ? { includes: resource.includes }
-                        : {}),
-                    ...(resource.aggregates
-                        ? { aggregates: resource.aggregates }
-                        : {}),
-                },
-            },
+            mutationPayload(resource, values, row ? [row] : undefined),
         );
         return result.records[0];
     },
+    validate: (
+        resource: ResourceDefinition,
+        values: Values,
+        row?: RecordData,
+        only?: string[],
+    ) =>
+        request<void>(
+            `/api/v1/${resource.name}/mutate`,
+            mutationPayload(resource, values, row ? [row] : undefined),
+            "POST",
+            undefined,
+            {
+                Precognition: "true",
+                ...(only?.length
+                    ? {
+                          "Precognition-Validate-Only": only
+                              .map((name) => `mutate.0.attributes.${name}`)
+                              .join(","),
+                      }
+                    : {}),
+            },
+        ),
+    saveMany: (
+        resource: ResourceDefinition,
+        values: Values,
+        rows: RecordData[],
+    ) =>
+        request<{ records: RecordData[] }>(
+            `/api/v1/${resource.name}/mutate`,
+            mutationPayload(resource, values, rows),
+        ),
     destroy: (resource: string, rows: RecordData[], confirmation?: string) =>
         request(
             `/api/v1/${resource}`,
@@ -121,7 +154,7 @@ export function normalizeValidationErrors(
     return Object.fromEntries(
         Object.entries(errors).map(([key, value]) => [
             key
-                .replace(/^mutate\.0\.attributes\./, "")
+                .replace(/^mutate\.\d+\.attributes\./, "")
                 .replace(/^fields\./, ""),
             value[0],
         ]),

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { FieldDefinition, Values } from "../types";
+import type { FieldDefinition } from "../types";
 function validDate(value: unknown, month = false): boolean {
     const text = String(value);
     if (month) return /^\d{4}-(0[1-9]|1[0-2])$/.test(text);
@@ -10,6 +10,7 @@ function validDate(value: unknown, month = false): boolean {
         parsed.toISOString().slice(0, 10) === text
     );
 }
+/** Optional standalone component-demo validation. REST editors use server validation only. */
 export function schemaFor(fields: FieldDefinition[]) {
     return z.record(z.string(), z.unknown()).superRefine((values, ctx) => {
         for (const field of fields) {
@@ -156,35 +157,4 @@ export function schemaFor(fields: FieldDefinition[]) {
         }
     });
 }
-export function initialValues(
-    fields: FieldDefinition[],
-    row?: Values,
-    defaults?: Values,
-): Values {
-    return Object.fromEntries(
-        fields.map((f) => {
-            let value = f.writeOnly
-                ? undefined
-                : defaults?.[f.name] !== undefined
-                  ? defaults[f.name]
-                  : row?.[f.name] !== undefined
-                    ? row[f.name]
-                    : (f.default ??
-                      (f.multiple ||
-                      [
-                          "multiselect",
-                          "checkbox-group",
-                          "checkbox-cards",
-                      ].includes(f.kind ?? "")
-                          ? []
-                          : f.kind === "checkbox"
-                            ? false
-                            : f.nullable
-                              ? null
-                              : ""));
-            if (f.kind === "date" && typeof value === "string")
-                value = value.slice(0, 10);
-            return [f.name, value];
-        }),
-    );
-}
+export { initialValues } from "./initial-values";

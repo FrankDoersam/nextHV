@@ -12,6 +12,7 @@ import { contractFlow } from "@/modules/contracts/contract-flow";
 import { flows } from "@/modules/flows";
 import { resources } from "@/modules/registry";
 import { WorkbenchProvider, useWorkbench } from "./workbench";
+import { ApiError } from "./data/http";
 import { dataProvider } from "./data/provider";
 import type { ResourceDefinition, RecordData } from "./types";
 
@@ -235,15 +236,23 @@ describe("declarative form flows", () => {
         );
         render(<RouterProvider router={router} />);
         const user = userEvent.setup();
+        save.mockRejectedValueOnce(
+            new ApiError(422, "Bezeichnung fehlt", {
+                "mutate.0.attributes.name": [
+                    "Bitte eine Bezeichnung eingeben.",
+                ],
+            }),
+        );
         await user.click(screen.getByText("Ablauf starten"));
         await user.click(
             await screen.findByRole(
                 "button",
                 { name: "Speichern & weiter" },
-                { timeout: 5000 },
+                { timeout: 10000 },
             ),
         );
-        expect(save).not.toHaveBeenCalled();
+        await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+        expect(records.size).toBe(0);
         await user.type(
             screen.getByRole("textbox", { name: /Bezeichnung/ }),
             "Vertrag A",
@@ -278,7 +287,7 @@ describe("declarative form flows", () => {
         );
         expect(records.size).toBe(2);
         expect(records.get("flow-child2")?.parent_id).toBe(1);
-        expect(save.mock.calls[1][2]?.id).toBe(1);
+        expect(save.mock.calls[2][2]?.id).toBe(1);
         expect(router.state.location.search).toBe("");
-    }, 10000);
+    }, 15000);
 });

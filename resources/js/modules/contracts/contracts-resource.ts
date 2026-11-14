@@ -1,4 +1,4 @@
-import { DeleteAction, EditAction } from "@/framework/actions";
+import { BulkEditAction, DeleteAction, EditAction } from "@/framework/actions";
 import type { ResourceDefinition } from "@/framework/types";
 import {
     code,
@@ -21,6 +21,8 @@ export const contracts: ResourceDefinition = {
     icon: FileText,
     navigationGroup: "Vermietung",
     titleField: "code",
+    presentationToggle: false,
+    bulkEditable: ["deposit_status", "notes"],
     createFlow: "new-contract",
     groups: [
         { id: "general", label: "Vertragsgrundlagen" },
@@ -118,6 +120,7 @@ export const contracts: ResourceDefinition = {
         },
     ],
     actions: [
+        new BulkEditAction(),
         new EditAction(),
         new ActivateContractAction(),
         new DeleteAction(),

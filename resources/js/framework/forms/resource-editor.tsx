@@ -1,10 +1,10 @@
+import { FormActionScope } from "./form-action-scope";
 import { ErrorState, SectionCard } from "@/components/blocks/content";
 import { FieldGrid, Stack } from "@/components/blocks/layout";
 import { Overlay, OverlayFooterHint } from "@/components/blocks/overlay";
 import { ResourceField } from "@/components/fields/field";
 import { WizardProgress } from "@/components/blocks/wizard-progress";
 import { Button } from "@/components/ui/button";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { ChevronLeft, ChevronRight, Save, Link, RefreshCw } from "lucide-react";
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { FormProvider, useForm } from "react-hook-form";
@@ -16,7 +16,7 @@ import { RowActions } from "../tables/resource-collection";
 import { RelationCollection } from "../tables/relation-collection";
 import type { FlowControls } from "./flow";
 import type { FormRequest, Values } from "../types";
-import { initialValues, schemaFor } from "./schema";
+import { initialValues } from "./initial-values";
 export function ResourceEditor({
     request,
     onClose,
@@ -42,10 +42,10 @@ export function ResourceEditor({
     ) ?? [{ id: "general", label: "Grunddaten" }];
     const form = useForm<Values>({
         defaultValues: initialValues(resource.fields, row, request.defaults),
-        resolver: zodResolver(schemaFor(fields)),
         shouldUnregister: false,
         mode: "onBlur",
     });
+    const [validating, setValidating] = useState(false);
     const [step, setStep] = useState(0);
     const [error, setError] = useState<unknown>();
     const [discard, setDiscard] = useState(false);
@@ -54,7 +54,7 @@ export function ResourceEditor({
     const reload = useReload();
     const saveRecord = useSaveRecord(resource);
     const dirty = form.formState.isDirty;
-    const busy = form.formState.isSubmitting;
+    const busy = form.formState.isSubmitting || validating;
     useEffect(() => {
         onDirtyChange?.(dirty);
     }, [dirty, onDirtyChange]);
@@ -99,6 +99,7 @@ export function ResourceEditor({
     };
     const save = form.handleSubmit(async (values) => {
         setError(undefined);
+        form.clearErrors();
         try {
             const attributes = {
                 ...values,
@@ -125,15 +126,33 @@ export function ResourceEditor({
         }
     }, errorStep);
     const next = async () => {
-        if (
-            await form.trigger(
-                fields
-                    .filter((f) => (f.group ?? "general") === groups[step].id)
-                    .map((f) => f.name),
-                { shouldFocus: true },
-            )
-        )
-            setStep(step + 1);
+        if (busy) return;
+        const names = fields
+            .filter((f) => (f.group ?? "general") === groups[step].id)
+            .map((f) => f.name);
+        setValidating(true);
+        setError(undefined);
+        form.clearErrors(names);
+        try {
+            await dataProvider.validate(
+                resource,
+                form.getValues(),
+                version,
+                names,
+            );
+            setStep((current) => Math.min(current + 1, groups.length - 1));
+        } catch (e) {
+            setError(e);
+            if (e instanceof ApiError) {
+                const errors = normalizeValidationErrors(e.errors);
+                for (const [name, message] of Object.entries(errors))
+                    form.setError(name, { type: "server", message });
+                const first = names.find((name) => errors[name]);
+                if (first) form.setFocus(first);
+            }
+        } finally {
+            setValidating(false);
+        }
     };
     const navigation = request.wizard ? (
         <WizardProgress
@@ -193,6 +212,7 @@ export function ResourceEditor({
                                 reload,
                             }}
                             exclude={["edit", "delete"]}
+                            placement="form"
                         />
                     </>
                 )}
@@ -244,6 +264,7 @@ export function ResourceEditor({
             open
             onClose={close}
             busy={busy}
+            fill={!!request.wizard || !!flow}
             stacked={stacked || discard}
             nested={
                 <>
@@ -275,15 +296,13 @@ export function ResourceEditor({
             }
             footer={
                 <>
-                    <OverlayFooterHint>
-                        {flow
-                            ? `Schritt ${flow.index + 1} von ${flow.steps.length}`
-                            : request.wizard
-                              ? `Schritt ${step + 1} von ${groups.length}`
-                              : dirty
+                    {!flow && !request.wizard && (
+                        <OverlayFooterHint>
+                            {dirty
                                 ? "Ungespeicherte Änderungen"
                                 : "Änderungen mit Speichern übernehmen"}
-                    </OverlayFooterHint>
+                        </OverlayFooterHint>
+                    )}
                     <Button
                         type="button"
                         variant="outline"
@@ -328,7 +347,7 @@ export function ResourceEditor({
                                 void next();
                             }}
                         >
-                            Weiter
+                            {validating ? "Wird geprüft …" : "Weiter"}
                             <ChevronRight />
                         </Button>
                     ) : (
@@ -368,60 +387,77 @@ export function ResourceEditor({
                         }
                     />
                 )}
-                <FormProvider {...form}>
-                    <form
-                        id={formId}
-                        onSubmit={(event) => {
-                            if (request.wizard && step < groups.length - 1) {
-                                event.preventDefault();
-                                void next();
-                            } else void save(event);
-                        }}
-                        className="space-y-6"
-                        noValidate
-                    >
-                        {groups.map((g, i) => (
-                            <section
-                                key={g.id}
-                                hidden={request.wizard && step !== i}
-                            >
-                                <SectionCard
-                                    title={g.label}
-                                    description={g.description}
+                <FormActionScope
+                    target={{
+                        resource,
+                        rows: version ? [version] : [],
+                        instance: {
+                            form,
+                            formResource: resource,
+                            refreshForm: refresh,
+                            reload,
+                        },
+                    }}
+                >
+                    <FormProvider {...form}>
+                        <form
+                            id={formId}
+                            onSubmit={(event) => {
+                                if (
+                                    request.wizard &&
+                                    step < groups.length - 1
+                                ) {
+                                    event.preventDefault();
+                                    void next();
+                                } else void save(event);
+                            }}
+                            className="space-y-6"
+                            noValidate
+                        >
+                            {groups.map((g, i) => (
+                                <section
+                                    key={g.id}
+                                    hidden={request.wizard && step !== i}
                                 >
-                                    <FieldGrid>
-                                        {fields
-                                            .filter(
-                                                (f) =>
-                                                    (f.group ?? "general") ===
-                                                    g.id,
-                                            )
-                                            .map((f) => (
-                                                <ResourceField
-                                                    key={f.name}
-                                                    definition={
-                                                        request.context
-                                                            ?.field ===
-                                                            f.name &&
-                                                        request.context.mode !==
-                                                            "prefill"
-                                                            ? {
-                                                                  ...f,
-                                                                  disabled: true,
-                                                                  lockedReason:
-                                                                      "Durch den aktuellen Datensatz vorgegeben.",
-                                                              }
-                                                            : f
-                                                    }
-                                                    editing={!!row}
-                                                />
-                                            ))}
-                                    </FieldGrid>
-                                </SectionCard>
-                            </section>
-                        ))}
-                    </form>
-                </FormProvider>
+                                    <SectionCard
+                                        title={g.label}
+                                        description={g.description}
+                                    >
+                                        <FieldGrid>
+                                            {fields
+                                                .filter(
+                                                    (f) =>
+                                                        (f.group ??
+                                                            "general") === g.id,
+                                                )
+                                                .map((f) => (
+                                                    <ResourceField
+                                                        key={f.name}
+                                                        definition={
+                                                            request.context
+                                                                ?.field ===
+                                                                f.name &&
+                                                            request.context
+                                                                .mode !==
+                                                                "prefill"
+                                                                ? {
+                                                                      ...f,
+                                                                      disabled: true,
+                                                                      lockedReason:
+                                                                          "Durch den aktuellen Datensatz vorgegeben.",
+                                                                  }
+                                                                : f
+                                                        }
+                                                        editing={!!row}
+                                                    />
+                                                ))}
+                                        </FieldGrid>
+                                    </SectionCard>
+                                </section>
+                            ))}
+                        </form>
+                    </FormProvider>
+                </FormActionScope>
                 {row &&
                     !flow &&
                     resource.relations?.map((relation) => (

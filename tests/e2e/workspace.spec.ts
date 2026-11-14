@@ -5,7 +5,10 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     const errors: string[] = [];
     let propertyWrites = 0;
     page.on("request", (request) => {
-        if (request.url().endsWith("/api/v1/properties/mutate"))
+        if (
+            request.url().endsWith("/api/v1/properties/mutate") &&
+            request.headers()["precognition"] !== "true"
+        )
             propertyWrites++;
     });
     page.on("pageerror", (error) => errors.push(error.message));
@@ -43,13 +46,15 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     const dialog = page.getByRole("dialog");
     await dialog.getByRole("button", { name: "Weiter", exact: true }).click();
     await expect(
-        dialog.getByText("Dieses Feld ist erforderlich.").first(),
-    ).toBeVisible();
+        dialog.getByRole("textbox", { name: "Nummer", exact: true }),
+    ).toHaveAttribute("aria-invalid", "true");
     const code = "E2E-" + Date.now();
     await dialog
         .getByRole("textbox", { name: "Nummer", exact: true })
         .fill(code);
-    await dialog.getByLabel("Bezeichnung").fill("Browser Test Objekt");
+    await dialog
+        .getByRole("textbox", { name: "Bezeichnung", exact: true })
+        .fill("Browser Test Objekt");
     await dialog.getByRole("button", { name: "Weiter", exact: true }).click();
     await dialog.getByLabel("Straße", { exact: false }).fill("Testweg");
     await dialog.getByLabel("Hausnummer").fill("7");
@@ -85,9 +90,9 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     const sheet = page.locator('[data-slot="sheet-content"]');
     expect((await sheet.boundingBox())!.width).toBeGreaterThan(600);
     await page.reload();
-    await expect(page.getByLabel("Bezeichnung", { exact: false })).toHaveValue(
-        "Browser Test Objekt",
-    );
+    await expect(
+        page.getByRole("textbox", { name: "Bezeichnung", exact: true }),
+    ).toHaveValue("Browser Test Objekt");
     await page
         .getByRole("button", {
             name: "Aktionen für Browser Test Objekt",

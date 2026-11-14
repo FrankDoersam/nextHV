@@ -157,7 +157,11 @@ export default function DetailPage({
                             <Pencil />
                             Bearbeiten
                         </Button>
-                        <RowActions resource={resource} row={record} />
+                        <RowActions
+                            placement="detail"
+                            resource={resource}
+                            row={record}
+                        />
                     </>
                 }
             />

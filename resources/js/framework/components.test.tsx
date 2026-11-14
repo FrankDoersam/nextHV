@@ -17,6 +17,7 @@ import React from "react";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DeleteAction, EditAction } from "./actions";
+import { ApiError } from "./data/http";
 import { dataProvider } from "./data/provider";
 import { ResourceCollection } from "./tables/resource-collection";
 import type { ResourceDefinition } from "./types";
@@ -132,6 +133,7 @@ beforeEach(() => {
         last_page: 1,
     });
     vi.spyOn(dataProvider, "save").mockResolvedValue(rows[0]);
+    vi.spyOn(dataProvider, "validate").mockResolvedValue(undefined);
 });
 afterEach(() => {
     cleanup();
@@ -140,6 +142,12 @@ afterEach(() => {
 describe("CRUD interactions", () => {
     it("validates each wizard step, preserves values when going back and submits once", async () => {
         const user = userEvent.setup();
+        vi.mocked(dataProvider.validate).mockRejectedValueOnce(
+            new ApiError(422, "Serverprüfung", {
+                "mutate.0.attributes.code": ["Nummer wird benötigt."],
+                "mutate.0.attributes.name": ["Bezeichnung wird benötigt."],
+            }),
+        );
         wrap(<OpenForm wizard />);
         await user.click(screen.getByRole("button", { name: "Öffnen" }));
         await user.click(
@@ -150,8 +158,15 @@ describe("CRUD interactions", () => {
             ),
         );
         expect(
-            await screen.findAllByText("Dieses Feld ist erforderlich."),
+            await screen.findAllByText("Nummer wird benötigt."),
         ).toHaveLength(2);
+        expect(dataProvider.validate).toHaveBeenCalledWith(
+            resource,
+            expect.any(Object),
+            undefined,
+            ["code", "name"],
+        );
+        expect(dataProvider.save).not.toHaveBeenCalled();
         await user.type(
             screen.getByLabelText("Nummer", { exact: false }),
             "P3",

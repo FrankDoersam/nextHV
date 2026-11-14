@@ -1,3 +1,6 @@
+import { BulkActionBar } from "@/components/blocks/bulk-action-bar";
+import { ActionMenu, ActionButtons } from "../action-controls";
+import type { ActionPlacement } from "../actions";
 import { PresentationToggle } from "../presentation-toggle";
 import { useGridState } from "./grid-state";
 import { exportRows } from "./export";
@@ -23,12 +26,6 @@ import {
     DataGridTableRowSelectAll,
 } from "@/components/reui/data-grid/data-grid-table";
 import { Button } from "@/components/ui/button";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { date, label, money, number } from "@/lib/format";
 import {
@@ -38,14 +35,8 @@ import {
     type SortingState,
     type ColumnVisibilityState,
 } from "@tanstack/react-table";
-import {
-    ListFilter,
-    MoreHorizontal,
-    Plus,
-    RefreshCw,
-    Search,
-} from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ListFilter, Plus, RefreshCw, Search } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { useDebounced, useReload, useResourceList } from "../data/hooks";
@@ -95,60 +86,24 @@ export function RowActions({
     instance,
     exclude = [],
     allowed,
+    placement = "row",
 }: {
     resource: ResourceDefinition;
     row: RecordData;
     instance?: Partial<ResourceInstance>;
     exclude?: string[];
     allowed?: false | string[];
+    placement?: ActionPlacement;
 }) {
-    const workbench = useWorkbench();
-    const actions = resource.actions.filter(
-        (a) =>
-            allowed !== false &&
-            (!allowed || allowed.includes(a.id)) &&
-            !exclude.includes(a.id) &&
-            a.location !== "toolbar" &&
-            a.visible(row) &&
-            can(resource.name, a.id, row),
-    );
-    if (!actions.length) return null;
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger
-                render={
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`Aktionen für ${String(row[resource.titleField])}`}
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                }
-            >
-                <MoreHorizontal />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                {actions.map((action) => (
-                    <DropdownMenuItem
-                        key={action.id}
-                        className={
-                            action.destructive ? "text-destructive" : undefined
-                        }
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            workbench.runAction(action, {
-                                resource,
-                                rows: [row],
-                                instance,
-                            });
-                        }}
-                    >
-                        {action.label}
-                    </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-        </DropdownMenu>
+        <ActionMenu
+            actions={resource.actions}
+            target={{ resource, rows: [row], instance }}
+            placement={placement}
+            label={`Aktionen für ${String(row[resource.titleField])}`}
+            exclude={exclude}
+            allowed={allowed}
+        />
     );
 }
 export function ResourceCollection({
@@ -174,7 +129,7 @@ export function ResourceCollection({
     columnChooser = true,
     exportable = true,
     refreshable = true,
-    presentationToggle = compact,
+    presentationToggle = false,
     toolbar = true,
     actions,
     detailLink = true,
@@ -535,14 +490,8 @@ export function ResourceCollection({
             (typeof rowSelection !== "function" || rowSelection(r)),
     );
     const bulk = resource.actions.filter(
-        (a) =>
-            actions !== false &&
-            (!actions || actions.includes(a.id)) &&
-            (a.bulk || selectedRows.length === 1) &&
-            a.location !== "row" &&
-            selectedRows.every(
-                (r) => a.visible(r) && can(resource.name, a.id, r),
-            ),
+        (action) =>
+            actions !== false && (!actions || actions.includes(action.id)),
     );
     const grouped =
         effectiveGroup === "none"
@@ -552,6 +501,117 @@ export function ResourceCollection({
                   (groups[key] ??= []).push(row);
                   return groups;
               }, {});
+    const renderToolbar = (filterTrigger?: ReactNode) => (
+        <div className="flex flex-wrap items-center gap-2.5">
+            {searchable && (
+                <div className="relative min-w-48 flex-1 sm:max-w-72">
+                    <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
+                    <Input
+                        value={search}
+                        onChange={(e) => {
+                            update("search", e.target.value, true);
+                        }}
+                        className="h-9 bg-card pl-9 pr-9"
+                        aria-label={`${resource.label} durchsuchen`}
+                        placeholder={`${resource.label} durchsuchen …`}
+                    />
+                    {search && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-xs"
+                            className="absolute right-1.5 top-1.5"
+                            aria-label="Suche leeren"
+                            onClick={() => update("search", "", true)}
+                        >
+                            <X />
+                        </Button>
+                    )}
+                </div>
+            )}
+            {filterTrigger}
+            <div className="flex flex-1 flex-wrap items-center gap-2">
+                {presentationToggle && <PresentationToggle />}
+                {groupable && resource.groupBy && (
+                    <ChoicePicker
+                        presentation="menu"
+                        size="sm"
+                        triggerIcon={<ListFilter />}
+                        aria-label="Gruppierung"
+                        placeholder="Gruppieren"
+                        clearable={false}
+                        value={group === "none" ? null : group}
+                        onChange={(value) =>
+                            update("group", String(value ?? "none"), true)
+                        }
+                        options={[
+                            {
+                                value: "none",
+                                label: "Keine Gruppierung",
+                            },
+                            ...resource.groupBy,
+                        ]}
+                    />
+                )}
+                <div className="ml-auto flex items-center gap-2">
+                    <ActionButtons
+                        actions={bulk}
+                        target={{ resource, rows: [], instance }}
+                        placement="table"
+                    />
+                    {exportable && (
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            aria-label={
+                                selectedRows.length
+                                    ? "Auswahl als CSV exportieren"
+                                    : "Aktuelle Seite als CSV exportieren"
+                            }
+                            disabled={!rows.length || result.isPlaceholderData}
+                            onClick={() =>
+                                exportRows(
+                                    selectedRows.length ? selectedRows : rows,
+                                    resource.columns.filter(
+                                        (c) =>
+                                            columnVisibility[c.field] !== false,
+                                    ),
+                                    resource.name,
+                                )
+                            }
+                        >
+                            <Download />
+                        </Button>
+                    )}
+                    {refreshable && (
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => result.refetch()}
+                            aria-label="Aktualisieren"
+                        >
+                            <RefreshCw
+                                className={
+                                    result.isFetching ? "animate-spin" : ""
+                                }
+                            />
+                        </Button>
+                    )}
+                    {creatable && can(resource.name, "create") && (
+                        <Button
+                            onClick={create}
+                            size={compact ? "sm" : "default"}
+                        >
+                            <Plus />
+                            {compact
+                                ? "Hinzufügen"
+                                : `${resource.singular} anlegen`}
+                        </Button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
     return (
         <DataGrid
             table={table}
@@ -607,170 +667,32 @@ export function ResourceCollection({
                 )}
                 {toolbar && (
                     <div className="space-y-3">
-                        <div className="flex flex-wrap items-center gap-2.5">
-                            {searchable && (
-                                <div className="relative min-w-48 flex-1 sm:max-w-72">
-                                    <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
-                                    <Input
-                                        value={search}
-                                        onChange={(e) => {
-                                            update(
-                                                "search",
-                                                e.target.value,
-                                                true,
-                                            );
-                                        }}
-                                        className="h-9 bg-card pl-9 pr-9"
-                                        aria-label={`${resource.label} durchsuchen`}
-                                        placeholder={`${resource.label} durchsuchen …`}
-                                    />
-                                    {search && (
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-xs"
-                                            className="absolute right-1.5 top-1.5"
-                                            aria-label="Suche leeren"
-                                            onClick={() =>
-                                                update("search", "", true)
-                                            }
-                                        >
-                                            <X />
-                                        </Button>
-                                    )}
-                                </div>
-                            )}
-                            <div className="flex flex-1 flex-wrap items-center gap-2">
-                                {presentationToggle && <PresentationToggle />}
-                                {groupable && resource.groupBy && (
-                                    <ChoicePicker
-                                        presentation="menu"
-                                        triggerIcon={<ListFilter />}
-                                        aria-label="Gruppierung"
-                                        placeholder="Gruppieren"
-                                        clearable={false}
-                                        value={group === "none" ? null : group}
-                                        onChange={(value) =>
-                                            update(
-                                                "group",
-                                                String(value ?? "none"),
-                                                true,
-                                            )
-                                        }
-                                        options={[
-                                            {
-                                                value: "none",
-                                                label: "Keine Gruppierung",
-                                            },
-                                            ...resource.groupBy,
-                                        ]}
-                                    />
-                                )}
-                                <div className="ml-auto flex items-center gap-2">
-                                    {exportable && (
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            aria-label={
-                                                selectedRows.length
-                                                    ? "Auswahl als CSV exportieren"
-                                                    : "Aktuelle Seite als CSV exportieren"
-                                            }
-                                            disabled={
-                                                !rows.length ||
-                                                result.isPlaceholderData
-                                            }
-                                            onClick={() =>
-                                                exportRows(
-                                                    selectedRows.length
-                                                        ? selectedRows
-                                                        : rows,
-                                                    resource.columns.filter(
-                                                        (c) =>
-                                                            columnVisibility[
-                                                                c.field
-                                                            ] !== false,
-                                                    ),
-                                                    resource.name,
-                                                )
-                                            }
-                                        >
-                                            <Download />
-                                        </Button>
-                                    )}
-                                    {refreshable && (
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            onClick={() => result.refetch()}
-                                            aria-label="Aktualisieren"
-                                        >
-                                            <RefreshCw
-                                                className={
-                                                    result.isFetching
-                                                        ? "animate-spin"
-                                                        : ""
-                                                }
-                                            />
-                                        </Button>
-                                    )}
-                                    {creatable &&
-                                        can(resource.name, "create") && (
-                                            <Button
-                                                onClick={create}
-                                                size={
-                                                    compact ? "sm" : "default"
-                                                }
-                                            >
-                                                <Plus />
-                                                {compact
-                                                    ? "Hinzufügen"
-                                                    : `${resource.singular} anlegen`}
-                                            </Button>
-                                        )}
-                                </div>
-                            </div>
-                        </div>
-                        {filterable && !!resource.filters?.length && (
+                        {filterable && !!resource.filters?.length ? (
                             <ResourceFilters
                                 definitions={resource.filters}
                                 value={filters}
                                 onChange={(next) =>
                                     update("filters", next, true)
                                 }
+                                renderToolbar={renderToolbar}
                             />
+                        ) : (
+                            renderToolbar()
                         )}
                     </div>
                 )}
                 {selectedRows.length > 0 && !result.isPlaceholderData && (
-                    <div className="flex flex-wrap items-center gap-2 rounded-lg bg-primary/5 px-3 py-2">
-                        <span className="mr-auto text-xs font-medium">
-                            {selectedRows.length} ausgewählt
-                        </span>
-                        {bulk.map((a) => (
-                            <Button
-                                key={a.id}
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                    workbench.runAction(a, {
-                                        rows: selectedRows,
-                                        resource,
-                                        instance,
-                                    })
-                                }
-                            >
-                                {a.label}
-                            </Button>
-                        ))}
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelection({})}
-                        >
-                            Auswahl aufheben
-                        </Button>
-                    </div>
+                    <BulkActionBar
+                        count={selectedRows.length}
+                        onClear={() => setSelection({})}
+                    >
+                        <ActionButtons
+                            actions={bulk}
+                            target={{ resource, rows: selectedRows, instance }}
+                            placement="bulk"
+                            inverse
+                        />
+                    </BulkActionBar>
                 )}
                 {result.error ? (
                     <ErrorState
@@ -783,6 +705,7 @@ export function ResourceCollection({
                             inert={result.isPlaceholderData}
                             className={cn(
                                 "min-h-0",
+                                selectedRows.length > 0 && "pb-16",
                                 result.isPlaceholderData &&
                                     "pointer-events-none opacity-60",
                                 compact

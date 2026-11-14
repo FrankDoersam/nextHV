@@ -64,6 +64,7 @@ export default function ContractDetailPage() {
                             <Pencil /> Bearbeiten
                         </Button>
                         <RowActions
+                            placement="detail"
                             resource={contracts}
                             row={record}
                             exclude={["edit"]}

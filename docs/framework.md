@@ -5,7 +5,7 @@ Dieses Dokument beschreibt den aktuellen Framework-Stand einschließlich Formula
 ## 1. Einstieg und Betriebsmodell
 
 - Laravel 13 + `lomkit/laravel-rest-api` 3, Sanctum-Session, Scramble/OpenAPI.
-- React 19, React Router 7, TanStack Query, TanStack Table 9, React Hook Form, Zod.
+- React 19, React Router 7, TanStack Query, TanStack Table 9, React Hook Form; REST-Formulare verwenden ausschließlich Laravel-Servervalidierung. Zod bleibt nur für die isolierte Komponenten-Demo und deren Tests.
 - REUI Base Nova, Base UI, Tailwind 4; gemeinsame Farben und Abstände in `resources/css/app.css` und zentralen Komponenten.
 - PHP 8.3+, Composer 2, Node 22.12+; CI verwendet Node 24/PHP 8.5. SQLite für lokale Entwicklung und Tests.
 - `setasign/tfpdf` erzeugt Unicode-PDFs; keine externe PDF-Website und kein HTML-Renderer erforderlich.
@@ -148,7 +148,7 @@ Optionale leere Felder bleiben erlaubt; `required` macht eine Mindestlänge auch
 
 ### CurrencyField
 
-`1.234,50 €` wird im Feld angezeigt, `1234.5` im Formular und JSON geführt und als `DECIMAL(12,2)` gespeichert. Kein Cent-Multiplikator. Die REUI/Base-UI-Komponente übernimmt Parsing, Gruppierung und Darstellung, React Hook Form den numerischen Zustand. Leeren ergibt `null`; Nullbetrag `0` bleibt erhalten. Zod und das Backend prüfen den Wertebereich und maximal zwei Nachkommastellen.
+`1.234,50 €` wird im Feld angezeigt, `1234.5` im Formular und JSON geführt und als `DECIMAL(12,2)` gespeichert. Kein Cent-Multiplikator. Die REUI/Base-UI-Komponente übernimmt Parsing, Gruppierung und Darstellung, React Hook Form den numerischen Zustand. Leeren ergibt `null`; Nullbetrag `0` bleibt erhalten. Laravel prüft beim Speichern den Wertebereich und maximal zwei Nachkommastellen. Die Eingabekomponente übernimmt ausschließlich Zahlenformat und Bediengrenzen.
 
 Alle bestehenden Geldfelder, darunter Miete, Nebenkosten, Heizung und Kaution, verwenden diesen Baustein. `currency` und `locale` sind konfigurierbar. Die Komponentenseite demonstriert auch Counter, Hilfetext, Checkboxgruppe und Mehrfachauswahl.
 
@@ -161,8 +161,8 @@ Tabellenspalten mit `kind: "date"` werden zentral als **dd.MM.yyyy** dargestellt
 - Formular-Sheets bis 48rem breit, auf kleineren Bildschirmen an den Viewport angepasst.
 - Fester Header, optionaler Werkzeug-/Wizard-Bereich, eigener scrollbarer Inhalt und fester Footer.
 - Dialoggrößen `compact`, `form`, `wide`; kompakt für Bestätigungen, breit für PDF-Vorschauen.
-- Speichern rechts, Abbrechen daneben, Status/Schrittinformation links. Schließen, Escape und Abbrechen durchlaufen denselben Dirty-Check; laufendes Speichern blockiert Schließen.
-- Wizard validiert den aktuellen Schritt vor Weiter, bewahrt Werte beim Zurückgehen und springt bei Fehlern in den betreffenden Schritt.
+- Speichern rechts, Abbrechen daneben; Statushinweise links nur bei normalen Formularen. Im Wizard steht kein zusätzlicher Schritttext im Footer. Schließen, Escape und Abbrechen durchlaufen denselben Dirty-Check; laufendes Speichern blockiert Schließen.
+- Wizard validiert den aktuellen Schritt mit Laravel Precognition vor Weiter, bewahrt Werte beim Zurückgehen und springt bei Fehlern in den betreffenden Schritt.
 - Mehrere Serverfehler erscheinen gesammelt ohne identische Wiederholungen; konkrete Feldfehler bleiben am Feld sichtbar.
 - Jede Neu-/Bearbeiten-Ansicht wird standardmäßig als `panels`-Descriptor in der URL abgebildet. Ein neu geladener Link lädt den Datensatz erneut über die API.
 - In der URL stehen Ressource, Modus, ID, Darstellungsart und Relationskontext. Ungespeicherte Formularinhalte, Ausweisnummern und Callbacks werden nicht serialisiert.
@@ -224,11 +224,11 @@ Der CSV-Button exportiert die Auswahl oder die aktuelle Seite, jeweils die sicht
 
 ## 8. Actions und Löschblockaden
 
-Eine `ResourceAction` definiert `id`, `label`, `bulk`, `location`, `destructive`, `fields`, `visible`, optional `prepare` und `execute`. Der Kontext liefert:
+Eine `ResourceAction` definiert `id`, `label`, optional `icon`, `description`, `group`, `children`, `placements`, `bulk`, `destructive`, `fields`/`fieldsFor`, `visible`, `enabled`, `prepare` und `execute`. `location` bleibt als kompatible ältere Kurzform erhalten; die vollständige API steht in Abschnitt 27. Der Kontext liefert:
 
 - `rows`: tatsächliche ausgewählte Datensätze;
 - `resource`: die Ressourcendefinition;
-- `values`: validierte Action-Eingaben;
+- `values`: Action-Eingaben; verbindliche Prüfung erfolgt durch den Server beim Ausführen;
 - `instance.reload`, `openForm`, `navigate`, `table`;
 - optional `instance.form`, `formResource` und `refreshForm`.
 
@@ -283,11 +283,11 @@ public function respond(ActionFields $fields, int $impacted): ?ActionResponse
 }
 ```
 
-| `ui.type`    | Vertrag / UI-Verhalten                                                                                                                     |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `details`    | `title`, optional `message`, `items: {label, value}[]`; DetailList im Dialog                                                               |
-| `document`   | `title`, `url`, `mime: "application/pdf"`, `name`; geschütztes Laden, PDF-Vorschau und Download                                            |
-| `form-patch` | `values`, optional `message`; bekannte beschreibbare Felder des aktiven `formResource` werden mit Validierung und Dirty-Markierung gesetzt |
+| `ui.type`    | Vertrag / UI-Verhalten                                                                                                                                                                            |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `details`    | `title`, optional `message`, `items: {label, value}[]`; DetailList im Dialog                                                                                                                      |
+| `document`   | `title`, `url`, `mime: "application/pdf"`, `name`; geschütztes Laden, PDF-Vorschau und Download                                                                                                   |
+| `form-patch` | `values`, optional `message`; bekannte beschreibbare Felder des aktiven `formResource` werden mit Dirty-Markierung gesetzt; Servervalidierung erfolgt beim nächsten Schrittwechsel bzw. Speichern |
 
 Zusätzlich werden native Lomkit-`message`- und `danger`-Ergebnisse behandelt. Weitere native Ergebnisarten wie Redirects benötigen einen ausdrücklich ergänzten Dispatcher; sie werden nicht ungeprüft als Navigation ausgeführt.
 
@@ -587,7 +587,7 @@ Tab fokussiert das Suchfeld; Tippen startet direkt die Suche, ohne einen weitere
   minDate: "2026-01-01", maxDate: "2026-12-31" }
 ```
 
-`minDate`/`maxDate` sind inklusive ISO-Grenzen, gelten im Kalender **und** in der gemeinsamen Validierung. Monatspicker verwenden `YYYY-MM` bzw. den Monatsanteil einer ISO-Datumsgrenze. Bei Bereichen begrenzen Beginn/Ende einander. Ein vollständig geleerter optionaler Bereich ist gültig; ein halb ausgefüllter Bereich nicht. Anzeige bleibt `dd.MM.yyyy`, Übertragung ISO. `clearable: false` unterdrückt Leeren und Abwahl desselben Kalendertags; es verhindert keine programmgesteuerten Defaults.
+`minDate`/`maxDate` sind inklusive ISO-Grenzen, begrenzen die Kalenderbedienung; dieselben fachlichen Grenzen müssen in der REST-Resource als Laravel-Regeln definiert sein. Monatspicker verwenden `YYYY-MM` bzw. den Monatsanteil einer ISO-Datumsgrenze. Bei Bereichen begrenzen Beginn/Ende einander. Die isolierte Komponenten-Demo prüft zudem vollständige Bereiche. Eine persistierte Fachressource muss vollständige/optionale Bereiche in ihren Serverregeln abbilden. Anzeige bleibt `dd.MM.yyyy`, Übertragung ISO. `clearable: false` unterdrückt Leeren und Abwahl desselben Kalendertags; es verhindert keine programmgesteuerten Defaults.
 
 ## 20. Key-Value-Liste und geschäftliche Checkbox-Komponenten
 
@@ -605,7 +605,7 @@ Tab fokussiert das Suchfeld; Tippen startet direkt die Suche, ohne einen weitere
 />
 ```
 
-Ein Klick öffnet genau ein Feld mit dem üblichen `BaseField`, Zod und Laravel-Fehlerrückgaben. Speichern sendet nur diese Property plus `updated_at` als Versionsprüfung. Abbrechen/Escape verwirft den lokalen Entwurf. Bei `422` bleibt die Eingabe bestehen, bei `409` kann der aktuelle Stand geladen werden; kein stilles Überschreiben. Schreibgeschützte Ausweisnummern werden niemals angezeigt. `render(value, record)` erlaubt eigene Lesedarstellung. Die **Vertragsakte / Übersicht / Vertragsverwaltung** demonstriert diese Komponente mit echten Mutationen.
+Ein Klick öffnet genau ein Feld mit dem üblichen `BaseField` und Laravel-Fehlerrückgaben, ohne zusätzlichen Client-Resolver. Speichern sendet nur diese Property plus `updated_at` als Versionsprüfung. Abbrechen/Escape verwirft den lokalen Entwurf. Bei `422` bleibt die Eingabe bestehen, bei `409` kann der aktuelle Stand geladen werden; kein stilles Überschreiben. Schreibgeschützte Ausweisnummern werden niemals angezeigt. `render(value, record)` erlaubt eigene Lesedarstellung. Die **Vertragsakte / Übersicht / Vertragsverwaltung** demonstriert diese Komponente mit echten Mutationen.
 
 `CheckboxList` unterstützt dynamische Optionen mit Titel, Beschreibung, Icon, Badge, gesperrten Einträgen, `layout: "list" | "cards"`, `searchable`, `selectAll` und `maxSelected`. „Alle sichtbaren“ betrifft nur die gefilterten und aktivierten Optionen; andere und gesperrte Auswahlen bleiben erhalten. Teil-Auswahl wird indeterminiert dargestellt. `kind: "checkbox-group"` und `kind: "checkbox-cards"` verwenden denselben Renderer. Für große Datenbestände ist der Entity-Picker geeigneter als Hunderte Checkboxen.
 
@@ -619,7 +619,7 @@ Alle Edit-Sheets, Dialoge und direkten Feldänderungen verwenden `useSaveRecord`
 
 Nach erfolgreichem Speichern werden laufende Requests derselben Ressource abgebrochen und `patchRecord` ersetzt ausschließlich diese ID in vorhandenen Listen, Detail- und Panel-Caches. Unveränderte Zeilen behalten ihre Objektreferenz; Auswahl, Scrollposition und aktuelle Seite bleiben bestehen. Kein pauschaler Reload aller Ressourcentabellen. Fehler verändern keinen Cache.
 
-Bei Änderung eines sortierten/gefilterten Werts bleibt die Zeile bis zum nächsten bewussten Aktualisieren, Seitenwechsel oder erneuten Aufruf an ihrer bisherigen Position. Die betroffenen Listen sind als veraltet markiert und werden dann serverseitig neu geordnet/gefiltert. Das verhindert ein überraschendes Verschwinden während der Bearbeitung. Erstellen invalidiert die Listen **der betroffenen Ressource**, weil sich deren Anzahl und Seitengrenzen ändern. Löschen/Bulk-/Fachaktionen behalten ihre explizite Reload-Strategie.
+Bei Änderung eines sortierten/gefilterten Werts bleibt die Zeile bis zum nächsten bewussten Aktualisieren, Seitenwechsel oder erneuten Aufruf an ihrer bisherigen Position. Die betroffenen Listen sind als veraltet markiert und werden dann serverseitig neu geordnet/gefiltert. Das verhindert ein überraschendes Verschwinden während der Bearbeitung. Erstellen invalidiert die Listen **der betroffenen Ressource**, weil sich deren Anzahl und Seitengrenzen ändern. Die generische Bulk-Bearbeitung übernimmt ebenfalls projizierte Zeilen in den Cache. Löschen und Fachaktionen ohne Zeilenprojektion behalten ihre explizite Reload-Strategie.
 
 Bereits im Cache vorhandene Fremdschlüssel-Eltern werden gezielt als einzelne Datensätze nachgeladen und gepatcht, z. B. der Vertrag nach einer neuen Kondition. Ein fehlgeschlagener optionaler Elternrefresh macht eine bereits erfolgreiche Speicherung nicht rückgängig; der Cache wird dann als veraltet markiert. Im geöffneten Elternformular ergänzt `onSaved` den bestehenden Refresh mit `keepDirtyValues`. Kennzahlen werden als veraltet markiert und bei erneutem Aufruf oder explizitem Refresh neu geladen.
 
@@ -634,6 +634,10 @@ Bereits im Cache vorhandene Fremdschlüssel-Eltern werden gezielt als einzelne D
 3. `03-vertrag-detail.png`
 4. `04-vertrag-anlegen.png`
 5. `05-vertrag-bearbeiten.png` (Detailseite → Bearbeiten, mit geladenen Formularwerten)
+6. `06-grid-filter.png`
+7. `07-bulk-auswahl.png` (schwebende Auswahlleiste)
+8. `08-bulk-bearbeiten.png` (explizite Feldauswahl)
+9. `09-feldaktionen.png` (Objektformular mit Untermenü im Textfeld)
 
 Die Suite prüft außerdem, dass der aktive Tab-Inhalt unterhalb der Tab-Leiste die verfügbare Breite nutzt, kein horizontaler Seitenüberlauf entsteht und die Vertragsansicht samt Edit-Sheet bei 390 px funktioniert. Der Zeitraum muss vor dem ersten Öffnen „Dieser Monat“ anzeigen.
 
@@ -647,16 +651,16 @@ Regressionstests decken Tastatursuche, Mehrfachauswahl/Vorauswahl, Backend-Filte
 
 Die Auswertung der echten CI-Aufnahmen zeigte vier gemeinsame Ursachen: falsche Orientierungsselektoren in `Tabs`, fehlende übersetzte Initialwerte im Zeitraum-Select, eine überladene Tabellen-Toolbar sowie uneinheitliche Wizard-Komposition. Die Korrekturen liegen in Komponenten, nicht in Seitenstyles.
 
-| Bereich             | Standard und Erweiterungspunkt                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Theme / AppShell    | Kühle neutrale Flächen, weiße Inhaltskarten, Indigo für aktive Navigation, Aktionen und Diagramm-Hervorhebung. Farben einschließlich Sidebar zentral in `resources/css/app.css`. Kompakte einzeilige Marke ohne weiße Logokarte; Suche in Sidebar und per Strg/⌘ K. Kein zusätzlicher Suchbutton rechts im Header.                                                                                                                                                       |
-| Tabs / LazyTabs     | Das `orientation`-Prop wird an Base UI weitergegeben. Selektoren verwenden dessen tatsächliches `data-orientation`. Horizontale Tabs stehen über dem Inhalt; vertikale Tabs daneben. Die Tab-Leiste darf innerhalb ihrer eigenen Breite scrollen; Panels bleiben `min-width: 0`. Aktiver Unterstrich, Zähler und Tastaturfokus zentral. URL und verzögertes Laden unverändert.                                                                                           |
-| Karten / Kennzahlen | `WorkspaceCard` übernimmt lesbare Kopf- und Fußzeilen sowie umbrechende Actions. `WorkspaceColumns` besitzt begrenzte Grid-Spalten und `min-width: 0`. Ein einzelner sichtbarer Baustein belegt die volle Breite.                                                                                                                                                                                                                                                        |
-| Dashboard           | Der Zeitraum verwendet denselben durchsuchbaren `ChoicePicker` im Menümodus wie Gruppierung und Filter. Bereits vor dem Öffnen erscheinen übersetzte Labels. Monats-/Quartalsauswahl passt Betrag, Titel und Balkenauswahl an. Die Demo-Kennzeichnung bleibt sichtbar.                                                                                                                                                                                                   |
-| Balkendiagramm      | Gemeinsame gerundete Skala, dezente Hilfslinien, Planlinie und Indigo-Hervorhebung. Mini-Diagramme zeigen ersten und letzten Monat außerhalb der schmalen Balkenspalten, ohne abgeschnittene Monatslabels. Tastaturfokus liefert dieselben Werte wie Hover.                                                                                                                                                                                                              |
-| Tabellen-Toolbar    | Erste Zeile: Suche und Gruppierung; rechts Export → Aktualisieren → Anlegen. Darunter: Filter hinzufügen, aktive Filter-Chips und Zurücksetzen. Keine separaten Buttons „Spalten“ oder „Zeilendichte“. `columnChooser` steuert das Spalten-Untermenü in den Tabellenköpfen. `densityToggle` entfällt; die bestehende `dense`-URL-Einstellung bleibt lesbar. Auswahl und Zeilenaktionen haben feste, nicht skalierbare Spaltenbreiten; Badge-Spalten bekommen mehr Platz. |
-| Overlay / FieldGrid | Sheet, Dialog, Header, scrollender Inhalt und Footer teilen dieselben Abstände. Standard-Sheets bis 52 rem. Das Feldraster richtet sich per Container Query nach seiner eigenen Breite; breite Felder belegen `col-span-full` und erzeugen bei schmalen Formularen keine zusätzliche Spalte.                                                                                                                                                                             |
-| WizardProgress      | Eine gemeinsame Komposition auf REUI-Stepper für Formulargruppen und gespeicherte Multi-Entity-Flows. Eine verbundene Fortschrittsleiste mit Nummer bzw. Haken, Indigo-Fokus auf dem aktiven Schritt, Schrittzähler und mobiler Kurzansicht. Nur bereits erreichbare Formulargruppen sind anklickbar. Persistierte Flows behalten ihre vorhandene Zurück-/Speicherlogik; der Fortschritt springt nicht über notwendige Mutationen hinweg.                                |
+| Bereich             | Standard und Erweiterungspunkt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Theme / AppShell    | Kühle neutrale Flächen, weiße Inhaltskarten, Blau für aktive Navigation, Aktionen und Diagramm-Hervorhebung. Farben einschließlich Sidebar zentral in `resources/css/app.css`. Kompakte einzeilige Marke ohne weiße Logokarte; Suche in Sidebar und per Strg/⌘ K. Kein zusätzlicher Suchbutton rechts im Header.                                                                                                                                                                                              |
+| Tabs / LazyTabs     | Das `orientation`-Prop wird an Base UI weitergegeben. Selektoren verwenden dessen tatsächliches `data-orientation`. Horizontale Tabs stehen über dem Inhalt; vertikale Tabs daneben. Die Tab-Leiste darf innerhalb ihrer eigenen Breite scrollen; Panels bleiben `min-width: 0`. Aktiver Unterstrich, Zähler und Tastaturfokus zentral. URL und verzögertes Laden unverändert.                                                                                                                                |
+| Karten / Kennzahlen | `WorkspaceCard` übernimmt lesbare Kopf- und Fußzeilen sowie umbrechende Actions. `WorkspaceColumns` besitzt begrenzte Grid-Spalten und `min-width: 0`. Ein einzelner sichtbarer Baustein belegt die volle Breite.                                                                                                                                                                                                                                                                                             |
+| Dashboard           | Der Zeitraum verwendet denselben durchsuchbaren `ChoicePicker` im Menümodus wie Gruppierung und Filter. Bereits vor dem Öffnen erscheinen übersetzte Labels. Monats-/Quartalsauswahl passt Betrag, Titel und Balkenauswahl an. Die Demo-Kennzeichnung bleibt sichtbar.                                                                                                                                                                                                                                        |
+| Balkendiagramm      | Gemeinsame gerundete Skala, dezente Hilfslinien, Planlinie und Blau-Hervorhebung. Mini-Diagramme zeigen ersten und letzten Monat außerhalb der schmalen Balkenspalten, ohne abgeschnittene Monatslabels. Tastaturfokus liefert dieselben Werte wie Hover.                                                                                                                                                                                                                                                     |
+| Tabellen-Toolbar    | Gemeinsame, bei Platzmangel umbrechende Zeile: Suche → Filter hinzufügen / aktive Filter-Chips → kompakte Gruppierung; rechts Ressourcen-Actions → Export → Aktualisieren → Anlegen. Keine separaten Buttons „Spalten“ oder „Zeilendichte“. `columnChooser` steuert das Spalten-Untermenü in den Tabellenköpfen. `densityToggle` entfällt; die bestehende `dense`-URL-Einstellung bleibt lesbar. Auswahl und Zeilenaktionen haben feste, nicht skalierbare Spaltenbreiten; Badge-Spalten bekommen mehr Platz. |
+| Overlay / FieldGrid | Sheet, Dialog, Header, scrollender Inhalt und Footer teilen dieselben Abstände. Standard-Sheets bis 52 rem. Das Feldraster richtet sich per Container Query nach seiner eigenen Breite; breite Felder belegen `col-span-full` und erzeugen bei schmalen Formularen keine zusätzliche Spalte.                                                                                                                                                                                                                  |
+| WizardProgress      | Eine gemeinsame Komposition auf REUI-Stepper für Formulargruppen und gespeicherte Multi-Entity-Flows. Eine über die gesamte Breite gleichmäßig aufgeteilte Schrittnavigation mit Nummer bzw. Haken, weißem aktiven Segment, blauem Akzent und mobiler Kurzansicht. Nur bereits erreichbare Formulargruppen sind anklickbar. Persistierte Flows behalten ihre vorhandene Zurück-/Speicherlogik; der Fortschritt springt nicht über notwendige Mutationen hinweg.                                               |
 
 API-Projektionen verwenden bei Includes und Aggregaten snake_case: `business_partner`, `related_contract`, `incoming_links_count`. Eloquent-Relationsnamen in Suchanfragen bleiben camelCase. Die Vertragsansichten verwenden die tatsächlichen Antwortschlüssel, damit Kontakte, Verknüpfungen und Zähler sichtbar werden.
 
@@ -701,7 +705,7 @@ So wird `filters` URL-kodiert gespeichert. `sanitizeGridFilters` akzeptiert nur 
 
 `triggerIcon` ist optional. Single/Multiple, Clearable, Disabled, Preselection, Optionsuche und Beschriftungen bleiben dieselben Props. Tab + Tippen öffnet auch Toolbar-Menüs direkt mit der Suche. Escape schließt ohne gespeicherte Auswahl zu löschen. Geschlossen erscheinen nur Titel; lange Mehrfachauswahlen werden innerhalb einer begrenzten Breite abgeschnitten und um die Anzahl ergänzt. Styles liegen ausschließlich in der gemeinsamen Komponente.
 
-Das Theme verwendet Indigo für Primäraktionen, Fokus, aktive Navigation und Diagramm-Akzente; neutrale Grau-/Weißflächen für Sidebar und Inhalt. Erfolgszustände sind blau, Warnungen amber, Fehler rot. Die zentrale Token-Datei gilt auch für Login und Overlays. Der Objektbericht verwendet dieselbe Indigo-Akzentfarbe.
+Das Theme verwendet Blau für Primäraktionen, Fokus, aktive Navigation und Diagramm-Akzente; neutrale Grau-/Weißflächen für Sidebar und Inhalt. Erfolgszustände sind blau, Warnungen amber, Fehler rot. Die zentrale Token-Datei gilt auch für Login und Overlays. Der Objektbericht behält seine eigenständige Berichtsvorlage.
 
 ## 25. Architekturprüfung der Domain-Klassen
 
@@ -738,4 +742,124 @@ Konkrete REST-Actions deklarieren weiterhin `fields()` und implementieren `clone
 
 Die Energieklasse am Objekt ist optional wie im Backend. Sie trägt deshalb kein `required` mehr; zuvor verhinderte diese widersprüchliche Felddefinition das Speichern eines ansonsten gültigen Wizards ohne Energieklasse.
 
-Wizard-Weiter und Speichern haben getrennte React-Keys. Der Weiter-Klick unterbindet die native Default-Aktion vor der asynchronen Schrittvalidierung. So kann derselbe DOM-Button beim letzten Übergang nicht zu einem Submit-Button werden und unbeabsichtigt speichern. Ein Form-Submit vor dem letzten Schritt führt nur die Schrittvalidierung aus; erst der letzte Schritt darf persistieren. Unit- und Browserregression prüfen, dass vor dem ausdrücklichen Speichern keine Mutation erfolgt.
+Wizard-Weiter und Speichern haben getrennte React-Keys. Der Weiter-Klick unterbindet die native Default-Aktion vor der asynchronen Schrittvalidierung. So kann derselbe DOM-Button beim letzten Übergang nicht zu einem Submit-Button werden und unbeabsichtigt speichern. Ein Form-Submit vor dem letzten Schritt führt nur die Schrittvalidierung aus; erst der letzte Schritt darf persistieren. Unit- und Browserregression prüfen, dass vor dem ausdrücklichen Speichern keine persistierende Mutation erfolgt; Precognition-Anfragen an denselben Endpunkt werden separat behandelt.
+
+## 26. Ein Server-Regelwerk für REST-Formulare
+
+`ResourceEditor`, `ActionDialog` und `EditableKeyValueList` haben keinen Zod-Resolver mehr. Pflichtfelder, Eindeutigkeit, Wertebereiche und fachliche Regeln werden vom Server geprüft. `required`, `minDate`, `maxLength` usw. in einer Felddefinition beschreiben Darstellung und Bedienung; sie sind keine zweite Sicherheits- oder Geschäftsvalidierung. `schemaFor` ist nur noch eine optionale lokale Demo-Hilfe, nicht Teil des REST-Schreibwegs. Formular-Defaults liegen separat in `initial-values.ts`, damit normale CRUD-Formulare den Demo-Validator nicht laden.
+
+Der installierte REST-v3-FormRequest unterstützt Laravel Precognition bereits. Deshalb wird **kein eigenes Validate-Endpoint, kein zusätzlicher Controller und kein neues npm-Paket** eingeführt. Die vorhandenen REST-Routen verwenden `HandlePrecognitiveRequests` hinter Authentifizierung und Rate-Limit:
+
+```http
+POST /api/v1/properties/mutate
+Precognition: true
+Precognition-Validate-Only: mutate.0.attributes.code,mutate.0.attributes.name
+```
+
+- `dataProvider.validate(resource, values, row?, only?)` verwendet denselben `mutationPayload` wie `save` und `saveMany`.
+- Gültige Vorschau: HTTP 204, ohne Controller-Ausführung, Observer oder Speicherung. Fehler: HTTP 422 mit den regulären Feldpfaden.
+- „Weiter“ wartet auf die aktuelle Serverprüfung; bei Fehlern bleibt der Schritt geöffnet und fokussiert das erste betroffene Feld. Netzwerkfehler erlauben kein unvalidiertes Weiterspringen.
+- „Speichern“ führt die reguläre vollständige Mutation aus. Domain-Regeln in Observern, Versionskonflikte, Transaktionssperren und externe Zustandsänderungen werden erst dabei abschließend geprüft. Eine erfolgreiche Vorschau ist keine Reservierung und keine Garantie für eine spätere Speicherung.
+- Gespeicherte Multi-Entity-Flows validieren und speichern beim Vorwärtsgehen. Sie verwenden dieselbe Serverfehler-Darstellung; bei Fehlern entsteht kein neuer Folgeschritt.
+- Fremdschlüssel-Bindung, Autorisierung und Versionsprüfung bleiben serverseitige Verantwortlichkeiten. UI-Sperren ersetzen sie nicht.
+
+Die PHP-Regression prüft Teilvalidierung ohne Speicherung, fehlende Anmeldung, kontextuelle Eindeutigkeitsregeln beim Update sowie unveränderte Daten nach der Vorschau. `tests/e2e/workspace.spec.ts` zählt nur persistierende Anfragen als Schreibzugriff.
+
+## 27. Eine Action-API für Feld, Formular, Detail, Tabelle und Auswahl
+
+| API                               | Bedeutung                                                                                                                                                                                     |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `placements`                      | Exakte Oberflächen: `field`, `form`, `detail`, `row`, `table`, `bulk`. Ohne Angabe gilt die bisherige `location`-Kompatibilität; Feld- und Tabellenaktionen sind ausdrücklich zu deklarieren. |
+| `icon`, `label`, `description`    | Gemeinsame Beschriftung, Symbol und Hilfstext. Symbolbuttons besitzen einen zugänglichen Namen.                                                                                               |
+| `group`                           | Beschriftete Menügruppen mit Trennlinien.                                                                                                                                                     |
+| `children` / `ActionGroup`        | Rekursive Untermenüs; Gruppen werden nicht als Fachaktion ausgeführt. Kindaktionen werden separat auf Sichtbarkeit, Auswahl und Freigabe geprüft.                                             |
+| `visible(row)`                    | Sichtbarkeit pro Datensatz; bei Mehrfachauswahl müssen alle Zeilen erlaubt sein.                                                                                                              |
+| `enabled(context)`                | `true`, `false` oder deaktivierter Grund als Text. UI und Dispatcher prüfen die Freigabe; eine direkte `runAction`-Ausführung umgeht sie nicht.                                               |
+| `bulk`                            | Mehrere Datensätze erlaubt. Bei `false` blockiert auch der Dispatcher mehrere IDs.                                                                                                            |
+| `requiresRecord`                  | Standard `true`; `false` erlaubt Aktionen am ungespeicherten Formular bzw. ohne Zeilenauswahl.                                                                                                |
+| `interaction`                     | `dialog` mit Vorbereitung/Bestätigung oder `immediate`. Auch direkte Aktionen verwenden Fehlerbehandlung und denselben Ergebnis-Dispatcher.                                                   |
+| `refresh`                         | Standard `true`; `false` für reine Formularaktionen oder Aktionen mit eigener Zeilenprojektion.                                                                                               |
+| `fieldsFor(context)`              | Dynamische Action-Felder, etwa die vom Resource-Schema freigegebenen Bulk-Felder.                                                                                                             |
+| `prepare(context)`                | Asynchrone Defaults oder Blockaden vor dem Ausführen.                                                                                                                                         |
+| `execute(context, confirmation?)` | Zugriff auf echte Zeilen, Instanz und Eingaben; Rückgabe entsprechend `ActionUIResult` bzw. dem REST-Ergebnisvertrag.                                                                         |
+
+Die tatsächliche Anzahl und IDs sind stets eindeutig:
+
+```ts
+async execute({ rows, resource, values, instance }: ActionContext) {
+    const ids = rows.map(row => row.id); // einzelne oder mehrere IDs
+    const current = rows[0];            // bei einer Einzelaktion
+    const formValues = instance.form?.getValues();
+    // API-Aktion, openForm/openRelation/openFlow, refreshForm oder Rückgabe …
+}
+```
+
+`values` enthält die eigenen Action-Eingaben; `instance.form` referenziert das übergeordnete Formular. `instance.formResource` benennt dessen Resource, was bei Actions aus Unterrelationen wichtig ist. `instance.table` liefert die Tabelleninstanz, `reload` den expliziten Reload. Änderungen am Formular allein sind noch keine Datenbankspeicherung.
+
+### Feldaktionen ohne Seitenlogik
+
+```ts
+{
+    ...text("name", "Bezeichnung", "general", true),
+    suffixActions: [new PropertyNameActions()],
+}
+```
+
+`prefixActions` und `suffixActions` werden bei Text-, E-Mail- und Zahlenfeldern innerhalb des zentralen `InputGroup` gerendert. `FormActionScope` stellt Ressource und Formular bereit. Nur Felder mit Actions abonnieren den Formularzustand für dynamische Freigaben. Gesperrte Felder sperren auch ihre Action-Buttons.
+
+Das laufende Beispiel liegt in `modules/properties/name-actions.ts`: „Leerzeichen bereinigen“ liest den aktuellen Namen; „Adresse übernehmen“ liest Straße/Hausnummer aus demselben Formular. Ohne Straße ist die zweite Action mit Begründung deaktiviert. Beide funktionieren vor dem ersten Speichern und liefern einen `form-patch`, statt die Page zu manipulieren:
+
+```ts
+return {
+    data: {
+        result: {
+            data: {
+                ui: {
+                    type: "form-patch",
+                    values: { name: nextName },
+                    message: "Bezeichnung übernommen.",
+                },
+            },
+        },
+    },
+};
+```
+
+Für Datenbankänderungen weiterhin den Provider oder die Backend-Action aufrufen. `document` öffnet weiterhin die PDF-Komponente, `details` eine Ergebnisansicht. Unbekannte Ergebnisformen werden abgewiesen. Für eine eigene Formular-Komposition außerhalb des Editors sind `FormProvider` und `FormActionScope` explizit einzubinden.
+
+`ActionMenu` und `ActionButtons` verwenden dieselben Definitionen. Die Collection bindet `table`, `row` und `bulk`, die Detailseite `detail`, der Editor `form`. Die eingebaute Edit-Aktion bleibt direkt; destructive Actions nutzen weiterhin Vorprüfung und Serverbestätigung. Die bestehenden expliziten Hauptbuttons „Bearbeiten“ bleiben erhalten.
+
+## 28. Schwebende Auswahlleiste und native Mehrfachbearbeitung
+
+`BulkActionBar` sitzt zentriert über dem Tabellenfooter, mit abgerundeter dunkler Fläche, Auswahlzahl, Actions und Aufheben-Button. Sie bleibt innerhalb der Collection; kleine Viewports dürfen umbrechen. Auswahl bleibt auf die aktuelle geladene Seite begrenzt und wird bei Wechsel von Suche/Sortierung/Filter/Seite zurückgesetzt.
+
+Die Mehrfachbearbeitung ist eine einzige wiederverwendbare Action:
+
+```ts
+bulkEditable: ["manager_name", "manager_email", "manager_phone", "next_inspection_on"],
+actions: [new BulkEditAction(), /* weitere Actions */],
+```
+
+Objekte demonstrieren Verwaltungsdaten, Verträge `deposit_status` und `notes`. Im Dialog muss jedes zu ändernde Feld ausdrücklich aktiviert werden. Nicht aktivierte Felder bleiben unberührt; ein aktiviertes optionales Feld darf bewusst geleert werden. Ohne Auswahl ist der Ausführen-Button gesperrt. Schreibgeschützte, deaktivierte und Write-only-Felder werden ausgeschlossen.
+
+`saveMany` sendet **eine native REST-Mutation** mit ID/Version je Zeile. Es gibt keinen separaten Bulk-Controller und keinen Loop einzelner HTTP-Requests. REST-Validierung, Versionsprüfung und Transaktion gelten für die ganze Auswahl. Fehler oder ein Konflikt lassen alle Datensätze unverändert. `bulkEditable` steuert das Produktangebot der UI; die REST-Resource und Policies bleiben die Sicherheitsgrenze.
+
+Die Antwort enthält projizierte `records`. Nur diese Zeilen und Details werden im Query-Cache ersetzt; die Liste wird ohne sofortiges Refetch als veraltet markiert. Das bewahrt Scrollposition, Auswahl und Sortierung wie beim normalen Edit. Elternformulare können über `refreshForm` gezielt nachladen.
+
+## 29. Architekturentscheidung für weitere Fachmodule
+
+Die Domain-Ordner aus Abschnitt 25 bleiben fachlich. Ein CRUD-Thema braucht **keine zusätzliche Domain-Klasse**, solange die Änderung mit Model, REST-Feldern, Laravel-Regeln und vorhandenen Relations-/Versionsfunktionen beschrieben ist. Thin REST-Controller bleiben die explizite Zuordnung zwischen URL und Resource. Sie enthalten keine Kopie der CRUD-Implementierung.
+
+Konkrete Einsparungen dieses Updates:
+
+1. Drei Formulararten verlieren ihren zweiten Client-Validator. Precognition und die bestehenden REST-Regeln ersetzen eine zusätzliche Validierungsschicht.
+2. Single-Save, Validierung und Bulk-Save teilen `mutationPayload` und Fehlernormalisierung.
+3. Zeilen-, Detail-, Formular-, Feld- und Bulk-Actions teilen `ResourceAction`, Freigabe und Render-Komponenten.
+4. Mehrfachbearbeitung entsteht aus der Resource-Konfiguration statt je Domain aus einem neuen Controller/Service/Dialog.
+5. Darstellung, Wizard, Filter, Palette und Auswahlleiste liegen zentral; Pages wählen nur Komponenten und Props.
+
+Neue Ressourcen werden weiterhin mit Model/Migration, einer REST-Resource samt validierten Feldern und Relationsfreigaben, dem dünnen REST-Controller und einer UI-Resource registriert. Erst eine echte Fachoperation wie Aktivierung, Laufzeitüberschneidung, Kündigungsbestätigung oder fachliches Klonen rechtfertigt eine eigene Domain-Action. Kein generisches `BaseModel`, das jede Beziehung und jede Regel magisch ableitet: Das würde die heute sichtbaren Verträge und Sicherheitsgrenzen verstecken.
+
+Ein späterer Metadaten-Adapter könnte REST-Enums, Labels und Eingabegrenzen in TypeScript generieren. Das ist **noch nicht implementiert**; derzeit werden UI-Feldtypen und Labels ausdrücklich definiert. Die Geschäftsvalidierung wird bereits heute nicht doppelt ausgeführt. Ebenso bleiben Organisationsgrenzen wie vereinbart verschoben.
+
+Orientierung: [REUI Stepper](https://reui.io/docs/components/base/stepper), [öffentliche REUI-Wizard-Komposition](https://reui.io/blocks/application/wizard/wizard-1), [Filament Actions](https://filamentphp.com/docs/5.x/actions/overview), [Refine Forms](https://refine.dev/core/docs/guides-concepts/forms/) und [Laravel Precognition](https://github.com/laravel/docs/blob/13.x/precognition.md). Bestehende Bibliotheken werden genutzt; keine neue Laufzeit-Abhängigkeit.

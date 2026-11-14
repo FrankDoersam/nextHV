@@ -44,6 +44,7 @@ export interface ChoicePickerProps extends AriaAttributes {
     /** One selection model for form inputs, toolbar menus and filter chips. */
     presentation?: "input" | "menu" | "chip";
     triggerIcon?: ReactNode;
+    size?: "default" | "sm";
 }
 
 /** Searchable input, shared by enums and asynchronous entity selections. */
@@ -67,6 +68,7 @@ export function ChoicePicker({
     maxSelected,
     presentation = "input",
     triggerIcon,
+    size = "default",
     ...aria
 }: ChoicePickerProps) {
     const [open, setOpen] = useState(false);
@@ -156,6 +158,8 @@ export function ChoicePicker({
                         title={caption || placeholder}
                         className={cn(
                             "h-9 min-w-0 max-w-full flex-1 shrink gap-2 text-[13px]",
+                            size === "sm" &&
+                                "h-8 gap-1.5 px-2 text-xs [&_svg]:size-3.5",
                             presentation === "chip" &&
                                 "h-8 rounded-none border-0 px-2 shadow-none focus-visible:ring-2 focus-visible:ring-inset",
                         )}

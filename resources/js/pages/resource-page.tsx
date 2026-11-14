@@ -15,7 +15,11 @@ export default function ResourcePage({
                 eyebrow="Verwaltung"
                 title={resource.label}
                 description={resource.description}
-                actions={<PresentationToggle />}
+                actions={
+                    resource.presentationToggle !== false ? (
+                        <PresentationToggle />
+                    ) : undefined
+                }
             />
             {resource.name === "properties" && <OverviewMetrics compact />}
             <SectionCard

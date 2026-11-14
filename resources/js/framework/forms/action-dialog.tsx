@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormProvider, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { ShieldAlert, Trash2 } from "lucide-react";
 import { ErrorState, Loading } from "@/components/blocks/content";
@@ -10,11 +9,16 @@ import { Overlay } from "@/components/blocks/overlay";
 import { ResourceField } from "@/components/fields/field";
 import { Alert, AlertTitle, AlertDescription } from "@/components/reui/alert";
 import { Button } from "@/components/ui/button";
-import type { ResourceAction } from "../actions";
+import { actionAvailability, type ResourceAction } from "../actions";
+import { Checkbox } from "@/components/ui/checkbox";
+import { patchRecord } from "../data/record-cache";
+import { resourceKey } from "../data/hooks";
+import type { RecordData } from "../types";
+import { FormActionScope } from "./form-action-scope";
 import { ApiError } from "../data/http";
 import { normalizeValidationErrors } from "../data/provider";
 import type { ActionContext, Values } from "../types";
-import { initialValues, schemaFor } from "./schema";
+import { initialValues } from "./initial-values";
 export function ActionDialog({
     action,
     context,
@@ -26,6 +30,9 @@ export function ActionDialog({
     onClose: () => void;
     onComplete: (result: unknown) => void;
 }) {
+    const client = useQueryClient();
+    const fields = useMemo(() => action.fieldsFor(context), [action, context]);
+    const [selected, setSelected] = useState<string[]>([]);
     const [error, setError] = useState<unknown>();
     const [confirmation, setConfirmation] = useState<{
         token: string;
@@ -45,32 +52,65 @@ export function ActionDialog({
         gcTime: 0,
     });
     const form = useForm<Values>({
-        defaultValues: initialValues(action.fields),
-        resolver: zodResolver(schemaFor(action.fields)),
+        defaultValues: initialValues(fields),
     });
     useEffect(() => {
         if (preparation.data?.defaults)
             form.reset(
-                initialValues(
-                    action.fields,
-                    undefined,
-                    preparation.data.defaults,
-                ),
+                initialValues(fields, undefined, preparation.data.defaults),
             );
-    }, [preparation.data, action.fields, form]);
+    }, [preparation.data, fields, form]);
     const blockers = preparation.data?.blockers ?? [];
     const blocked = !!blockers.length;
     const execute = async (values: Values, token?: string) => {
+        if (busy) return;
+        const availability = actionAvailability(action, context);
+        if (availability !== true) {
+            setError(
+                new Error(
+                    typeof availability === "string"
+                        ? availability
+                        : "Diese Action ist derzeit nicht verfügbar.",
+                ),
+            );
+            return;
+        }
+        const submitted =
+            action.selectableFields && !token
+                ? Object.fromEntries(
+                      Object.entries(values).filter(([name]) =>
+                          selected.includes(name),
+                      ),
+                  )
+                : values;
         setBusy(true);
         setError(undefined);
+        form.clearErrors();
         try {
             const response = await action.execute(
-                { ...context, values },
+                { ...context, values: submitted },
                 token,
             );
             onComplete(response);
-            await context.instance.reload();
-            await context.instance.refreshForm?.();
+            const records = (response as { records?: RecordData[] } | undefined)
+                ?.records;
+            if (Array.isArray(records)) {
+                await client.cancelQueries({
+                    queryKey: resourceKey(context.resource.name),
+                });
+                for (const record of records)
+                    patchRecord(client, context.resource.name, record);
+                await client.invalidateQueries({
+                    queryKey: [...resourceKey(context.resource.name), "list"],
+                    refetchType: "none",
+                });
+                await client.invalidateQueries({
+                    queryKey: ["overview"],
+                    refetchType: "none",
+                });
+            } else if (action.refresh) await context.instance.reload();
+            if (action.refresh || records)
+                await context.instance.refreshForm?.();
             toast.success(`${action.label}: erfolgreich`);
             onClose();
         } catch (e) {
@@ -78,7 +118,7 @@ export function ActionDialog({
                 setConfirmation({
                     token: e.confirmation.token,
                     message: e.message,
-                    values,
+                    values: submitted,
                 });
             else {
                 setConfirmation(undefined);
@@ -100,7 +140,10 @@ export function ActionDialog({
             busy={busy}
             size="compact"
             title={blocked ? "Löschen nicht möglich" : action.label}
-            description={`${context.rows.length} ${context.resource.label} ausgewählt`}
+            description={
+                action.description ??
+                `${context.rows.length} ${context.resource.label} ausgewählt`
+            }
             presentation="dialog"
             footer={
                 <>
@@ -115,7 +158,8 @@ export function ActionDialog({
                             disabled={
                                 busy ||
                                 preparation.isPending ||
-                                preparation.isError
+                                preparation.isError ||
+                                (action.selectableFields && !selected.length)
                             }
                             onClick={
                                 confirmation
@@ -190,29 +234,83 @@ export function ActionDialog({
                                 </AlertDescription>
                             </Alert>
                         ) : (
-                            <FormProvider {...form}>
-                                <form
-                                    onSubmit={form.handleSubmit((v) =>
-                                        execute(v),
-                                    )}
-                                >
-                                    <FieldGrid>
-                                        {action.fields.map((f) => (
-                                            <ResourceField
-                                                key={f.name}
-                                                definition={f}
-                                            />
-                                        ))}
-                                    </FieldGrid>
-                                    {!action.fields.length && (
-                                        <p className="text-sm leading-6 text-muted-foreground">
-                                            {action.destructive
-                                                ? "Die Auswahl wird vor dem Löschen serverseitig geprüft. Anschließend ist eine ausdrückliche Bestätigung erforderlich."
-                                                : `${action.label} für die Auswahl ausführen.`}
-                                        </p>
-                                    )}
-                                </form>
-                            </FormProvider>
+                            <FormActionScope
+                                target={{
+                                    ...context,
+                                    resource: { ...context.resource, fields },
+                                }}
+                            >
+                                <FormProvider {...form}>
+                                    <form
+                                        noValidate
+                                        onSubmit={form.handleSubmit((v) =>
+                                            execute(v),
+                                        )}
+                                    >
+                                        <FieldGrid>
+                                            {fields.map((field) =>
+                                                action.selectableFields ? (
+                                                    <div
+                                                        key={field.name}
+                                                        className="col-span-full space-y-3 rounded-xl border bg-card p-4"
+                                                    >
+                                                        <label className="flex items-center gap-2 text-sm font-medium">
+                                                            <Checkbox
+                                                                checked={selected.includes(
+                                                                    field.name,
+                                                                )}
+                                                                onCheckedChange={(
+                                                                    checked,
+                                                                ) =>
+                                                                    setSelected(
+                                                                        (
+                                                                            current,
+                                                                        ) =>
+                                                                            checked
+                                                                                ? [
+                                                                                      ...current,
+                                                                                      field.name,
+                                                                                  ]
+                                                                                : current.filter(
+                                                                                      (
+                                                                                          name,
+                                                                                      ) =>
+                                                                                          name !==
+                                                                                          field.name,
+                                                                                  ),
+                                                                    )
+                                                                }
+                                                            />
+                                                            {field.label} ändern
+                                                        </label>
+                                                        {selected.includes(
+                                                            field.name,
+                                                        ) && (
+                                                            <ResourceField
+                                                                definition={
+                                                                    field
+                                                                }
+                                                            />
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <ResourceField
+                                                        key={field.name}
+                                                        definition={field}
+                                                    />
+                                                ),
+                                            )}
+                                        </FieldGrid>
+                                        {!fields.length && (
+                                            <p className="text-sm leading-6 text-muted-foreground">
+                                                {action.destructive
+                                                    ? "Die Auswahl wird vor dem Löschen serverseitig geprüft. Anschließend ist eine ausdrückliche Bestätigung erforderlich."
+                                                    : `${action.label} für die Auswahl ausführen.`}
+                                            </p>
+                                        )}
+                                    </form>
+                                </FormProvider>
+                            </FormActionScope>
                         )}
                     </>
                 )}
