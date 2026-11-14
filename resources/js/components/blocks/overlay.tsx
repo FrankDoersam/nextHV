@@ -147,7 +147,7 @@ export function Overlay({
     const bottom = (footer || footerStart) && (
         <div
             data-slot="overlay-footer"
-            className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t bg-muted/30 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6"
+            className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t bg-muted/30 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 [&_[data-slot=button]]:h-9 [&_[data-slot=button]]:px-3.5"
         >
             <div className="flex min-w-0 flex-wrap items-center gap-3">
                 {footerStart}
