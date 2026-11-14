@@ -18,6 +18,7 @@ import {
     useDataGridAtom,
 } from "@/components/reui/data-grid/data-grid";
 import { cn } from "@/lib/utils";
+import { isRowActivationEvent } from "@/lib/row-interaction";
 import type { Cell, Column, Header, Row } from "@tanstack/react-table";
 import { flexRender, Subscribe } from "@tanstack/react-table";
 import type {
@@ -2200,10 +2201,20 @@ function DataGridTableBodyRow<TData extends object>({
             aria-rowindex={
                 props.tableLayout?.cellSelection ? row.index + 2 : undefined
             }
+            tabIndex={props.onRowClick ? 0 : undefined}
             onClick={(event) => {
-                if (isDataGridPortalEvent(event)) return;
-                // Through the getter, as in DataGridTableAddRow.
-                context.props.onRowClick?.(row.original);
+                if (context.props.onRowClick && isRowActivationEvent(event))
+                    context.props.onRowClick(row.original);
+            }}
+            onKeyDown={(event) => {
+                if (
+                    context.props.onRowClick &&
+                    (event.key === "Enter" || event.key === " ") &&
+                    isRowActivationEvent(event)
+                ) {
+                    event.preventDefault();
+                    context.props.onRowClick(row.original);
+                }
             }}
             className={cn(
                 "hover:bg-muted/40 data-[state=selected]:bg-muted/50",
@@ -2215,7 +2226,7 @@ function DataGridTableBodyRow<TData extends object>({
            a second, different hover colour: gate it on the same flag. */
                 props.tableLayout?.columnsPinnable &&
                     "hover:[&>td[data-pinned]]:bg-[color-mix(in_oklab,var(--muted)_40%,var(--data-grid-surface,var(--data-grid-card-surface,var(--background))))] data-[state=selected]:[&>td[data-pinned]]:bg-[color-mix(in_oklab,var(--muted)_50%,var(--data-grid-surface,var(--data-grid-card-surface,var(--background))))]",
-                props.onRowClick && "cursor-pointer",
+                props.onRowClick && "cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
                 // Optional CRUD indications, active only when getRowStatus is
                 // wired; the warning-muted defaults yield to tableClassNames
                 // overrides per status. Pinned cells must stay OPAQUE (they hide

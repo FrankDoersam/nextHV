@@ -255,7 +255,7 @@ describe("CRUD interactions", () => {
         const user = userEvent.setup();
         wrap(<ResourceCollection resource={resource} />);
         expect(
-            await screen.findByRole("button", { name: "Lindenhöfe" }),
+            await screen.findByText("Lindenhöfe"),
         ).toBeVisible();
         await user.type(
             screen.getByRole("textbox", { name: "Objekte durchsuchen" }),
@@ -272,7 +272,7 @@ describe("CRUD interactions", () => {
     it("exposes only enabled bulk actions for selected rows", async () => {
         const user = userEvent.setup();
         wrap(<ResourceCollection resource={resource} />);
-        await screen.findByRole("button", { name: "Lindenhöfe" });
+        await screen.findByText("Lindenhöfe");
         await user.click(
             screen.getByRole("checkbox", {
                 name: "Alle Zeilen dieser Seite auswählen",
@@ -354,7 +354,7 @@ describe("CRUD interactions", () => {
     it("shares column visibility across grouped grids", async () => {
         const user = userEvent.setup();
         wrap(<ResourceCollection resource={resource} />);
-        await screen.findByRole("button", { name: "Lindenhöfe" });
+        await screen.findByText("Lindenhöfe");
         await user.click(screen.getByRole("combobox", { name: "Gruppierung" }));
         await user.click(
             await screen.findByRole("option", { name: "Standort" }),
@@ -371,10 +371,10 @@ describe("CRUD interactions", () => {
         await user.keyboard(" ");
         await user.keyboard("{Escape}{Escape}");
         expect(
-            screen.queryByRole("button", { name: "Lindenhöfe" }),
+            screen.queryByText("Lindenhöfe"),
         ).not.toBeInTheDocument();
         expect(
-            screen.queryByRole("button", { name: "Sonnenhof" }),
+            screen.queryByText("Sonnenhof"),
         ).not.toBeInTheDocument();
     });
 });

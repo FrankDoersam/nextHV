@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Building2 } from "lucide-react";
 import { MemoryRouter, useLocation } from "react-router";
@@ -48,7 +48,13 @@ const resource: ResourceDefinition = {
     toolbarFilters: ["status"],
 };
 function Location() {
-    return <output aria-label="URL">{useLocation().search}</output>;
+    const location = useLocation();
+    return (
+        <>
+            <output aria-label="URL">{location.search}</output>
+            <output aria-label="Pfad">{location.pathname}</output>
+        </>
+    );
 }
 function mount(
     initialEntry = "/?page=3",
@@ -212,6 +218,32 @@ describe("collection scopes and cells", () => {
         expect(screen.getByRole("tabpanel")).toHaveAttribute(
             "aria-labelledby",
             screen.getByRole("tab", { name: "Aktive Verträge" }).id,
+        );
+    });
+    it("navigates from a passive table cell, not a checkbox or title button", async () => {
+        mount("/");
+        const user = userEvent.setup();
+        const title = await screen.findByText("Haus");
+        const row = title.closest("tr[data-row-id]")!;
+        expect(row).toHaveAttribute("tabindex", "0");
+        expect(screen.queryByRole("button", { name: "Haus" })).not.toBeInTheDocument();
+        expect(screen.queryByRole("link", { name: "Haus" })).not.toBeInTheDocument();
+        await user.click(screen.getByRole("checkbox", { name: "Zeile auswählen" }));
+        expect(screen.getByLabelText("Pfad")).toHaveTextContent("/");
+        const statusCell = row.querySelectorAll("td")[2] as HTMLElement;
+        expect(statusCell).not.toBeNull();
+        await user.click(statusCell);
+        await waitFor(() =>
+            expect(screen.getByLabelText("Pfad")).toHaveTextContent("/demo/1"),
+        );
+    });
+    it("opens a focused table row with Enter", async () => {
+        mount("/");
+        const row = (await screen.findByText("Haus")).closest("tr[data-row-id]") as HTMLTableRowElement;
+        row.focus();
+        fireEvent.keyDown(row, { key: "Enter" });
+        await waitFor(() =>
+            expect(screen.getByLabelText("Pfad")).toHaveTextContent("/demo/1"),
         );
     });
     it("keeps column headers and pagination visible when the server returns no matching rows", async () => {

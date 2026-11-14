@@ -229,7 +229,7 @@ describe("shared action runtime", () => {
             <ResourceCollection resource={resource} syncWithLocation={false} />,
         );
         const user = userEvent.setup();
-        await screen.findByRole("button", { name: "Haus A" });
+        await screen.findByText("Haus A");
         await user.click(
             screen.getByRole("checkbox", {
                 name: "Alle Zeilen dieser Seite auswählen",

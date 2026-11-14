@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { Cell } from "@/components/blocks/cell";
 import { Skeleton } from "@/components/ui/skeleton";
+import { isRowActivationEvent } from "@/lib/row-interaction";
+import { cn } from "@/lib/utils";
 import type { ColumnDefinition, RecordData } from "../types";
 import { CellRenderer } from "./cell-renderer";
 
@@ -58,29 +59,32 @@ export function ResponsiveRecordList({
                             role="listitem"
                             data-row-id={row.id}
                             data-selected={selected?.(row) || undefined}
-                            className="min-w-0 space-y-3 px-3 py-3 data-selected:bg-primary/5"
+                            tabIndex={open ? 0 : undefined}
+                            className={cn(
+                                "min-w-0 space-y-3 px-3 py-3 data-selected:bg-primary/5",
+                                open && "cursor-pointer hover:bg-muted/40 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+                            )}
+                            onClick={(event) => {
+                                if (open && isRowActivationEvent(event)) open(row);
+                            }}
+                            onKeyDown={(event) => {
+                                if (
+                                    open &&
+                                    (event.key === "Enter" || event.key === " ") &&
+                                    isRowActivationEvent(event)
+                                ) {
+                                    event.preventDefault();
+                                    open(row);
+                                }
+                            }}
                         >
                             <div className="flex min-w-0 items-center gap-3">
                                 {selection?.row(row)}
-                                {title &&
-                                    (open ? (
-                                        <Cell
-                                            className="w-full flex-1"
-                                            onClick={() => open(row)}
-                                        >
-                                            <CellRenderer
-                                                column={title}
-                                                row={row}
-                                            />
-                                        </Cell>
-                                    ) : (
-                                        <div className="min-w-0 flex-1">
-                                            <CellRenderer
-                                                column={title}
-                                                row={row}
-                                            />
-                                        </div>
-                                    ))}
+                                {title && (
+                                    <div className="min-w-0 flex-1 font-medium">
+                                        <CellRenderer column={title} row={row} />
+                                    </div>
+                                )}
                                 {actions && (
                                     <div className="shrink-0">
                                         {actions(row)}
