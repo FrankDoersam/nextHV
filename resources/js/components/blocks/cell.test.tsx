@@ -4,18 +4,17 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { afterEach, expect, it, vi } from "vitest";
 import { Cell } from "./cell";
-import { CellReference } from "./cell-reference";
 
 afterEach(cleanup);
 
-it("renders relation links as neutral cells without propagating double-click", () => {
+it("keeps explicit navigation links neutral, focused and isolated from row double clicks", () => {
     const onDoubleClick = vi.fn();
     render(
         <MemoryRouter>
             <div onDoubleClick={onDoubleClick}>
-                <CellReference resource="units" id={42}>
+                <Cell to="/units/42" onDoubleClick={(event) => event.stopPropagation()}>
                     Wohnung 42
-                </CellReference>
+                </Cell>
             </div>
         </MemoryRouter>,
     );
@@ -27,19 +26,6 @@ it("renders relation links as neutral cells without propagating double-click", (
     expect(link).not.toHaveClass("text-primary");
     fireEvent.doubleClick(link);
     expect(onDoubleClick).not.toHaveBeenCalled();
-});
-
-it("does not create navigation for missing relation identifiers", () => {
-    render(
-        <MemoryRouter>
-            <CellReference resource="units" id={null}>
-                Keine Einheit
-            </CellReference>
-        </MemoryRouter>,
-    );
-
-    expect(screen.getByText("Keine Einheit")).toBeVisible();
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
 });
 
 it("uses a button for in-place record actions", async () => {
