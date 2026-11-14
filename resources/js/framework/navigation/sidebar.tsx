@@ -25,7 +25,9 @@ function storedExpansion(key: string): Expansion {
         const value = JSON.parse(window.localStorage.getItem(key) ?? "{}");
         return value && typeof value === "object" && !Array.isArray(value)
             ? Object.fromEntries(
-                  Object.entries(value).filter((entry): entry is [string, boolean] => typeof entry[1] === "boolean"),
+                  Object.entries(value as Record<string, unknown>).filter(
+                      (entry): entry is [string, boolean] => typeof entry[1] === "boolean",
+                  ),
               )
             : {};
     } catch {
@@ -98,6 +100,7 @@ function NavCount({ item }: { item: NavigationItem }) {
         );
 }
 function NavBadge({ item }: { item: NavigationItem }) {
+    if (item.disabledReason) return null;
     if (item.count && item.resource?.views?.some((candidate) => candidate.id === item.view && candidate.count)) {
         return <NavCount item={item} />;
     }

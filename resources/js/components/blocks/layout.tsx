@@ -24,6 +24,8 @@ import {
     navigationPath,
     resolveNavigation,
     type NavigationItem,
+    type NavigationItemDefinition,
+    type NavigationGroupSettings,
 } from "@/framework/navigation/sidebar-model";
 import {
     SidebarNavigation,
@@ -44,11 +46,16 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router";
 /** Header-first REUI workspace shell. All navigation surfaces share one resolved tree. */
 export function AppShell({
     resources,
+    navigation,
+    navigationGroups,
     user,
     onLogout,
     children,
 }: {
     resources: ResourceDefinition[];
+    /** An optional complete navigation tree; omitted means resource-derived navigation. */
+    navigation?: NavigationItemDefinition[];
+    navigationGroups?: Record<string, NavigationGroupSettings>;
     user: { id?: number; name: string; email: string };
     onLogout: () => void;
     children: ReactNode;
@@ -66,8 +73,12 @@ export function AppShell({
     const scrollArea = useRef<HTMLElement>(null);
     const navigate = useNavigate();
     const navigationItems = useMemo(
-        () => resolveNavigation(defaultNavigation(resources), resources, user),
-        [resources, user.id, user.name, user.email],
+        () => resolveNavigation(
+            navigation ?? defaultNavigation(resources, navigationGroups),
+            resources,
+            user,
+        ),
+        [resources, navigation, navigationGroups, user.id, user.name, user.email],
     );
     const controls = useSidebarExpansion(navigationItems, user.id);
     const trail = navigationPath(navigationItems, location.pathname, location.search);

@@ -35,7 +35,7 @@ beforeEach(() => {
     window.localStorage.clear();
     vi.spyOn(dataProvider, "list").mockImplementation(async (_, params = {}) => ({
         data: [],
-        total: params.filters?.[0] && "field" in params.filters[0] && params.filters[0].value === "active"
+        total: params?.filters?.[0] && "field" in params.filters[0] && params.filters[0].value === "active"
             ? 7 : 3,
         current_page: 1,
         last_page: 1,

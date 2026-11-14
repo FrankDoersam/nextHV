@@ -4,6 +4,7 @@ import { Routes, Route, useLocation } from "react-router";
 import { useAuth } from "@/framework/auth";
 import { WorkbenchProvider } from "@/framework/workbench";
 import { resources } from "@/modules/registry";
+import { navigationGroups } from "@/modules/navigation";
 import { AppShell } from "@/components/blocks/layout";
 import { CollectionLoading } from "@/components/blocks/collection-loading";
 import { Loading, EmptyState, ErrorState } from "@/components/blocks/content";
@@ -32,6 +33,7 @@ function ApplicationWorkspace() {
         <WorkbenchProvider>
             <AppShell
                 resources={resources}
+                navigationGroups={navigationGroups}
                 user={user}
                 onLogout={() => {
                     setLogoutError(undefined);
@@ -43,7 +45,7 @@ function ApplicationWorkspace() {
                     <Suspense
                         fallback={
                             loadingResource ? (
-                                <CollectionLoading resource={loadingResource} />
+                                <CollectionLoading resource={loadingResource} activeView={new URLSearchParams(location.search).get("view")} />
                             ) : (
                                 <Loading />
                             )

@@ -53,8 +53,22 @@ const valid = (
     context: NavigationContext,
 ) => typeof condition === "function" ? condition(context) : condition !== false;
 
+export type NavigationGroupSettings = Partial<Pick<
+    NavigationItemDefinition,
+    | "description"
+    | "tooltip"
+    | "badge"
+    | "defaultOpen"
+    | "visible"
+    | "enabled"
+    | "permission"
+>>;
+
 /** Keep the existing resource registry as the source of truth; declarations only enrich its navigation. */
-export function defaultNavigation(resources: ResourceDefinition[]): NavigationItemDefinition[] {
+export function defaultNavigation(
+    resources: ResourceDefinition[],
+    groupSettings: Record<string, NavigationGroupSettings> = {},
+): NavigationItemDefinition[] {
     const groups = new Map<string, NavigationItemDefinition[]>();
     for (const resource of resources) {
         if (resource.navigation === false) continue;
@@ -79,12 +93,12 @@ export function defaultNavigation(resources: ResourceDefinition[]): NavigationIt
     return [
         { id: "home", label: "Übersicht", icon: House, to: "/" },
         ...[...groups].map(([group, children]) => ({
+            ...groupSettings[group],
             id: `group:${group}`,
             label: group,
-            description: group === "Stammdaten"
-                ? "Objekte, Einheiten und Geschäftspartner"
-                : undefined,
-            defaultOpen: true,
+            description: groupSettings[group]?.description ??
+                (group === "Stammdaten" ? "Objekte, Einheiten und Geschäftspartner" : undefined),
+            defaultOpen: groupSettings[group]?.defaultOpen ?? true,
             children,
         })),
     ];
@@ -127,12 +141,20 @@ export function resolveNavigation(
             ? byName.get(definition.resource)
             : inheritedResource;
         if (definition.resource && !resource) return null;
+        // Every resource-linked navigation must pass list access, even if an
+        // additional, more specific permission is declared for this menu item.
+        const listDecision = resource ? decide(resource.name, "list") : true;
         const permissionResource = definition.permission?.resource ?? resource?.name;
-        const allowed = permissionResource
-            ? decide(permissionResource, definition.permission?.action ?? "list")
+        const action = definition.permission?.action ?? "list";
+        const extraDecision = permissionResource &&
+            (permissionResource !== resource?.name || action !== "list")
+            ? decide(permissionResource, action)
             : true;
-        const permitted = typeof allowed === "boolean" ? allowed : allowed.allowed;
-        const denialReason = typeof allowed === "boolean" ? undefined : allowed.reason;
+        const denied = [listDecision, extraDecision].find(
+            (decision) => typeof decision === "boolean" ? !decision : !decision.allowed,
+        );
+        const permitted = denied === undefined;
+        const denialReason = denied && typeof denied !== "boolean" ? denied.reason : undefined;
         if (!permitted && definition.permission?.denied !== "disable") return null;
         const disabledReason =
             parentDisabled ??

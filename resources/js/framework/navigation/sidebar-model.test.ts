@@ -96,6 +96,35 @@ describe("sidebar navigation model", () => {
         expect(tree.map((item) => item.id)).toEqual(["home"]);
     });
 
+    it("does not expose a resource when list access is denied even if another action is allowed", () => {
+        const tree = resolveNavigation([
+            {
+                id: "edit-only",
+                label: "Bearbeiten",
+                resource: "properties",
+                permission: { action: "edit" },
+            },
+        ], [properties], undefined, (_resource, action) => action === "edit");
+        expect(tree).toEqual([]);
+    });
+
+    it("allows groups to default closed and hide their contents through configured rules", () => {
+        const closed = defaultNavigation([properties], {
+            Stammdaten: { defaultOpen: false, description: "Einfach", tooltip: "Alles zum Bestand" },
+        });
+        expect(closed.find((node) => node.id === "group:Stammdaten")).toEqual(
+            expect.objectContaining({
+                defaultOpen: false,
+                description: "Einfach",
+                tooltip: "Alles zum Bestand",
+            }),
+        );
+        const hidden = defaultNavigation([properties], {
+            Stammdaten: { visible: () => false },
+        });
+        expect(resolveNavigation(hidden, [properties]).map((node) => node.id)).toEqual(["home"]);
+    });
+
     it("does not turn a stale view link into unrestricted navigation", () => {
         const tree = resolveNavigation([
             { id: "bad", label: "Fehler", resource: "properties", view: "unknown" },
