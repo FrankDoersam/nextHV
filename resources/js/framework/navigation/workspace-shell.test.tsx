@@ -24,6 +24,7 @@ const propertyResource = {
 beforeEach(() => {
     window.localStorage.clear();
     Element.prototype.scrollTo = vi.fn();
+    Element.prototype.scrollIntoView = vi.fn();
     vi.stubGlobal(
         "ResizeObserver",
         class {
