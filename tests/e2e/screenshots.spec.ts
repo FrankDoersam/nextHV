@@ -5,6 +5,21 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     page,
 }) => {
     const errors: string[] = [];
+    let apiRemaining = Infinity;
+    let apiResetAt = 0;
+    page.on("response", (response) => {
+        if (!response.url().includes("/api/v1/")) return;
+        const headers = response.headers();
+        const remaining = Number(headers["x-ratelimit-remaining"]);
+        const resetAt = Number(headers["x-ratelimit-reset"]) * 1000;
+        if (!Number.isFinite(remaining)) return;
+        apiRemaining = Math.min(apiRemaining, remaining);
+        // Laravel includes Reset only on 429. Its one-minute window starts
+        // no later than the first response; reserve one second for rounding.
+        if (Number.isFinite(resetAt) && resetAt > 0)
+            apiResetAt = resetAt + 1000;
+        else if (!apiResetAt) apiResetAt = Date.now() + 61_000;
+    });
     page.on("pageerror", (error) => errors.push(error.message));
     await mkdir("screenshots", { recursive: true });
     await page.clock.setFixedTime(new Date("2026-11-13T10:00:00+01:00"));
@@ -828,6 +843,16 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(lockedProperty).toBeDisabled();
     await expect(lockedProperty).toHaveValue("Lindenhöfe");
     await capture("34-einheit-kontext-link");
+<<<<<<< HEAD
+=======
+    // The capture tour is faster than human navigation. Respect the server's
+    // remaining request budget before starting the next batch of scenarios.
+    if (apiRemaining < 60 && apiResetAt > Date.now()) {
+        await new Promise((resolve) =>
+            setTimeout(resolve, apiResetAt - Date.now() + 250),
+        );
+    }
+>>>>>>> a566580e7c7c9b6eee1aa32aa50049663d8432e7
     await page.goto("/business-partners");
     await page
         .getByRole("textbox", { name: "Geschäftspartner durchsuchen" })

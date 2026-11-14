@@ -1517,3 +1517,8 @@ Der Schema-Adapter erkennt `BelongsTo`-Spalten wie `contract.code` und erzeugt d
 `ColumnDefinition.options` wird unabhängig von der Filteranzeige aus den PHP-Metadaten übernommen. Zellanzeige und CSV verwenden diese Beschriftungen: `tenant` wird zu `Mieter`, boolesche Werte zu `Ja`/`Nein`. Spaltenüberschriften und Dateiname sind fachlich benannt. `exportValue(row)` bleibt der bewusste Override. Exportiert wird weiterhin nur die aktuelle Seite bzw. Auswahl; der Schutz vor CSV-Formeln bleibt aktiv.
 
 Browseraufnahmen `40`–`44` prüfen die einspaltige Rollentabelle, CSV-Beschriftungen, Suche/Navigation über Vertragsnummern, das kontextgebundene Bearbeiten, Tabs bei 390/768 px und die Einheiten-Auswahl mit Objektbezug. Backendtests prüfen zusätzlich kombinierte Suchbegriffe, wörtliche Wildcard-Zeichen und den unveränderten Elternfilter.
+<<<<<<< HEAD
+=======
+
+Die umfangreiche Screenshot-Tour berücksichtigt vor dem zusätzlichen Szenarioblock die Rate-Limit-Header des Servers und wartet bei knappem Anfragebudget auf dessen Rücksetzung. Das produktive API-Limit bleibt unverändert.
+>>>>>>> a566580e7c7c9b6eee1aa32aa50049663d8432e7
