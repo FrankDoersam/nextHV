@@ -50,7 +50,7 @@ const resource: ResourceDefinition = {
 function Location() {
     return <output aria-label="URL">{useLocation().search}</output>;
 }
-function mount(initialEntry = "/?page=3") {
+function mount(initialEntry = "/?page=3", selectedResource: ResourceDefinition = resource) {
     return render(
         <MemoryRouter initialEntries={[initialEntry]}>
             <QueryClientProvider
@@ -62,7 +62,7 @@ function mount(initialEntry = "/?page=3") {
             >
                 <WorkbenchProvider>
                     <ResourceCollection
-                        resource={resource}
+                        resource={selectedResource}
                         fixedFilters={[{ field: "property_id", value: 9 }]}
                         filterable={false}
                         groupable={false}
@@ -222,6 +222,46 @@ describe("collection scopes and cells", () => {
             readGridState(new URLSearchParams("view=unknown"), resource).view,
         ).toBe("");
     });
+    it("sends the canonical relation-name sort to the REST API and renders the related name", async () => {
+        const withRelation: ResourceDefinition = {
+            ...resource,
+            columns: [
+                ...resource.columns,
+                {
+                    field: "property_record.name",
+                    label: "Objekt",
+                    sortable: true,
+                    sortField: "property.name",
+                },
+            ],
+        };
+        vi.mocked(dataProvider.list).mockResolvedValue({
+            data: [{
+                id: 1,
+                name: "Wohnung 01",
+                status: "active",
+                property_record: { name: "Birkenhof" },
+                updated_at: "2026-01-01",
+            }],
+            total: 1,
+            current_page: 1,
+            last_page: 1,
+        });
+        const sort = encodeURIComponent(JSON.stringify([
+            { id: "property_record.name", desc: false },
+        ]));
+        mount(`/?sort=${sort}`, withRelation);
+
+        await screen.findByText("Birkenhof");
+        await waitFor(() => expect(dataProvider.list).toHaveBeenCalledWith(
+            withRelation,
+            expect.objectContaining({
+                sort: [{ field: "property.name", direction: "asc" }],
+            }),
+            expect.any(AbortSignal),
+        ));
+    });
+
     it("uses numeric relation IDs and rejects invalid identifiers", () => {
         const definitions = [
             {
