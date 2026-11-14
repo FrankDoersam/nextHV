@@ -7,6 +7,7 @@ export default defineConfig({
     timeout: 240_000,
     use: {
         ...base.use,
+        actionTimeout: 15_000,
         viewport: { width: 1440, height: 1000 },
         deviceScaleFactor: 1,
         locale: "de-DE",

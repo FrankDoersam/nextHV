@@ -777,7 +777,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         .click();
     await page.goto("/identity-documents");
     await page
-        .getByRole("button", { name: "Browser-Nachweis", exact: true })
+        .getByText("Browser-Nachweis", { exact: true })
         .click();
     await expect(
         page.getByRole("heading", { name: "Browser-Nachweis", exact: true }),
@@ -950,7 +950,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         .click();
     await page
         .getByRole("navigation", { name: "Hauptnavigation", exact: true })
-        .getByRole("link", { name: /^Verträge(?:\\s|$)/ })
+        .getByRole("link", { name: /^Verträge(?:\s|$)/ })
         .click();
     await page
         .getByRole("textbox", { name: "Verträge durchsuchen" })
