@@ -63,7 +63,7 @@ export function ResponsiveRecordList({
                             <div className="flex min-w-0 items-center gap-3">
                                 {selection?.row(row)}
                                 {title &&
-                                    (open && !title.reference ? (
+                                    (open ? (
                                         <Cell
                                             className="w-full flex-1"
                                             onClick={() => open(row)}
