@@ -117,7 +117,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         .getByRole("textbox", { name: "Verträge durchsuchen" })
         .fill("MV-001");
     await expect(
-        page.getByRole("button", { name: "MV-001-01", exact: true }),
+        page.getByText("MV-001-01", { exact: true }),
     ).toBeVisible();
     await expect(
         page.locator('[data-slot="resource-collection"]'),
@@ -186,10 +186,10 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         page.locator('[data-slot="resource-collection"]'),
     ).not.toHaveAttribute("aria-busy", "true");
     await expect(
-        page.getByRole("button", { name: "MV-001-01", exact: true }),
+        page.getByText("MV-001-01", { exact: true }),
     ).toBeVisible();
     await expect(
-        page.getByRole("button", { name: "MV-001-02", exact: true }),
+        page.getByText("MV-001-02", { exact: true }),
     ).toHaveCount(0);
     await capture("10-relationsfilter");
     // Active criteria must not push grouping above a detached row of actions.
@@ -225,10 +225,10 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         240,
     );
     await page
-        .getByRole("button", { name: "MV-001-01", exact: true })
+        .getByText("MV-001-01", { exact: true })
         .scrollIntoViewIfNeeded();
     await expect(
-        page.getByRole("button", { name: "MV-001-01", exact: true }),
+        page.getByText("MV-001-01", { exact: true }),
     ).toBeInViewport();
     await capture("37-filter-mobile-datensatz");
     await page
@@ -244,7 +244,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         })
         .click();
     await expect(
-        page.getByRole("button", { name: "MV-001-02", exact: true }),
+        page.getByText("MV-001-02", { exact: true }),
     ).toBeVisible();
 
     await page
@@ -378,7 +378,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         .getByRole("textbox", { name: "Verträge durchsuchen" })
         .fill("MV-001");
 
-    await page.getByRole("button", { name: "MV-001-01", exact: true }).click();
+    await page.getByText("MV-001-01", { exact: true }).click();
     await expect(
         page.getByRole("heading", { name: "MV-001-01", exact: true }),
     ).toBeVisible();
@@ -595,7 +595,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         .getByRole("textbox", { name: "Objekte durchsuchen" })
         .fill("Linden");
     await expect(
-        page.getByRole("button", { name: "Lindenhöfe", exact: true }),
+        page.getByText("Lindenhöfe", { exact: true }),
     ).toBeVisible();
     await page.getByRole("cell", { name: "OBJ-001", exact: true }).dblclick();
     await expect(
@@ -737,7 +737,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     ).not.toHaveAttribute("aria-busy", "true");
     await expect(page).toHaveURL(/property_id/);
     await capture("23-einheiten-objektfilter");
-    await page.getByRole("button", { name: "Wohnung 01", exact: true }).click();
+    await page.getByText("Wohnung 01", { exact: true }).click();
     const unitView = page.getByRole("dialog");
     await expect(
         unitView.getByRole("heading", { name: "Wohnung 01", exact: true }),
@@ -823,10 +823,10 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await page
         .getByRole("textbox", { name: "Objekte durchsuchen" })
         .fill("Linden");
-    await page.getByRole("button", { name: "Lindenhöfe", exact: true }).click();
+    await page.getByText("Lindenhöfe", { exact: true }).click();
     await page.getByRole("tab", { name: /Einheiten/ }).click();
     await expect(
-        page.getByRole("button", { name: "Wohnung 01", exact: true }),
+        page.getByText("Wohnung 01", { exact: true }),
     ).toBeVisible();
     const unitTab = page.getByRole("tab", { name: /Einheiten/ });
     await expect(unitTab.locator("svg")).toBeVisible();
@@ -957,7 +957,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await page
         .getByRole("textbox", { name: "Verträge durchsuchen" })
         .fill("MV-001-01");
-    await page.getByRole("button", { name: "MV-001-01", exact: true }).click();
+    await page.getByText("MV-001-01", { exact: true }).click();
     await expect(
         page.getByRole("heading", { name: "MV-001-01", exact: true }),
     ).toBeVisible();

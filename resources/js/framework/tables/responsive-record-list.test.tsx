@@ -45,10 +45,15 @@ it("reflows every visible business column into labelled values and keeps record 
     ).toBeVisible();
     expect(screen.getByText("15")).toBeVisible();
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: row.name as string }));
-    await user.click(screen.getByRole("button", { name: "Aktion" }));
+    expect(screen.queryByRole("button", { name: row.name as string })).not.toBeInTheDocument();
+    await user.click(screen.getByText("Parkstraße 128, Hinterhaus, Berlin"));
     expect(open).toHaveBeenCalledExactlyOnceWith(row);
+    await user.click(screen.getByRole("button", { name: "Aktion" }));
+    expect(open).toHaveBeenCalledTimes(1);
     expect(action).toHaveBeenCalledExactlyOnceWith(row);
+    screen.getByRole("listitem").focus();
+    await user.keyboard("{Enter}");
+    expect(open).toHaveBeenCalledTimes(2);
 });
 
 it("uses the ordinary record action for referenced mobile titles and renders no extra link", async () => {
@@ -77,7 +82,8 @@ it("uses the ordinary record action for referenced mobile titles and renders no 
     );
 
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Wohnung 17" }));
+    expect(screen.queryByRole("button", { name: "Wohnung 17" })).not.toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole("listitem"));
     expect(open).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ id: 1, unit_id: 17 }),
     );

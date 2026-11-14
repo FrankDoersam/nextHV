@@ -30,13 +30,13 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     await page
         .getByRole("textbox", { name: "Objekte durchsuchen" })
         .fill("Linden");
-    await page.getByRole("button", { name: "Lindenhöfe", exact: true }).click();
+    await page.getByText("Lindenhöfe", { exact: true }).click();
     await expect(
         page.getByRole("heading", { name: "Lindenhöfe", exact: true }),
     ).toBeVisible();
     await page.getByRole("tab", { name: /Einheiten/ }).click();
     await expect(
-        page.getByRole("button", { name: "Wohnung 01", exact: true }),
+        page.getByText("Wohnung 01", { exact: true }),
     ).toBeVisible();
     await page.getByRole("tab", { name: "Zähler", exact: true }).click();
     await expect(
@@ -77,7 +77,7 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     expect(propertyWrites).toBe(1);
     await page.getByRole("textbox", { name: "Objekte durchsuchen" }).fill(code);
     await expect(
-        page.getByRole("button", { name: "Browser Test Objekt", exact: true }),
+        page.getByText("Browser Test Objekt", { exact: true }),
     ).toBeVisible();
     // URL state, the wider sheet, and browser reload use the real application.
     await expect(page).toHaveURL(/q=/);
@@ -140,7 +140,7 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     await page
         .getByRole("textbox", { name: "Verträge durchsuchen" })
         .fill("MV-001-01");
-    await page.getByRole("button", { name: "MV-001-01", exact: true }).click();
+    await page.getByText("MV-001-01", { exact: true }).click();
     await expect(
         page.getByRole("heading", { name: "MV-001-01", exact: true }),
     ).toBeVisible();

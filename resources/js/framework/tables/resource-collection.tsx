@@ -1,6 +1,5 @@
 import { CellRenderer } from "./cell-renderer";
 import { recordValue } from "./cell-value";
-import { Cell } from "@/components/blocks/cell";
 import { CollectionViews, collectionViewTabId } from "./collection-views";
 import { DirectFilters, supportsDirectFilter } from "./direct-filters";
 import { GridCellSkeleton } from "@/components/blocks/collection-loading";
@@ -17,6 +16,7 @@ import type { ActionPlacement } from "../actions";
 import { useGridState, defaultColumnVisibility } from "./grid-state";
 import { exportRows } from "./export";
 import { cn } from "@/lib/utils";
+import { isRowActivationEvent } from "@/lib/row-interaction";
 import { Download, X, Ellipsis } from "lucide-react";
 import {
     DropdownMenu,
@@ -276,6 +276,13 @@ export function ResourceCollection({
         value: import("@tanstack/react-table").Updater<ColumnVisibilityState>,
     ) => update("columnVisibility", value);
     const [selection, setSelection] = useState<RowSelectionState>({});
+    const pendingRowOpen = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(
+        () => () => {
+            if (pendingRowOpen.current) clearTimeout(pendingRowOpen.current);
+        },
+        [],
+    );
     const filterDefinitions = useMemo(
         () => columnFilters(resource),
         [resource],
@@ -542,33 +549,16 @@ export function ResourceCollection({
                         DataGridFeatures,
                         RecordData
                     >;
-                }) =>
-                    c.field === resource.titleField && detailLink ? (
-                        <Cell
-                            className="w-full"
-                            title={
-                                typeof row.original[c.field] === "string"
-                                    ? String(row.original[c.field])
-                                    : undefined
-                            }
-                            onClick={() =>
-                                viewMode === "page"
-                                    ? navigate(
-                                          `/${resource.name}/${row.original.id}`,
-                                      )
-                                    : workbench.openForm({
-                                          resource,
-                                          mode: "view",
-                                          row: row.original,
-                                          presentation: viewMode,
-                                      })
-                            }
-                        >
-                            {formatCell(c, row.original)}
-                        </Cell>
-                    ) : (
-                        formatCell(c, row.original)
-                    ),
+                }) => (
+                    <div
+                        className={cn(
+                            "min-w-0",
+                            c.field === resource.titleField && "font-medium text-foreground",
+                        )}
+                    >
+                        {formatCell(c, row.original)}
+                    </div>
+                ),
             })),
             ...filterDefinitions
                 .filter(
@@ -615,11 +605,8 @@ export function ResourceCollection({
         ],
         [
             resource,
-            navigate,
             rowSelection,
             actions,
-            detailLink,
-            viewMode,
             columnChooser,
             sizing,
             dense,
@@ -778,6 +765,24 @@ export function ResourceCollection({
                   row,
                   presentation: viewMode,
               });
+    const openFromTable = (row: RecordData) => {
+        if (!detailLink || result.isPlaceholderData || !can(resource.name, "view", row))
+            return;
+        if (
+            doubleClickEdit &&
+            actions !== false &&
+            (!actions || actions.includes("edit")) &&
+            can(resource.name, "edit", row)
+        ) {
+            if (pendingRowOpen.current) clearTimeout(pendingRowOpen.current);
+            pendingRowOpen.current = setTimeout(() => {
+                pendingRowOpen.current = null;
+                openRecord(row);
+            }, 220);
+        } else {
+            openRecord(row);
+        }
+    };
     const recordCards = (items: RecordData[]) => (
         <ResponsiveRecordList
             columns={resource.columns.filter(
@@ -1022,6 +1027,7 @@ export function ResourceCollection({
     return (
         <DataGrid
             table={table}
+            onRowClick={detailLink && !result.isPlaceholderData ? openFromTable : undefined}
             recordCount={result.data?.total ?? 0}
             isLoading={result.isPending}
             loadingMode="skeleton"
@@ -1058,17 +1064,20 @@ export function ResourceCollection({
                             actions === false ||
                             (actions && !actions.includes("edit")) ||
                             result.isPlaceholderData ||
-                            (event.target as HTMLElement).closest(
-                                "button,a,input,[role=checkbox],[role=menuitem]",
-                            )
+                            !isRowActivationEvent(event, true)
                         )
                             return;
                         const id = (event.target as HTMLElement)
                             .closest("[data-row-id]")
                             ?.getAttribute("data-row-id");
                         const row = rows.find((r) => String(r.id) === id);
-                        if (row && can(resource.name, "edit", row))
+                        if (row && can(resource.name, "edit", row)) {
+                            if (pendingRowOpen.current) {
+                                clearTimeout(pendingRowOpen.current);
+                                pendingRowOpen.current = null;
+                            }
                             openEdit(row);
+                        }
                     }}
                 >
                     {result.isPending && (
@@ -1260,6 +1269,11 @@ export function ResourceCollection({
                                                                     defaultVisibility={defaultColumnVisibility(
                                                                         resource,
                                                                     )}
+                                                                    onRowClick={
+                                                                        detailLink && !result.isPlaceholderData
+                                                                            ? openFromTable
+                                                                            : undefined
+                                                                    }
                                                                 />
                                                             )}
                                                         </section>
@@ -1377,6 +1391,7 @@ function GroupedGrid({
     selectionMode,
     dense,
     defaultVisibility,
+    onRowClick,
 }: {
     columns: ColumnDef<DataGridFeatures, RecordData>[];
     rows: RecordData[];
@@ -1390,6 +1405,7 @@ function GroupedGrid({
         false | "single" | "multiple" | ((row: RecordData) => boolean);
     dense: boolean;
     defaultVisibility: ColumnVisibilityState;
+    onRowClick?: (row: RecordData) => void;
 }) {
     const table = useTable({
         initialState: { columnVisibility: defaultVisibility },
@@ -1424,6 +1440,7 @@ function GroupedGrid({
     return (
         <DataGrid
             table={table}
+            onRowClick={onRowClick}
             recordCount={rows.length}
             i18n={i18n}
             tableLayout={{
