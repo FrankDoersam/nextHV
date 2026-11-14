@@ -4,22 +4,29 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import type { ResourceDefinition } from "../types";
 import { dataProvider, type ListParams } from "./provider";
-export const resourceKey = (name: string) => ["resources", name] as const;
+import { resolveDataProvider } from "./provider-registry";
+import type { TableQueryOptions } from "../tables/table-contract";
+import { resourceKey } from "./resource-key";
+export { resourceKey } from "./resource-key";
 export function useResourceList(
     resource: ResourceDefinition,
     params: ListParams = {},
     enabled = true,
     retainPrevious = false,
     staleTime?: number,
+    queryOptions?: TableQueryOptions,
 ) {
+    const provider = resolveDataProvider(resource);
     return useQuery({
-        enabled,
         ...(staleTime === undefined ? {} : { staleTime }),
-        queryKey: [...resourceKey(resource.name), "list", params],
-        queryFn: ({ signal }) => dataProvider.list(resource, params, signal),
+        ...(queryOptions ?? {}),
+        enabled: enabled && (queryOptions?.enabled ?? true),
+        queryKey: [...resourceKey(resource), "list", params],
+        queryFn: ({ signal }) => provider.list(resource, params, signal),
         placeholderData: retainPrevious
             ? (previous, query) =>
-                  query?.queryKey[1] === resource.name ? previous : undefined
+                  query?.queryKey.slice(0, -2).join(".") === resourceKey(resource).join(".")
+                      ? previous : undefined
             : undefined,
     });
 }
@@ -30,13 +37,13 @@ export function useCollectionSummary(
 ) {
     return useQuery({
         queryKey: [
-            ...resourceKey(resource.name),
+            ...resourceKey(resource),
             "metric",
             resource.summary?.metric,
             params,
         ],
         queryFn: ({ signal }) =>
-            dataProvider.summary(
+            resolveDataProvider(resource).summary(
                 resource,
                 resource.summary!.metric,
                 params,
@@ -47,8 +54,8 @@ export function useCollectionSummary(
 }
 export function useResource(resource: ResourceDefinition, id: number) {
     return useQuery({
-        queryKey: [...resourceKey(resource.name), "detail", id],
-        queryFn: () => dataProvider.one(resource, id),
+        queryKey: [...resourceKey(resource), "detail", id],
+        queryFn: () => resolveDataProvider(resource).one(resource, id),
         enabled: Number.isFinite(id) && id > 0,
     });
 }
@@ -63,6 +70,7 @@ export function useReload() {
     return () =>
         Promise.all([
             client.invalidateQueries({ queryKey: ["resources"] }),
+            client.invalidateQueries({ queryKey: ["providers"] }),
             client.invalidateQueries({ queryKey: ["overview"] }),
         ]);
 }
@@ -82,22 +90,25 @@ export function useSaveRecord(resource: ResourceDefinition) {
         values: import("../types").Values,
         previous?: import("../types").RecordData,
     ) => {
-        const saved = await dataProvider.save(resource, values, previous);
-        await client.cancelQueries({ queryKey: resourceKey(resource.name) });
-        patchRecord(client, resource.name, saved);
+        const saved = await resolveDataProvider(resource).save(resource, values, previous);
+        await client.cancelQueries({ queryKey: resourceKey(resource) });
+        patchRecord(client, resource, saved);
         if (previous) {
             // Preserve the current viewport/order. Re-evaluate server sort/filter on next visit or explicit refresh.
             await client.invalidateQueries({
-                queryKey: [...resourceKey(resource.name), "list"],
+                queryKey: [...resourceKey(resource), "list"],
                 refetchType: "none",
             });
         } else {
             await client.invalidateQueries({
-                queryKey: [...resourceKey(resource.name), "list"],
+                queryKey: [...resourceKey(resource), "list"],
             });
         }
         await client.invalidateQueries({
-            queryKey: [...resourceKey(resource.name), "metric"],
+            queryKey: [...resourceKey(resource), "metric"],
+        });
+        await client.invalidateQueries({
+            queryKey: [...resourceKey(resource), "groups"],
         });
         // Recount only cached foreign-key parents (e.g. contract after adding a condition).
         const countResources = new Set([resource.name]);
@@ -114,7 +125,7 @@ export function useSaveRecord(resource: ResourceDefinition) {
                 if (typeof id !== "number" || id <= 0) continue;
                 countResources.add(field.resource);
                 const cached = client
-                    .getQueriesData({ queryKey: resourceKey(field.resource) })
+                    .getQueriesData({ queryKey: resourceKey(getResource(field.resource)) })
                     .some(([, value]) => {
                         const entry = value as
                             | { id?: number; data?: { id: number }[] }
@@ -134,24 +145,27 @@ export function useSaveRecord(resource: ResourceDefinition) {
         await Promise.all(
             [...parents.values()].map(async (parent) => {
                 try {
-                    const refreshed = await dataProvider.one(
+                    const refreshed = await resolveDataProvider(parent.resource).one(
                         parent.resource,
                         parent.id,
                     );
                     await client.cancelQueries({
-                        queryKey: resourceKey(parent.resource.name),
+                        queryKey: resourceKey(parent.resource),
                     });
-                    patchRecord(client, parent.resource.name, refreshed);
+                    patchRecord(client, parent.resource, refreshed);
                     await client.invalidateQueries({
                         queryKey: [
-                            ...resourceKey(parent.resource.name),
+                            ...resourceKey(parent.resource),
                             "metric",
                         ],
+                    });
+                    await client.invalidateQueries({
+                        queryKey: [...resourceKey(parent.resource), "groups"],
                     });
                 } catch {
                     // The mutation already succeeded. A failed optional parent refresh must not invite resubmission.
                     await client.invalidateQueries({
-                        queryKey: resourceKey(parent.resource.name),
+                        queryKey: resourceKey(parent.resource),
                         refetchType: "none",
                     });
                 }

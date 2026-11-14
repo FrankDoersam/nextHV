@@ -6,6 +6,7 @@ use App\Domain\Property\Enums\UnitStatus;
 use App\Domain\Property\Enums\UnitType;
 use App\Models\Unit;
 use App\Rest\Actions\CloneUnit;
+use App\Rest\Metrics\GroupedCounts;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -44,6 +45,11 @@ class UnitResource extends Resource
     public function relations(): array
     {
         return [BelongsTo::make('property', PropertyResource::class)->onlyOperations(), HasMany::make('contracts', ContractResource::class)->onlyOperations()];
+    }
+
+    public function metrics(): array
+    {
+        return [new GroupedCounts(['type', 'status'])];
     }
 
     public function actions(): array

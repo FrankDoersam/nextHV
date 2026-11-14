@@ -4,6 +4,7 @@ namespace App\Rest\Resources;
 
 use App\Models\BusinessPartner;
 use App\Rest\Filters\ExpressionFilter;
+use App\Rest\Metrics\GroupedCounts;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
 use Lomkit\Rest\Fields\Date;
@@ -56,4 +57,9 @@ class BusinessPartnerResource extends Resource
             HasMany::make('identityDocuments', IdentityDocumentResource::class)->onlyOperations(),
         ];
     }
+    public function metrics(): array
+    {
+        return [new GroupedCounts(['kind', 'city'])];
+    }
+
 }

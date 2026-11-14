@@ -217,6 +217,31 @@ export const dataProvider = {
             "POST",
             signal,
         ),
+    /** A native Lomkit metric counts groups on the full authorized/filter-scoped query. */
+    groups: (
+        resource: ResourceDefinition,
+        group: string,
+        params: Pick<ListParams, "query" | "filters">,
+        signal?: AbortSignal,
+    ) =>
+        request<{
+            data: {
+                field: string;
+                total: number;
+                groups: { value: string | number | null; count: number }[];
+            };
+        }>(
+            `/api/v1/${resource.name}/metrics/groups`,
+            {
+                group,
+                search: {
+                    filters: params.filters ?? [],
+                    ...(params.query ? { text: { value: params.query } } : {}),
+                },
+            },
+            "POST",
+            signal,
+        ),
     overview: (id?: number) =>
         request<{ data: Record<string, number | null> }>(
             "/api/v1/properties/metrics/overview",

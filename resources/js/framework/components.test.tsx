@@ -354,6 +354,16 @@ describe("CRUD interactions", () => {
         expect(screen.getByText("Sonnenhof")).toBeVisible();
     });
     it("shares column visibility across grouped grids", async () => {
+        vi.spyOn(dataProvider, "groups").mockResolvedValue({
+            data: {
+                field: "city",
+                total: 2,
+                groups: [
+                    { value: "Berlin", count: 1 },
+                    { value: "München", count: 1 },
+                ],
+            },
+        });
         const user = userEvent.setup();
         wrap(<ResourceCollection resource={resource} />);
         await screen.findByText("Lindenhöfe");
@@ -361,7 +371,7 @@ describe("CRUD interactions", () => {
         await user.click(
             await screen.findByRole("option", { name: "Standort" }),
         );
-        expect(await screen.findAllByText("1 auf dieser Seite")).toHaveLength(
+        expect(await screen.findAllByText("1 auf dieser Seite · 1 insgesamt")).toHaveLength(
             2,
         );
         await user.click(screen.getAllByRole("button", { name: "Objekt" })[0]);

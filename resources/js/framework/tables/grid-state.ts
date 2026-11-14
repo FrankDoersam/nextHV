@@ -47,14 +47,15 @@ export function readGridState(
     resource: ResourceDefinition,
     prefix = "",
     pageSize = 25,
+    defaults: Partial<GridState> = {},
 ): GridState {
     const value = (name: string) => url.get(prefix + name);
     const columns = new Set(resource.columns.map((c) => c.field));
-    const rawSort = json(value("sort"), []);
-    const rawFilters = json(value("filters"), {});
-    const rawColumns = json(value("columns"), {});
-    const page = Number(value("page") ?? 1);
-    const size = Number(value("perPage") ?? pageSize);
+    const rawSort = json(value("sort"), defaults.sorting ?? []);
+    const rawFilters = json(value("filters"), defaults.filters ?? {});
+    const rawColumns = json(value("columns"), defaults.columnVisibility ?? {});
+    const page = Number(value("page") ?? (defaults.pagination?.pageIndex ?? 0) + 1);
+    const size = Number(value("perPage") ?? defaults.pagination?.pageSize ?? pageSize);
     return {
         view: resource.views?.some((view) => view.id === value("view"))
             ? value("view")!
@@ -95,10 +96,10 @@ export function readGridState(
                     : [],
             ),
         } as ColumnVisibilityState,
-        group: resource.groupBy?.some((g) => g.value === value("group"))
-            ? value("group")!
+        group: resource.groupBy?.some((g) => g.value === (value("group") ?? defaults.group))
+            ? (value("group") ?? defaults.group)!
             : "none",
-        dense: value("dense") === "1",
+        dense: value("dense") === "1" || (value("dense") === null && defaults.dense === true),
     };
 }
 export function writeGridState(
@@ -136,15 +137,16 @@ export function useGridState(
         sync = true,
         prefix = "",
         pageSize = 25,
-    }: { sync?: boolean; prefix?: string; pageSize?: number } = {},
+        defaults = {},
+    }: { sync?: boolean; prefix?: string; pageSize?: number; defaults?: Partial<GridState> } = {},
 ) {
     const [url, setUrl] = useSearchParams();
     const [local, setLocal] = useState(() =>
-        readGridState(new URLSearchParams(), resource, "", pageSize),
+        readGridState(new URLSearchParams(), resource, "", pageSize, defaults),
     );
     const state = useMemo(
-        () => (sync ? readGridState(url, resource, prefix, pageSize) : local),
-        [sync, url, resource, prefix, pageSize, local],
+        () => (sync ? readGridState(url, resource, prefix, pageSize, defaults) : local),
+        [sync, url, resource, prefix, pageSize, defaults, local],
     );
     function commit(
         change: (current: GridState) => GridState,
@@ -155,7 +157,7 @@ export function useGridState(
                 (prev) =>
                     writeGridState(
                         prev,
-                        change(readGridState(prev, resource, prefix, pageSize)),
+                        change(readGridState(prev, resource, prefix, pageSize, defaults)),
                         prefix,
                     ),
                 { replace },

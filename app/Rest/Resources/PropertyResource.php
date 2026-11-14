@@ -13,6 +13,7 @@ use App\Rest\Actions\CreatePropertyReport;
 use App\Rest\Actions\InspectProperty;
 use App\Rest\Filters\ExpressionFilter;
 use App\Rest\Metrics\CollectionSummary;
+use App\Rest\Metrics\GroupedCounts;
 use App\Rest\Metrics\PropertyOverview;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
@@ -67,6 +68,6 @@ class PropertyResource extends Resource
             'active' => fn (Builder $query): int => $query->where('status', 'active')->count(),
             'units' => fn (Builder $query): int => Unit::whereIn('property_id', $query->select('properties.id'))->count(),
             'area' => fn (Builder $query): float => (float) $query->sum('land_area'),
-        ])];
+        ]), new GroupedCounts(['city', 'type'])];
     }
 }

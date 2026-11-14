@@ -5,7 +5,7 @@ import {
     type LucideIcon,
 } from "lucide-react";
 import { can } from "./permissions";
-import { dataProvider } from "./data/provider";
+import { resolveDataProvider } from "./data/provider-registry";
 import type { ActionContext, FieldDefinition, RecordData } from "./types";
 export type ActionPlacement =
     "row" | "table" | "detail" | "form" | "field" | "bulk";
@@ -65,7 +65,7 @@ export class DeleteAction extends ResourceAction {
     bulk = true;
     destructive = true;
     async execute({ rows, resource }: ActionContext) {
-        return dataProvider.destroy(resource.name, rows);
+        return resolveDataProvider(resource).destroy(resource.name, rows);
     }
 }
 
@@ -152,6 +152,6 @@ export class BulkEditAction extends ResourceAction {
         );
         if (!Object.keys(values).length)
             throw new Error("Bitte mindestens ein Feld zum Ändern auswählen.");
-        return dataProvider.saveMany(context.resource, values, context.rows);
+        return resolveDataProvider(context.resource).saveMany(context.resource, values, context.rows);
     }
 }

@@ -1,7 +1,8 @@
 import { useQueries } from "@tanstack/react-query";
 import { Tabs } from "@/components/ui/tabs";
 import { ResponsiveTabList } from "@/components/blocks/responsive-tab-list";
-import { dataProvider } from "../data/provider";
+import { resolveDataProvider } from "../data/provider-registry";
+import { resourceKey } from "../data/resource-key";
 import type {
     CollectionViewDefinition,
     Filter,
@@ -16,8 +17,7 @@ export const viewCountQuery = (
     fixedFilters: Filter[] = [],
 ) => ({
     queryKey: [
-        "resources",
-        resource.name,
+        ...resourceKey(resource),
         "view-count",
         view.id,
         fixedFilters,
@@ -28,7 +28,7 @@ export const viewCountQuery = (
     staleTime: 30_000,
     queryFn: async ({ signal }: { signal: AbortSignal }) =>
         (
-            await dataProvider.list(
+            await resolveDataProvider(resource).list(
                 { ...resource, includes: undefined, aggregates: undefined },
                 {
                     limit: 10,

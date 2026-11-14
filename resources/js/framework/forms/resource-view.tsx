@@ -8,7 +8,7 @@ import { Overlay } from "@/components/blocks/overlay";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { label } from "@/lib/format";
-import { dataProvider } from "../data/provider";
+import { resolveDataProvider } from "../data/provider-registry";
 import { useReload } from "../data/hooks";
 import { can } from "../permissions";
 import { RelationCollection } from "../tables/relation-collection";
@@ -52,7 +52,7 @@ export function ResourceView({
         setRefreshing(true);
         setError(undefined);
         try {
-            setRecord(await dataProvider.one(resource, record.id));
+            setRecord(await resolveDataProvider(resource).one(resource, record.id));
         } catch (error) {
             setError(error);
         } finally {

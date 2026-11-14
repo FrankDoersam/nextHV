@@ -1,5 +1,6 @@
 import type { KeyValueItem } from "@/components/blocks/key-value-card";
 import type { NavigationItemDefinition } from "./navigation/sidebar-model";
+import type { TableFilterPresets, TablePaginationOptions, TableQueryOptions, TableSortPresets } from "./tables/table-contract";
 import type { ChoiceOption } from "@/components/fields/choice-picker";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
@@ -217,6 +218,8 @@ export interface ResourceDefinition {
     includes?: { relation: string; includes?: { relation: string }[] }[];
     aggregates?: { relation: string; type: string; field?: string }[];
     navigation?: boolean;
+    /** Select a complete named provider; Laravel/Lomkit is the default. */
+    dataProvider?: string;
     navigationGroup?: string;
     /** Optional nested/sidebar behaviors; resource CRUD metadata stays in this registry. */
     navigationItem?: Pick<
@@ -260,7 +263,12 @@ export interface CollectionOptions {
     searchable?: boolean;
     filterable?: boolean;
     groupable?: boolean;
-    pagination?: boolean;
+    pagination?: boolean | TablePaginationOptions;
+    filters?: TableFilterPresets;
+    sorters?: TableSortPresets;
+    queryOptions?: TableQueryOptions;
+    /** Opt-in bounded server-wide selection across pages (max 100 records). */
+    selectAllFiltered?: boolean;
     rowSelection?:
         false | "single" | "multiple" | ((row: RecordData) => boolean);
     /** Remove only the select-all control while retaining row checkboxes. */
@@ -343,8 +351,8 @@ export interface ActionContext {
     instance: ResourceInstance;
     values: Values;
 }
-export interface PageResult {
-    data: RecordData[];
+export interface PageResult<TRecord extends RecordData = RecordData> {
+    data: TRecord[];
     total: number;
     current_page: number;
     last_page: number;
