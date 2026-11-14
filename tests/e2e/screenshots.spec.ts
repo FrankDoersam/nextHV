@@ -440,7 +440,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         .click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByLabel("Nummer", { exact: false })).toBeVisible();
-    await expect(page.getByText(/^Schritt \d+ von \d+$/)).toHaveCount(0);
+    await expect(page.getByText(/^Schritt \d+ von \d+$/)).toBeVisible();
     const wizardSteps = page.locator('[data-slot="stepper-item"]');
     const firstStep = await wizardSteps.nth(0).boundingBox();
     const secondStep = await wizardSteps.nth(1).boundingBox();
@@ -452,6 +452,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(
         wizardHeader.locator('[data-slot="stepper-item"]'),
     ).toHaveCount(6);
+    await expect(wizardHeader.locator('[data-slot="wizard-progress"]')).toBeVisible();
     const progress = wizardHeader.locator('[data-slot="stepper"]');
     const progressBox = await progress.boundingBox();
     const headerBox = await wizardHeader.boundingBox();
@@ -462,13 +463,10 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
                 (headerBox!.x + headerBox!.width / 2),
         ),
     ).toBeLessThanOrEqual(2);
-    expect(
-        Math.abs(
-            progressBox!.y +
-                progressBox!.height / 2 -
-                (headerBox!.y + headerBox!.height / 2),
-        ),
-    ).toBeLessThanOrEqual(2);
+    expect(progressBox!.y).toBeGreaterThanOrEqual(headerBox!.y);
+    expect(progressBox!.y + progressBox!.height).toBeLessThanOrEqual(
+        headerBox!.y + headerBox!.height + 2,
+    );
     const body = page.locator('[data-slot="overlay-body"]');
     const bodyBox = await body.boundingBox();
     expect(bodyBox!.y).toBeGreaterThanOrEqual(
