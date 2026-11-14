@@ -303,13 +303,22 @@ export function AppShell({
                                     const last = index === trail.length - 1 && !detailId;
                                     return (
                                         <Fragment key={item.id}>
-                                            <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                                            <ChevronRight
+                                                className={cn(
+                                                    "size-3.5 shrink-0 text-muted-foreground",
+                                                    !last && index < trail.length - 1 && "hidden md:block",
+                                                )}
+                                                aria-hidden
+                                            />
                                             {last ? (
                                                 <span aria-current="page" className="truncate font-medium">{item.label}</span>
                                             ) : item.to ? (
                                                 <Link
                                                     to={item.to}
-                                                    className="hidden max-w-40 truncate text-muted-foreground hover:text-foreground md:inline"
+                                                    className={cn(
+                                                        "max-w-40 truncate text-muted-foreground hover:text-foreground",
+                                                        index < trail.length - 1 && "hidden md:inline",
+                                                    )}
                                                 >
                                                     {item.label}
                                                 </Link>
