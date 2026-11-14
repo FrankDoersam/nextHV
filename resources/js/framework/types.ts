@@ -135,7 +135,8 @@ export interface ColumnDefinition {
     hideable?: boolean;
     cell?: CellDefinition;
     options?: { value: string | number; label: string }[];
-    reference?: false | { resource: string; idField: string };
+    /** Canonical API field for server-side sorting when a display path uses a relation response key. */
+    sortField?: string;
     exportValue?: (row: RecordData) => string | number | null;
     render?: (row: RecordData) => ReactNode;
 }
