@@ -32,6 +32,7 @@ export function Overlay({
     busy = false,
     size = "form",
     fill = false,
+    wizard = false,
     titleBadge,
     icon,
     actions,
@@ -52,6 +53,8 @@ export function Overlay({
     busy?: boolean;
     size?: "form" | "compact" | "wide";
     fill?: boolean;
+    /** Compact wizard header and content-sized dialog. */
+    wizard?: boolean;
     titleBadge?: ReactNode;
     icon?: ReactNode;
     actions?: ReactNode;
@@ -72,8 +75,10 @@ export function Overlay({
     const close = () => {
         if (!busy) onClose();
     };
-    const headClass =
-        "relative shrink-0 gap-0 border-b bg-card px-5 py-5 sm:px-6";
+    const headClass = cn(
+        "relative shrink-0 gap-0 border-b bg-card px-5 py-5 sm:px-6",
+        wizard && "py-4 sm:py-4",
+    );
     const closeButton = (
         <Button
             type="button"
@@ -97,7 +102,10 @@ export function Overlay({
                 )}
                 <div
                     data-slot="overlay-body"
-                    className="@container/form min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain bg-card px-5 py-6 sm:px-6"
+                    className={cn(
+                        "@container/form min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain bg-card px-5 py-6 sm:px-6",
+                        wizard && "py-5 sm:py-5",
+                    )}
                 >
                     {tabs ? (
                         <TabsContent value={tabs.value}>{children}</TabsContent>
@@ -111,7 +119,10 @@ export function Overlay({
     const accessory = header && (
         <div
             data-slot="overlay-header-content"
-            className="min-w-0 shrink-0 border-b bg-muted/20 px-5 py-4 sm:px-6"
+            className={cn(
+                "min-w-0 shrink-0 border-b bg-muted/20 px-5 py-4 sm:px-6",
+                wizard && "bg-card py-3 sm:py-3",
+            )}
         >
             {header}
         </div>
@@ -147,7 +158,10 @@ export function Overlay({
     const bottom = (footer || footerStart) && (
         <div
             data-slot="overlay-footer"
-            className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t bg-muted/30 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 [&_[data-slot=button]]:h-9 [&_[data-slot=button]]:min-w-24 [&_[data-slot=button]]:px-3"
+            className={cn(
+                "flex shrink-0 flex-wrap items-center justify-between gap-3 border-t bg-muted/30 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 [&_[data-slot=button]]:h-9 [&_[data-slot=button]]:min-w-24 [&_[data-slot=button]]:px-3",
+                wizard && "bg-card pt-3 sm:pt-3",
+            )}
         >
             <div className="flex min-w-0 flex-wrap items-center gap-3">
                 {footerStart}
@@ -203,6 +217,7 @@ export function Overlay({
                 <DialogContent
                     showCloseButton={false}
                     data-stacked={stacked || undefined}
+                    data-wizard={wizard || undefined}
                     className={cn(
                         "crud-dialog flex max-h-[92dvh] flex-col gap-0 overflow-hidden p-0 shadow-2xl",
                         fill && "h-[min(52rem,92dvh)]",
@@ -226,6 +241,7 @@ export function Overlay({
                 <SheetContent
                     showCloseButton={false}
                     data-stacked={stacked || undefined}
+                    data-wizard={wizard || undefined}
                     className={cn(
                         "crud-sheet flex flex-col gap-0 overflow-hidden p-0 shadow-2xl data-[side=right]:w-full data-[side=right]:sm:inset-y-3 data-[side=right]:sm:right-3 data-[side=right]:sm:h-[calc(100dvh-1.5rem)] data-[side=right]:sm:rounded-2xl data-[side=right]:sm:max-w-[min(48rem,calc(100vw-3rem))]",
                         size === "wide" &&

@@ -333,7 +333,8 @@ export function ResourceEditor({
             open
             onClose={close}
             busy={busy}
-            fill={!!request.wizard || !!flow}
+            fill={!!flow}
+            wizard={!!request.wizard}
             size={(request.wizard || flow) && summary ? "wide" : "form"}
             stacked={stacked || discard}
             nested={

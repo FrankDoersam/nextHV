@@ -1,6 +1,6 @@
 import { Collapsible } from "@base-ui/react/collapsible";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, PanelLeftOpen } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useEffect, useState, type ReactElement } from "react";
 import { Link, useLocation } from "react-router";
 import {
@@ -74,8 +74,7 @@ export function useSidebarExpansion(items: NavigationItem[], userId?: number) {
     return {
         isOpen: (item: NavigationItem) =>
             overrides[item.id] ??
-            item.defaultOpen ??
-            navigationBranchActive(item, pathname, search),
+            (navigationBranchActive(item, pathname, search) || item.defaultOpen === true),
         setOpen: (id: string, open: boolean) =>
             setOverrides((current) => ({ ...current, [id]: open })),
     };
@@ -180,23 +179,16 @@ function SidebarNode({
                     className="size-4 shrink-0 text-muted-foreground"
                 />
             )}
-            <span className="min-w-0 flex-1 truncate text-left">
-                <span className="block truncate">{item.label}</span>
-                {item.description && (
-                    <span className="block truncate text-[10px] font-normal text-muted-foreground">
-                        {item.description}
-                    </span>
-                )}
-            </span>
+            <span className="min-w-0 flex-1 truncate text-left">{item.label}</span>
         </>
     );
     const rowClasses = cn(
-        "flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded-md border-l-2 border-transparent px-2.5 py-1.5 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         selected
-            ? "bg-muted font-medium text-foreground"
+            ? "border-foreground bg-muted font-semibold text-foreground"
             : branchActive
-              ? "font-medium text-foreground hover:bg-muted/70"
-              : "text-foreground/80 hover:bg-muted/70 hover:text-foreground",
+              ? "font-medium text-foreground hover:bg-muted/60"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
         item.disabledReason && "cursor-not-allowed opacity-50",
     );
     const link =
@@ -237,7 +229,7 @@ function SidebarNode({
             data-level={level}
             open={open}
             onOpenChange={(next) => controls.setOpen(item.id, next)}
-            className={cn("min-w-0", level === 0 && "pt-3 first:pt-0")}
+            className={cn("min-w-0", level === 0 && "pt-4 first:pt-0")}
         >
             {link ? (
                 <div className="flex min-w-0 items-center gap-1">
@@ -246,7 +238,7 @@ function SidebarNode({
                     </div>
                     <Collapsible.Trigger
                         aria-label={`${item.label} Unterpunkte ${open ? "einklappen" : "ausklappen"}`}
-                        className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                         <ChevronRight
                             className={cn(
@@ -258,7 +250,7 @@ function SidebarNode({
                 </div>
             ) : (
                 <Collapsible.Trigger
-                    className="flex w-full min-h-8 items-center justify-between gap-2 rounded-md px-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex w-full min-h-8 items-center justify-between gap-2 rounded-md px-3 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     title={item.tooltip ?? item.description}
                 >
                     <span className="truncate">{item.label}</span>
@@ -271,7 +263,7 @@ function SidebarNode({
                 </Collapsible.Trigger>
             )}
             <Collapsible.Panel
-                className={cn("min-w-0", level > 0 && "ml-4 border-l pl-2")}
+                className={cn("min-w-0", level > 0 && "ml-3 border-l border-sidebar-border pl-2")}
             >
                 <div className="space-y-0.5 pt-1">
                     {item.children.map((child) => (
@@ -315,12 +307,12 @@ export function SidebarNavigation({
                 aria-label="Hauptnavigation"
                 data-slot="sidebar-navigation"
                 className={cn(
-                    "min-h-0 flex-1 overflow-y-auto px-3 pt-3 pb-4",
+                    "min-h-0 flex-1 overflow-y-auto px-2.5 pt-3 pb-4",
                     rail && "px-2",
                 )}
             >
                 {!rail && (
-                    <p className="px-2.5 pb-3 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <p className="px-3 pb-2 pt-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                         Arbeitsbereich
                     </p>
                 )}
@@ -350,12 +342,12 @@ export function SidebarNavigation({
                                     aria-label={`${item.label} Untermenü öffnen`}
                                     onClick={onExpandRail}
                                     className={cn(
-                                        "flex size-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                        "relative flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                                         selected && "bg-muted text-foreground",
                                     )}
                                 >
                                     <Icon className="size-4" />
-                                    <PanelLeftOpen className="ml-0.5 size-2.5" />
+                                    <ChevronRight className="absolute bottom-1 right-1 size-2.5" />
                                 </button>
                             ) : (
                                 <Link
@@ -364,7 +356,7 @@ export function SidebarNavigation({
                                     aria-label={item.label}
                                     aria-current={selected ? "page" : undefined}
                                     className={cn(
-                                        "flex size-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                        "flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                                         selected && "bg-muted text-foreground",
                                     )}
                                 >

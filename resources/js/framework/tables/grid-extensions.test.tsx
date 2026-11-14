@@ -6,7 +6,7 @@ import { Building2 } from "lucide-react";
 import { MemoryRouter, useLocation } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { dataProvider } from "../data/provider";
-import type { ResourceDefinition } from "../types";
+import type { CollectionOptions, ResourceDefinition } from "../types";
 import { WorkbenchProvider } from "../workbench";
 import { CellRenderer } from "./cell-renderer";
 import { exportColumnValue } from "./cell-value";
@@ -59,6 +59,7 @@ function Location() {
 function mount(
     initialEntry = "/?page=3",
     selectedResource: ResourceDefinition = resource,
+    options: CollectionOptions = {},
 ) {
     return render(
         <MemoryRouter initialEntries={[initialEntry]}>
@@ -76,6 +77,7 @@ function mount(
                         filterable={false}
                         groupable={false}
                         summary={false}
+                        {...options}
                     />
                     <Location />
                 </WorkbenchProvider>
@@ -113,6 +115,32 @@ afterEach(() => {
     vi.restoreAllMocks();
 });
 describe("collection scopes and cells", () => {
+    it("can independently hide selection, filter builder and grouping for a resource", async () => {
+        mount(
+            "/",
+            { ...resource, groupBy: [{ value: "status", label: "Status" }] },
+            {
+                rowSelection: false,
+                filterable: false,
+                groupable: false,
+                toolbarFilters: [],
+            },
+        );
+        await screen.findByText("Haus");
+        expect(screen.queryByRole("checkbox", { name: "Zeile auswählen" })).not.toBeInTheDocument();
+        expect(screen.queryByRole("checkbox", { name: "Alle Zeilen dieser Seite auswählen" })).not.toBeInTheDocument();
+        expect(screen.queryByRole("combobox", { name: "Filter hinzufügen" })).not.toBeInTheDocument();
+        expect(screen.queryByRole("combobox", { name: "Gruppierung" })).not.toBeInTheDocument();
+        expect(screen.getByRole("textbox", { name: "Einträge durchsuchen" })).toBeVisible();
+    });
+    it("can hide only the bulk select-all checkbox while keeping per-row selection", async () => {
+        mount("/", resource, { rowSelection: "multiple", selectAll: false });
+        await screen.findByText("Haus");
+        expect(screen.queryByRole("checkbox", { name: "Alle Zeilen dieser Seite auswählen" })).not.toBeInTheDocument();
+        const rowCheckbox = screen.getByRole("checkbox", { name: "Zeile auswählen" });
+        await userEvent.setup().click(rowCheckbox);
+        expect(rowCheckbox).toBeChecked();
+    });
     it("keeps export and refresh available in the narrow toolbar and pages with previous/next controls", async () => {
         vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(
             390,

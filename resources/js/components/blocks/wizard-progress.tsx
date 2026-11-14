@@ -26,10 +26,19 @@ export function WizardProgress({
     return (
         <nav
             aria-label={label ?? "Erfassungsschritte"}
-            className="@container/wizard flex min-h-16 min-w-0 items-center justify-center"
+            data-slot="wizard-progress"
+            className="@container/wizard flex min-w-0 flex-col gap-2.5"
         >
+            <div className="flex min-w-0 items-center justify-between gap-3 text-[11px]">
+                <span className="font-semibold uppercase tracking-wide text-muted-foreground">
+                    Schritt {active + 1} von {steps.length}
+                </span>
+                <span className="truncate font-medium text-foreground">
+                    {steps[active]?.label}
+                </span>
+            </div>
             <Stepper
-                className="w-full max-w-2xl"
+                className="w-full"
                 role="group"
                 aria-orientation={undefined}
                 aria-label={`Schritt ${active + 1} von ${steps.length}`}
@@ -42,7 +51,7 @@ export function WizardProgress({
                         const completed = index < active;
                         const content = (
                             <>
-                                <StepperIndicator className="size-7 border border-border bg-card font-semibold text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:shadow-xs data-[state=completed]:border-primary/20 data-[state=completed]:bg-primary/10 data-[state=completed]:text-primary">
+                                <StepperIndicator className="size-6 border border-border bg-card font-semibold text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:shadow-xs data-[state=completed]:border-primary/20 data-[state=completed]:bg-primary/10 data-[state=completed]:text-primary">
                                     {index + 1}
                                 </StepperIndicator>
                                 <span
@@ -62,7 +71,7 @@ export function WizardProgress({
                             </>
                         );
                         const classes = cn(
-                            "relative z-10 flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-2 rounded-lg px-1.5 py-1 outline-offset-2",
+                            "relative z-10 flex min-h-9 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-md px-1 py-1 outline-offset-2",
                             !compact &&
                                 "@min-[32rem]/wizard:flex-row @min-[32rem]/wizard:gap-2.5",
                         );
@@ -97,7 +106,7 @@ export function WizardProgress({
                                 {index < steps.length - 1 && (
                                     <StepperSeparator
                                         className={cn(
-                                            "absolute top-[1.125rem] right-[calc(-50%+1.25rem)] left-[calc(50%+1.25rem)] m-0 rounded-none bg-border group-data-[orientation=horizontal]/stepper-nav:h-px group-data-[orientation=horizontal]/stepper-nav:flex-none",
+                                            "absolute top-[0.9375rem] right-[calc(-50%+1.25rem)] left-[calc(50%+1.25rem)] m-0 rounded-none bg-border group-data-[orientation=horizontal]/stepper-nav:h-px group-data-[orientation=horizontal]/stepper-nav:flex-none",
                                             !compact &&
                                                 "@min-[32rem]/wizard:static @min-[32rem]/wizard:mx-1 @min-[32rem]/wizard:w-6 @min-[32rem]/wizard:flex-none",
                                             completed && "bg-primary/30",
@@ -109,6 +118,12 @@ export function WizardProgress({
                     })}
                 </StepperNav>
             </Stepper>
+            <div className="h-1 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                <div
+                    className="h-full rounded-full bg-primary transition-[width] duration-200 motion-reduce:transition-none"
+                    style={{ width: `${((active + 1) / Math.max(steps.length, 1)) * 100}%` }}
+                />
+            </div>
         </nav>
     );
 }
