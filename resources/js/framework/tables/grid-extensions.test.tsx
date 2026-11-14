@@ -50,9 +50,9 @@ const resource: ResourceDefinition = {
 function Location() {
     return <output aria-label="URL">{useLocation().search}</output>;
 }
-function mount() {
+function mount(initialEntry = "/?page=3") {
     return render(
-        <MemoryRouter initialEntries={["/?page=3"]}>
+        <MemoryRouter initialEntries={[initialEntry]}>
             <QueryClientProvider
                 client={
                     new QueryClient({
@@ -192,7 +192,7 @@ describe("collection scopes and cells", () => {
                     finishRefresh = resolve;
                 }),
             );
-        mount();
+        mount("/");
         await screen.findByText("Haus");
 
         await userEvent.setup().click(screen.getByRole("button", { name: "Aktualisieren" }));
