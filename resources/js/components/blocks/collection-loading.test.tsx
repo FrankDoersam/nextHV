@@ -18,12 +18,13 @@ it("renders view tabs above the table skeleton during route loading", () => {
             { id: "archived", label: "Inaktiv", count: true },
         ],
     } as ResourceDefinition;
-    const { container } = render(<CollectionLoading resource={resource} />);
+    const { container } = render(<CollectionLoading resource={resource} activeView="archived" />);
 
     const tabs = screen.getByRole("tablist", { name: "Objekte Ansichten" });
     const table = container.querySelector('[data-slot="collection-loading-table"]');
     expect(table).not.toBeNull();
     expect(tabs).toContainElement(screen.getByRole("tab", { name: "Inaktiv" }));
+    expect(screen.getByRole("tab", { name: "Inaktiv" })).toHaveAttribute("aria-selected", "true");
     expect(tabs.compareDocumentPosition(table!)).toBe(
         Node.DOCUMENT_POSITION_FOLLOWING,
     );
