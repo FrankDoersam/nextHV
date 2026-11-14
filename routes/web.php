@@ -10,6 +10,5 @@ Route::middleware('auth')->group(function () {
 });
 // Missing /build/assets/* files must return 404, not the SPA HTML page.
 Route::view('/{path?}', 'app')
-    ->where('path', '^(?!(?:api|auth|sanctum|docs|build)(?:/|$)).*
-)
+    ->where('path', '^(?!(?:api|auth|sanctum|docs|build)(?:/|$)).*$')
     ->name('login');
