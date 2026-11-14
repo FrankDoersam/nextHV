@@ -1,3 +1,4 @@
+import { clearResourceSchemaCache } from "./data/resource-schema";
 import { AuthScreen } from "@/components/blocks/auth-screen";
 import { ErrorState, Loading } from "@/components/blocks/content";
 import { useQueryClient } from "@tanstack/react-query";
@@ -45,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         void load();
         const expire = () => {
             setUser(null);
+            clearResourceSchemaCache();
             client.clear();
         };
         window.addEventListener("auth:expired", expire);
@@ -61,12 +63,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             password,
             remember,
         });
+        clearResourceSchemaCache();
         setUser(r.data);
         client.clear();
     };
     const logout = async () => {
         await request("/auth/logout", {});
         setUser(null);
+        clearResourceSchemaCache();
         client.clear();
     };
     if (loading)

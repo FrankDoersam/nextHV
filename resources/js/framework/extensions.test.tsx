@@ -1,4 +1,11 @@
 import React from "react";
+import { conditions } from "@/modules/registry";
+import { hydrateResources } from "./data/resource-schema";
+const originalConditions = {
+    fields: conditions.fields,
+    columns: conditions.columns,
+    filters: conditions.filters,
+};
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
@@ -131,6 +138,46 @@ function Opener({ relation = false }: { relation?: boolean }) {
     );
 }
 beforeEach(() => {
+    // This Workbench fixture bypasses Application; supply the same native metadata bootstrap.
+    hydrateResources([conditions], {
+        "rent-conditions": {
+            fields: originalConditions.fields.map((field) => ({
+                name: field.name,
+                type:
+                    field.kind === "relation"
+                        ? "integer"
+                        : field.kind === "currency" || field.kind === "number"
+                          ? "number"
+                          : field.kind === "date"
+                            ? "date"
+                            : "text",
+                nullable: !field.required,
+                select: true,
+                sort: true,
+                create: true,
+                update: !field.readonlyOnEdit,
+                filter: { operators: ["=", "!=", "in", "not in"] },
+                rules: { all: [], create: [], update: [] },
+            })),
+            meta: {
+                ui: {
+                    version: 1,
+                    fields: {},
+                    labels: {},
+                    relations: {
+                        contract_id: {
+                            relation: "contract",
+                            responseKey: "contract",
+                            resource: "contracts",
+                            labelField: "code",
+                            filters: [],
+                            creatable: false,
+                        },
+                    },
+                },
+            },
+        },
+    });
     vi.spyOn(dataProvider, "list").mockImplementation(async (r) => ({
         data: r.name === "rent-conditions" ? [] : rows,
         total: r.name === "rent-conditions" ? 0 : 1,
@@ -154,6 +201,7 @@ beforeEach(() => {
 });
 afterEach(() => {
     cleanup();
+    Object.assign(conditions, originalConditions);
     vi.restoreAllMocks();
 });
 describe("navigation and results", () => {
@@ -238,16 +286,19 @@ describe("navigation and results", () => {
         ).toEqual([]);
     });
     it("formats dates before rendering the clickable title column", () => {
-        expect(
-            formatCell(
-                { field: "effective_from", label: "Datum", kind: "date" },
-                {
-                    id: 1,
-                    updated_at: "",
-                    effective_from: "2026-01-02T00:00:00Z",
-                },
-            ),
-        ).toBe("02.01.2026");
+        render(
+            <>
+                {formatCell(
+                    { field: "effective_from", label: "Datum", kind: "date" },
+                    {
+                        id: 1,
+                        updated_at: "",
+                        effective_from: "2026-01-02T00:00:00Z",
+                    },
+                )}
+            </>,
+        );
+        expect(screen.getByText("02.01.2026")).toBeVisible();
     });
     it("rejects external document sources and escapes spreadsheet formulas", () => {
         expect(() =>

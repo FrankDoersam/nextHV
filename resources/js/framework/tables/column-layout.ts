@@ -7,7 +7,7 @@ export interface ColumnLayout {
 }
 export function columnLayout(
     column: ColumnDefinition,
-    resource: ResourceDefinition,
+    resource: Pick<ResourceDefinition, "columns" | "fields" | "titleField">,
     available: number,
 ): ColumnLayout {
     const options =
@@ -58,7 +58,7 @@ export function columnLayout(
 }
 /** Respect min/max, assign percentage preferences, distribute remaining width only to flexible text. */
 export function resolveColumnLayout(
-    resource: ResourceDefinition,
+    resource: Pick<ResourceDefinition, "columns" | "fields" | "titleField">,
     width: number,
     visibility: Record<string, boolean>,
     reserved = 88,

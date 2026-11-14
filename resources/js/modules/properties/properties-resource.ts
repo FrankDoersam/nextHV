@@ -8,7 +8,6 @@ import {
     dateField,
     notes,
     numeric,
-    opts,
     select,
     text,
 } from "@/modules/fields";
@@ -22,6 +21,26 @@ export const properties: ResourceDefinition = {
     navigationGroup: "Stammdaten",
     titleField: "name",
     supportsClone: true,
+    editor: {
+        sectionStyle: "collapsible",
+        summary: {
+            title: "Objektübersicht",
+            items: (values) => [
+                {
+                    id: "name",
+                    label: "Objekt",
+                    value: String(values.name || "Noch ohne Bezeichnung"),
+                    emphasis: true,
+                },
+                {
+                    id: "code",
+                    label: "Nummer",
+                    value: String(values.code || "—"),
+                },
+                { id: "city", label: "Ort", value: String(values.city || "—") },
+            ],
+        },
+    },
     summary: {
         metric: "summary",
         items: [
@@ -54,13 +73,9 @@ export const properties: ResourceDefinition = {
             ...text("name", "Bezeichnung", "general", true),
             suffixActions: [new PropertyNameActions()],
         },
-        select("type", "Nutzung", ["residential", "commercial", "mixed"]),
-        select("management_type", "Verwaltungsart", [
-            "rental",
-            "condominium",
-            "mixed",
-        ]),
-        select("status", "Status", ["active", "archived"]),
+        select("type", "Nutzung"),
+        select("management_type", "Verwaltungsart"),
+        select("status", "Status"),
         text("street", "Straße", "address", true),
         {
             ...text("house_number", "Hausnummer", "address", true),
@@ -91,12 +106,7 @@ export const properties: ResourceDefinition = {
         },
         text("heating_type", "Heizung", "details"),
         {
-            ...select(
-                "energy_class",
-                "Energieklasse",
-                ["A+", "A", "B", "C", "D", "E", "F", "G", "H"],
-                "details",
-            ),
+            ...select("energy_class", "Energieklasse", "details"),
             required: false,
             nullable: true,
             default: null,
@@ -105,7 +115,10 @@ export const properties: ResourceDefinition = {
     ],
     columns: [
         col("code", "Nr."),
-        col("name", "Objekt"),
+        {
+            ...col("name", "Objekt"),
+            cell: { type: "icon-text", icon: Building2 },
+        },
         { field: "full_address", label: "Adresse", sortable: false },
         col("type", "Nutzung", "badge"),
         {
@@ -127,12 +140,10 @@ export const properties: ResourceDefinition = {
         {
             field: "status",
             label: "Status",
-            options: opts(["active", "archived"]),
         },
         {
             field: "type",
             label: "Nutzung",
-            options: opts(["residential", "commercial", "mixed"]),
         },
     ],
     deletionCheck: true,

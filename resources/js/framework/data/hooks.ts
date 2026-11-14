@@ -98,6 +98,7 @@ export function useSaveRecord(resource: ResourceDefinition) {
             queryKey: [...resourceKey(resource.name), "metric"],
         });
         // Recount only cached foreign-key parents (e.g. contract after adding a condition).
+        const countResources = new Set([resource.name]);
         const parents = new Map<
             string,
             { resource: ResourceDefinition; id: number }
@@ -109,6 +110,7 @@ export function useSaveRecord(resource: ResourceDefinition) {
                 previous?.[field.name],
             ])) {
                 if (typeof id !== "number" || id <= 0) continue;
+                countResources.add(field.resource);
                 const cached = client
                     .getQueriesData({ queryKey: resourceKey(field.resource) })
                     .some(([, value]) => {
@@ -152,6 +154,14 @@ export function useSaveRecord(resource: ResourceDefinition) {
                     });
                 }
             }),
+        );
+        // Tab counts can change independently of visible rows; refresh only these cheap queries.
+        await Promise.all(
+            [...countResources].map((name) =>
+                client.invalidateQueries({
+                    queryKey: [...resourceKey(name), "view-count"],
+                }),
+            ),
         );
         await client.invalidateQueries({
             queryKey: ["overview"],

@@ -31,7 +31,7 @@ export function LazyTabs({
                 })
             }
         >
-            <div className="min-w-0 max-w-full overflow-x-auto border-b">
+            <div className="w-full min-w-0 max-w-full overflow-x-auto border-b">
                 <TabsList variant="line" className="h-11 min-w-max gap-1">
                     {tabs.map((tab) => (
                         <TabsTrigger key={tab.id} value={tab.id}>

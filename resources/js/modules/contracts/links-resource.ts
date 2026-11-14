@@ -12,21 +12,12 @@ export const links: ResourceDefinition = {
     navigation: false,
     fields: [
         {
-            ...relation("contract_id", "Vertrag", "contracts"),
+            ...relation("contract_id", "Vertrag"),
             readonlyOnEdit: true,
         },
-        relation("related_contract_id", "Verknüpfter Vertrag", "contracts"),
+        relation("related_contract_id", "Verknüpfter Vertrag"),
         {
-            ...select("type", "Beziehung", [
-                "ancillary",
-                "successor",
-                "related",
-            ]),
-            options: [
-                { value: "ancillary", label: "Zusatzvertrag" },
-                { value: "successor", label: "Nachfolgevertrag" },
-                { value: "related", label: "Zugehörig" },
-            ],
+            ...select("type", "Beziehung"),
         },
         { ...notes, group: "general" },
     ],

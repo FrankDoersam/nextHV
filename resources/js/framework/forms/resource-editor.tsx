@@ -3,15 +3,26 @@ import { FormActionScope } from "./form-action-scope";
 import { Badge } from "@/components/ui/badge";
 import { label } from "@/lib/format";
 import { ErrorState } from "@/components/blocks/content";
-import { FormSection } from "@/components/blocks/form-section";
+import { FormLayout, FormSection } from "@/components/blocks/form-section";
 import { FieldGrid, Stack } from "@/components/blocks/layout";
 import { Overlay } from "@/components/blocks/overlay";
 import { ResourceField } from "@/components/fields/field";
 import { WizardProgress } from "@/components/blocks/wizard-progress";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Save, Link, RefreshCw } from "lucide-react";
-import { useEffect, useId, useState, type ReactNode } from "react";
-import { FormProvider, useForm } from "react-hook-form";
+import {
+    useEffect,
+    useId,
+    useState,
+    type ComponentProps,
+    type ReactNode,
+} from "react";
+import {
+    FormProvider,
+    useForm,
+    useFormContext,
+    useWatch,
+} from "react-hook-form";
 import { toast } from "sonner";
 import { useReload, useSaveRecord } from "../data/hooks";
 import { ApiError } from "../data/http";
@@ -19,7 +30,7 @@ import { dataProvider, normalizeValidationErrors } from "../data/provider";
 import { RowActions } from "../tables/resource-collection";
 import { RelationCollection } from "../tables/relation-collection";
 import type { FlowControls } from "./flow";
-import type { FormRequest, Values } from "../types";
+import type { FormGroupDefinition, FormRequest, Values } from "../types";
 import { initialValues } from "./initial-values";
 export function ResourceEditor({
     request,
@@ -39,13 +50,15 @@ export function ResourceEditor({
     const formId = useId();
     const { resource, row } = request;
     const fields = resource.fields.filter(
-        (f) => !request.reduced || f.required || f.reduced,
+        (f) =>
+            (!request.fields || request.fields.includes(f.name)) &&
+            (!request.reduced || f.required || f.reduced),
     );
     const groups = resource.groups?.filter((g) =>
         fields.some((f) => (f.group ?? "general") === g.id),
     ) ?? [{ id: "general", label: "Grunddaten" }];
     const editorTabs =
-        !request.wizard && !flow
+        !request.wizard && !flow && !request.fields
             ? resource.editor?.tabs?.filter(
                   (tab) =>
                       (tab.relations && !!row) ||
@@ -58,6 +71,13 @@ export function ResourceEditor({
     const [tab, setTab] = useState(editorTabs?.[0]?.id ?? "");
     const activeTab =
         editorTabs?.find((item) => item.id === tab) ?? editorTabs?.[0];
+    const summary = !request.fields
+        ? ((request.wizard || flow
+              ? resource.editor?.wizardSummary
+              : undefined) ??
+          activeTab?.summary ??
+          resource.editor?.summary)
+        : undefined;
     const form = useForm<Values>({
         defaultValues: initialValues(resource.fields, row, request.defaults),
         shouldUnregister: false,
@@ -69,6 +89,8 @@ export function ResourceEditor({
     const [discard, setDiscard] = useState(false);
     const [pendingBack, setPendingBack] = useState(false);
     const [version, setVersion] = useState(row);
+    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+    const [focusField, setFocusField] = useState<string>();
     const reload = useReload();
     const saveRecord = useSaveRecord(resource);
     const dirty = form.formState.isDirty;
@@ -76,6 +98,12 @@ export function ResourceEditor({
     useEffect(() => {
         onDirtyChange?.(dirty);
     }, [dirty, onDirtyChange]);
+    useEffect(() => {
+        if (!focusField) return;
+        // Focus after React has revealed the rejected field's tab and region.
+        form.setFocus(focusField);
+        setFocusField(undefined);
+    }, [focusField, form]);
     useEffect(() => {
         const warn = (e: BeforeUnloadEvent) => {
             if (dirty) {
@@ -108,6 +136,17 @@ export function ResourceEditor({
         );
     };
     const errorStep = (errors: Record<string, unknown>) => {
+        const rejectedGroups = groups.filter((g) =>
+            fields.some(
+                (f) => (f.group ?? "general") === g.id && errors[f.name],
+            ),
+        );
+        setOpenGroups((current) => ({
+            ...current,
+            ...Object.fromEntries(
+                rejectedGroups.map((group) => [group.id, true]),
+            ),
+        }));
         const index = groups.findIndex((g) =>
             fields.some(
                 (f) => (f.group ?? "general") === g.id && errors[f.name],
@@ -120,17 +159,31 @@ export function ResourceEditor({
             );
             if (errorTab) setTab(errorTab.id);
         }
+        setFocusField(fields.find((field) => errors[field.name])?.name);
     };
     const save = form.handleSubmit(async (values) => {
         setError(undefined);
         form.clearErrors();
         try {
-            const attributes = {
+            const valuesWithContext = {
                 ...values,
                 ...(request.context && request.context.mode !== "prefill"
                     ? { [request.context.field]: request.context.id }
                     : {}),
             };
+            const attributes = request.fields
+                ? Object.fromEntries(
+                      fields
+                          .filter(
+                              (field) =>
+                                  !field.readonlyOnEdit && !field.disabled,
+                          )
+                          .map((field) => [
+                              field.name,
+                              valuesWithContext[field.name],
+                          ]),
+                  )
+                : valuesWithContext;
             const saved = await saveRecord(attributes, version);
             setVersion(saved);
             form.reset(initialValues(resource.fields, saved));
@@ -171,8 +224,7 @@ export function ResourceEditor({
                 const errors = normalizeValidationErrors(e.errors);
                 for (const [name, message] of Object.entries(errors))
                     form.setError(name, { type: "server", message });
-                const first = names.find((name) => errors[name]);
-                if (first) form.setFocus(first);
+                errorStep(errors);
             }
         } finally {
             setValidating(false);
@@ -271,6 +323,7 @@ export function ResourceEditor({
             onClose={close}
             busy={busy}
             fill={!!request.wizard || !!flow}
+            size={(request.wizard || flow) && summary ? "wide" : "form"}
             stacked={stacked || discard}
             nested={
                 <>
@@ -451,63 +504,86 @@ export function ResourceEditor({
                             className="space-y-6"
                             noValidate
                         >
-                            {groups.map((g, i) => (
-                                <FormSection
-                                    key={g.id}
-                                    hidden={
-                                        (request.wizard && step !== i) ||
-                                        (!!activeTab &&
-                                            !activeTab.groups?.includes(g.id))
-                                    }
-                                    variant={resource.editor?.sectionStyle}
-                                    title={g.label}
-                                    description={g.description}
-                                >
-                                    <FieldGrid>
-                                        {fields
-                                            .filter(
-                                                (f) =>
-                                                    (f.group ?? "general") ===
+                            <FormLayout
+                                aside={!!request.wizard || !!flow}
+                                summary={
+                                    summary ? (
+                                        <FormSummary
+                                            definition={summary}
+                                            record={version}
+                                        />
+                                    ) : undefined
+                                }
+                            >
+                                {groups.map((g, i) => (
+                                    <EditorSection
+                                        key={g.id}
+                                        hidden={
+                                            (request.wizard && step !== i) ||
+                                            (!!activeTab &&
+                                                !activeTab.groups?.includes(
                                                     g.id,
-                                            )
-                                            .map((f) => (
-                                                <ResourceField
-                                                    key={f.name}
-                                                    definition={
-                                                        request.context
-                                                            ?.field ===
-                                                            f.name &&
-                                                        request.context.mode !==
-                                                            "prefill"
-                                                            ? {
-                                                                  ...f,
-                                                                  disabled: true,
-                                                                  lockedReason:
-                                                                      "Durch den aktuellen Datensatz vorgegeben.",
-                                                              }
-                                                            : f
-                                                    }
-                                                    editing={!!row}
-                                                />
-                                            ))}
-                                    </FieldGrid>
-                                </FormSection>
-                            ))}
-                            {(activeTab?.summary ??
-                                resource.editor?.summary) && (
-                                <FormSummary
-                                    definition={
-                                        (activeTab?.summary ??
-                                            resource.editor?.summary)!
-                                    }
-                                    record={version}
-                                />
-                            )}
+                                                ))
+                                        }
+                                        group={g}
+                                        variant={resource.editor?.sectionStyle}
+                                        collapsible={
+                                            request.wizard || flow
+                                                ? false
+                                                : g.collapsible
+                                        }
+                                        open={
+                                            openGroups[g.id] ??
+                                            (request.fields
+                                                ? true
+                                                : g.defaultOpen) ??
+                                            true
+                                        }
+                                        onOpenChange={(open) =>
+                                            setOpenGroups((current) => ({
+                                                ...current,
+                                                [g.id]: open,
+                                            }))
+                                        }
+                                    >
+                                        <FieldGrid>
+                                            {fields
+                                                .filter(
+                                                    (f) =>
+                                                        (f.group ??
+                                                            "general") === g.id,
+                                                )
+                                                .map((f) => (
+                                                    <ResourceField
+                                                        key={f.name}
+                                                        definition={
+                                                            request.context
+                                                                ?.field ===
+                                                                f.name &&
+                                                            request.context
+                                                                .mode !==
+                                                                "prefill"
+                                                                ? {
+                                                                      ...f,
+                                                                      disabled: true,
+                                                                      lockedReason:
+                                                                          "Durch den aktuellen Datensatz vorgegeben.",
+                                                                  }
+                                                                : f
+                                                        }
+                                                        editing={!!row}
+                                                    />
+                                                ))}
+                                        </FieldGrid>
+                                    </EditorSection>
+                                ))}
+                            </FormLayout>
                         </form>
                     </FormProvider>
                 </FormActionScope>
                 {row &&
                     !flow &&
+                    !request.fields &&
                     (!activeTab || activeTab.relations) &&
                     resource.relations?.map((relation) => (
                         <RelationCollection
@@ -522,5 +598,30 @@ export function ResourceEditor({
                     ))}
             </Stack>
         </Overlay>
+    );
+}
+
+/** Watch summaries inside their region, keeping field editing isolated. */
+function EditorSection({
+    group,
+    children,
+    ...props
+}: Omit<
+    ComponentProps<typeof FormSection>,
+    "title" | "description" | "summary"
+> & {
+    group: FormGroupDefinition;
+}) {
+    const { control } = useFormContext<Values>();
+    const values = useWatch({ control, disabled: !group.summary });
+    return (
+        <FormSection
+            {...props}
+            title={group.label}
+            description={group.description}
+            summary={group.summary?.(values)}
+        >
+            {children}
+        </FormSection>
     );
 }

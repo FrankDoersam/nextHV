@@ -26,7 +26,7 @@ export const partners: ResourceDefinition = {
     fields: [
         code,
         text("display_name", "Anzeigename", "general", true),
-        select("kind", "Typ", ["person", "company"]),
+        select("kind", "Typ"),
         text("first_name", "Vorname"),
         text("last_name", "Nachname"),
         text("company_name", "Unternehmen"),
@@ -47,9 +47,12 @@ export const partners: ResourceDefinition = {
     columns: [
         { field: "full_name", label: "Vollständiger Name", sortable: false },
         col("code", "Nr."),
-        col("display_name", "Geschäftspartner"),
+        {
+            ...col("display_name", "Geschäftspartner"),
+            cell: { type: "avatar", secondary: "email" },
+        },
         col("kind", "Typ", "badge"),
-        col("email", "E-Mail"),
+        { ...col("email", "E-Mail"), defaultVisible: false },
         col("city", "Ort"),
     ],
     groupBy: [

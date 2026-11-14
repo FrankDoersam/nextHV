@@ -1,6 +1,9 @@
+import { CellRenderer } from "./cell-renderer";
+import { CollectionViews, collectionViewTabId } from "./collection-views";
+import { DirectFilters, supportsDirectFilter } from "./direct-filters";
 import { GridCellSkeleton } from "@/components/blocks/collection-loading";
 import { resolveColumnLayout } from "./column-layout";
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useId } from "react";
 import { CollectionKpis } from "@/components/blocks/collection-kpis";
 import { useCollectionSummary } from "../data/hooks";
 import { BulkActionBar } from "@/components/blocks/bulk-action-bar";
@@ -11,11 +14,7 @@ import { exportRows } from "./export";
 import { cn } from "@/lib/utils";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { Download, X } from "lucide-react";
-import {
-    EmptyState,
-    ErrorState,
-    StatusBadge,
-} from "@/components/blocks/content";
+import { EmptyState, ErrorState } from "@/components/blocks/content";
 import {
     DataGrid,
     DataGridContainer,
@@ -35,7 +34,7 @@ import {
 } from "@/components/reui/data-grid/data-grid-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { date, label, money, number } from "@/lib/format";
+import { label } from "@/lib/format";
 import {
     useTable,
     type ColumnDef,
@@ -139,6 +138,9 @@ export function ResourceCollection({
     refreshable = true,
     toolbar = true,
     summary = !compact,
+    views: configuredViews = compact ? false : resource.views,
+    toolbarFilters: directFields = resource.toolbarFilters ?? [],
+    viewMode = "page",
     actions,
     detailLink = true,
     create: creatable = true,
@@ -158,6 +160,7 @@ export function ResourceCollection({
     editForm?: Omit<RelationFormOptions, "flow">;
 } & CollectionOptions) {
     const navigate = useNavigate();
+    const panelId = useId();
     const workbench = useWorkbench();
     const reload = useReload();
     const prefix =
@@ -165,13 +168,19 @@ export function ResourceCollection({
         (compact
             ? `${resource.name}.${fixedFilters.map((f) => ("field" in f ? `${f.field}-${f.value}` : "relation")).join(".")}.`
             : "");
-    const { state, update, clearQuery } = useGridState(resource, {
+    const views = configuredViews || [];
+    const stateResource = useMemo(
+        () => ({ ...resource, views }),
+        [resource, configuredViews],
+    );
+    const { state, update, clearQuery } = useGridState(stateResource, {
         sync: syncWithLocation,
         prefix,
         pageSize: compact ? 10 : 25,
     });
     const {
         search,
+        view,
         pagination,
         sorting,
         columnVisibility,
@@ -212,9 +221,14 @@ export function ResourceCollection({
         [resource, width, columnVisibility, rowSelection, actions],
     );
     const query = useDebounced(searchable ? search : "");
+    const activeView =
+        views.find((candidate) => candidate.id === view) ?? views[0];
+    const scopedQuery = [activeView?.query, query].filter(Boolean).join(" ");
     const hasQuery =
         !!(searchable && search.trim()) ||
-        (filterable && Object.keys(filters).length > 0);
+        Object.keys(filters).some(
+            (field) => filterable || directFields.includes(field),
+        );
     const effectiveGroup = groupable ? group : "none";
     const setSorting = (
         value: import("@tanstack/react-table").Updater<SortingState>,
@@ -227,9 +241,26 @@ export function ResourceCollection({
         () => columnFilters(resource),
         [resource],
     );
+    const directDefinitions = filterDefinitions.filter(
+        (definition) =>
+            directFields.includes(definition.field) &&
+            supportsDirectFilter(definition),
+    );
+    const builderDefinitions = filterDefinitions.filter(
+        (definition) =>
+            !directDefinitions.some(
+                (direct) => direct.field === definition.field,
+            ),
+    );
+    const userFilters = Object.fromEntries(
+        Object.entries(filters).filter(
+            ([field]) => filterable || directFields.includes(field),
+        ),
+    );
     const apiFilters = [
         ...fixedFilters,
-        ...compileGridFilters(filterable ? filters : {}, filterDefinitions),
+        ...(activeView?.filters ?? []),
+        ...compileGridFilters(userFilters, filterDefinitions),
     ];
     const sort = [
         ...(effectiveGroup !== "none"
@@ -243,7 +274,7 @@ export function ResourceCollection({
     const result = useResourceList(
         resource,
         {
-            query,
+            query: scopedQuery,
             page: paging ? pagination.pageIndex + 1 : 1,
             limit: paging ? pagination.pageSize : 100,
             filters: apiFilters,
@@ -254,7 +285,7 @@ export function ResourceCollection({
     );
     const rollups = useCollectionSummary(
         resource,
-        { query, filters: apiFilters },
+        { query: scopedQuery, filters: apiFilters },
         summary,
     );
     const rows = result.data?.data ?? EMPTY_ROWS;
@@ -286,6 +317,7 @@ export function ResourceCollection({
         group,
         JSON.stringify(filters),
         JSON.stringify(fixedFilters),
+        activeView?.id,
     ]);
     const tableRef = useRef<unknown>(null);
     const instance: Partial<ResourceInstance> = {
@@ -436,14 +468,23 @@ export function ResourceCollection({
                 }) =>
                     c.field === resource.titleField && detailLink ? (
                         <button
-                            className="block max-w-full truncate text-left font-medium text-foreground hover:text-primary"
+                            className="block w-full min-w-0 max-w-full text-left font-medium text-foreground hover:text-primary"
                             title={
                                 typeof row.original[c.field] === "string"
                                     ? String(row.original[c.field])
                                     : undefined
                             }
                             onClick={() =>
-                                navigate(`/${resource.name}/${row.original.id}`)
+                                viewMode === "page"
+                                    ? navigate(
+                                          `/${resource.name}/${row.original.id}`,
+                                      )
+                                    : workbench.openForm({
+                                          resource,
+                                          mode: "view",
+                                          row: row.original,
+                                          presentation: viewMode,
+                                      })
                             }
                         >
                             {formatCell(c, row.original)}
@@ -501,6 +542,7 @@ export function ResourceCollection({
             rowSelection,
             actions,
             detailLink,
+            viewMode,
             columnChooser,
             sizing,
             dense,
@@ -597,6 +639,11 @@ export function ResourceCollection({
               }, {});
     const renderToolbar = (filterTrigger?: ReactNode) => (
         <div className="flex flex-wrap items-center gap-2.5">
+            <DirectFilters
+                definitions={directDefinitions}
+                value={filters}
+                onChange={(next) => update("filters", next, true)}
+            />
             {searchable && (
                 <div className="relative min-w-48 flex-1 sm:max-w-72">
                     <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
@@ -781,175 +828,222 @@ export function ResourceCollection({
                         retry={() => rollups.refetch()}
                     />
                 )}
-                {toolbar && (
-                    <div className="space-y-3">
-                        {filterable && !!filterDefinitions.length ? (
-                            <ResourceFilters
-                                definitions={filterDefinitions}
-                                value={filters}
-                                onChange={(next) =>
-                                    update("filters", next, true)
-                                }
-                                renderToolbar={renderToolbar}
-                            />
-                        ) : (
-                            renderToolbar()
-                        )}
-                    </div>
-                )}
-                {selectedRows.length > 0 && !result.isPlaceholderData && (
-                    <BulkActionBar
-                        count={selectedRows.length}
-                        onClear={() => setSelection({})}
-                    >
-                        <ActionButtons
-                            actions={tableActions.filter((action) =>
-                                resource.bulkActions === false
-                                    ? false
-                                    : !resource.bulkActions ||
-                                      resource.bulkActions.includes(action.id),
-                            )}
-                            target={{ resource, rows: selectedRows, instance }}
-                            placement="bulk"
-                            inverse
-                        />
-                    </BulkActionBar>
-                )}
-                {result.error ? (
-                    <ErrorState
-                        error={result.error}
-                        retry={() => result.refetch()}
+                {views.length > 0 && (
+                    <CollectionViews
+                        panelId={panelId}
+                        resource={resource}
+                        views={views}
+                        active={activeView!.id}
+                        fixedFilters={fixedFilters}
+                        onChange={(next) => update("view", next, true)}
                     />
-                ) : (
-                    <>
-                        <div
-                            inert={result.isPlaceholderData}
-                            className={cn(
-                                "min-h-0",
-                                selectedRows.length > 0 && "pb-16",
-                                result.isPlaceholderData &&
-                                    "pointer-events-none opacity-60",
-                                compact
-                                    ? "max-h-[32rem] overflow-auto"
-                                    : "flex-1 overflow-hidden",
-                            )}
-                        >
-                            {!result.isPending && rows.length === 0 ? (
-                                <EmptyState
-                                    title={
-                                        hasQuery
-                                            ? "Keine Treffer"
-                                            : "Noch keine Einträge"
-                                    }
-                                    description={
-                                        hasQuery
-                                            ? "Für diese Suche und Filter wurden keine passenden Datensätze gefunden."
-                                            : "In diesem Bereich sind noch keine Datensätze vorhanden."
-                                    }
-                                    action={
-                                        hasQuery ? (
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={clearQuery}
-                                            >
-                                                Suche und Filter zurücksetzen
-                                            </Button>
-                                        ) : !toolbar &&
-                                          creatable &&
-                                          can(resource.name, "create") ? (
-                                            <Button
-                                                type="button"
-                                                onClick={create}
-                                            >
-                                                <Plus />
-                                                {resource.singular} anlegen
-                                            </Button>
-                                        ) : undefined
-                                    }
-                                />
-                            ) : grouped ? (
-                                <div className="h-full space-y-4 overflow-auto">
-                                    {Object.entries(grouped).map(
-                                        ([key, items]) => (
-                                            <section
-                                                key={key}
-                                                className="overflow-hidden rounded-xl border"
-                                            >
-                                                <div className="flex items-center justify-between bg-muted/50 px-4 py-2 text-xs font-semibold">
-                                                    <span>{label(key)}</span>
-                                                    <span className="font-normal text-muted-foreground">
-                                                        {items!.length} auf
-                                                        dieser Seite
-                                                    </span>
-                                                </div>
-                                                <GroupedGrid
-                                                    columns={columns}
-                                                    rows={items!}
-                                                    selection={selection}
-                                                    onSelection={setSelection}
-                                                    sorting={sorting}
-                                                    onSorting={setSorting}
-                                                    columnVisibility={
-                                                        columnVisibility
-                                                    }
-                                                    onVisibility={
-                                                        setColumnVisibility
-                                                    }
-                                                    selectionMode={rowSelection}
-                                                    dense={dense}
-                                                    defaultVisibility={defaultColumnVisibility(
-                                                        resource,
-                                                    )}
-                                                />
-                                            </section>
-                                        ),
-                                    )}
-                                </div>
-                            ) : (
-                                <DataGridContainer
-                                    className={compact ? "" : "h-full"}
-                                >
-                                    {(virtualized === true ||
-                                        (virtualized === "auto" &&
-                                            rows.length >= 50)) &&
-                                    !result.isPending ? (
-                                        <DataGridTableVirtual
-                                            height={compact ? 480 : "100%"}
-                                            estimateSize={dense ? 36 : 44}
-                                            overscan={8}
-                                        />
-                                    ) : (
-                                        <DataGridScrollArea
-                                            className={
-                                                compact
-                                                    ? "max-h-[30rem]"
-                                                    : "h-full"
-                                            }
-                                            orientation="both"
-                                        >
-                                            <DataGridTable />
-                                        </DataGridScrollArea>
-                                    )}
-                                </DataGridContainer>
-                            )}
-                        </div>
-                        <div className="shrink-0 border-t pt-3">
-                            {paging ? (
-                                <DataGridPagination
-                                    className="w-full"
-                                    sizes={[10, 25, 50, 100]}
-                                />
-                            ) : (
-                                <p className="text-xs text-muted-foreground">
-                                    {rows.length} von {result.data?.total ?? 0}{" "}
-                                    Einträgen · maximal 100 ohne
-                                    Seitennavigation
-                                </p>
-                            )}
-                        </div>
-                    </>
                 )}
+                <div
+                    id={panelId}
+                    role={views.length ? "tabpanel" : undefined}
+                    aria-labelledby={
+                        views.length
+                            ? collectionViewTabId(panelId, activeView!.id)
+                            : undefined
+                    }
+                    className="flex min-h-0 flex-1 flex-col gap-3"
+                >
+                    {toolbar && (
+                        <div className="space-y-3">
+                            {filterable && !!builderDefinitions.length ? (
+                                <ResourceFilters
+                                    definitions={builderDefinitions}
+                                    value={filters}
+                                    onChange={(next) =>
+                                        update("filters", next, true)
+                                    }
+                                    renderToolbar={renderToolbar}
+                                />
+                            ) : (
+                                renderToolbar()
+                            )}
+                        </div>
+                    )}
+                    {selectedRows.length > 0 && !result.isPlaceholderData && (
+                        <BulkActionBar
+                            count={selectedRows.length}
+                            onClear={() => setSelection({})}
+                        >
+                            <ActionButtons
+                                actions={tableActions.filter((action) =>
+                                    resource.bulkActions === false
+                                        ? false
+                                        : !resource.bulkActions ||
+                                          resource.bulkActions.includes(
+                                              action.id,
+                                          ),
+                                )}
+                                target={{
+                                    resource,
+                                    rows: selectedRows,
+                                    instance,
+                                }}
+                                placement="bulk"
+                                inverse
+                            />
+                        </BulkActionBar>
+                    )}
+                    {result.error ? (
+                        <ErrorState
+                            error={result.error}
+                            retry={() => result.refetch()}
+                        />
+                    ) : (
+                        <>
+                            <div
+                                inert={result.isPlaceholderData}
+                                className={cn(
+                                    "min-h-0",
+                                    selectedRows.length > 0 && "pb-16",
+                                    result.isPlaceholderData &&
+                                        "pointer-events-none opacity-60",
+                                    compact
+                                        ? "max-h-[32rem] overflow-auto"
+                                        : "flex-1 overflow-hidden",
+                                )}
+                            >
+                                {!result.isPending && rows.length === 0 ? (
+                                    <EmptyState
+                                        title={
+                                            hasQuery
+                                                ? "Keine Treffer"
+                                                : "Noch keine Einträge"
+                                        }
+                                        description={
+                                            hasQuery
+                                                ? "Für diese Suche und Filter wurden keine passenden Datensätze gefunden."
+                                                : "In diesem Bereich sind noch keine Datensätze vorhanden."
+                                        }
+                                        action={
+                                            hasQuery ? (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={clearQuery}
+                                                >
+                                                    Suche und Filter
+                                                    zurücksetzen
+                                                </Button>
+                                            ) : !toolbar &&
+                                              creatable &&
+                                              can(resource.name, "create") ? (
+                                                <Button
+                                                    type="button"
+                                                    onClick={create}
+                                                >
+                                                    <Plus />
+                                                    {resource.singular} anlegen
+                                                </Button>
+                                            ) : undefined
+                                        }
+                                    />
+                                ) : grouped ? (
+                                    <div className="h-full space-y-4 overflow-auto">
+                                        {Object.entries(grouped).map(
+                                            ([key, items]) => (
+                                                <section
+                                                    key={key}
+                                                    className="overflow-hidden rounded-xl border"
+                                                >
+                                                    <div className="flex items-center justify-between bg-muted/50 px-4 py-2 text-xs font-semibold">
+                                                        <span>
+                                                            {filterDefinitions
+                                                                .find(
+                                                                    (filter) =>
+                                                                        filter.field ===
+                                                                        effectiveGroup,
+                                                                )
+                                                                ?.options?.find(
+                                                                    (option) =>
+                                                                        String(
+                                                                            option.value,
+                                                                        ) ===
+                                                                        key,
+                                                                )?.label ??
+                                                                label(key)}
+                                                        </span>
+                                                        <span className="font-normal text-muted-foreground">
+                                                            {items!.length} auf
+                                                            dieser Seite
+                                                        </span>
+                                                    </div>
+                                                    <GroupedGrid
+                                                        columns={columns}
+                                                        rows={items!}
+                                                        selection={selection}
+                                                        onSelection={
+                                                            setSelection
+                                                        }
+                                                        sorting={sorting}
+                                                        onSorting={setSorting}
+                                                        columnVisibility={
+                                                            columnVisibility
+                                                        }
+                                                        onVisibility={
+                                                            setColumnVisibility
+                                                        }
+                                                        selectionMode={
+                                                            rowSelection
+                                                        }
+                                                        dense={dense}
+                                                        defaultVisibility={defaultColumnVisibility(
+                                                            resource,
+                                                        )}
+                                                    />
+                                                </section>
+                                            ),
+                                        )}
+                                    </div>
+                                ) : (
+                                    <DataGridContainer
+                                        className={compact ? "" : "h-full"}
+                                    >
+                                        {(virtualized === true ||
+                                            (virtualized === "auto" &&
+                                                rows.length >= 50)) &&
+                                        !result.isPending ? (
+                                            <DataGridTableVirtual
+                                                height={compact ? 480 : "100%"}
+                                                estimateSize={dense ? 36 : 44}
+                                                overscan={8}
+                                            />
+                                        ) : (
+                                            <DataGridScrollArea
+                                                className={
+                                                    compact
+                                                        ? "max-h-[30rem]"
+                                                        : "h-full"
+                                                }
+                                                orientation="both"
+                                            >
+                                                <DataGridTable />
+                                            </DataGridScrollArea>
+                                        )}
+                                    </DataGridContainer>
+                                )}
+                            </div>
+                            <div className="shrink-0 border-t pt-3">
+                                {paging ? (
+                                    <DataGridPagination
+                                        className="w-full"
+                                        sizes={[10, 25, 50, 100]}
+                                    />
+                                ) : (
+                                    <p className="text-xs text-muted-foreground">
+                                        {rows.length} von{" "}
+                                        {result.data?.total ?? 0} Einträgen ·
+                                        maximal 100 ohne Seitennavigation
+                                    </p>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
         </DataGrid>
     );
@@ -958,20 +1052,7 @@ export function formatCell(
     column: import("../types").ColumnDefinition,
     row: RecordData,
 ) {
-    if (column.render) return column.render(row);
-    const value = row[column.field];
-    switch (column.kind) {
-        case "currency":
-            return money(value);
-        case "date":
-            return date(value);
-        case "badge":
-            return <StatusBadge value={value} />;
-        case "number":
-            return number(value, 2);
-        default:
-            return String(value ?? "—");
-    }
+    return <CellRenderer column={column} row={row} />;
 }
 function GroupedGrid({
     columns,

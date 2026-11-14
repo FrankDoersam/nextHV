@@ -21,8 +21,8 @@ class TerminationNoticeResource extends Resource
         return [
             ID::make('id'),
             Integer::make('contract_id')->rules(Rule::exists('contracts', 'id')->whereNull('deleted_at'))->creationRules('required')->updatable(false),
-            Text::make('status')->readonly(),
-            Text::make('type')->rules('in:ordinary,extraordinary,mutual'),
+            Text::make('status')->rules('in:received,confirmed,withdrawn')->readonly()->meta(['ui' => ['optionLabels' => ['received' => 'Eingegangen']]]),
+            Text::make('type')->rules('in:ordinary,extraordinary,mutual')->meta(['ui' => ['optionLabels' => ['mutual' => 'Aufhebungsvereinbarung']]]),
             Text::make('initiated_by')->rules('in:tenant,landlord,mutual'),
             Date::make('declared_on')->creationRules('required'),
             Date::make('received_on')->creationRules('required'),

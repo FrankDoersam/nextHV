@@ -21,47 +21,20 @@ export const terminations: ResourceDefinition = {
     titleField: "reason",
     fields: [
         {
-            ...relation("contract_id", "Vertrag", "contracts"),
+            ...relation("contract_id", "Vertrag"),
             readonlyOnEdit: true,
         },
         {
-            ...select("type", "Art", ["ordinary", "extraordinary", "mutual"]),
-            options: [
-                { value: "ordinary", label: "Ordentlich" },
-                { value: "extraordinary", label: "Außerordentlich" },
-                { value: "mutual", label: "Aufhebungsvereinbarung" },
-            ],
+            ...select("type", "Art"),
         },
         {
-            ...select("initiated_by", "Erklärt durch", [
-                "tenant",
-                "landlord",
-                "mutual",
-            ]),
-            options: [
-                { value: "tenant", label: "Mieter" },
-                { value: "landlord", label: "Vermieter" },
-                { value: "mutual", label: "Gemeinsam" },
-            ],
+            ...select("initiated_by", "Erklärt durch"),
         },
         dateField("declared_on", "Erklärt am", "general", true),
         dateField("received_on", "Eingegangen am", "general", true),
         dateField("requested_end_on", "Gewünschtes Ende", "general", true),
         {
-            ...select("delivery_method", "Eingangsweg", [
-                "letter",
-                "registered_letter",
-                "personal",
-                "email",
-                "other",
-            ]),
-            options: [
-                { value: "letter", label: "Brief" },
-                { value: "registered_letter", label: "Einschreiben" },
-                { value: "personal", label: "Persönlich" },
-                { value: "email", label: "E-Mail" },
-                { value: "other", label: "Sonstiges" },
-            ],
+            ...select("delivery_method", "Eingangsweg"),
         },
         text("reason", "Kündigungsgrund", "general", true),
         { ...notes, group: "general" },
@@ -82,11 +55,6 @@ export const terminations: ResourceDefinition = {
             ...col("status", "Status", "badge"),
             filter: {
                 kind: "choice",
-                options: [
-                    { value: "received", label: "Eingegangen" },
-                    { value: "confirmed", label: "Bestätigt" },
-                    { value: "withdrawn", label: "Zurückgezogen" },
-                ],
             },
         },
     ],

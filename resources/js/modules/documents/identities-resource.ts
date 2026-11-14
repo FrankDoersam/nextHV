@@ -13,20 +13,11 @@ export const identities: ResourceDefinition = {
     navigation: false,
     fields: [
         {
-            ...relation(
-                "business_partner_id",
-                "Geschäftspartner",
-                "business-partners",
-            ),
+            ...relation("business_partner_id", "Geschäftspartner"),
             readonlyOnEdit: true,
         },
         text("title", "Bezeichnung", "general", true),
-        select("type", "Dokumentart", [
-            "identity_card",
-            "passport",
-            "residence_permit",
-            "other",
-        ]),
+        select("type", "Dokumentart"),
         {
             ...text("document_number", "Ausweisnummer"),
             writeOnly: true,

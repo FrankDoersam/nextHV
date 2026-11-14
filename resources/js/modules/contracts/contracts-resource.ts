@@ -7,19 +7,11 @@ import {
     dateField,
     notes,
     numeric,
-    opts,
     relation,
     select,
 } from "@/modules/fields";
-import { createElement } from "react";
-import { label, money } from "@/lib/format";
-import {
-    FileText,
-    Building2,
-    CircleCheck,
-    FilePenLine,
-    Wallet,
-} from "lucide-react";
+import { date, label, money } from "@/lib/format";
+import { FileText, CircleCheck, FilePenLine, Wallet } from "lucide-react";
 export const contracts: ResourceDefinition = {
     name: "contracts",
     label: "Verträge",
@@ -31,6 +23,27 @@ export const contracts: ResourceDefinition = {
     titleField: "code",
     bulkActions: ["delete"],
     createFlow: "new-contract",
+    views: [
+        { id: "all", label: "Alle", count: true },
+        {
+            id: "active",
+            label: "Aktiv",
+            filters: [{ field: "status", value: "active" }],
+            count: true,
+        },
+        {
+            id: "draft",
+            label: "Entwürfe",
+            filters: [{ field: "status", value: "draft" }],
+            count: true,
+        },
+        {
+            id: "ended",
+            label: "Beendet",
+            filters: [{ field: "status", value: "ended" }],
+            count: true,
+        },
+    ],
     summary: {
         metric: "summary",
         items: [
@@ -51,6 +64,29 @@ export const contracts: ResourceDefinition = {
         ],
     },
     editor: {
+        wizardSummary: {
+            title: "Vertragsübersicht",
+            items: (values) => [
+                {
+                    id: "code",
+                    label: "Vertrag",
+                    value: String(values.code || "Neuer Entwurf"),
+                    emphasis: true,
+                },
+                { id: "type", label: "Art", value: label(values.type) },
+                {
+                    id: "starts_on",
+                    label: "Beginn",
+                    value: date(values.starts_on),
+                },
+                {
+                    id: "deposit",
+                    label: "Kaution",
+                    value: money(values.deposit),
+                    separator: true,
+                },
+            ],
+        },
         sectionStyle: "card",
         tabs: [
             { id: "general", label: "Grunddaten", groups: ["general", "term"] },
@@ -96,23 +132,8 @@ export const contracts: ResourceDefinition = {
     ],
     fields: [
         code,
-        {
-            ...relation("unit_id", "Einheit", "units"),
-            selectedDisplay: "rich",
-            secondaryText: (row) => `${row.code} · ${label(row.type)}`,
-            optionMeta: (row) => ({
-                icon: createElement(Building2),
-                badge: label(row.status),
-                badgeTone: row.status === "ready" ? "success" : "warning",
-            }),
-        },
-        select("type", "Vertragsart", [
-            "residential_lease",
-            "commercial_lease",
-            "garage_lease",
-            "parking_lease",
-            "storage_lease",
-        ]),
+        { ...relation("unit_id", "Einheit"), selectedDisplay: "title" },
+        select("type", "Vertragsart"),
         dateField("signed_on", "Unterzeichnet am", "term"),
         dateField("starts_on", "Vertragsbeginn", "term", true),
         dateField("ends_on", "Befristetes Ende", "term"),
@@ -127,18 +148,7 @@ export const contracts: ResourceDefinition = {
             max: 120,
         },
         {
-            ...select(
-                "notice_to",
-                "Kündigung zum",
-                ["month_end", "quarter_end", "year_end", "any"],
-                "term",
-            ),
-            options: [
-                { value: "month_end", label: "Monatsende" },
-                { value: "quarter_end", label: "Quartalsende" },
-                { value: "year_end", label: "Jahresende" },
-                { value: "any", label: "Beliebiger Tag" },
-            ],
+            ...select("notice_to", "Kündigung zum", "term"),
         },
         {
             ...numeric(
@@ -151,12 +161,7 @@ export const contracts: ResourceDefinition = {
             max: 28,
         },
         currency("deposit", "Kaution"),
-        select(
-            "deposit_status",
-            "Kautionsstatus",
-            ["outstanding", "partial", "received", "returned"],
-            "finance",
-        ),
+        select("deposit_status", "Kautionsstatus", "finance"),
         notes,
     ],
     columns: [
@@ -194,7 +199,6 @@ export const contracts: ResourceDefinition = {
         {
             field: "status",
             label: "Status",
-            options: opts(["draft", "active", "ended"]),
         },
     ],
     actions: [

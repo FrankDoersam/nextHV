@@ -27,7 +27,7 @@ class UnitResource extends Resource
     public function fields(): array
     {
         return [
-            ID::make('id'), Integer::make('property_id')->rules(Rule::exists('properties', 'id')->whereNull('deleted_at')->where('status', 'active')),
+            ID::make('id'), Integer::make('property_id')->meta(['ui' => ['picker' => ['filters' => [['field' => 'status', 'value' => 'active']]]]])->rules(Rule::exists('properties', 'id')->whereNull('deleted_at')->where('status', 'active')),
             Text::make('code')->searchable()->rules('max:40')->creationRules('required')->updateRules('filled'), Text::make('name')->searchable()->filterable(['=', '!=', 'in', 'not in', 'like', 'not like'])->rules('max:160')->creationRules('required')->updateRules('filled'),
             Enum::make('type', UnitType::class), Enum::make('status', UnitStatus::class), Text::make('floor')->nullable()->rules('max:30'),
             Number::make('area')->rules('min:0', 'max:9999999999'), Number::make('rooms')->rules('min:0', 'max:999'),

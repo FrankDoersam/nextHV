@@ -4,11 +4,13 @@ import { getFlow } from "@/modules/flows";
 export interface PanelLink {
     key: string;
     resource: string;
-    mode: "create" | "edit";
+    mode: FormRequest["mode"];
     id?: number;
     presentation: Presentation;
     wizard?: boolean;
     reduced?: boolean;
+    fields?: string[];
+    returnToView?: boolean;
     context?: FormRequest["context"];
     flow?: FlowState;
 }
@@ -29,10 +31,23 @@ export function readPanels(search: string): PanelLink[] {
                     keys.has(v.key) ||
                     typeof v.resource !== "string" ||
                     !/^[a-z-]+$/.test(v.resource) ||
-                    !["create", "edit"].includes(v.mode) ||
+                    !["create", "edit", "view"].includes(v.mode) ||
                     !["sheet", "dialog"].includes(v.presentation) ||
-                    (v.mode === "edit" &&
+                    (v.mode !== "create" &&
                         (!Number.isSafeInteger(v.id) || v.id < 1))
+                )
+                    return false;
+                if (
+                    v.fields !== undefined &&
+                    (v.mode !== "edit" ||
+                        !Array.isArray(v.fields) ||
+                        !v.fields.length ||
+                        v.fields.length > 100 ||
+                        v.fields.some(
+                            (field: unknown) =>
+                                typeof field !== "string" ||
+                                !/^[a-zA-Z_][a-zA-Z0-9_]{0,79}$/.test(field),
+                        ))
                 )
                     return false;
                 if (
@@ -59,7 +74,13 @@ export function readPanels(search: string): PanelLink[] {
                           resource: v.resource,
                           mode: v.mode,
                           presentation: v.presentation,
-                          ...(v.mode === "edit" ? { id: v.id } : {}),
+                          ...(v.mode !== "create" ? { id: v.id } : {}),
+                          ...(v.fields
+                              ? { fields: [...new Set(v.fields)] }
+                              : {}),
+                          ...(v.mode === "edit" && v.returnToView === true
+                              ? { returnToView: true }
+                              : {}),
                           ...(v.wizard === true ? { wizard: true } : {}),
                           ...(v.reduced === true ? { reduced: true } : {}),
                           ...(v.context

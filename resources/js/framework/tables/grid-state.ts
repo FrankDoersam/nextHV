@@ -14,6 +14,7 @@ import {
 } from "./filter-rules";
 export interface GridState {
     search: string;
+    view: string;
     pagination: PaginationState;
     sorting: SortingState;
     columnVisibility: ColumnVisibilityState;
@@ -55,6 +56,9 @@ export function readGridState(
     const page = Number(value("page") ?? 1);
     const size = Number(value("perPage") ?? pageSize);
     return {
+        view: resource.views?.some((view) => view.id === value("view"))
+            ? value("view")!
+            : "",
         search: (value("q") ?? "").slice(0, 200),
         pagination: {
             pageIndex:
@@ -105,6 +109,7 @@ export function writeGridState(
     const next = new URLSearchParams(url);
     const values: Record<string, string | undefined> = {
         q: state.search || undefined,
+        view: state.view || undefined,
         page: state.pagination.pageIndex
             ? String(state.pagination.pageIndex + 1)
             : undefined,

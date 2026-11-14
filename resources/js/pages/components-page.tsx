@@ -1,4 +1,5 @@
 import { CreditCard, Banknote, Wallet, Building2 } from "lucide-react";
+import { CellTypesDemo } from "@/components/blocks/cell-types-demo";
 import { FormSummary } from "@/framework/forms/form-summary";
 import { money } from "@/lib/format";
 import { DynamicList, ListRow, SectionCard } from "@/components/blocks/content";
@@ -151,6 +152,7 @@ export default function ComponentsPage() {
                 title="Ein Baukasten. Klare Konventionen."
                 description="Zentrale Felder, Dialoge, Sheets, Wizard und Listen mit derselben Validierung wie im CRUD-Alltag."
             />
+            <CellTypesDemo />
             <SectionCard
                 title="Felder & Picker"
                 description="Interaktive Vorschau der wiederverwendbaren Komponenten."
