@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import type { ColumnDefinition, RecordData } from "../types";
 import { cellItems, cellText, recordValue, optionLabel } from "./cell-value";
 import { date, money, number } from "@/lib/format";
-import { CellReference } from "@/components/blocks/cell-reference";
 export function CellRenderer({
     column,
     row,
@@ -16,18 +15,6 @@ export function CellRenderer({
     column: ColumnDefinition;
     row: RecordData;
 }) {
-    if (column.reference)
-        return (
-            <CellReference
-                resource={column.reference.resource}
-                id={recordValue(row, column.reference.idField)}
-            >
-                <CellRenderer
-                    column={{ ...column, reference: false }}
-                    row={row}
-                />
-            </CellReference>
-        );
     if (column.render) return column.render(row);
     const cell = column.cell;
     if (cell) {
