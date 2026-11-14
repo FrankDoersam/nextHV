@@ -19,7 +19,7 @@ export const properties: ResourceDefinition = {
     description: "Stammdaten, Verwaltung und Einheiten eines Objekts.",
     icon: Building2,
     navigationGroup: "Stammdaten",
-    views: [
+    /*views: [
         { id: "all", label: "Alle", count: true },
         {
             id: "active",
@@ -33,13 +33,13 @@ export const properties: ResourceDefinition = {
             count: true,
             filters: [{ field: "status", value: "archived" }],
         },
-    ],
+    ],*/
     titleField: "name",
-    supportsClone: true,
+    //supportsClone: true,
     editor: {
         sectionStyle: "collapsible",
     },
-    summary: {
+   /* summary: {
         metric: "summary",
         items: [
             {
@@ -57,8 +57,8 @@ export const properties: ResourceDefinition = {
                 icon: Ruler,
             },
         ],
-    },
-    bulkActions: ["delete"],
+    },*/
+   //bulkActions: ["delete"],
     groups: [
         { id: "general", label: "Objekt" },
         { id: "address", label: "Adresse" },
