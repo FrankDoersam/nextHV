@@ -289,7 +289,7 @@ function ScalarFilterValue({
             <div
                 className="flex min-w-0 flex-wrap items-center"
                 onKeyDown={(event) => {
-                    if (event.key === "Enter") {
+                    if (event.key === "Enter" && !event.defaultPrevented) {
                         event.preventDefault();
                         commit();
                     }
@@ -305,6 +305,13 @@ function ScalarFilterValue({
                                     setDraft((previous) => {
                                         const next = [...previous];
                                         next[index] = date ?? "";
+                                        return next;
+                                    })
+                                }
+                                onInvalidInput={(text) =>
+                                    setDraft((previous) => {
+                                        const next = [...previous];
+                                        next[index] = text;
                                         return next;
                                     })
                                 }

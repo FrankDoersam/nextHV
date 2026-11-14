@@ -22,6 +22,7 @@ export function WizardProgress({
     onSelect?: (index: number) => void;
     busy?: boolean;
 }) {
+    const compact = steps.length > 4;
     return (
         <nav
             aria-label={label ?? "Erfassungsschritte"}
@@ -46,7 +47,9 @@ export function WizardProgress({
                                 </StepperIndicator>
                                 <span
                                     className={cn(
-                                        "line-clamp-2 min-w-0 text-center text-[11px] leading-4 font-medium @min-[32rem]/wizard:text-left @min-[32rem]/wizard:text-xs",
+                                        "min-w-0 max-w-full break-words hyphens-auto text-center text-[11px] leading-4 font-medium",
+                                        !compact &&
+                                            "@min-[32rem]/wizard:text-left @min-[32rem]/wizard:text-xs",
                                         current
                                             ? "text-foreground"
                                             : completed
@@ -58,8 +61,11 @@ export function WizardProgress({
                                 </span>
                             </>
                         );
-                        const classes =
-                            "relative z-10 flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-2 rounded-lg px-1.5 py-1 outline-offset-2 @min-[32rem]/wizard:flex-row @min-[32rem]/wizard:gap-2.5";
+                        const classes = cn(
+                            "relative z-10 flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-2 rounded-lg px-1.5 py-1 outline-offset-2",
+                            !compact &&
+                                "@min-[32rem]/wizard:flex-row @min-[32rem]/wizard:gap-2.5",
+                        );
                         return (
                             <StepperItem
                                 key={step.id}
@@ -91,7 +97,9 @@ export function WizardProgress({
                                 {index < steps.length - 1 && (
                                     <StepperSeparator
                                         className={cn(
-                                            "absolute top-[1.125rem] right-[calc(-50%+1.25rem)] left-[calc(50%+1.25rem)] m-0 rounded-none bg-border group-data-[orientation=horizontal]/stepper-nav:h-px group-data-[orientation=horizontal]/stepper-nav:flex-none @min-[32rem]/wizard:static @min-[32rem]/wizard:mx-1 @min-[32rem]/wizard:w-6 @min-[32rem]/wizard:flex-none",
+                                            "absolute top-[1.125rem] right-[calc(-50%+1.25rem)] left-[calc(50%+1.25rem)] m-0 rounded-none bg-border group-data-[orientation=horizontal]/stepper-nav:h-px group-data-[orientation=horizontal]/stepper-nav:flex-none",
+                                            !compact &&
+                                                "@min-[32rem]/wizard:static @min-[32rem]/wizard:mx-1 @min-[32rem]/wizard:w-6 @min-[32rem]/wizard:flex-none",
                                             completed && "bg-primary/30",
                                         )}
                                     />

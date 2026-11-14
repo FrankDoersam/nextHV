@@ -19,7 +19,6 @@ import {
     LoaderCircle,
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Brand } from "./brand";
 
 /** Centered photo-backdrop authentication composed from the same fields and Frame as the workspace. */
 export function AuthScreen({
@@ -70,11 +69,6 @@ export function AuthScreen({
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 -z-10 bg-background/35 backdrop-blur-[2px]"
             />
-            <header className="flex shrink-0 px-5 py-5 sm:px-8">
-                <div className="rounded-xl border border-white/60 bg-card/95 px-3 py-2 shadow-xs">
-                    <Brand />
-                </div>
-            </header>
             <main className="flex flex-1 items-center justify-center px-4 py-8 sm:py-12">
                 <Frame
                     spacing="lg"
@@ -197,9 +191,6 @@ export function AuthScreen({
                     </FrameFooter>
                 </Frame>
             </main>
-            <footer className="px-5 pb-5 text-center text-xs font-medium text-foreground/80">
-                nextHV · Raum für einen klaren Überblick
-            </footer>
         </div>
     );
 }

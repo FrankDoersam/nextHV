@@ -134,7 +134,7 @@ class ContractPartyManagementTest extends TestCase
         $tenant = $this->contract('active')->parties()->firstOrFail();
         $other = $this->contract('draft');
 
-        $this->updateParty($tenant, ['contract_id' => $other->id])->assertUnprocessable()->assertJsonValidationErrors(['mutate.0.attributes' => 'The contract_id key of the mutate.0.attributes field is not writable on update.']);
+        $this->updateParty($tenant, ['contract_id' => $other->id])->assertUnprocessable()->assertJsonValidationErrors(['mutate.0.attributes' => 'Diese Angabe darf bei dieser Aktion nicht geändert werden.']);
 
         $this->assertDatabaseHas('contract_parties', ['id' => $tenant->id, 'contract_id' => $tenant->contract_id]);
     }

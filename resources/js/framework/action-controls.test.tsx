@@ -15,7 +15,12 @@ import { FormProvider, useForm } from "react-hook-form";
 import { Building2 } from "lucide-react";
 import { WorkbenchProvider, useWorkbench } from "./workbench";
 import { ActionMenu } from "./action-controls";
-import { actionAt, BulkEditAction, ResourceAction } from "./actions";
+import {
+    actionAt,
+    ActionGroup,
+    BulkEditAction,
+    ResourceAction,
+} from "./actions";
 import { FormActionScope } from "./forms/form-action-scope";
 import { ResourceField } from "@/components/fields/field";
 import { PropertyNameActions } from "@/modules/properties/name-actions";
@@ -89,6 +94,88 @@ afterEach(() => {
 });
 
 describe("shared action runtime", () => {
+    it.each([true, false])(
+        "keeps grouped keyboard actions and accessible reasons with icons=%s",
+        async (icons) => {
+            const user = userEvent.setup();
+            const execute = vi.fn();
+            class Report extends ResourceAction {
+                id = "report";
+                label = "Bericht erstellen";
+                description = "Auswertung des ausgewählten Objekts.";
+                interaction = "immediate" as const;
+                refresh = false;
+                async execute(context: ActionContext) {
+                    execute(context.rows);
+                }
+            }
+            class Blocked extends Report {
+                id = "blocked";
+                label = "Archivieren";
+                group = "Verwalten";
+                enabled() {
+                    return "Der Datensatz ist noch aktiv.";
+                }
+            }
+            class Hidden extends Report {
+                id = "hidden";
+                label = "Verborgene Aktion";
+                visible() {
+                    return false;
+                }
+            }
+            const reports = new ActionGroup("reports", "Berichte", [
+                new Report(),
+                new Hidden(),
+            ]);
+            reports.group = "Auswertung";
+            mount(
+                <ActionMenu
+                    actions={[
+                        reports,
+                        new Blocked(),
+                        new ActionGroup("hidden-group", "Verborgene Gruppe", [
+                            new Hidden(),
+                        ]),
+                    ]}
+                    target={{ resource, rows: [rows[0]] }}
+                    placement="row"
+                    icons={icons}
+                />,
+            );
+            await user.click(screen.getByRole("button", { name: "Aktionen" }));
+            expect(
+                await screen.findByRole("menuitem", { name: "Archivieren" }),
+            ).toHaveAttribute("aria-disabled", "true");
+            expect(
+                screen.getByRole("menuitem", { name: "Archivieren" }),
+            ).toHaveAccessibleDescription("Der Datensatz ist noch aktiv.");
+            expect(
+                screen.queryByRole("menuitem", { name: "Verborgene Gruppe" }),
+            ).not.toBeInTheDocument();
+            expect(screen.getByText("Auswertung")).toBeVisible();
+            expect(screen.getByText("Verwalten")).toBeVisible();
+
+            screen.getByRole("menuitem", { name: "Berichte" }).focus();
+            await user.keyboard("{ArrowRight}");
+            const report = await screen.findByRole("menuitem", {
+                name: "Bericht erstellen",
+            });
+            expect(report).toHaveAccessibleDescription(
+                "Auswertung des ausgewählten Objekts.",
+            );
+            expect(
+                screen.queryByRole("menuitem", { name: "Verborgene Aktion" }),
+            ).not.toBeInTheDocument();
+            report.focus();
+            await user.keyboard("{Enter}");
+
+            await waitFor(() =>
+                expect(execute).toHaveBeenCalledExactlyOnceWith([rows[0]]),
+            );
+        },
+    );
+
     it("patches a live unsaved form from a field submenu and reevaluates enabled reasons", async () => {
         function Form() {
             const form = useForm<Values>({

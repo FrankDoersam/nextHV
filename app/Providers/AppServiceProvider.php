@@ -24,10 +24,13 @@ use App\Observers\RentConditionObserver;
 use App\Observers\TerminationNoticeObserver;
 use App\Observers\UnitObserver;
 use App\Support\Permissions\AllowAllAdapter;
+use App\Support\Validation\LocalizedValidator;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Translation\Translator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -39,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Validator::resolver(fn (Translator $translator, array $data, array $rules, array $messages, array $attributes): LocalizedValidator => new LocalizedValidator($translator, $data, $rules, $messages, $attributes));
         Property::observe(PropertyObserver::class);
         Unit::observe(UnitObserver::class);
         Contract::observe(ContractObserver::class);

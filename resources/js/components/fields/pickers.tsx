@@ -9,16 +9,29 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+} from "@/components/ui/input-group";
+import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { format, parseISO, isValid } from "date-fns";
+import { format, parse, parseISO, isValid } from "date-fns";
 import { de } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
-import { useState, type AriaAttributes } from "react";
+import {
+    useEffect,
+    useId,
+    useRef,
+    useState,
+    type AriaAttributes,
+    type Ref,
+} from "react";
 export { RelationPicker } from "./entity-picker";
-interface DatePickerProps extends AriaAttributes {
+interface PickerValueProps extends AriaAttributes {
     id?: string;
     value: unknown;
     onChange: (value: string | null) => void;
@@ -27,9 +40,70 @@ interface DatePickerProps extends AriaAttributes {
     minDate?: string;
     maxDate?: string;
 }
+interface DatePickerProps extends PickerValueProps {
+    inputRef?: Ref<HTMLInputElement>;
+    onBlur?: () => void;
+    /** RHF retains invalid drafts for its dirty guard and input validation. */
+    onInvalidInput?: (draft: string) => void;
+}
 const parsedDate = (value: unknown) => {
-    const parsed = value ? parseISO(String(value)) : undefined;
+    const parsed =
+        typeof value === "string" && /^\d{4}-\d{2}-\d{2}(?:T|$)/.test(value)
+            ? parseISO(value)
+            : undefined;
     return parsed && isValid(parsed) ? parsed : undefined;
+};
+type DateConstraints = Pick<
+    PickerValueProps,
+    "clearable" | "minDate" | "maxDate"
+>;
+const invalidDateMessage =
+    "Bitte ein gültiges Datum im Format TT.MM.JJJJ eingeben.";
+
+/** Control-level parsing constraints; business validation still runs on the API. */
+export function dateControlError(
+    value: unknown,
+    { clearable = true, minDate, maxDate }: DateConstraints = {},
+): string | undefined {
+    if (value == null || value === "")
+        return clearable ? undefined : "Bitte ein Datum eingeben.";
+    const date =
+        typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
+            ? parsedDate(value)
+            : undefined;
+    if (!date) return invalidDateMessage;
+    const minimum = parsedDate(minDate),
+        maximum = parsedDate(maxDate);
+    if (minimum && String(value) < format(minimum, "yyyy-MM-dd"))
+        return `Das Datum darf nicht vor dem ${format(minimum, "dd.MM.yyyy")} liegen.`;
+    if (maximum && String(value) > format(maximum, "yyyy-MM-dd"))
+        return `Das Datum darf nicht nach dem ${format(maximum, "dd.MM.yyyy")} liegen.`;
+}
+export function dateRangeControlError(
+    value: unknown,
+    constraints: DateConstraints = {},
+): string | undefined {
+    const range = (value ?? {}) as { from?: string; to?: string };
+    return (
+        dateControlError(range.from, constraints) ??
+        dateControlError(range.to, constraints) ??
+        (range.from && range.to && range.from > range.to
+            ? "Das Ende darf nicht vor dem Beginn liegen."
+            : undefined)
+    );
+}
+function readDateInput(text: string): { value: string | null; error?: string } {
+    if (!text.trim()) return { value: null };
+    const date = /^\d{1,2}\.\d{1,2}\.\d{4}$/.test(text.trim())
+        ? parse(text.trim(), "d.M.yyyy", new Date())
+        : undefined;
+    return date && isValid(date)
+        ? { value: format(date, "yyyy-MM-dd") }
+        : { value: null, error: invalidDateMessage };
+}
+const dateCaption = (value: unknown) => {
+    const date = parsedDate(value);
+    return date ? format(date, "dd.MM.yyyy") : String(value ?? "");
 };
 export function DatePicker({
     id,
@@ -39,64 +113,152 @@ export function DatePicker({
     clearable = true,
     minDate,
     maxDate,
+    inputRef,
+    onBlur,
+    onInvalidInput,
     ...aria
 }: DatePickerProps) {
     const [open, setOpen] = useState(false);
+    const [draft, setDraft] = useState(() => dateCaption(value));
+    const [touched, setTouched] = useState(false);
+    const localRef = useRef<HTMLInputElement | null>(null);
+    const errorId = useId();
+    const caption = dateCaption(value);
+    useEffect(() => setDraft(caption), [caption]);
     const selected = parsedDate(value);
     const minimum = parsedDate(minDate),
         maximum = parsedDate(maxDate);
+    const parsed = readDateInput(draft);
+    const error =
+        parsed.error ??
+        dateControlError(parsed.value, { clearable, minDate, maxDate });
+    useEffect(() => {
+        localRef.current?.setCustomValidity(error ?? "");
+    }, [error]);
+    const showError = touched && !!error && !aria["aria-invalid"];
+    const commit = (text: string) => {
+        setDraft(text);
+        const next = readDateInput(text);
+        const invalid =
+            next.error ??
+            dateControlError(next.value, { clearable, minDate, maxDate });
+        if (invalid) onInvalidInput?.(next.error ? text : (next.value ?? ""));
+        else onChange(next.value);
+    };
     return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger
-                render={
-                    <Button
+        <div className="min-w-0">
+            <Popover open={open} onOpenChange={setOpen}>
+                <InputGroup className="h-9 bg-card">
+                    <InputGroupInput
                         id={id}
                         {...aria}
-                        type="button"
-                        variant="outline"
-                        className="h-9 w-full justify-start bg-card font-normal"
+                        ref={(element) => {
+                            localRef.current = element;
+                            if (typeof inputRef === "function")
+                                inputRef(element);
+                            else if (inputRef) inputRef.current = element;
+                        }}
+                        type="text"
+                        value={draft}
+                        placeholder="TT.MM.JJJJ"
+                        autoComplete="off"
                         disabled={disabled}
+                        aria-invalid={
+                            aria["aria-invalid"] || (touched && !!error)
+                        }
+                        aria-describedby={
+                            [
+                                aria["aria-describedby"],
+                                showError ? errorId : undefined,
+                            ]
+                                .filter(Boolean)
+                                .join(" ") || undefined
+                        }
+                        onChange={(event) => commit(event.target.value)}
+                        onBlur={() => {
+                            setTouched(true);
+                            if (!error && parsed.value)
+                                setDraft(dateCaption(parsed.value));
+                            onBlur?.();
+                        }}
+                        onKeyDown={(event) => {
+                            if (event.key === "Enter" && error) {
+                                setTouched(true);
+                                event.preventDefault();
+                            }
+                            if (event.altKey && event.key === "ArrowDown") {
+                                event.preventDefault();
+                                setOpen(true);
+                            }
+                        }}
                     />
-                }
-            >
-                <CalendarIcon className="text-muted-foreground" />
-                {selected ? format(selected, "dd.MM.yyyy") : "Datum wählen"}
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                    mode="single"
-                    locale={de}
-                    selected={selected}
-                    required={!clearable}
-                    disabled={[
-                        ...(minimum ? [{ before: minimum }] : []),
-                        ...(maximum ? [{ after: maximum }] : []),
-                    ]}
-                    onSelect={(date: Date | undefined) => {
-                        if (date || clearable)
-                            onChange(date ? format(date, "yyyy-MM-dd") : null);
-                        setOpen(false);
-                    }}
-                    captionLayout="dropdown"
-                    startMonth={minimum ?? new Date(1920, 0)}
-                    endMonth={maximum ?? new Date(2100, 11)}
-                    defaultMonth={selected ?? minimum}
-                />
-                {clearable && (
-                    <Button
-                        variant="ghost"
-                        type="button"
-                        disabled={!selected}
-                        onClick={() => {
-                            onChange(null);
+                    <InputGroupAddon align="inline-end">
+                        <PopoverTrigger
+                            render={
+                                <InputGroupButton
+                                    aria-label="Kalender öffnen"
+                                    size="icon-sm"
+                                    disabled={disabled}
+                                />
+                            }
+                        >
+                            <CalendarIcon className="text-muted-foreground" />
+                        </PopoverTrigger>
+                    </InputGroupAddon>
+                </InputGroup>
+                <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                        mode="single"
+                        locale={de}
+                        selected={selected}
+                        required={!clearable}
+                        disabled={[
+                            ...(minimum ? [{ before: minimum }] : []),
+                            ...(maximum ? [{ after: maximum }] : []),
+                        ]}
+                        onSelect={(date: Date | undefined) => {
+                            if (date || clearable) {
+                                const next = date
+                                    ? format(date, "yyyy-MM-dd")
+                                    : null;
+                                setDraft(dateCaption(next));
+                                onChange(next);
+                                onBlur?.();
+                            }
                             setOpen(false);
                         }}
-                    >
-                        Datum entfernen
-                    </Button>
-                )}
-            </PopoverContent>
-        </Popover>
+                        captionLayout="dropdown"
+                        startMonth={minimum ?? new Date(1920, 0)}
+                        endMonth={maximum ?? new Date(2100, 11)}
+                        defaultMonth={selected ?? minimum}
+                    />
+                    {clearable && (
+                        <Button
+                            variant="ghost"
+                            type="button"
+                            disabled={!selected}
+                            onClick={() => {
+                                onChange(null);
+                                setDraft("");
+                                onBlur?.();
+                                setOpen(false);
+                            }}
+                        >
+                            Datum entfernen
+                        </Button>
+                    )}
+                </PopoverContent>
+            </Popover>
+            {showError && (
+                <p
+                    id={errorId}
+                    role="alert"
+                    className="mt-2 text-xs leading-5 text-destructive"
+                >
+                    {error}
+                </p>
+            )}
+        </div>
     );
 }
 export function MonthPicker({
@@ -108,7 +270,7 @@ export function MonthPicker({
     minDate,
     maxDate,
     ...aria
-}: DatePickerProps) {
+}: PickerValueProps) {
     const [open, setOpen] = useState(false);
     const [year, setYear] = useState(
         Number(String(value ?? "").slice(0, 4)) || new Date().getFullYear(),
@@ -208,9 +370,13 @@ export function RangePicker({
     month = false,
     minDate,
     maxDate,
+    inputRef,
+    onBlur,
+    onInvalidInput,
     ...props
-}: Omit<DatePickerProps, "onChange"> & {
+}: Omit<DatePickerProps, "onChange" | "onInvalidInput"> & {
     onChange: (value: unknown) => void;
+    onInvalidInput?: (value: unknown) => void;
     month?: boolean;
 }) {
     const range = (value ?? {}) as { from?: string; to?: string };
@@ -226,6 +392,14 @@ export function RangePicker({
                 </label>
                 <Picker
                     {...props}
+                    {...(!month
+                        ? {
+                              inputRef,
+                              onBlur,
+                              onInvalidInput: (from: string) =>
+                                  onInvalidInput?.({ ...range, from }),
+                          }
+                        : {})}
                     id={id}
                     value={range.from}
                     minDate={minDate}
@@ -246,6 +420,13 @@ export function RangePicker({
                 </label>
                 <Picker
                     {...props}
+                    {...(!month
+                        ? {
+                              onBlur,
+                              onInvalidInput: (to: string) =>
+                                  onInvalidInput?.({ ...range, to }),
+                          }
+                        : {})}
                     id={`${id}-to`}
                     value={range.to}
                     maxDate={maxDate}

@@ -2,7 +2,9 @@ import { CellRenderer } from "./cell-renderer";
 import { CollectionViews, collectionViewTabId } from "./collection-views";
 import { DirectFilters, supportsDirectFilter } from "./direct-filters";
 import { GridCellSkeleton } from "@/components/blocks/collection-loading";
-import { resolveColumnLayout } from "./column-layout";
+import { resolveColumnLayout, stackRecordColumns } from "./column-layout";
+import { ResponsiveRecordList } from "./responsive-record-list";
+import { TableViewport } from "./table-viewport";
 import { useLayoutEffect, useId } from "react";
 import { CollectionKpis } from "@/components/blocks/collection-kpis";
 import { useCollectionSummary } from "../data/hooks";
@@ -12,7 +14,6 @@ import type { ActionPlacement } from "../actions";
 import { useGridState, defaultColumnVisibility } from "./grid-state";
 import { exportRows } from "./export";
 import { cn } from "@/lib/utils";
-import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { Download, X } from "lucide-react";
 import { EmptyState, ErrorState } from "@/components/blocks/content";
 import {
@@ -196,7 +197,13 @@ export function ResourceCollection({
         let frame = 0;
         const measure = () =>
             setWidth((previous) => {
-                const next = Math.round(node.clientWidth);
+                const scroll = node.querySelector<HTMLElement>(
+                    '[data-slot="scroll-area-viewport"], [data-slot="data-grid-table-viewport"]',
+                );
+                const gutter = scroll
+                    ? scroll.offsetWidth - scroll.clientWidth
+                    : 0;
+                const next = Math.max(0, Math.floor(node.clientWidth - gutter));
                 return next === previous ? previous : next;
             });
         measure();
@@ -210,15 +217,27 @@ export function ResourceCollection({
             cancelAnimationFrame(frame);
         };
     }, []);
+    const [preferredSizes, setPreferredSizes] = useState<
+        Record<string, number>
+    >({});
+    const reservedWidth =
+        (rowSelection ? 40 : 0) + (actions !== false ? 40 : 0);
+    const stackedRows = stackRecordColumns(
+        resource,
+        width,
+        columnVisibility,
+        reservedWidth,
+    );
     const sizing = useMemo(
         () =>
             resolveColumnLayout(
                 resource,
                 width,
                 columnVisibility,
-                (rowSelection ? 44 : 0) + (actions !== false ? 44 : 0),
+                reservedWidth,
+                preferredSizes,
             ),
-        [resource, width, columnVisibility, rowSelection, actions],
+        [resource, width, columnVisibility, reservedWidth, preferredSizes],
     );
     const query = useDebounced(searchable ? search : "");
     const activeView =
@@ -309,6 +328,13 @@ export function ResourceCollection({
     ]);
     useEffect(() => {
         setSelection({});
+        viewport.current
+            ?.querySelectorAll<HTMLElement>(
+                '[data-slot="scroll-area-viewport"], [data-slot="data-grid-table-viewport"]',
+            )
+            .forEach((node) => {
+                node.scrollTop = 0;
+            });
     }, [
         JSON.stringify(sorting),
         query,
@@ -412,9 +438,9 @@ export function ResourceCollection({
                           cell: ({ row }) => (
                               <DataGridTableRowSelect row={row} />
                           ),
-                          size: 44,
-                          minSize: 44,
-                          maxSize: 44,
+                          size: 40,
+                          minSize: 40,
+                          maxSize: 40,
                           meta: {
                               skeleton: (
                                   <GridCellSkeleton
@@ -516,9 +542,9 @@ export function ResourceCollection({
                                   allowed={actions}
                               />
                           ),
-                          size: 44,
-                          minSize: 44,
-                          maxSize: 44,
+                          size: 40,
+                          minSize: 40,
+                          maxSize: 40,
                           meta: {
                               cellClassName: "text-right",
                               skeleton: (
@@ -549,6 +575,16 @@ export function ResourceCollection({
             filterDefinitions,
         ],
     );
+    const columnSizes = {
+        ...Object.fromEntries(
+            Object.entries(sizing).map(([field, layout]) => [
+                field,
+                layout.size,
+            ]),
+        ),
+        selection: 40,
+        actions: 40,
+    };
     const table = useTable({
         initialState: {
             columnVisibility: defaultColumnVisibility(resource),
@@ -562,6 +598,7 @@ export function ResourceCollection({
         manualFiltering: true,
         rowCount: result.data?.total ?? 0,
         state: {
+            columnSizing: columnSizes,
             pagination: paging ? pagination : { pageIndex: 0, pageSize: 100 },
             sorting,
             rowSelection: selection,
@@ -582,6 +619,10 @@ export function ResourceCollection({
                 ([id, rule]) => ({ id, value: rule.values }),
             ),
         },
+        onColumnSizingChange: (next) =>
+            setPreferredSizes(
+                typeof next === "function" ? next(columnSizes) : next,
+            ),
         onColumnFiltersChange: (value) =>
             update(
                 "filters",
@@ -637,6 +678,81 @@ export function ResourceCollection({
                   (groups[key] ??= []).push(row);
                   return groups;
               }, {});
+    const emptyState = (
+        <EmptyState
+            title={hasQuery ? "Keine Treffer" : "Noch keine Einträge"}
+            description={
+                hasQuery
+                    ? "Für diese Suche und Filter wurden keine passenden Datensätze gefunden."
+                    : "In diesem Bereich sind noch keine Datensätze vorhanden."
+            }
+            action={
+                hasQuery ? (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={clearQuery}
+                    >
+                        Suche und Filter zurücksetzen
+                    </Button>
+                ) : !toolbar && creatable && can(resource.name, "create") ? (
+                    <Button type="button" onClick={create}>
+                        <Plus />
+                        {resource.singular} anlegen
+                    </Button>
+                ) : undefined
+            }
+        />
+    );
+    const openRecord = (row: RecordData) =>
+        viewMode === "page"
+            ? navigate(`/${resource.name}/${row.id}`)
+            : workbench.openForm({
+                  resource,
+                  mode: "view",
+                  row,
+                  presentation: viewMode,
+              });
+    const recordCards = (items: RecordData[]) => (
+        <ResponsiveRecordList
+            columns={resource.columns.filter(
+                (column) => columnVisibility[column.field] !== false,
+            )}
+            rows={items}
+            titleField={resource.titleField}
+            loading={result.isPending}
+            empty={emptyState}
+            open={detailLink ? openRecord : undefined}
+            selected={(row) => !!selection[String(row.id)]}
+            selection={
+                rowSelection
+                    ? {
+                          header:
+                              rowSelection === "single" ? undefined : (
+                                  <DataGridTableRowSelectAll />
+                              ),
+                          row: (row) => (
+                              <DataGridTableRowSelect
+                                  row={table.getRow(String(row.id))}
+                              />
+                          ),
+                      }
+                    : undefined
+            }
+            actions={
+                actions !== false
+                    ? (row) => (
+                          <RowActions
+                              resource={resource}
+                              row={row}
+                              instance={liveInstance}
+                              allowed={actions}
+                          />
+                      )
+                    : undefined
+            }
+        />
+    );
     const renderToolbar = (filterTrigger?: ReactNode) => (
         <div className="flex flex-wrap items-center gap-2.5">
             <DirectFilters
@@ -761,6 +877,7 @@ export function ResourceCollection({
             recordCount={result.data?.total ?? 0}
             isLoading={result.isPending}
             loadingMode="skeleton"
+            emptyMessage={emptyState}
             i18n={i18n}
             tableLayout={{
                 columnsVisibility: columnChooser,
@@ -792,7 +909,7 @@ export function ResourceCollection({
                     )
                         return;
                     const id = (event.target as HTMLElement)
-                        .closest("tr[data-row-id]")
+                        .closest("[data-row-id]")
                         ?.getAttribute("data-row-id");
                     const row = rows.find((r) => String(r.id) === id);
                     if (row && can(resource.name, "edit", row)) openEdit(row);
@@ -899,111 +1016,95 @@ export function ResourceCollection({
                                 inert={result.isPlaceholderData}
                                 className={cn(
                                     "min-h-0",
-                                    selectedRows.length > 0 && "pb-16",
                                     result.isPlaceholderData &&
                                         "pointer-events-none opacity-60",
                                     compact
-                                        ? "max-h-[32rem] overflow-auto"
+                                        ? "max-h-[32rem] overflow-hidden"
                                         : "flex-1 overflow-hidden",
                                 )}
                             >
-                                {!result.isPending && rows.length === 0 ? (
-                                    <EmptyState
-                                        title={
-                                            hasQuery
-                                                ? "Keine Treffer"
-                                                : "Noch keine Einträge"
-                                        }
-                                        description={
-                                            hasQuery
-                                                ? "Für diese Suche und Filter wurden keine passenden Datensätze gefunden."
-                                                : "In diesem Bereich sind noch keine Datensätze vorhanden."
-                                        }
-                                        action={
-                                            hasQuery ? (
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    onClick={clearQuery}
-                                                >
-                                                    Suche und Filter
-                                                    zurücksetzen
-                                                </Button>
-                                            ) : !toolbar &&
-                                              creatable &&
-                                              can(resource.name, "create") ? (
-                                                <Button
-                                                    type="button"
-                                                    onClick={create}
-                                                >
-                                                    <Plus />
-                                                    {resource.singular} anlegen
-                                                </Button>
-                                            ) : undefined
-                                        }
-                                    />
-                                ) : grouped ? (
-                                    <div className="h-full space-y-4 overflow-auto">
-                                        {Object.entries(grouped).map(
-                                            ([key, items]) => (
-                                                <section
-                                                    key={key}
-                                                    className="overflow-hidden rounded-xl border"
-                                                >
-                                                    <div className="flex items-center justify-between bg-muted/50 px-4 py-2 text-xs font-semibold">
-                                                        <span>
-                                                            {filterDefinitions
-                                                                .find(
-                                                                    (filter) =>
-                                                                        filter.field ===
-                                                                        effectiveGroup,
-                                                                )
-                                                                ?.options?.find(
-                                                                    (option) =>
-                                                                        String(
-                                                                            option.value,
-                                                                        ) ===
-                                                                        key,
-                                                                )?.label ??
-                                                                label(key)}
-                                                        </span>
-                                                        <span className="font-normal text-muted-foreground">
-                                                            {items!.length} auf
-                                                            dieser Seite
-                                                        </span>
-                                                    </div>
-                                                    <GroupedGrid
-                                                        columns={columns}
-                                                        rows={items!}
-                                                        selection={selection}
-                                                        onSelection={
-                                                            setSelection
-                                                        }
-                                                        sorting={sorting}
-                                                        onSorting={setSorting}
-                                                        columnVisibility={
-                                                            columnVisibility
-                                                        }
-                                                        onVisibility={
-                                                            setColumnVisibility
-                                                        }
-                                                        selectionMode={
-                                                            rowSelection
-                                                        }
-                                                        dense={dense}
-                                                        defaultVisibility={defaultColumnVisibility(
-                                                            resource,
+                                {grouped && rows.length > 0 ? (
+                                    <TableViewport compact={compact}>
+                                        <div className="space-y-4">
+                                            {Object.entries(grouped).map(
+                                                ([key, items]) => (
+                                                    <section
+                                                        key={key}
+                                                        className="overflow-hidden rounded-xl border"
+                                                    >
+                                                        <div className="flex items-center justify-between bg-muted/50 px-4 py-2 text-xs font-semibold">
+                                                            <span>
+                                                                {filterDefinitions
+                                                                    .find(
+                                                                        (
+                                                                            filter,
+                                                                        ) =>
+                                                                            filter.field ===
+                                                                            effectiveGroup,
+                                                                    )
+                                                                    ?.options?.find(
+                                                                        (
+                                                                            option,
+                                                                        ) =>
+                                                                            String(
+                                                                                option.value,
+                                                                            ) ===
+                                                                            key,
+                                                                    )?.label ??
+                                                                    label(key)}
+                                                            </span>
+                                                            <span className="font-normal text-muted-foreground">
+                                                                {items!.length}{" "}
+                                                                auf dieser Seite
+                                                            </span>
+                                                        </div>
+                                                        {stackedRows ? (
+                                                            recordCards(items!)
+                                                        ) : (
+                                                            <GroupedGrid
+                                                                columns={
+                                                                    columns
+                                                                }
+                                                                rows={items!}
+                                                                selection={
+                                                                    selection
+                                                                }
+                                                                onSelection={
+                                                                    setSelection
+                                                                }
+                                                                sorting={
+                                                                    sorting
+                                                                }
+                                                                onSorting={
+                                                                    setSorting
+                                                                }
+                                                                columnVisibility={
+                                                                    columnVisibility
+                                                                }
+                                                                onVisibility={
+                                                                    setColumnVisibility
+                                                                }
+                                                                selectionMode={
+                                                                    rowSelection
+                                                                }
+                                                                dense={dense}
+                                                                defaultVisibility={defaultColumnVisibility(
+                                                                    resource,
+                                                                )}
+                                                            />
                                                         )}
-                                                    />
-                                                </section>
-                                            ),
-                                        )}
-                                    </div>
+                                                    </section>
+                                                ),
+                                            )}
+                                        </div>
+                                    </TableViewport>
                                 ) : (
                                     <DataGridContainer
-                                        className={compact ? "" : "h-full"}
+                                        className={cn(!compact && "h-full")}
                                     >
-                                        {(virtualized === true ||
+                                        {!stackedRows &&
+                                        rows.length > 0 &&
+                                        (virtualized === true ||
                                             (virtualized === "auto" &&
                                                 rows.length >= 50)) &&
                                         !result.isPending ? (
@@ -1013,16 +1114,13 @@ export function ResourceCollection({
                                                 overscan={8}
                                             />
                                         ) : (
-                                            <DataGridScrollArea
-                                                className={
-                                                    compact
-                                                        ? "max-h-[30rem]"
-                                                        : "h-full"
-                                                }
-                                                orientation="both"
-                                            >
-                                                <DataGridTable />
-                                            </DataGridScrollArea>
+                                            <TableViewport compact={compact}>
+                                                {stackedRows ? (
+                                                    recordCards(rows)
+                                                ) : (
+                                                    <DataGridTable />
+                                                )}
+                                            </TableViewport>
                                         )}
                                     </DataGridContainer>
                                 )}
@@ -1105,7 +1203,12 @@ function GroupedGrid({
             table={table}
             recordCount={rows.length}
             i18n={i18n}
-            tableLayout={{ dense, columnsVisibility: true }}
+            tableLayout={{
+                dense,
+                columnsVisibility: true,
+                width: "fixed",
+                headerSticky: true,
+            }}
         >
             <DataGridTable />
         </DataGrid>

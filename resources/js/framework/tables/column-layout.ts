@@ -62,12 +62,19 @@ export function resolveColumnLayout(
     width: number,
     visibility: Record<string, boolean>,
     reserved = 88,
+    preferred: Record<string, number> = {},
 ): Record<string, ColumnLayout> {
     const available = Math.max(0, width - reserved);
     const layouts = Object.fromEntries(
         resource.columns.map((column) => [
             column.field,
-            columnLayout(column, resource, available),
+            columnLayout(
+                preferred[column.field] == null
+                    ? column
+                    : { ...column, size: preferred[column.field] },
+                resource,
+                available,
+            ),
         ]),
     );
     const visible = resource.columns
@@ -102,7 +109,44 @@ export function resolveColumnLayout(
             }
             delta -= allocated;
         }
-    for (const item of Object.values(layouts))
-        item.size = Math.round(item.size);
+    // Minimum sizes are comfortable desktop preferences. A hard container budget
+    // takes precedence; narrow containers additionally render labelled record cards.
+    const total = visible.reduce((sum, item) => sum + item.size, 0);
+    if (total > available && total > 0)
+        for (const item of visible) {
+            item.size *= available / total;
+            item.minSize = Math.min(item.minSize, item.size);
+        }
+    const target = Math.min(
+        available,
+        Math.round(visible.reduce((sum, item) => sum + item.size, 0)),
+    );
+    for (const item of Object.values(layouts)) {
+        item.size = Math.floor(item.size);
+        item.minSize = Math.min(item.minSize, item.size);
+    }
+    let remainder = target - visible.reduce((sum, item) => sum + item.size, 0);
+    for (const item of visible)
+        if (remainder > 0 && item.size + 1 <= item.maxSize) {
+            item.size++;
+            remainder--;
+        }
     return layouts;
+}
+
+export function stackRecordColumns(
+    resource: Pick<ResourceDefinition, "columns" | "fields" | "titleField">,
+    width: number,
+    visibility: Record<string, boolean>,
+    reserved = 88,
+): boolean {
+    if (!width) return false;
+    const minimum = resource.columns
+        .filter((column) => visibility[column.field] !== false)
+        .reduce(
+            (total, column) =>
+                total + columnLayout(column, resource, width).minSize,
+            reserved,
+        );
+    return width < Math.max(640, minimum);
 }

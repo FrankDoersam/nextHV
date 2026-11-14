@@ -137,7 +137,11 @@ function getDataGridScrollAreaViewport(node: HTMLElement): HTMLElement | null {
  * release.
  */
 function getDataGridTableFillMeasurementTarget(node: HTMLElement): HTMLElement {
-    return getDataGridScrollAreaViewport(node) ?? node.parentElement ?? node;
+    const externalViewport = getDataGridScrollAreaViewport(node);
+    if (externalViewport) return externalViewport;
+    // Standalone virtual tables own their scrollbar. Measuring the parent
+    // would fill the reserved scrollbar gutter and reintroduce x-overflow.
+    return node.style.overflow === "auto" ? node : (node.parentElement ?? node);
 }
 
 /**

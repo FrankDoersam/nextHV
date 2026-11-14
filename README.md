@@ -49,13 +49,13 @@ Auf einer leeren Datenbank entstehen **10 Objekte mit jeweils 5 Einheiten**: Woh
 
 Eine Einheit enthält **keinen Mieternamen, Mietbeginn, Mietende oder Mietpreis**. Belegung und Einnahmen ergeben sich aus den Verträgen. `ready` und `maintenance` beschreiben nur den physischen Zustand. Ein beendeter Vertrag mit zukünftigem Enddatum zählt bis einschließlich dieses Datums weiterhin als laufend.
 
-Geldwerte sind im Formular `Currency`-Felder und im JSON Zahlen in Euro, z. B. `1234.56`. Die Datenbank speichert `DECIMAL(12,2)`; es gibt keine Cent-Umrechnung. Maximal zwei Nachkommastellen, keine negativen Beträge. Dies ist noch keine Finanzbuchhaltung oder Zahlungsabstimmung.
+Geldwerte sind im Formular `Currency`-Felder mit formatierter Zahl und separat angezeigtem, nicht bearbeitbarem `EUR`-Suffix; im JSON bleiben sie Zahlen in Euro, z. B. `1234.56`. Die Datenbank speichert `DECIMAL(12,2)`; es gibt keine Cent-Umrechnung. Maximal zwei Nachkommastellen, keine negativen Beträge. Dies ist noch keine Finanzbuchhaltung oder Zahlungsabstimmung.
 
 ### Vertragsablauf
 
-1. Vertragsentwurf zur Einheit anlegen; Laufzeit, Mindestlaufzeit, Frist, Zahlung und Kaution erfassen.
-2. Geschäftspartner als Mieter bzw. andere Vertragsbeteiligte zuordnen. Die passende Partnerrolle wird automatisch ergänzt.
-3. Eine Kondition ab Vertragsbeginn erfassen. Weitere Stichtage können jährliche Änderungen abbilden.
+1. Vertragsentwurf zur Einheit erfassen; Laufzeit, Mindestlaufzeit, Frist, Zahlung und Kaution eintragen.
+2. Im selben Formular mehrere Geschäftspartner als Mieter oder weitere Beteiligte hinzufügen. Die Felder stammen aus der vorhandenen Beteiligten-Resource; die passende Partnerrolle wird beim Speichern automatisch ergänzt.
+3. Eine oder mehrere Konditionen ab Vertragsbeginn erfassen. **Speichern** legt Vertrag, Beteiligte und Konditionen mit einer nativen REST-Mutation atomar an. Es gibt im Standardablauf keine gespeicherten Zwischenschritte; ein Fehler rollt alle diese Änderungen zurück. Weitere Stichtage können jährliche Änderungen abbilden.
 4. **Vertrag aktivieren**. Die serverseitige Action verlangt Mieter und Anfangskondition und verhindert überlappende verbindliche Verträge derselben Einheit.
 5. Spätere Beträge als neue Kondition erfassen; bereits gültige Konditionen aktivierter Verträge bleiben historisch geschützt. Beteiligte sind auch bei aktiven und beendeten Verträgen bearbeitbar. Ein aktiver Vertrag muss mindestens einen Mieter behalten; Duplikat- und Hauptkontaktregeln gelten weiterhin. Eine zeitliche Beteiligtenhistorie ist nicht implementiert. Vertragsnotizen und Kautionsstatus bleiben bearbeitbar.
 6. Kündigung separat erfassen. Erst **Kündigung bestätigen** setzt in einer Transaktion das bestätigte Vertragsende. Mindestlaufzeit und Kündigungsfrist sind dokumentierte Vertragsangaben; rechtliche Fristberechnung und Zulässigkeitsbewertung werden nicht automatisiert.
@@ -99,16 +99,17 @@ Beim Duplizieren werden nur Objekt-/Einheitenstammdaten kopiert. Verträge, Bete
 
 Eine `ResourceDefinition` beschreibt UI-Felder, Gruppen, Spalten, Views, Actions und Relationslisten. Aus dieser Registrierung entstehen Sidebar, Listen, Detailansichten und Formulare. Der authentifizierte native Details-Endpunkt der PHP-Resource liefert Enums, Relationsziele, Picker-Suchfilter, erlaubte Filteroperatoren und Eingabehinweise. `ResourceSchemaProvider` ergänzt die Registry vor dem ersten Formular; Optionen und Relationsziele werden nicht nochmals in TypeScript gepflegt. Fachmodule verwenden etwa `select("status", "Status")` und `relation("property_id", "Objekt")` aus `modules/fields.ts`. Darstellung, Layout und React-Renderer bleiben im Frontend.
 
-- Tabellen: serverseitige Suche, Filter, Sortierung und Pagination, Query-Tabs mit optionalen Zählern, direkte Toolbar-Filter und getrennt abschaltbare Filter/Gruppierung. Spalten unterstützen Avatargruppen, Tags, Icon/Text und Unterzeilen sowie einen eigenen Exportwert. Gruppierung und Zeilenauswahl beziehen sich auf die geladene Seite. Die aktuellen Module erlauben als Bulk-Action ausschließlich Löschen.
-- Formulare: React Hook Form und Laravel-Servervalidierung, zentrale Fehlerdarstellung, horizontaler Header-Wizard mit optionaler Zusammenfassung, klappbare Gruppen, Dirty-Check und Reload bei Versionskonflikten. Zod bleibt ausschließlich in der isolierten Komponentendemo.
-- Suchbare Select-/Entity-Picker: `multiple`, `clearable`, Backend-Filter, anpassbare Titel/Subtexte und abschaltbare Neuanlage. Datumspicker mit ISO-Minimum/Maximum.
+- Tabellen: serverseitige Suche, Filter, Sortierung und Pagination, Query-Tabs mit optionalen Zählern und getrennt abschaltbare Filter/Gruppierung. Relationssuche, etwa nach einem Objekt, öffnet sich über **Filter → Objekt**. Direkte Toolbar-Filter bleiben eine optionale Framework-API; die aktuellen Module verwenden sie nicht. Spalten unterstützen Avatargruppen, Tags, Icon/Text, Unterzeilen und einen eigenen Exportwert. Die aktuellen Module erlauben als Bulk-Action ausschließlich Löschen.
+- Tabellenlayout: ein nativer vertikaler Viewport mit fixiertem Kopf, dauerhaftem Footer und stabiler Höhe bei Auswahl oder Leerzustand. Bei schmalen Containern erscheinen alle sichtbaren Spalten als beschriftete Datensatzwerte; horizontales Scrollen entfällt. Gruppierung und Auswahl betreffen die geladene Seite.
+- Formulare: React Hook Form und Laravel-Fachvalidierung, deutsche Feldfehler, horizontaler Header-Wizard, klappbare Gruppen, Dirty-Check und Reload bei Versionskonflikten. `createRelations` bindet wiederholbare Unterdatensätze aus bestehenden Resource-Feldern ein. Objekt- und Vertragswizard zeigen keine zusätzliche Zusammenfassung; die Zahlungskarte im Vertrags-Edit bleibt. Zod bleibt ausschließlich in der isolierten Komponentendemo.
+- Suchbare Select-/Entity-Picker: `multiple`, `clearable`, Backend-Filter, anpassbare Titel/Subtexte und abschaltbare Neuanlage. Datumspicker erlauben freie Eingabe in `TT.MM.JJJJ` sowie Kalenderwahl; Format, Min-/Max-Grenzen und Bereichsreihenfolge werden am Control geprüft, die fachliche Gültigkeit weiterhin im Backend.
 - Key-Value-Liste mit einzelnen versionsgeprüften Mutationen; Checkbox-Listen/-Karten und direkte boolesche Änderungen. Editieren aktualisiert standardmäßig nur die betroffene Cache-Zeile.
 - PDF-Anzeige über den Browser in einer React-Komponente, ohne zusätzliche PDF-Frontendbibliotheken. Geschützter Abruf und Download bleiben erhalten.
 
 - Relationspicker: Datenbanksuche mit Debouncing, Anzeigen bestehender Auswahl, reduzierte Neuanlage im verschachtelten Dialog und automatische Übernahme.
 - Relationslisten im Bearbeitungsformular: Suche, Anlegen und Zeilenactions. Änderungen invalidieren die betroffenen Ansichten; Formular-Refresh erhält ungespeicherte Werte.
 - Sheet/Dialog wird über `presentation` pro Workbench-Aufruf konfiguriert; `collection.viewMode` steuert, ob ein Datensatzlink eine Page, ein lesendes Sheet oder einen Dialog öffnet. Die echte View-Ansicht bietet Key-Value-Werte und abschnittsweises Bearbeiten im selben Panel. Es gibt keine Darstellungs-Umschaltbuttons in den Listen.
-- `PageWrapper` hält Dashboard, Akten und Tabs auf derselben Inhaltsbreite. Gemeinsame REUI-Frames bilden Cards, Formulargruppen und Key-Value-Karten; Actions stehen in den zentralen Slots. `DynamicList` unterstützt Suche, eigene Zeilenrenderer, Empty-State und Actions. Der Login ist eine zentrierte Karte vor einem lokal ausgelieferten Wohngebäude-Bild.
+- `PageWrapper` hält Dashboard, Akten und Tabs auf derselben Inhaltsbreite. Gemeinsame REUI-Frames bilden Cards, Formulargruppen und Key-Value-Karten; Actions stehen in den zentralen Slots. `DynamicList` unterstützt Suche, eigene Zeilenrenderer, Empty-State und Actions. Der Login ist eine zentrierte Karte vor einem lokal ausgelieferten Wohngebäude-Bild, ohne zusätzliches Logo und äußeren Footer.
 - Datum, Monat, Uhrzeit sowie Datum-/Monatsbereiche sind zentrale Komponenten. Die Komponentenseite zeigt sie interaktiv; sie erfindet keine zusätzlichen Datenbankfelder.
 
 Eigene Actions sind Klassen mit `bulk`, `visible`, `fields` und `execute`. Der Kontext enthält die tatsächlichen `rows`, die Ressource und `instance` mit `reload`, `openForm`, `navigate`, optionalem Formular, `refreshForm` und Tabelleninstanz. Beispiel:
@@ -192,7 +193,7 @@ npm test
 npm run build
 ```
 
-PHP-Featuretests prüfen Auth, API-Verträge, Seeder, Klonen, Bestätigung, Versionskonflikte, Währungsvalidierung, Belegung, Konditionshistorie, Vertragsgrenzen, Kündigungen, Verknüpfungen, Ausweisschutz und den deaktivierten Permission-Adapter. React-Komponententests prüfen u. a. Wizard, Fehler, Zurück-Navigation, Discard, echte REUI-Tabelle, Suche, Bulk-Auswahl und LazyTabs.
+PHP-Featuretests prüfen Auth, API-Verträge, Seeder, Klonen, Bestätigung, Versionskonflikte, Währungsvalidierung, atomare Vertragsanlage mit Unterdatensätzen und Rollback, lokalisierte Feldfehler, Belegung, Konditionshistorie, Vertragsgrenzen, Kündigungen, Verknüpfungen, Ausweisschutz und den deaktivierten Permission-Adapter. React-Komponententests prüfen u. a. Wizard, Fehler, Zurück-Navigation, Discard, echte REUI-Tabelle, Suche, Bulk-Auswahl und LazyTabs.
 
 Die GitHub-Action führt diese Prüfungen und einen Playwright-Durchlauf gegen eine **separate** SQLite-Datenbank aus. Die Ergebnisse des jeweiligen Jobs und seine Browserdiagnostik sind maßgeblich; ein fehlgeschlagener Browserstart ersetzt keine visuelle Prüfung.
 

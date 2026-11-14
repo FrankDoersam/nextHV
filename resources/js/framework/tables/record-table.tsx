@@ -6,12 +6,13 @@ import {
     dataGridFeatures,
     type DataGridFeatures,
 } from "@/components/reui/data-grid/data-grid";
-import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
 import type { ColumnDefinition, RecordData } from "../types";
 import { CellRenderer } from "./cell-renderer";
 import { recordValue } from "./cell-value";
-import { resolveColumnLayout } from "./column-layout";
+import { resolveColumnLayout, stackRecordColumns } from "./column-layout";
+import { TableViewport } from "./table-viewport";
+import { ResponsiveRecordList } from "./responsive-record-list";
 
 /** Small, read-only embedded tables reuse the grid's cells and sizing without API, selection or mutation state. */
 export function RecordTable({
@@ -32,7 +33,13 @@ export function RecordTable({
     useLayoutEffect(() => {
         const element = viewport.current;
         if (!element) return;
-        const measure = () => setWidth(element.clientWidth);
+        const measure = () => {
+            const scroll = element.querySelector<HTMLElement>(
+                '[data-slot="scroll-area-viewport"]',
+            );
+            const gutter = scroll ? scroll.offsetWidth - scroll.clientWidth : 0;
+            setWidth(Math.max(0, element.clientWidth - gutter));
+        };
         measure();
         const observer = new ResizeObserver(measure);
         observer.observe(element);
@@ -60,6 +67,12 @@ export function RecordTable({
             enableHiding: false,
         }));
     }, [columns, width]);
+    const stacked = stackRecordColumns(
+        { columns, fields: [], titleField: columns[0]?.field ?? "id" },
+        width,
+        {},
+        0,
+    );
     const table = useTable({
         features: dataGridFeatures,
         data: rows,
@@ -85,13 +98,26 @@ export function RecordTable({
                     dense,
                     width: "fixed",
                     headerBackground: true,
+                    headerSticky: true,
                     rowBorder: true,
                 }}
             >
                 <DataGridContainer className="rounded-lg border bg-card">
-                    <DataGridScrollArea orientation="horizontal">
-                        <DataGridTable />
-                    </DataGridScrollArea>
+                    <TableViewport compact>
+                        {stacked ? (
+                            <ResponsiveRecordList
+                                columns={columns}
+                                rows={rows}
+                                empty={
+                                    <p className="p-6 text-center text-sm text-muted-foreground">
+                                        {emptyMessage}
+                                    </p>
+                                }
+                            />
+                        ) : (
+                            <DataGridTable />
+                        )}
+                    </TableViewport>
                 </DataGridContainer>
             </DataGrid>
         </section>

@@ -164,7 +164,10 @@ describe("searchable choice controls", () => {
                 clearable={false}
             />,
         );
-        await user.click(screen.getByRole("button", { name: "13.11.2026" }));
+        expect(screen.getByRole("textbox")).toHaveValue("13.11.2026");
+        await user.click(
+            screen.getByRole("button", { name: "Kalender öffnen" }),
+        );
         expect(
             screen.queryByRole("button", { name: "Datum entfernen" }),
         ).not.toBeInTheDocument();

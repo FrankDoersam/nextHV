@@ -163,6 +163,7 @@ export interface CollectionSummaryDefinition {
 export interface FormGroupDefinition {
     id: string;
     label: string;
+    stepLabel?: string;
     description?: string;
     collapsible?: boolean;
     defaultOpen?: boolean;
@@ -174,6 +175,18 @@ export interface CollectionViewDefinition {
     filters?: Filter[];
     query?: string;
     count?: boolean;
+}
+/** Unsaved child rows are submitted with their parent in one native REST mutation. */
+export interface CreateRelationDefinition {
+    relation: string;
+    resource: () => ResourceDefinition;
+    foreignKey: string;
+    label: string;
+    singular: string;
+    group: string;
+    initialRows?: number;
+    fields?: string[];
+    defaults?: (parent: Values) => Values;
 }
 export interface ResourceDefinition {
     name: string;
@@ -209,6 +222,7 @@ export interface ResourceDefinition {
     supportsClone?: boolean;
     bulkEditable?: string[];
     createFlow?: string;
+    createRelations?: CreateRelationDefinition[];
     summary?: CollectionSummaryDefinition;
     relations?: RelationDefinition[];
 }

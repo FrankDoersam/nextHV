@@ -6,7 +6,7 @@ import {
     compileGridFilters,
     sanitizeGridFilters,
 } from "./filter-rules";
-import { resolveColumnLayout } from "./column-layout";
+import { resolveColumnLayout, stackRecordColumns } from "./column-layout";
 const resource: ResourceDefinition = {
     name: "demo",
     description: "Schema fixture",
@@ -159,6 +159,22 @@ describe("responsive column widths", () => {
         expect(layout.status.size).toBeLessThanOrEqual(180);
         expect(layout.name.size).toBeGreaterThan(layout.status.size);
     });
+    it("keeps the exact width budget even with user resize preferences and fractional rounding", () => {
+        for (const width of [320, 641, 823, 1027, 1201]) {
+            const layout = resolveColumnLayout(columns, width, {}, 80, {
+                name: 470,
+                full_address: 480,
+            });
+            expect(
+                Object.values(layout).reduce(
+                    (sum, column) => sum + column.size,
+                    80,
+                ),
+            ).toBeLessThanOrEqual(width);
+            expect(layout.area.size).toBeLessThanOrEqual(132);
+            expect(layout.status.size).toBeLessThanOrEqual(180);
+        }
+    });
     it("clamps percentage preferences, respects min/max and frees hidden-column space", () => {
         const configured = {
             ...columns,
@@ -181,6 +197,8 @@ describe("responsive column widths", () => {
             expect(column.size).toBeGreaterThanOrEqual(column.minSize);
         expect(
             Object.values(narrow).reduce((n, c) => n + c.size, 88),
-        ).toBeGreaterThan(320);
+        ).toBeLessThanOrEqual(320);
+        expect(stackRecordColumns(configured, 320, {})).toBe(true);
+        expect(stackRecordColumns(configured, 1200, {})).toBe(false);
     });
 });

@@ -23,7 +23,6 @@ export const units: ResourceDefinition = {
     bulkActions: ["delete"],
     editor: { sectionStyle: "collapsible" },
     view: { sectionStyle: "collapsible" },
-    toolbarFilters: ["property_id"],
     collection: { viewMode: "sheet" },
     views: [
         { id: "all", label: "Alle", count: true },

@@ -13,6 +13,8 @@ use Lomkit\Rest\Fields\ID;
 use Lomkit\Rest\Fields\Integer;
 use Lomkit\Rest\Fields\Number;
 use Lomkit\Rest\Fields\Text;
+use Lomkit\Rest\Mutations\Contextual;
+use Lomkit\Rest\Mutations\MutationContext;
 use Lomkit\Rest\Relations\BelongsTo;
 
 class RentConditionResource extends Resource
@@ -28,7 +30,7 @@ class RentConditionResource extends Resource
                 return 'CAST(ROUND(('.$column('base_rent').' + '.$column('service_charge').' + '.$column('heating_cost').') * (1 + '.$column('vat_rate').' / 100.0), 2) AS DECIMAL(20, 2))';
             }))->virtual()->readonly()->requires(['base_rent', 'service_charge', 'heating_cost', 'vat_rate'])->resolveUsing(fn (RentCondition $condition) => round(($condition->base_rent + $condition->service_charge + $condition->heating_cost) * (1 + $condition->vat_rate / 100), 2)),
             ID::make('id'),
-            Integer::make('contract_id')->rules(Rule::exists('contracts', 'id')->whereNull('deleted_at'))->creationRules('required')->updatable(false),
+            Integer::make('contract_id')->rules(Rule::exists('contracts', 'id')->whereNull('deleted_at'))->creationRules(Contextual::rule(fn (MutationContext $mutation): string => $mutation->depth === 0 ? 'required' : 'prohibited'))->updatable(false),
             Date::make('effective_from')->creationRules('required'),
             Currency::make('base_rent')->creationRules('required'),
             Currency::make('service_charge'),

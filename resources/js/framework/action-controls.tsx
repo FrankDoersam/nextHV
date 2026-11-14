@@ -1,4 +1,5 @@
-import { MoreHorizontal } from "lucide-react";
+import { Circle, MoreHorizontal } from "lucide-react";
+import { useId } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,33 +41,109 @@ export function useActionContext(target: ActionTarget): ActionContext {
 function Caption({
     action,
     reason,
+    descriptionId,
+    icons,
 }: {
     action: ResourceAction;
     reason?: string;
+    descriptionId: string;
+    icons: boolean;
 }) {
-    const Icon = action.icon;
+    const Icon = action.icon ?? Circle;
     return (
-        <>
-            {Icon && <Icon className="size-4 shrink-0" />}
-            <span className="min-w-0">
-                <span className="block">{action.label}</span>
+        <span className="flex min-w-0 flex-1 items-start gap-2.5">
+            {icons && (
+                <span
+                    aria-hidden
+                    className="flex size-5 shrink-0 items-center justify-center text-current"
+                >
+                    <Icon className="size-4" />
+                </span>
+            )}
+            <span className="min-w-0 flex-1">
+                <span className="block text-sm leading-5 font-medium whitespace-normal">
+                    {action.label}
+                </span>
                 {(reason || action.description) && (
-                    <span className="mt-0.5 block max-w-64 text-xs leading-4 font-normal text-muted-foreground">
+                    <span
+                        id={descriptionId}
+                        className="mt-0.5 block text-xs leading-4 font-normal whitespace-normal text-muted-foreground"
+                    >
                         {reason || action.description}
                     </span>
                 )}
             </span>
-        </>
+        </span>
+    );
+}
+const menuClass = "w-64 max-w-[calc(100vw-2rem)] p-1.5";
+function MenuAction({
+    action,
+    context,
+    icons,
+}: {
+    action: ResourceAction;
+    context: ActionContext;
+    icons: boolean;
+}) {
+    const workbench = useWorkbench();
+    const descriptionId = useId();
+    const availability = actionAvailability(action, context);
+    const reason = typeof availability === "string" ? availability : undefined;
+    const caption = (
+        <Caption
+            action={action}
+            reason={reason}
+            descriptionId={descriptionId}
+            icons={icons}
+        />
+    );
+    const props = {
+        className:
+            "min-h-9 items-start gap-2 rounded-md px-2 py-2 data-disabled:pointer-events-none data-disabled:opacity-50",
+        disabled: availability !== true,
+        "aria-label": action.label,
+        "aria-describedby":
+            reason || action.description ? descriptionId : undefined,
+    };
+    return action.children.length ? (
+        <DropdownMenuSub>
+            <DropdownMenuSubTrigger
+                {...props}
+                className={`${props.className} [&>svg]:mt-0.5`}
+            >
+                {caption}
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className={menuClass}>
+                <MenuItems
+                    actions={action.children}
+                    context={context}
+                    icons={icons}
+                />
+            </DropdownMenuSubContent>
+        </DropdownMenuSub>
+    ) : (
+        <DropdownMenuItem
+            {...props}
+            variant={action.destructive ? "destructive" : "default"}
+            onClick={(event) => {
+                event.stopPropagation();
+                workbench.runAction(action, context);
+            }}
+        >
+            {caption}
+        </DropdownMenuItem>
     );
 }
 function MenuItems({
     actions,
     context,
+    icons,
 }: {
     actions: ResourceAction[];
     context: ActionContext;
+    icons: boolean;
 }) {
-    const workbench = useWorkbench();
     const groups = new Map<string, ResourceAction[]>();
     for (const action of actions.filter((action) =>
         actionVisible(action, context),
@@ -76,48 +153,20 @@ function MenuItems({
     }
     return Array.from(groups, ([group, items], index) => (
         <DropdownMenuGroup key={group}>
-            {index > 0 && <DropdownMenuSeparator />}
-            {group && <DropdownMenuLabel>{group}</DropdownMenuLabel>}
-            {items.map((action) => {
-                const availability = actionAvailability(action, context);
-                const caption = (
-                    <Caption
-                        action={action}
-                        reason={
-                            typeof availability === "string"
-                                ? availability
-                                : undefined
-                        }
-                    />
-                );
-                return action.children.length ? (
-                    <DropdownMenuSub key={action.id}>
-                        <DropdownMenuSubTrigger
-                            disabled={availability !== true}
-                        >
-                            {caption}
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent className="w-72">
-                            <MenuItems
-                                actions={action.children}
-                                context={context}
-                            />
-                        </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-                ) : (
-                    <DropdownMenuItem
-                        key={action.id}
-                        disabled={availability !== true}
-                        variant={action.destructive ? "destructive" : "default"}
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            workbench.runAction(action, context);
-                        }}
-                    >
-                        {caption}
-                    </DropdownMenuItem>
-                );
-            })}
+            {index > 0 && <DropdownMenuSeparator className="my-1.5" />}
+            {group && (
+                <DropdownMenuLabel className="px-2 py-1.5">
+                    {group}
+                </DropdownMenuLabel>
+            )}
+            {items.map((action) => (
+                <MenuAction
+                    key={action.id}
+                    action={action}
+                    context={context}
+                    icons={icons}
+                />
+            ))}
         </DropdownMenuGroup>
     ));
 }
@@ -128,6 +177,7 @@ export function ActionMenu({
     label = "Aktionen",
     exclude = [],
     allowed,
+    icons = true,
 }: {
     actions: ResourceAction[];
     target: ActionTarget;
@@ -135,6 +185,7 @@ export function ActionMenu({
     label?: string;
     exclude?: string[];
     allowed?: false | string[];
+    icons?: boolean;
 }) {
     const context = useActionContext(target);
     const visible = actions.filter(
@@ -161,8 +212,8 @@ export function ActionMenu({
             >
                 <MoreHorizontal />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-72">
-                <MenuItems actions={visible} context={context} />
+            <DropdownMenuContent align="end" className={menuClass}>
+                <MenuItems actions={visible} context={context} icons={icons} />
             </DropdownMenuContent>
         </DropdownMenu>
     );
@@ -174,6 +225,7 @@ export function ActionButtons({
     iconOnly = false,
     disabled = false,
     inverse = false,
+    icons = true,
 }: {
     actions: ResourceAction[];
     target: ActionTarget;
@@ -181,6 +233,7 @@ export function ActionButtons({
     iconOnly?: boolean;
     disabled?: boolean;
     inverse?: boolean;
+    icons?: boolean;
 }) {
     const context = useActionContext(target);
     const workbench = useWorkbench();
@@ -191,7 +244,13 @@ export function ActionButtons({
         )
         .map((action) => {
             const available = actionAvailability(action, context);
-            const Icon = action.icon;
+            const Icon = action.icon ?? Circle;
+            const content = (
+                <>
+                    {(icons || iconOnly) && <Icon aria-hidden />}
+                    {!iconOnly && action.label}
+                </>
+            );
             const button = (
                 <Button
                     key={action.id}
@@ -212,20 +271,19 @@ export function ActionButtons({
                             : () => workbench.runAction(action, context)
                     }
                 >
-                    {Icon ? <Icon /> : iconOnly ? <MoreHorizontal /> : null}
-                    {!iconOnly && action.label}
+                    {content}
                 </Button>
             );
             return action.children.length ? (
                 <DropdownMenu key={action.id}>
                     <DropdownMenuTrigger render={button}>
-                        {Icon ? <Icon /> : iconOnly ? <MoreHorizontal /> : null}
-                        {!iconOnly && action.label}
+                        {content}
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-72">
+                    <DropdownMenuContent align="end" className={menuClass}>
                         <MenuItems
                             actions={action.children}
                             context={context}
+                            icons={icons}
                         />
                     </DropdownMenuContent>
                 </DropdownMenu>
