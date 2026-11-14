@@ -70,7 +70,6 @@ export class EditAction extends ResourceAction {
 
 export class DeleteAction extends ResourceAction {
     icon = Trash2;
-    group = "Verwalten";
     id = "delete";
     label = "Löschen";
     bulk = true;

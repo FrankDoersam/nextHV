@@ -377,8 +377,8 @@ export function PageHeader({
 }) {
     return (
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
-            <div className="min-w-0">
-                <h1 className="text-2xl font-semibold tracking-tight">
+            <div className="min-w-0 flex-1 basis-64">
+                <h1 className="break-words text-2xl font-semibold tracking-tight">
                     {title}
                 </h1>
                 {description && (
@@ -388,7 +388,7 @@ export function PageHeader({
                 )}
             </div>
             {actions && (
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
                     {actions}
                 </div>
             )}

@@ -119,11 +119,12 @@ export function Overlay({
     const tabBar = tabs && (
         <div
             data-slot="overlay-tabs"
-            className="min-w-0 shrink-0 overflow-x-auto border-b bg-card px-5 sm:px-6"
+            className="min-w-0 shrink-0  border-b bg-card px-5 sm:px-6"
         >
             <TabsList
+                responsive
                 variant="line"
-                className="data-[orientation=horizontal]:h-12 min-w-max gap-3 [&_[data-slot=tabs-trigger][data-active]]:text-foreground [&_[data-slot=tabs-trigger]]:after:bg-foreground"
+                className="data-[orientation=horizontal]:h-12 min-w-0 gap-3 [&_[data-slot=tabs-trigger][data-active]]:text-foreground [&_[data-slot=tabs-trigger]]:after:bg-foreground"
             >
                 {tabs.items.map((tab) => (
                     <TabsTrigger

@@ -10,9 +10,11 @@ export function useResourceList(
     params: ListParams = {},
     enabled = true,
     retainPrevious = false,
+    staleTime?: number,
 ) {
     return useQuery({
         enabled,
+        ...(staleTime === undefined ? {} : { staleTime }),
         queryKey: [...resourceKey(resource.name), "list", params],
         queryFn: ({ signal }) => dataProvider.list(resource, params, signal),
         placeholderData: retainPrevious

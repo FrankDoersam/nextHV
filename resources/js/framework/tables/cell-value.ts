@@ -1,3 +1,4 @@
+import { label } from "@/lib/format";
 import type { ColumnDefinition, RecordData } from "../types";
 export function recordValue(
     row: RecordData | Record<string, unknown>,
@@ -40,6 +41,18 @@ export function cellItems(
             : recordValue(row, source ?? column.field);
     return Array.isArray(value) ? value : value == null ? [] : [value];
 }
+export function optionLabel(
+    value: unknown,
+    column: ColumnDefinition,
+): string | undefined {
+    return (
+        (
+            column.options ??
+            (column.filter ? column.filter.options : undefined)
+        )?.find((option) => String(option.value) === String(value))?.label ??
+        (column.kind === "badge" ? label(value) : undefined)
+    );
+}
 export function exportColumnValue(
     row: RecordData,
     column: ColumnDefinition,
@@ -54,8 +67,16 @@ export function exportColumnValue(
                       ] ??
                       (item as Record<string, unknown>).label ??
                       "")
-                    : item,
+                    : (optionLabel(item, column) ?? item),
             )
             .join(", ");
-    return recordValue(row, column.field);
+    const value = recordValue(row, column.field);
+    if (value == null) return "";
+    if (typeof value === "boolean") return value ? "Ja" : "Nein";
+    return (
+        optionLabel(value, column) ??
+        (column.cell?.primary
+            ? cellText(row, column.cell.primary, column.field)
+            : value)
+    );
 }

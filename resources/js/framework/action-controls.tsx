@@ -148,13 +148,13 @@ function MenuItems({
     for (const action of actions.filter((action) =>
         actionVisible(action, context),
     )) {
-        const key = action.group ?? "";
+        const key = action.group ?? (action.destructive ? "__destructive" : "");
         groups.set(key, [...(groups.get(key) ?? []), action]);
     }
     return Array.from(groups, ([group, items], index) => (
         <DropdownMenuGroup key={group}>
             {index > 0 && <DropdownMenuSeparator className="my-1.5" />}
-            {group && (
+            {group && group !== "__destructive" && (
                 <DropdownMenuLabel className="px-2 py-1.5">
                     {group}
                 </DropdownMenuLabel>

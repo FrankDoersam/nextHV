@@ -278,3 +278,23 @@ describe("collection scopes and cells", () => {
         ).toBe("CUSTOM");
     });
 });
+
+it("exports enum labels and booleans even when filtering is disabled, while retaining explicit export overrides", () => {
+    const row = { id: 1, updated_at: "v1", role: "tenant", is_primary: true };
+    const role = {
+        field: "role",
+        label: "Rolle",
+        filter: false as const,
+        options: [{ value: "tenant", label: "Mieter" }],
+    };
+    expect(exportColumnValue(row, role)).toBe("Mieter");
+    expect(
+        exportColumnValue(row, { field: "is_primary", label: "Hauptkontakt" }),
+    ).toBe("Ja");
+    expect(
+        exportColumnValue(row, {
+            ...role,
+            exportValue: (record) => String(record.role),
+        }),
+    ).toBe("tenant");
+});

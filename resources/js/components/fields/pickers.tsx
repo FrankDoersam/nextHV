@@ -94,8 +94,11 @@ export function dateRangeControlError(
 }
 function readDateInput(text: string): { value: string | null; error?: string } {
     if (!text.trim()) return { value: null };
-    const date = /^\d{1,2}\.\d{1,2}\.\d{4}$/.test(text.trim())
-        ? parse(text.trim(), "d.M.yyyy", new Date())
+    const normalized = /^\d{8}$/.test(text.trim())
+        ? text.trim().replace(/^(\d{2})(\d{2})(\d{4})$/, "$1.$2.$3")
+        : text.trim();
+    const date = /^\d{1,2}\.\d{1,2}\.\d{4}$/.test(normalized)
+        ? parse(normalized, "d.M.yyyy", new Date())
         : undefined;
     return date && isValid(date)
         ? { value: format(date, "yyyy-MM-dd") }
@@ -143,7 +146,11 @@ export function DatePicker({
             next.error ??
             dateControlError(next.value, { clearable, minDate, maxDate });
         if (invalid) onInvalidInput?.(next.error ? text : (next.value ?? ""));
-        else onChange(next.value);
+        else {
+            if (/^\d{8}$/.test(text.trim()) && next.value)
+                setDraft(dateCaption(next.value));
+            onChange(next.value);
+        }
     };
     return (
         <div className="min-w-0">
@@ -196,6 +203,7 @@ export function DatePicker({
                         <PopoverTrigger
                             render={
                                 <InputGroupButton
+                                    tabIndex={-1}
                                     aria-label="Kalender öffnen"
                                     size="icon-sm"
                                     disabled={disabled}
@@ -465,7 +473,7 @@ export function TimeField({
         >
             <div className="flex gap-2">
                 <TimePickerInput {...aria} />
-                <TimePickerTrigger />
+                <TimePickerTrigger tabIndex={-1} />
             </div>
             <TimePickerContent>
                 <TimePickerColumns />

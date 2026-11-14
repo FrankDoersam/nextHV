@@ -41,13 +41,20 @@ const tabsListVariants = cva(
 function TabsList({
     className,
     variant = "default",
+    responsive = false,
     ...props
-}: TabsPrimitive.List.Props & VariantProps<typeof tabsListVariants>) {
+}: TabsPrimitive.List.Props &
+    VariantProps<typeof tabsListVariants> & { responsive?: boolean }) {
     return (
         <TabsPrimitive.List
             data-slot="tabs-list"
             data-variant={variant}
-            className={cn(tabsListVariants({ variant }), className)}
+            className={cn(
+                tabsListVariants({ variant }),
+                className,
+                responsive &&
+                    "w-full min-w-0 flex-wrap justify-start gap-x-1 gap-y-0 data-[orientation=horizontal]:h-auto [&>[data-slot=tabs-trigger]]:h-11 [&>[data-slot=tabs-trigger]]:max-w-full [&>[data-slot=tabs-trigger]]:whitespace-normal [&>[data-slot=tabs-trigger]]:text-left",
+            )}
             {...props}
         />
     );

@@ -62,7 +62,7 @@ final readonly class ResourceMetadata
             ];
         }
 
-        return ['version' => 1, 'fields' => (object) $fields, 'relations' => (object) $relations, 'labels' => (object) config('ui.options', [])];
+        return ['version' => 1, 'fields' => (object) $fields, 'relations' => (object) $relations, 'picker' => $this->resource->uiPicker(), 'labels' => (object) config('ui.options', [])];
     }
 
     /** @return list<array{value: string|int, label: string}> */

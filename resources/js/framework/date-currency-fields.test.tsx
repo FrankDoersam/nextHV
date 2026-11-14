@@ -91,6 +91,43 @@ describe("currency editing", () => {
 });
 
 describe("typed dates", () => {
+    it("recognizes compact dates, rejects impossible days and skips the auxiliary calendar button on Tab", async () => {
+        const user = userEvent.setup();
+        const submit = vi.fn();
+        render(
+            <DateForm
+                definition={{
+                    name: "starts_on",
+                    label: "Beginn",
+                    kind: "date",
+                }}
+                defaults={{ starts_on: null }}
+                onSubmit={submit}
+            />,
+        );
+        const input = screen.getByRole("textbox", { name: "Beginn" });
+        await user.click(input);
+        await user.keyboard("01012026");
+        expect(input).toHaveValue("01.01.2026");
+        await user.tab();
+        expect(screen.getByRole("button", { name: "Speichern" })).toHaveFocus();
+        await user.keyboard("{Enter}");
+        await waitFor(() =>
+            expect(submit).toHaveBeenCalledWith(
+                { starts_on: "2026-01-01" },
+                expect.anything(),
+            ),
+        );
+        submit.mockClear();
+        await user.clear(input);
+        await user.type(input, "31022026");
+        await user.click(screen.getByRole("button", { name: "Speichern" }));
+        expect(submit).not.toHaveBeenCalled();
+        expect(screen.getAllByRole("alert")[0]).toHaveTextContent(
+            "gültiges Datum",
+        );
+    });
+
     it("keeps an invalid draft visible without emitting it to standalone consumers and accepts leap days", async () => {
         const user = userEvent.setup();
         const change = vi.fn();

@@ -45,7 +45,7 @@ export function StatusBadge({
             )}
         >
             <span className="size-1.5 shrink-0 rounded-full bg-current" />
-            <span className="truncate">{label(value)}</span>
+            <span className="truncate">{displayLabel ?? label(value)}</span>
         </Badge>
     );
 }

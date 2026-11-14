@@ -2,6 +2,7 @@
 
 namespace App\Rest\Resources;
 
+use App\Rest\Text\RelatedContains;
 use App\Rest\Ui\ResourceMetadata;
 use App\Support\Validation\MutationValidationContext;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,7 @@ use Lomkit\Rest\Confirmation\Confirmation;
 use Lomkit\Rest\Fields\Field;
 use Lomkit\Rest\Http\Resource as RestResource;
 use Lomkit\Rest\Mutations\MutationNode;
-use Lomkit\Rest\Text\Contains;
+use Lomkit\Rest\Relations\BelongsTo;
 use Lomkit\Rest\Text\TextSearch;
 
 #[WithoutPerimeter] // Single workspace by request. Organisation scoping is deferred.
@@ -65,7 +66,26 @@ abstract class Resource extends RestResource
 
     public function text(): ?TextSearch
     {
-        return Contains::make();
+        return new RelatedContains($this);
+    }
+
+    /** Direct belongs-to relations participate in text search; override to restrict this scope. */
+    public function searchableRelations(): array
+    {
+        $relations = [];
+        foreach ($this->definition()->relations() as $relation) {
+            if ($relation instanceof BelongsTo) {
+                $relations[$relation->relation] = $relation->resource();
+            }
+        }
+
+        return $relations;
+    }
+
+    /** @return array{secondaryFields: list<string>, includes?: list<array{relation: string}>} */
+    public function uiPicker(): array
+    {
+        return ['secondaryFields' => ['code']];
     }
 
     public function destroyConfirmation(Collection $models): ?Confirmation
