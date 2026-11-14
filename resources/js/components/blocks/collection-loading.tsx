@@ -66,12 +66,34 @@ export function CollectionLoading({
                             ))}
                         </div>
                     )}
+                    {!!resource.views?.length && (
+                        <div
+                            data-slot="collection-loading-tabs"
+                            role="tablist"
+                            aria-label={`${resource.label} Ansichten`}
+                            className="flex h-10 shrink-0 items-center gap-5 border-b"
+                        >
+                            {resource.views.map((view, index) => (
+                                <span
+                                    key={view.id}
+                                    role="tab"
+                                    aria-selected={index === 0}
+                                    className={index === 0
+                                        ? "flex h-full items-center border-b-2 border-foreground text-sm font-medium"
+                                        : "flex h-full items-center text-sm text-muted-foreground"}
+                                >
+                                    {view.label}
+                                    {view.count && <Skeleton className="ml-2 h-4 w-5 rounded-md" />}
+                                </span>
+                            ))}
+                        </div>
+                    )}
                     <div className="flex items-center gap-3">
                         <Skeleton className="h-9 w-72" />
                         <Skeleton className="h-9 w-24" />
                         <Skeleton className="ml-auto h-9 w-36" />
                     </div>
-                    <div className="min-h-0 flex-1 overflow-hidden rounded-lg border">
+                    <div data-slot="collection-loading-table" className="min-h-0 flex-1 overflow-hidden rounded-lg border">
                         <Skeleton className="h-10 rounded-none" />
                         {Array.from({ length: 12 }, (_, i) => (
                             <div

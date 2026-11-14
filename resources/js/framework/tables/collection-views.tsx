@@ -9,6 +9,37 @@ import type {
 } from "../types";
 export const collectionViewTabId = (panelId: string, viewId: string) =>
     `${panelId}-view-${encodeURIComponent(viewId)}`;
+/** Shared count cache for collection tabs and sidebar badges. */
+export const viewCountQuery = (
+    resource: ResourceDefinition,
+    view: CollectionViewDefinition,
+    fixedFilters: Filter[] = [],
+) => ({
+    queryKey: [
+        "resources",
+        resource.name,
+        "view-count",
+        view.id,
+        fixedFilters,
+        view.filters,
+        view.query,
+    ],
+    enabled: !!view.count,
+    staleTime: 30_000,
+    queryFn: async ({ signal }: { signal: AbortSignal }) =>
+        (
+            await dataProvider.list(
+                { ...resource, includes: undefined, aggregates: undefined },
+                {
+                    limit: 10,
+                    query: view.query,
+                    filters: [...fixedFilters, ...(view.filters ?? [])],
+                },
+                signal,
+            )
+        ).total,
+});
+
 
 /** Counts use the fixed relation scope plus the view query, independent of user chips/paging. */
 export function CollectionViews({
@@ -29,35 +60,7 @@ export function CollectionViews({
     onChange: (view: string) => void;
 }) {
     const counts = useQueries({
-        queries: views.map((view) => ({
-            queryKey: [
-                "resources",
-                resource.name,
-                "view-count",
-                view.id,
-                fixedFilters,
-                view.filters,
-                view.query,
-            ],
-            enabled: !!view.count,
-            staleTime: 30_000,
-            queryFn: async ({ signal }: { signal: AbortSignal }) =>
-                (
-                    await dataProvider.list(
-                        {
-                            ...resource,
-                            includes: undefined,
-                            aggregates: undefined,
-                        },
-                        {
-                            limit: 10,
-                            query: view.query,
-                            filters: [...fixedFilters, ...(view.filters ?? [])],
-                        },
-                        signal,
-                    )
-                ).total,
-        })),
+        queries: views.map((view) => viewCountQuery(resource, view, fixedFilters)),
     });
     return (
         <Tabs

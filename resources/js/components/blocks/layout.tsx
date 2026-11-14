@@ -17,22 +17,31 @@ import {
     CommandList,
 } from "@/components/ui/command";
 import { PersonAvatar } from "./people-avatar";
-import { can } from "@/framework/permissions";
 import type { ResourceDefinition } from "@/framework/types";
+import {
+    defaultNavigation,
+    flattenNavigation,
+    navigationPath,
+    resolveNavigation,
+    type NavigationItem,
+} from "@/framework/navigation/sidebar-model";
+import {
+    SidebarNavigation,
+    useSidebarExpansion,
+} from "@/framework/navigation/sidebar";
 import { cn } from "@/lib/utils";
 import {
     ChevronRight,
-    House,
     LogOut,
     Menu,
     PanelLeftClose,
     PanelLeftOpen,
     Shapes,
 } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
 
-/** Header-first workspace shell; real navigation only, with no demo environment/status controls. */
+/** Header-first REUI workspace shell. All navigation surfaces share one resolved tree. */
 export function AppShell({
     resources,
     user,
@@ -40,42 +49,51 @@ export function AppShell({
     children,
 }: {
     resources: ResourceDefinition[];
-    user: { name: string; email: string };
+    user: { id?: number; name: string; email: string };
     onLogout: () => void;
     children: ReactNode;
 }) {
     const [mobile, setMobile] = useState(false);
-    const [compact, setCompact] = useState(false);
+    const [compact, setCompact] = useState(() => {
+        try {
+            return window.localStorage.getItem("nexthv.sidebar.compact") === "1";
+        } catch {
+            return false;
+        }
+    });
     const [search, setSearch] = useState(false);
     const location = useLocation();
     const scrollArea = useRef<HTMLElement>(null);
     const navigate = useNavigate();
-    const visible = resources.filter(
-        (resource) =>
-            resource.navigation !== false && can(resource.name, "list"),
+    const navigationItems = useMemo(
+        () => resolveNavigation(defaultNavigation(resources), resources, user),
+        [resources, user.id, user.name, user.email],
     );
+    const controls = useSidebarExpansion(navigationItems, user.id);
+    const trail = navigationPath(navigationItems, location.pathname, location.search);
+    const leaf = trail.at(-1);
     const current = resources.find(
         (resource) =>
             location.pathname === `/${resource.name}` ||
             location.pathname.startsWith(`/${resource.name}/`),
     );
-    const groups = Array.from(
-        new Set(
-            visible.map((resource) => resource.navigationGroup ?? "Verwaltung"),
-        ),
-    );
     const collection = resources.some(
         (resource) => location.pathname === `/${resource.name}`,
     );
-    const currentTitle =
-        current?.label ??
-        (location.pathname === "/components" ? "Komponenten" : "Übersicht");
+    const currentTitle = current
+        ? leaf?.view ? `${current.label} · ${leaf.label}` : current.label
+        : location.pathname === "/components" ? "Komponenten" : "Übersicht";
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem("nexthv.sidebar.compact", compact ? "1" : "0");
+        } catch {
+            // Optional workspace preference.
+        }
+    }, [compact]);
     useEffect(() => {
         const shortcut = (event: KeyboardEvent) => {
-            if (
-                (event.metaKey || event.ctrlKey) &&
-                event.key.toLowerCase() === "k"
-            ) {
+            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
                 event.preventDefault();
                 setSearch((open) => !open);
             }
@@ -91,84 +109,15 @@ export function AppShell({
         setMobile(false);
         navigate(path);
     };
-    const navigation = (rail: boolean) => (
+    const sidebar = (rail: boolean) => (
         <>
-            <nav
-                aria-label="Hauptnavigation"
-                className={cn(
-                    "min-h-0 flex-1 overflow-y-auto px-3 pt-3",
-                    rail && "px-2",
-                )}
-            >
-                {!rail && (
-                    <p className="px-2.5 pb-2 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Arbeitsbereich
-                    </p>
-                )}
-                <NavLink
-                    to="/"
-                    end
-                    onClick={() => setMobile(false)}
-                    title={rail ? "Übersicht" : undefined}
-                    aria-label={rail ? "Übersicht" : undefined}
-                    className={({ isActive }) =>
-                        cn(
-                            "nav-item",
-                            rail && "justify-center px-0",
-                            isActive && "nav-item-active",
-                        )
-                    }
-                >
-                    <House size={16} /> {!rail && "Übersicht"}
-                </NavLink>
-                {groups.map((group) => {
-                    const links = visible
-                        .filter(
-                            (resource) =>
-                                (resource.navigationGroup ?? "Verwaltung") ===
-                                group,
-                        )
-                        .map((resource) => (
-                            <NavLink
-                                key={resource.name}
-                                to={`/${resource.name}`}
-                                onClick={() => setMobile(false)}
-                                title={rail ? resource.label : undefined}
-                                aria-label={rail ? resource.label : undefined}
-                                className={({ isActive }) =>
-                                    cn(
-                                        "nav-item",
-                                        rail && "justify-center px-0",
-                                        isActive && "nav-item-active",
-                                    )
-                                }
-                            >
-                                <resource.icon size={16} />{" "}
-                                {!rail && (
-                                    <span className="truncate">
-                                        {resource.label}
-                                    </span>
-                                )}
-                            </NavLink>
-                        ));
-                    return rail ? (
-                        <div
-                            key={group}
-                            className="mt-3 space-y-1 border-t pt-3"
-                        >
-                            {links}
-                        </div>
-                    ) : (
-                        <details key={group} open className="group pt-5">
-                            <summary className="flex cursor-pointer list-none items-center justify-between px-2.5 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                {group}
-                                <ChevronRight className="size-3 transition-transform group-open:rotate-90" />
-                            </summary>
-                            <div className="space-y-0.5">{links}</div>
-                        </details>
-                    );
-                })}
-            </nav>
+            <SidebarNavigation
+                items={navigationItems}
+                rail={rail}
+                controls={controls}
+                onNavigate={() => setMobile(false)}
+                onExpandRail={() => setCompact(false)}
+            />
             <div className={cn("space-y-3 border-t p-3", rail && "px-2")}>
                 <NavLink
                     to="/components"
@@ -177,7 +126,7 @@ export function AppShell({
                     aria-label={rail ? "Komponenten" : undefined}
                     className={({ isActive }) =>
                         cn(
-                            "nav-item",
+                            "nav-item focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                             rail && "justify-center px-0",
                             isActive && "nav-item-active",
                         )
@@ -194,12 +143,8 @@ export function AppShell({
                     <PersonAvatar person={{ id: "me", name: user.name }} />
                     {!rail && (
                         <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-medium">
-                                {user.name}
-                            </p>
-                            <p className="truncate text-[10px] text-muted-foreground">
-                                {user.email}
-                            </p>
+                            <p className="truncate text-xs font-medium">{user.name}</p>
+                            <p className="truncate text-[10px] text-muted-foreground">{user.email}</p>
                         </div>
                     )}
                     <Button
@@ -215,6 +160,10 @@ export function AppShell({
             </div>
         </>
     );
+    const commandEntries = (section: NavigationItem) => [
+        ...(section.to ? [section] : []),
+        ...flattenNavigation(section.children),
+    ].filter((item) => item.to && !item.disabledReason);
     return (
         <div
             data-slot="app-shell"
@@ -224,7 +173,7 @@ export function AppShell({
                 data-slot="shell-header"
                 className="z-20 flex h-14 shrink-0 items-center gap-3 border-b bg-card px-4 lg:px-5"
             >
-                <div className="flex shrink-0 items-center gap-3 lg:w-48">
+                <div className="flex shrink-0 items-center gap-3 lg:w-60">
                     <Button
                         variant="ghost"
                         size="icon-sm"
@@ -247,16 +196,22 @@ export function AppShell({
                     </Button>
                 </div>
                 <span className="hidden h-5 border-l sm:block" aria-hidden />
-                <nav
-                    aria-label="Seitenpfad"
-                    className="flex min-w-0 items-center gap-2 text-xs"
-                >
-                    <Link
-                        to="/"
-                        className="hidden text-muted-foreground hover:text-foreground md:inline"
-                    >
+                <nav aria-label="Seitenpfad" className="flex min-w-0 items-center gap-2 text-xs">
+                    <Link to="/" className="hidden text-muted-foreground hover:text-foreground md:inline">
                         Arbeitsbereich
                     </Link>
+                    {trail.slice(0, -1).map((item) => (
+                        <span key={item.id} className="hidden min-w-0 items-center gap-2 md:inline-flex">
+                            <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
+                            {item.to ? (
+                                <Link to={item.to} className="truncate text-muted-foreground hover:text-foreground">
+                                    {item.label}
+                                </Link>
+                            ) : (
+                                <span className="truncate text-muted-foreground">{item.label}</span>
+                            )}
+                        </span>
+                    ))}
                     <ChevronRight className="hidden size-3 text-muted-foreground md:block" />
                     <span className="truncate font-medium" aria-current="page">
                         {currentTitle}
@@ -267,24 +222,19 @@ export function AppShell({
                 <aside
                     className={cn(
                         "hidden shrink-0 flex-col border-r bg-sidebar lg:flex",
-                        compact ? "w-16" : "w-56",
+                        compact ? "w-16" : "w-72",
                     )}
                 >
-                    {navigation(compact)}
+                    {sidebar(compact)}
                 </aside>
                 <Sheet open={mobile} onOpenChange={setMobile}>
-                    <SheetContent
-                        side="left"
-                        className="w-64 gap-0 bg-sidebar p-0"
-                    >
-                        <div className="px-5 py-5">
-                            <Brand />
-                        </div>
+                    <SheetContent side="left" className="w-72 gap-0 bg-sidebar p-0">
+                        <div className="px-5 py-5"><Brand /></div>
                         <SheetTitle className="sr-only">Navigation</SheetTitle>
                         <SheetDescription className="sr-only">
                             Bereiche deiner Hausverwaltung öffnen.
                         </SheetDescription>
-                        {navigation(false)}
+                        {sidebar(false)}
                     </SheetContent>
                 </Sheet>
                 <main
@@ -307,30 +257,26 @@ export function AppShell({
                     <CommandInput placeholder="Objekte, Verträge, Geschäftspartner …" />
                     <CommandList>
                         <CommandEmpty>Kein Bereich gefunden.</CommandEmpty>
-                        <CommandGroup heading="Arbeitsbereich">
-                            <CommandItem onSelect={() => go("/")}>
-                                <House /> Übersicht
-                            </CommandItem>
-                        </CommandGroup>
-                        {groups.map((group) => (
-                            <CommandGroup key={group} heading={group}>
-                                {visible
-                                    .filter(
-                                        (resource) =>
-                                            (resource.navigationGroup ??
-                                                "Verwaltung") === group,
-                                    )
-                                    .map((resource) => (
+                        {navigationItems.map((section) => (
+                            <CommandGroup
+                                key={section.id}
+                                heading={section.to ? "Arbeitsbereich" : section.label}
+                            >
+                                {commandEntries(section).map((item) => {
+                                    const Icon = item.icon;
+                                    return (
                                         <CommandItem
-                                            key={resource.name}
-                                            onSelect={() =>
-                                                go(`/${resource.name}`)
-                                            }
+                                            key={item.id}
+                                            value={`${item.resource?.label ?? ""} ${item.label} ${item.description ?? ""}`}
+                                            onSelect={() => go(item.to!)}
                                         >
-                                            <resource.icon />
-                                            {resource.label}
+                                            {Icon && <Icon />}
+                                            {item.resource && item.label !== item.resource.label
+                                                ? `${item.resource.label} · ${item.label}`
+                                                : item.label}
                                         </CommandItem>
-                                    ))}
+                                    );
+                                })}
                             </CommandGroup>
                         ))}
                     </CommandList>
@@ -339,7 +285,7 @@ export function AppShell({
         </div>
     );
 }
-/** Width, page padding and viewport allocation belong to one parent, never to individual tabs. */
+
 export function PageWrapper({
     children,
     mode = "page",
