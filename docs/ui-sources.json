@@ -211,5 +211,15 @@
         "source": "OpenAI image generation",
         "note": "Generiertes Architekturfoto, lokal als WebP eingebunden. Keine Personen oder reale verwaltete Immobilie.",
         "prompt": "Premium editorial photoreal contemporary German residential courtyard, pale limestone and light grey stucco, large windows and balconies, tree and landscaping, soft early morning light, calm center for a white login card, neutral slate and warm light, no people, cars, text or logos."
+    },
+    {
+        "file": "resources/js/components/blocks/metric-card.tsx",
+        "source": "https://reui.io/blocks/application/stats/stats-1",
+        "note": "Öffentliche Stats-Overview-Vorschau visuell geprüft. Eigene Komposition auf vorhandenem REUI Frame; Pro-Quellcode war lizenzgesperrt und wurde nicht kopiert."
+    },
+    {
+        "file": "resources/js/components/blocks/responsive-tab-list.tsx",
+        "source": "https://reui.io/blocks/application/navbar/navbar-1",
+        "note": "Öffentliche Project-Workspace-Vorschau visuell geprüft. Line-Tabs mit eigener responsiver Überlauflogik auf Base UI; kein Import des gesperrten Pro-Blocks."
     }
 ]

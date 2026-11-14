@@ -1,5 +1,5 @@
-import { KeyValueRows } from "./key-value-rows";
 import { Cell } from "./cell";
+import { KeyValueRows } from "./key-value-rows";
 import {
     Alert,
     AlertTitle,
@@ -9,18 +9,16 @@ import {
 import { ApiError } from "@/framework/data/http";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    MetricCard,
+    MetricCardGrid,
+    type MetricCardProps,
+} from "./metric-card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { label } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import {
-    ArrowUpRight,
-    Building2,
-    Inbox,
-    RefreshCw,
-    TriangleAlert,
-} from "lucide-react";
+import { Building2, Inbox, RefreshCw, TriangleAlert } from "lucide-react";
 import { useState, type ReactNode } from "react";
 export { ContentCard as SectionCard } from "./content-card";
 export function StatusBadge({
@@ -124,55 +122,17 @@ export function ErrorState({
 
 export function MetricGrid({
     items,
-    compact = false,
 }: {
+    /** Kept for existing callers; cards now size to their container without clipping. */
     compact?: boolean;
-    items: { label: string; value: string; hint?: string; accent?: boolean }[];
+    items: MetricCardProps[];
 }) {
     return (
-        <div
-            className={cn(
-                "grid gap-4 sm:grid-cols-2 xl:grid-cols-4",
-                compact && "max-h-44 overflow-y-auto sm:max-h-none",
-            )}
-        >
+        <MetricCardGrid>
             {items.map((item) => (
-                <Card
-                    key={item.label}
-                    className={cn(
-                        compact ? "gap-1 py-3" : "gap-2",
-                        item.accent && "border-primary/20 bg-primary/5",
-                    )}
-                >
-                    <CardContent>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            {item.label}
-                            <ArrowUpRight
-                                className={
-                                    item.accent
-                                        ? "text-primary"
-                                        : "text-muted-foreground/50"
-                                }
-                                size={15}
-                            />
-                        </div>
-                        <div
-                            className={cn(
-                                "font-semibold tracking-tight tabular-nums",
-                                compact ? "mt-1 text-xl" : "mt-3 text-[28px]",
-                            )}
-                        >
-                            {item.value}
-                        </div>
-                        {item.hint && (
-                            <p className="mt-2 text-[11px] text-muted-foreground">
-                                {item.hint}
-                            </p>
-                        )}
-                    </CardContent>
-                </Card>
+                <MetricCard key={item.label} {...item} />
             ))}
-        </div>
+        </MetricCardGrid>
     );
 }
 export function DetailList({

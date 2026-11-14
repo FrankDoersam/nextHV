@@ -233,6 +233,7 @@ export const contracts: ResourceDefinition = {
             resource: "contract-parties",
             countRelation: "parties",
             label: "Vertragsbeteiligte",
+            navigationLabel: "Beteiligte",
             field: "contract_id",
             collection: {
                 pagination: false,
@@ -298,6 +299,7 @@ export const contracts: ResourceDefinition = {
             resource: "contract-links",
             countRelation: "links",
             label: "Verknüpfte Verträge",
+            navigationLabel: "Verknüpfungen",
             field: "contract_id",
             collection: {
                 pagination: false,
