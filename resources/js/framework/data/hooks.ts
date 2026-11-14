@@ -6,7 +6,7 @@ import type { ResourceDefinition } from "../types";
 import { dataProvider, type ListParams } from "./provider";
 import { resolveDataProvider } from "./provider-registry";
 import type { TableQueryOptions } from "../tables/table-contract";
-import { resourceKey } from "./resource-key";
+import { resourceKey, resourceListParams } from "./resource-key";
 export { resourceKey } from "./resource-key";
 export function useResourceList(
     resource: ResourceDefinition,
@@ -17,6 +17,7 @@ export function useResourceList(
     queryOptions?: TableQueryOptions,
 ) {
     const provider = resolveDataProvider(resource);
+    params = resourceListParams(resource, params);
     return useQuery({
         ...(staleTime === undefined ? {} : { staleTime }),
         ...(queryOptions ?? {}),
@@ -25,8 +26,10 @@ export function useResourceList(
         queryFn: ({ signal }) => provider.list(resource, params, signal),
         placeholderData: retainPrevious
             ? (previous, query) =>
-                  query?.queryKey.slice(0, -2).join(".") === resourceKey(resource).join(".")
-                      ? previous : undefined
+                  query?.queryKey.slice(0, -2).join(".") ===
+                  resourceKey(resource).join(".")
+                      ? previous
+                      : undefined
             : undefined,
     });
 }
@@ -55,14 +58,15 @@ export function useCollectionSummary(
 export function useResource(resource: ResourceDefinition, id: number) {
     return useQuery({
         queryKey: [...resourceKey(resource), "detail", id],
-        queryFn: () => resolveDataProvider(resource).one(resource, id),
+        queryFn: ({ signal }) =>
+            resolveDataProvider(resource).one(resource, id, signal),
         enabled: Number.isFinite(id) && id > 0,
     });
 }
 export function useOverview(id?: number) {
     return useQuery({
         queryKey: ["overview", id],
-        queryFn: () => dataProvider.overview(id),
+        queryFn: ({ signal }) => dataProvider.overview(id, signal),
     });
 }
 export function useReload() {
@@ -90,9 +94,17 @@ export function useSaveRecord(resource: ResourceDefinition) {
         values: import("../types").Values,
         previous?: import("../types").RecordData,
     ) => {
-        const saved = await resolveDataProvider(resource).save(resource, values, previous);
+        const saved = await resolveDataProvider(resource).save(
+            resource,
+            values,
+            previous,
+        );
         await client.cancelQueries({ queryKey: resourceKey(resource) });
         patchRecord(client, resource, saved);
+        await client.invalidateQueries({
+            queryKey: [...resourceKey(resource), "infinite"],
+            refetchType: previous ? "none" : "active",
+        });
         if (previous) {
             // Preserve the current viewport/order. Re-evaluate server sort/filter on next visit or explicit refresh.
             await client.invalidateQueries({
@@ -111,7 +123,7 @@ export function useSaveRecord(resource: ResourceDefinition) {
             queryKey: [...resourceKey(resource), "groups"],
         });
         // Recount only cached foreign-key parents (e.g. contract after adding a condition).
-        const countResources = new Set([resource.name]);
+        const countResources = new Map([[resource.name, resource]]);
         const parents = new Map<
             string,
             { resource: ResourceDefinition; id: number }
@@ -123,9 +135,11 @@ export function useSaveRecord(resource: ResourceDefinition) {
                 previous?.[field.name],
             ])) {
                 if (typeof id !== "number" || id <= 0) continue;
-                countResources.add(field.resource);
+                countResources.set(field.resource, getResource(field.resource));
                 const cached = client
-                    .getQueriesData({ queryKey: resourceKey(getResource(field.resource)) })
+                    .getQueriesData({
+                        queryKey: resourceKey(getResource(field.resource)),
+                    })
                     .some(([, value]) => {
                         const entry = value as
                             | { id?: number; data?: { id: number }[] }
@@ -145,19 +159,15 @@ export function useSaveRecord(resource: ResourceDefinition) {
         await Promise.all(
             [...parents.values()].map(async (parent) => {
                 try {
-                    const refreshed = await resolveDataProvider(parent.resource).one(
+                    const refreshed = await resolveDataProvider(
                         parent.resource,
-                        parent.id,
-                    );
+                    ).one(parent.resource, parent.id);
                     await client.cancelQueries({
                         queryKey: resourceKey(parent.resource),
                     });
                     patchRecord(client, parent.resource, refreshed);
                     await client.invalidateQueries({
-                        queryKey: [
-                            ...resourceKey(parent.resource),
-                            "metric",
-                        ],
+                        queryKey: [...resourceKey(parent.resource), "metric"],
                     });
                     await client.invalidateQueries({
                         queryKey: [...resourceKey(parent.resource), "groups"],
@@ -173,9 +183,9 @@ export function useSaveRecord(resource: ResourceDefinition) {
         );
         // Tab counts can change independently of visible rows; refresh only these cheap queries.
         await Promise.all(
-            [...countResources].map((name) =>
+            [...countResources.values()].map((definition) =>
                 client.invalidateQueries({
-                    queryKey: [...resourceKey(name), "view-count"],
+                    queryKey: [...resourceKey(definition), "view-count"],
                 }),
             ),
         );

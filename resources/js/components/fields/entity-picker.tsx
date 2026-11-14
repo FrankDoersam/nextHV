@@ -1,8 +1,9 @@
+import { usePermissionRevision } from "@/framework/permissions";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDebounced, useResourceList } from "@/framework/data/hooks";
-import { dataProvider } from "@/framework/data/provider";
+import { resolveDataProvider } from "@/framework/data/provider-registry";
 import { recordValue } from "@/framework/tables/cell-value";
 import { can } from "@/framework/permissions";
 import type { Filter, RecordData } from "@/framework/types";
@@ -45,6 +46,7 @@ export function RelationPicker({
     maxSelected = 100,
     ...props
 }: EntityPickerProps) {
+    usePermissionRevision();
     const resource = getResource(name);
     maxSelected = Math.min(100, Math.max(1, maxSelected));
     const workbench = useWorkbench();
@@ -178,16 +180,15 @@ export function RelationPicker({
                                 reduced: true,
                                 presentation: "dialog",
                                 onSaved: async (row) => {
-                                    const matching = await dataProvider.list(
+                                    const matching = await resolveDataProvider(
                                         resource,
-                                        {
-                                            limit: 10,
-                                            filters: [
-                                                ...filters,
-                                                { field: "id", value: row.id },
-                                            ],
-                                        },
-                                    );
+                                    ).list(resource, {
+                                        limit: 10,
+                                        filters: [
+                                            ...filters,
+                                            { field: "id", value: row.id },
+                                        ],
+                                    });
                                     if (!matching.data.length) {
                                         setCreationError(
                                             "Der neue Datensatz entspricht nicht dem Auswahlfilter und wurde nicht ausgewählt.",

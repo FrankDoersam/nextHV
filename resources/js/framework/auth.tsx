@@ -1,3 +1,4 @@
+import { invalidatePermissions } from "./permissions";
 import { clearResourceSchemaCache } from "./data/resource-schema";
 import { AuthScreen } from "@/components/blocks/auth-screen";
 import { ErrorState, Loading } from "@/components/blocks/content";
@@ -6,6 +7,7 @@ import {
     createContext,
     useContext,
     useEffect,
+    useRef,
     useState,
     type ReactNode,
 } from "react";
@@ -29,28 +31,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<unknown>();
     const client = useQueryClient();
+    const pendingLoad = useRef<AbortController | undefined>(undefined);
+    const cancelLoad = () => {
+        pendingLoad.current?.abort();
+        pendingLoad.current = undefined;
+    };
     const load = async () => {
+        cancelLoad();
+        const controller = new AbortController();
+        pendingLoad.current = controller;
         setError(undefined);
         setLoading(true);
         try {
             await csrf();
-            const r = await request<{ data: Identity }>("/auth/user");
-            setUser(r.data);
+            if (controller.signal.aborted) return;
+            const r = await request<{ data: Identity }>(
+                "/auth/user",
+                undefined,
+                "GET",
+                controller.signal,
+            );
+            if (pendingLoad.current === controller) setUser(r.data);
         } catch (e) {
-            if (!(e instanceof ApiError && e.status === 401)) setError(e);
+            if (
+                !controller.signal.aborted &&
+                !(e instanceof ApiError && e.status === 401)
+            )
+                setError(e);
         } finally {
-            setLoading(false);
+            if (pendingLoad.current === controller) {
+                pendingLoad.current = undefined;
+                setLoading(false);
+            }
         }
     };
     useEffect(() => {
         void load();
         const expire = () => {
+            cancelLoad();
+            setLoading(false);
+            setError(undefined);
             setUser(null);
             clearResourceSchemaCache();
+            invalidatePermissions();
             client.clear();
         };
         window.addEventListener("auth:expired", expire);
-        return () => window.removeEventListener("auth:expired", expire);
+        return () => {
+            cancelLoad();
+            window.removeEventListener("auth:expired", expire);
+        };
     }, []);
     const login = async (
         email: string,
@@ -63,14 +93,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             password,
             remember,
         });
+        cancelLoad();
         clearResourceSchemaCache();
+        invalidatePermissions();
         setUser(r.data);
         client.clear();
     };
     const logout = async () => {
         await request("/auth/logout", {});
+        cancelLoad();
         setUser(null);
         clearResourceSchemaCache();
+        invalidatePermissions();
         client.clear();
     };
     if (loading)

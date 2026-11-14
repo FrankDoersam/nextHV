@@ -1,3 +1,4 @@
+import { usePermissionRevision } from "../permissions";
 import { useQueryClient } from "@tanstack/react-query";
 import { patchRecord } from "../data/record-cache";
 import { useEffect, useState, type ReactNode } from "react";
@@ -9,7 +10,8 @@ import { CheckboxList } from "@/components/fields/checkbox-list";
 import { ErrorState } from "@/components/blocks/content";
 import { can } from "../permissions";
 import { useSaveRecord } from "../data/hooks";
-import { dataProvider, normalizeValidationErrors } from "../data/provider";
+import { normalizeValidationErrors } from "../data/provider";
+import { resolveDataProvider } from "../data/provider-registry";
 import { ApiError } from "../data/http";
 import type {
     FieldDefinition,
@@ -36,6 +38,7 @@ export function EditableKeyValueList({
     record: RecordData;
     properties: (string | KeyValueProperty)[];
 }) {
+    usePermissionRevision();
     const [editing, setEditing] = useState<string>();
     const [current, setCurrent] = useState(record);
     useEffect(() => {
@@ -122,6 +125,7 @@ function PropertyEditor({
         defaultValues: initialValues(resource.fields, snapshot),
         mode: "onBlur",
     });
+    usePermissionRevision();
     const save = useSaveRecord(resource);
     const busy = form.formState.isSubmitting;
     return (
@@ -167,10 +171,9 @@ function PropertyEditor({
                             disabled={busy}
                             onClick={async () => {
                                 try {
-                                    const latest = await dataProvider.one(
+                                    const latest = await resolveDataProvider(
                                         resource,
-                                        record.id,
-                                    );
+                                    ).one(resource, record.id);
                                     patchRecord(client, resource.name, latest);
                                     onSaved(latest);
                                 } catch (e) {
@@ -212,6 +215,7 @@ export function BooleanPropertyList({
     names: string[];
     layout?: "list" | "cards";
 }) {
+    usePermissionRevision();
     const save = useSaveRecord(resource);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<unknown>();

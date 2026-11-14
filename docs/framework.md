@@ -39,7 +39,7 @@ Der wiederholbare Seeder erzeugt auf leerer Datenbank 10 Objekte mit je 5 Einhei
 | REST-Schema           | `app/Rest/Resources`                                                             | Felder, Regeln, Relationen, Versionen, Actions, berechnete Werte                                                                    |
 | UI-Metadaten          | `app/Rest/Ui`, `config/ui.php`, `resources/js/framework/data/resource-schema.ts` | Native REST-Details erweitern und UI-Registry ergänzen: Optionswerte, Relationsziele, Picker-Scopes, Operatoren und Eingabehinweise |
 | REST-Actions          | `app/Rest/Actions`                                                               | Autorisierung, Einzel-/Bulk-Ziel, Bestätigung, Übergabe an Fachaktionen, Ergebnisvertrag                                            |
-| Zusätzliche Endpunkte | `app/Http/Controllers`                                                           | Login, private Dokumente, Clone-Defaults, PDF-Abruf                                                                |
+| Zusätzliche Endpunkte | `app/Http/Controllers`                                                           | Login, private Dokumente, Clone-Defaults, PDF-Abruf                                                                                 |
 | UI-Primitives         | `resources/js/components/ui`                                                     | Offizielle Base-UI-/shadcn-Bausteine                                                                                                |
 | REUI                  | `resources/js/components/reui`                                                   | Öffentliche REUI-Quellen, einschließlich DataGrid, Stepper, TimePicker, NumberField und Alert                                       |
 | App-Blöcke            | `resources/js/components/blocks`                                                 | AppShell, Cards, Listen, KPIs, Overlay, Layout, Auth, LazyTabs                                                                      |
@@ -812,18 +812,18 @@ Das Theme verwendet Blau für Primäraktionen, Fokus, aktive Navigation und Diag
 
 Maßstab: Eine Domain-Action bleibt bestehen, wenn sie eine benannte fachliche Operation, Transaktion oder wiederverwendete Invariante kapselt. Reine HTTP-Autorisierung, Feldnamenübersetzung und Antwortformatierung gehören an die REST-Grenze. Eine Klasse pro CRUD-Methode ohne zusätzliche Fachlichkeit ist hier nicht nötig; diese Aufgaben übernimmt Lomkit bereits.
 
-| Klasse                  | Entscheidung und Begründung                                                                                                                                                                                                 |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ActivateContract`      | Behalten. Aktivierung verlangt Entwurf, Mieter und Anfangskondition; Transaktion und gesperrter Vertrag bilden eine fachliche Zustandsänderung.                                                                             |
-| `ConfirmTermination`    | Behalten. Kündigung und Vertrag werden gemeinsam geändert; nachgelagerte Konditionen blockieren den Abschluss. Das ist keine generische Statusänderung.                                                                     |
-| `ValidateContract`      | Behalten. Mindestlaufzeit, Enddatum und Überschneidungen gehören zur Vermietungsdomäne. Gemeinsamer Aufruf über den Observer sichert verschiedene Schreibwege.                                                              |
-| `ValidateUnit`          | Behalten und als einzige fachliche Prüfung nutzen. Aktives Objekt, Nummer im Objekt und Verschiebesperre bei Vertragshistorie gelten auch beim Klonen. Die doppelte Nummernprüfung in der REST-Clone-Action wurde entfernt. |
-| `CloneProperty`         | Behalten. Transaktion, Prüftermin-Reset und optionales Kopieren physischer Einheiten sind fachliche Kopierregeln. `CloneUnit` wird explizit per Konstruktor injiziert.                                                      |
-| `CloneUnit`             | Behalten. Physische Stammdaten kopieren, Zustand `ready`, keine Verträge oder Mieterdaten übernehmen. Derselbe Ablauf wird separat und beim Objekt-Klon verwendet.                                                          |
-| `CloneDefaults`         | Behalten. Nummer, Kopiebezeichnung und `with_units` sind gemeinsame Produktvorgaben für Vorbelegung und Ausführung. Ein Modell-agnostischer Generator wäre derzeit nur zusätzliche Indirektion.                             |
-| `PropertyObserver` | Prüft Status und vorhandene Einheiten direkt beim Löschen. Die separate Vorprüfung wurde entfernt; native REST-Transaktionen sichern Mehrfachlöschungen ab. |
-| `CalculateOverview`     | Behalten. Stichtag, laufende Verträge und wirksame Konditionen definieren Kennzahlen. Metric und PDF nutzen dieselbe Berechnung.                                                                                            |
-| `BuildPropertyReport`   | Behalten. Ein konkreter fachlicher Bericht, kein zweites CRUD-System. Ein generisches PDF-Templating-Framework wäre erst bei mehreren wiederholten Berichtlayouts sinnvoll.                                                 |
+| Klasse                | Entscheidung und Begründung                                                                                                                                                                                                 |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ActivateContract`    | Behalten. Aktivierung verlangt Entwurf, Mieter und Anfangskondition; Transaktion und gesperrter Vertrag bilden eine fachliche Zustandsänderung.                                                                             |
+| `ConfirmTermination`  | Behalten. Kündigung und Vertrag werden gemeinsam geändert; nachgelagerte Konditionen blockieren den Abschluss. Das ist keine generische Statusänderung.                                                                     |
+| `ValidateContract`    | Behalten. Mindestlaufzeit, Enddatum und Überschneidungen gehören zur Vermietungsdomäne. Gemeinsamer Aufruf über den Observer sichert verschiedene Schreibwege.                                                              |
+| `ValidateUnit`        | Behalten und als einzige fachliche Prüfung nutzen. Aktives Objekt, Nummer im Objekt und Verschiebesperre bei Vertragshistorie gelten auch beim Klonen. Die doppelte Nummernprüfung in der REST-Clone-Action wurde entfernt. |
+| `CloneProperty`       | Behalten. Transaktion, Prüftermin-Reset und optionales Kopieren physischer Einheiten sind fachliche Kopierregeln. `CloneUnit` wird explizit per Konstruktor injiziert.                                                      |
+| `CloneUnit`           | Behalten. Physische Stammdaten kopieren, Zustand `ready`, keine Verträge oder Mieterdaten übernehmen. Derselbe Ablauf wird separat und beim Objekt-Klon verwendet.                                                          |
+| `CloneDefaults`       | Behalten. Nummer, Kopiebezeichnung und `with_units` sind gemeinsame Produktvorgaben für Vorbelegung und Ausführung. Ein Modell-agnostischer Generator wäre derzeit nur zusätzliche Indirektion.                             |
+| `PropertyObserver`    | Prüft Status und vorhandene Einheiten direkt beim Löschen. Die separate Vorprüfung wurde entfernt; native REST-Transaktionen sichern Mehrfachlöschungen ab.                                                                 |
+| `CalculateOverview`   | Behalten. Stichtag, laufende Verträge und wirksame Konditionen definieren Kennzahlen. Metric und PDF nutzen dieselbe Berechnung.                                                                                            |
+| `BuildPropertyReport` | Behalten. Ein konkreter fachlicher Bericht, kein zweites CRUD-System. Ein generisches PDF-Templating-Framework wäre erst bei mehreren wiederholten Berichtlayouts sinnvoll.                                                 |
 
 Die fünf Property-Enums (`PropertyStatus`, `PropertyType`, `UnitStatus`, `UnitType`, `ManagementType`) begrenzen fachliche Werte und werden von Eloquent/REST wiederverwendet. Vertragszustände bleiben native `in:`-Regeln. Der Details-Adapter liest beide Varianten und versorgt das Frontend mit denselben Werten; dafür sind weder zusätzliche Domain-Enums noch ein neues Enum-Framework erforderlich.
 
@@ -878,21 +878,21 @@ Vorhandenseinsregeln (`required`, `filled`, `present`) werden vor Typprüfungen 
 
 ## 27. Eine Action-API für Feld, Formular, Detail, Tabelle und Auswahl
 
-| API                               | Bedeutung                                                                                                                                                                                     |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `placements`                      | Exakte Oberflächen: `field`, `form`, `detail`, `row`, `table`, `bulk`. Ohne Angabe gilt die bisherige `location`-Kompatibilität; Feld- und Tabellenaktionen sind ausdrücklich zu deklarieren. |
-| `icon`, `label`, `description`    | Gemeinsame Beschriftung, Symbol und Hilfstext. Symbolbuttons besitzen einen zugänglichen Namen.                                                                                               |
-| `group`                           | Beschriftete Menügruppen mit Trennlinien.                                                                                                                                                     |
-| `children` / `ActionGroup`        | Rekursive Untermenüs; Gruppen werden nicht als Fachaktion ausgeführt. Kindaktionen werden separat auf Sichtbarkeit, Auswahl und Freigabe geprüft.                                             |
-| `visible(row)`                    | Sichtbarkeit pro Datensatz; bei Mehrfachauswahl müssen alle Zeilen erlaubt sein.                                                                                                              |
-| `enabled(context)`                | `true`, `false` oder deaktivierter Grund als Text. UI und Dispatcher prüfen die Freigabe; eine direkte `runAction`-Ausführung umgeht sie nicht.                                               |
-| `bulk`                            | Mehrere Datensätze erlaubt. Bei `false` blockiert auch der Dispatcher mehrere IDs.                                                                                                            |
-| `requiresRecord`                  | Standard `true`; `false` erlaubt Aktionen am ungespeicherten Formular bzw. ohne Zeilenauswahl.                                                                                                |
-| `interaction`                     | `dialog` mit Vorbereitung/Bestätigung oder `immediate`. Auch direkte Aktionen verwenden Fehlerbehandlung und denselben Ergebnis-Dispatcher.                                                   |
-| `refresh`                         | Standard `true`; `false` für reine Formularaktionen oder Aktionen mit eigener Zeilenprojektion.                                                                                               |
-| `fieldsFor(context)`              | Dynamische Action-Felder, etwa die vom Resource-Schema freigegebenen Bulk-Felder.                                                                                                             |
-| `prepare(context)`                | Optional: asynchrone Defaults, etwa für Duplizieren. Ohne Implementierung findet keine Vorbereitung statt.                                                                                                                                         |
-| `execute(context)` | Zugriff auf echte Zeilen, Instanz und Eingaben; Rückgabe entsprechend `ActionUIResult` bzw. dem REST-Ergebnisvertrag.                                                                         |
+| API                            | Bedeutung                                                                                                                                                                                     |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `placements`                   | Exakte Oberflächen: `field`, `form`, `detail`, `row`, `table`, `bulk`. Ohne Angabe gilt die bisherige `location`-Kompatibilität; Feld- und Tabellenaktionen sind ausdrücklich zu deklarieren. |
+| `icon`, `label`, `description` | Gemeinsame Beschriftung, Symbol und Hilfstext. Symbolbuttons besitzen einen zugänglichen Namen.                                                                                               |
+| `group`                        | Beschriftete Menügruppen mit Trennlinien.                                                                                                                                                     |
+| `children` / `ActionGroup`     | Rekursive Untermenüs; Gruppen werden nicht als Fachaktion ausgeführt. Kindaktionen werden separat auf Sichtbarkeit, Auswahl und Freigabe geprüft.                                             |
+| `visible(row)`                 | Sichtbarkeit pro Datensatz; bei Mehrfachauswahl müssen alle Zeilen erlaubt sein.                                                                                                              |
+| `enabled(context)`             | `true`, `false` oder deaktivierter Grund als Text. UI und Dispatcher prüfen die Freigabe; eine direkte `runAction`-Ausführung umgeht sie nicht.                                               |
+| `bulk`                         | Mehrere Datensätze erlaubt. Bei `false` blockiert auch der Dispatcher mehrere IDs.                                                                                                            |
+| `requiresRecord`               | Standard `true`; `false` erlaubt Aktionen am ungespeicherten Formular bzw. ohne Zeilenauswahl.                                                                                                |
+| `interaction`                  | `dialog` mit Vorbereitung/Bestätigung oder `immediate`. Auch direkte Aktionen verwenden Fehlerbehandlung und denselben Ergebnis-Dispatcher.                                                   |
+| `refresh`                      | Standard `true`; `false` für reine Formularaktionen oder Aktionen mit eigener Zeilenprojektion.                                                                                               |
+| `fieldsFor(context)`           | Dynamische Action-Felder, etwa die vom Resource-Schema freigegebenen Bulk-Felder.                                                                                                             |
+| `prepare(context)`             | Optional: asynchrone Defaults, etwa für Duplizieren. Ohne Implementierung findet keine Vorbereitung statt.                                                                                    |
+| `execute(context)`             | Zugriff auf echte Zeilen, Instanz und Eingaben; Rückgabe entsprechend `ActionUIResult` bzw. dem REST-Ergebnisvertrag.                                                                         |
 
 Die tatsächliche Anzahl und IDs sind stets eindeutig:
 
@@ -1547,7 +1547,6 @@ Gestaltungsreferenzen: öffentliche Vorschauen von REUI **Project Workspace / na
 
 Regression: Der Interaktionstest prüft Überlaufwahl, verzögertes Mounting, erhaltene URL-Filter, aktiven Bereich nach Resize und ungültige Direktlinks. Die Screenshot-Tour prüft bei 390/768px eine einzeilige Navigation, zwei nebeneinanderliegende KPI-Karten und den Wechsel zu eingehenden Verknüpfungen über **Weitere**. Aufnahmen `03`, `42`, `43`, `45` zeigen Desktop, iPhone, iPad und die gewählte mobile Relation.
 
-
 ## 37. AppShell und zusammenhängende Listenansichten
 
 Die Shell folgt dem Aufbau von REUI `app-shell-7` in heller Darstellung: durchgehender 52-px-Kopf, schmale 240-px-Navigation, neutrale aktive Menüzeilen, einklappbare Gruppen und Kontobereich unten. Die kompakte Icon-Leiste und das mobile Menü verwenden weiterhin denselben Navigationsbaum. Die festgelegten Abstände gelten zentral in `AppShell` und `PageWrapper`. Es gibt keine zusätzlichen Umgebungs-/Systemanzeigen oder Suchfelder in der Sidebar.
@@ -1612,3 +1611,67 @@ Erst wenn der Benutzer die aktuell geladene Seite ausgewählt hat, kann er zusä
 `useInfiniteResourceList<TRecord>(resource, { limit: 25, filters })` stellt `records`, `fetchNextPage`, `hasNextPage`, `total` und die übrigen TanStack-Infinite-Query-Zustände zur Verfügung. Der Hook lädt nur die jeweils angeforderte native REST-Seite, nicht alle Records auf einmal.
 
 Tests: `use-resource-table.test.tsx` prüft URL-/Filter-Presets, Client/Off-Grenzen, Provider-Isolation, Infinite-Paging, serverweite Counts und begrenzte Auswahl. `GroupedCountsTest.php` prüft Counts jenseits der ersten Seite sowie das Feld-Whitelisting. Diese Tests ergänzen die bestehenden End-to-End-Prüfungen für REUI-Grid und Formulare.
+
+## 39. Verlässliche Abfragen, Berechtigungen und Formularabschluss
+
+Das [Framework-Konzept mit Refine-Vergleich und Freigabekriterien](framework-readiness.md) hält vorhandene Funktionen, konkrete Verbesserungen und offene Voraussetzungen für eine öffentliche Framework-Veröffentlichung auseinander.
+
+### Cache und Performance
+
+- Listen berücksichtigen nun auch die wirksamen `includes`/`aggregates` im Cache-Schlüssel. Unterschiedliche Antwortprojektionen teilen nicht versehentlich denselben Cacheeintrag.
+- `dataProvider: "default"` und eine nicht gesetzte Providerangabe verwenden denselben Namensraum. Benannte Provider bleiben getrennt, auch bei Panel-Patches, Tab-Zählern, RelationPicker-Nachverarbeitung und Inline-Konfliktauflösung.
+- `one(resource, id, signal?)` und `overview(id?, signal?)` geben das `AbortSignal` bis zum HTTP-Aufruf weiter. Detailseiten, Panel-Hydrierung und Sitzungsladen verwerfen überholte Antworten.
+- `useResourceTable` behält beim Seitenwechsel vorherige Zeilen. Bei Änderung von Ressource, Provider, permanenten Filtern, Elternbezug, Query-View oder Projektion zeigt es den Ladezustand ohne fremde Zeilen. Deaktivierte Abfragen starten auch keine Gruppenmetrik.
+- `useSaveRecord` aktualisiert die betroffene Zeile in normalen Listen **und** geladenen Infinite-Seiten. Andere Zeilen und Seiten behalten ihre Referenzen. Ein Edit markiert Listen für den nächsten Besuch als veraltet, ohne sofort den kompletten Tabelleninhalt neu abzurufen. Neue Records lösen ein gezieltes Nachladen aus.
+
+Zusätzliche Provider vor dem Mounten registrieren und während einer Sitzung nicht austauschen. Bei einem tatsächlichen Backend-/Identitätswechsel müssen die Query-Caches geleert werden; eine reine Namensänderung ist keine Autorisierungsgrenze. Moduleigene API-Actions und Dashboard-Metriken müssen zum gewählten Backend passen.
+
+### Optionaler Permission-Adapter
+
+Der Adapter bleibt **standardmäßig deaktiviert**, ohne Adapteraufrufe. Bestehende Zuweisungen an `permissionConfig.enabled` und `.adapter` bleiben möglich und aktualisieren nun montierte Oberflächen. Die bevorzugte explizite Einrichtung erfolgt einmalig vor dem Mounten:
+
+```ts
+import {
+    configurePermissions,
+    invalidatePermissions,
+} from "@/framework/permissions";
+
+configurePermissions({
+    enabled: true,
+    staleTime: 30_000,
+    adapter: {
+        can: async (resource, action, row, context) => {
+            // Eigener Policy-Client; ein solcher Endpunkt wird nicht vom UI erfunden.
+            return permissionService.check({
+                resource,
+                action,
+                id: row?.id,
+                signal: context?.signal,
+            }); // boolean oder { allowed: boolean, reason?: string }
+        },
+    },
+});
+
+// Nach einer Rollenänderung innerhalb derselben Sitzung:
+invalidatePermissions();
+```
+
+`useAccess(resource, action, row?)` liefert `{ allowed, pending?, reason? }`. `can()` und `access()` sind weiterhin für headless Actions verfügbar. Synchrone Adapter werden unmittelbar ausgewertet. Asynchrone Entscheidungen verwenden TanStack Query für Cache, Deduplizierung und Abbruch; Standards: 30 Sekunden Frische, fünf Minuten Garbage Collection, kein automatischer Retry. Datensatzattribute gehören zum Schlüssel, damit eine Statusänderung eine neue Prüfung auslöst. Ablauf wird beim nächsten Zugriff geprüft. Während einer ausstehenden oder fehlgeschlagenen Prüfung wird kein Zugriff angenommen.
+
+`PermissionBoundary` und `ResourceRouteBoundary` schützen das Mounten von Ressourcen-Routen und Formularen. Direkte Links prüfen zunächst Ressource/Aktion und gegebenenfalls die ID; nach Panel-Hydrierung steht der vollständige Record zur Verfügung. Der Adapter muss daher mit einem partiellen `PermissionRecord` umgehen können. Navigation, Aktionsmenüs, Tabellen, Inline-Editoren und Picker reagieren auf neue Entscheidungen. Logout, Login und Sitzungsablauf löschen den Permission-Cache; verspätete Antworten dürfen keine alte Freigabe wiederherstellen.
+
+Eine Action kann `permissionDenied = "disable"` setzen. Dann bleibt sie mit Begründung deaktiviert sichtbar; Standard ist `"hide"`. Das Verhalten gilt für einzelne und Bulk-Actions; alle ausgewählten Datensätze müssen freigegeben sein. Vorhandene `enabled(context)`-Regeln gelten zusätzlich.
+
+**Diese Grenzen sind UI-Verhalten.** Laravel-Policies und serverseitige Organisationsgrenzen bleiben zwingend für echte Zugriffssicherheit. Deren Aktivierung wurde zuvor ausdrücklich verschoben und ist durch diesen Ausbau nicht erledigt. Ein versteckter Menüpunkt oder deaktivierter Button ist niemals eine Sicherheitskontrolle der API.
+
+### Speichern und Folgeschritte
+
+Der Editor sperrt konkurrierende Submit-/Wizard-Prüfungen synchron. Die fachliche Validierung bleibt serverseitig; Clientprüfungen betreffen nur die Eingabeformate bestehender Controls.
+
+Nach bestätigtem Save werden Record/Version und Cache aktualisiert. Erst danach läuft `request.onSaved(record)` beziehungsweise der nächste Flow-Schritt. Scheitert diese Nachverarbeitung, lautet die Meldung ausdrücklich **„Der Datensatz wurde gespeichert. Der Folgeschritt ist fehlgeschlagen …“**. Die Felder sind dann gesperrt. **Folgeschritt wiederholen** ruft nur den Callback erneut auf, niemals die Create-/Update-Mutation; **Schließen** beendet den Editor. Callbacks müssen wiederholbar sein und sollen keine weitere, nicht idempotente fachliche Mutation verstecken. Fachliche zusammengehörige Schreibvorgänge gehören in eine atomare Backend-Action.
+
+Ein unterbrochener Netzwerkaufruf mit unklarer Serverbestätigung ist dadurch noch keine Ende-zu-Ende-Idempotenz. Für externe Integrationen/Jobs bleibt ein serverseitiger Idempotency-Vertrag ein separates Freigabekriterium.
+
+### Prüfung und Veröffentlichung
+
+Gezielte Regressionstests decken Kontextwechsel, Abbruch, Projektionen, Infinite-Patches, asynchrone Rechte, Sitzungswechsel, direkte Formlinks, Mehrfach-Submit und wiederholbare Nachverarbeitung ab. Die bestehende CI prüft PHP, REST-Vertrag, React, Production Build und Browserabläufe. Performance gegenüber Refine wurde nicht unter vergleichbaren Lastbedingungen gemessen; es wird daher kein pauschaler Geschwindigkeitsvorteil behauptet.

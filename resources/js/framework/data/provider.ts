@@ -112,11 +112,15 @@ export const dataProvider = {
             "POST",
             signal,
         ),
-    async one(resource: ResourceDefinition, id: number) {
-        const result = await this.list(resource, {
-            filters: [{ field: "id", value: id }],
-            limit: 10,
-        });
+    async one(resource: ResourceDefinition, id: number, signal?: AbortSignal) {
+        const result = await this.list(
+            resource,
+            {
+                filters: [{ field: "id", value: id }],
+                limit: 10,
+            },
+            signal,
+        );
         if (!result.data[0]) throw new Error("Datensatz nicht gefunden.");
         return result.data[0];
     },
@@ -242,10 +246,12 @@ export const dataProvider = {
             "POST",
             signal,
         ),
-    overview: (id?: number) =>
+    overview: (id?: number, signal?: AbortSignal) =>
         request<{ data: Record<string, number | null> }>(
             "/api/v1/properties/metrics/overview",
             { search: { filters: id ? [{ field: "id", value: id }] : [] } },
+            "POST",
+            signal,
         ),
 };
 export function normalizeValidationErrors(

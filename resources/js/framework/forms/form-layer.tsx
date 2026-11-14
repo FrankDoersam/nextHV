@@ -9,6 +9,8 @@ import type { PanelLink } from "../navigation/panels";
 import { ResourceEditor } from "./resource-editor";
 import { ResourceView } from "./resource-view";
 import type { FlowControls } from "./flow";
+import { useAccess } from "../permissions";
+import { PermissionBoundary } from "../permission-boundary";
 export function FormLayer({
     panel,
     cached,
@@ -36,6 +38,11 @@ export function FormLayer({
     } catch {
         /* Bad deep links render a recoverable state. */
     }
+    const permission = useAccess(
+        panel.resource,
+        panel.mode === "create" ? "create" : "view",
+        cached?.row ?? (panel.id ? { id: panel.id } : undefined),
+    );
     const hydration = useQuery({
         queryKey: [
             "panel",
@@ -45,9 +52,10 @@ export function FormLayer({
             panel.context,
             panel.mode,
             panel.fields,
+            resource?.dataProvider ?? "default",
         ],
-        enabled: !!resource,
-        queryFn: async () => {
+        enabled: !!resource && permission.allowed,
+        queryFn: async ({ signal }) => {
             if (
                 panel.fields?.some(
                     (name) =>
@@ -70,15 +78,22 @@ export function FormLayer({
                         f.resource === panel.context!.resource,
                 );
                 if (!field) throw new Error("Der Formularbezug ist ungültig.");
-                await resolveDataProvider(getResource(panel.context.resource)).one(
+                await resolveDataProvider(
+                    getResource(panel.context.resource),
+                ).one(
                     getResource(panel.context.resource),
                     panel.context.id,
+                    signal,
                 );
             }
             const row =
                 panel.mode !== "create"
                     ? (cached?.row ??
-                      (await resolveDataProvider(resource!).one(resource!, panel.id!)))
+                      (await resolveDataProvider(resource!).one(
+                          resource!,
+                          panel.id!,
+                          signal,
+                      )))
                     : null;
             if (
                 row &&
@@ -93,7 +108,12 @@ export function FormLayer({
         staleTime: Infinity,
         gcTime: 0,
     });
-    if (!resource || hydration.error || hydration.isPending)
+    if (
+        !permission.allowed ||
+        !resource ||
+        hydration.error ||
+        hydration.isPending
+    )
         return (
             <Overlay
                 open
@@ -103,7 +123,18 @@ export function FormLayer({
                 nested={nested}
             >
                 <>
-                    {hydration.error || !resource ? (
+                    {!permission.allowed ? (
+                        <PermissionBoundary
+                            resource={panel.resource}
+                            action={panel.mode === "create" ? "create" : "view"}
+                            row={
+                                cached?.row ??
+                                (panel.id ? { id: panel.id } : undefined)
+                            }
+                        >
+                            {null}
+                        </PermissionBoundary>
+                    ) : hydration.error || !resource ? (
                         <ErrorState
                             error={
                                 hydration.error ??
@@ -139,22 +170,34 @@ export function FormLayer({
     };
     if (panel.mode === "view" && hydration.data)
         return (
-            <ResourceView
-                request={{ ...request, row: hydration.data }}
-                onClose={onClose}
-                onEdit={onEdit}
-                nested={nested}
-                stacked={stacked}
-            />
+            <PermissionBoundary
+                resource={resource.name}
+                action="view"
+                row={hydration.data}
+            >
+                <ResourceView
+                    request={{ ...request, row: hydration.data }}
+                    onClose={onClose}
+                    onEdit={onEdit}
+                    nested={nested}
+                    stacked={stacked}
+                />
+            </PermissionBoundary>
         );
     return (
-        <ResourceEditor
-            request={request}
-            onClose={onClose}
-            onDirtyChange={onDirtyChange}
-            nested={nested}
-            stacked={stacked}
-            flow={flow}
-        />
+        <PermissionBoundary
+            resource={resource.name}
+            action={panel.mode === "create" ? "create" : "edit"}
+            row={hydration.data ?? undefined}
+        >
+            <ResourceEditor
+                request={request}
+                onClose={onClose}
+                onDirtyChange={onDirtyChange}
+                nested={nested}
+                stacked={stacked}
+                flow={flow}
+            />
+        </PermissionBoundary>
     );
 }

@@ -1,3 +1,4 @@
+import { usePermissionRevision } from "@/framework/permissions";
 import { Brand } from "./brand";
 export { Brand } from "./brand";
 import { Button } from "@/components/ui/button";
@@ -43,7 +44,14 @@ import {
     Search,
     Shapes,
 } from "lucide-react";
-import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+    Fragment,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    type ReactNode,
+} from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
 
 /** A single navigation tree feeds desktop, mobile, the icon rail and the command palette. */
@@ -65,7 +73,9 @@ export function AppShell({
     const [mobile, setMobile] = useState(false);
     const [compact, setCompact] = useState(() => {
         try {
-            return window.localStorage.getItem("nexthv.sidebar.compact") === "1";
+            return (
+                window.localStorage.getItem("nexthv.sidebar.compact") === "1"
+            );
         } catch {
             return false;
         }
@@ -74,6 +84,7 @@ export function AppShell({
     const location = useLocation();
     const scrollArea = useRef<HTMLElement>(null);
     const navigate = useNavigate();
+    const permissionRevision = usePermissionRevision();
     const navigationItems = useMemo(
         () =>
             resolveNavigation(
@@ -81,7 +92,15 @@ export function AppShell({
                 resources,
                 user,
             ),
-        [resources, navigation, navigationGroups, user.id, user.name, user.email],
+        [
+            resources,
+            navigation,
+            navigationGroups,
+            user.id,
+            user.name,
+            user.email,
+            permissionRevision,
+        ],
     );
     const controls = useSidebarExpansion(navigationItems, user.id);
     const trail = navigationPath(
@@ -97,22 +116,30 @@ export function AppShell({
     const collection = resources.some(
         (resource) => location.pathname === `/${resource.name}`,
     );
-    const detailId = current && location.pathname.startsWith(`/${current.name}/`)
-        ? location.pathname.slice(current.name.length + 2).split("/")[0]
-        : undefined;
-    const currentTitle = trail.at(-1)?.label ??
+    const detailId =
+        current && location.pathname.startsWith(`/${current.name}/`)
+            ? location.pathname.slice(current.name.length + 2).split("/")[0]
+            : undefined;
+    const currentTitle =
+        trail.at(-1)?.label ??
         (location.pathname === "/components" ? "Komponenten" : "Übersicht");
 
     useEffect(() => {
         try {
-            window.localStorage.setItem("nexthv.sidebar.compact", compact ? "1" : "0");
+            window.localStorage.setItem(
+                "nexthv.sidebar.compact",
+                compact ? "1" : "0",
+            );
         } catch {
             // Storage is optional; the toggle always works in memory.
         }
     }, [compact]);
     useEffect(() => {
         const shortcut = (event: KeyboardEvent) => {
-            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+            if (
+                (event.metaKey || event.ctrlKey) &&
+                event.key.toLowerCase() === "k"
+            ) {
                 event.preventDefault();
                 setSearch((open) => !open);
             }
@@ -170,8 +197,12 @@ export function AppShell({
                     <PersonAvatar person={{ id: "me", name: user.name }} />
                     {!rail && (
                         <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-medium">{user.name}</p>
-                            <p className="truncate text-[10px] text-muted-foreground">{user.email}</p>
+                            <p className="truncate text-xs font-medium">
+                                {user.name}
+                            </p>
+                            <p className="truncate text-[10px] text-muted-foreground">
+                                {user.email}
+                            </p>
                         </div>
                     )}
                     <Button
@@ -195,7 +226,10 @@ export function AppShell({
         ].filter((item) => item.to && !item.disabledReason);
 
     return (
-        <div data-slot="app-shell" className="flex h-dvh min-w-0 overflow-hidden bg-background">
+        <div
+            data-slot="app-shell"
+            className="flex h-dvh min-w-0 overflow-hidden bg-background"
+        >
             <aside
                 data-slot="desktop-sidebar"
                 data-collapsed={compact || undefined}
@@ -253,7 +287,10 @@ export function AppShell({
             </aside>
 
             <Sheet open={mobile} onOpenChange={setMobile}>
-                <SheetContent side="left" className="w-[min(19rem,90vw)] gap-0 bg-sidebar p-0">
+                <SheetContent
+                    side="left"
+                    className="w-[min(19rem,90vw)] gap-0 bg-sidebar p-0"
+                >
                     <div className="flex h-14 shrink-0 items-center border-b border-sidebar-border px-5">
                         <Brand />
                     </div>
@@ -281,7 +318,10 @@ export function AppShell({
                         >
                             <Menu />
                         </Button>
-                        <nav aria-label="Seitenpfad" className="flex min-w-0 items-center gap-2 text-sm">
+                        <nav
+                            aria-label="Seitenpfad"
+                            className="flex min-w-0 items-center gap-2 text-sm"
+                        >
                             <Link
                                 to="/"
                                 aria-label="Zur Übersicht"
@@ -291,33 +331,57 @@ export function AppShell({
                             </Link>
                             {trail.length === 0 ? (
                                 location.pathname === "/" ? (
-                                    <span aria-current="page" className="truncate font-medium">Übersicht</span>
+                                    <span
+                                        aria-current="page"
+                                        className="truncate font-medium"
+                                    >
+                                        Übersicht
+                                    </span>
                                 ) : (
                                     <>
-                                        <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-                                        <span aria-current="page" className="truncate font-medium">{currentTitle}</span>
+                                        <ChevronRight
+                                            className="size-3.5 shrink-0 text-muted-foreground"
+                                            aria-hidden
+                                        />
+                                        <span
+                                            aria-current="page"
+                                            className="truncate font-medium"
+                                        >
+                                            {currentTitle}
+                                        </span>
                                     </>
                                 )
                             ) : (
                                 trail.map((item, index) => {
-                                    const last = index === trail.length - 1 && !detailId;
+                                    const last =
+                                        index === trail.length - 1 && !detailId;
                                     return (
                                         <Fragment key={item.id}>
                                             <ChevronRight
                                                 className={cn(
                                                     "size-3.5 shrink-0 text-muted-foreground",
-                                                    !last && index < trail.length - 1 && "hidden md:block",
+                                                    !last &&
+                                                        index <
+                                                            trail.length - 1 &&
+                                                        "hidden md:block",
                                                 )}
                                                 aria-hidden
                                             />
                                             {last ? (
-                                                <span aria-current="page" className="truncate font-medium">{item.label}</span>
+                                                <span
+                                                    aria-current="page"
+                                                    className="truncate font-medium"
+                                                >
+                                                    {item.label}
+                                                </span>
                                             ) : item.to ? (
                                                 <Link
                                                     to={item.to}
                                                     className={cn(
                                                         "max-w-40 truncate text-muted-foreground hover:text-foreground",
-                                                        index < trail.length - 1 && "hidden md:inline",
+                                                        index <
+                                                            trail.length - 1 &&
+                                                            "hidden md:inline",
                                                     )}
                                                 >
                                                     {item.label}
@@ -333,8 +397,16 @@ export function AppShell({
                             )}
                             {detailId && (
                                 <>
-                                    <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-                                    <span aria-current="page" className="truncate font-medium">#{detailId}</span>
+                                    <ChevronRight
+                                        className="size-3.5 shrink-0 text-muted-foreground"
+                                        aria-hidden
+                                    />
+                                    <span
+                                        aria-current="page"
+                                        className="truncate font-medium"
+                                    >
+                                        #{detailId}
+                                    </span>
                                 </>
                             )}
                         </nav>
@@ -348,7 +420,9 @@ export function AppShell({
                         onClick={() => setSearch(true)}
                     >
                         <Search className="size-4" />
-                        <span className="hidden sm:inline">Bereiche suchen</span>
+                        <span className="hidden sm:inline">
+                            Bereiche suchen
+                        </span>
                         <kbd className="hidden rounded border bg-muted/60 px-1.5 py-0.5 text-[10px] leading-none lg:inline">
                             Ctrl K
                         </kbd>
@@ -375,7 +449,14 @@ export function AppShell({
                     <CommandList>
                         <CommandEmpty>Kein Bereich gefunden.</CommandEmpty>
                         {navigationItems.map((section) => (
-                            <CommandGroup key={section.id} heading={section.to ? "Arbeitsbereich" : section.label}>
+                            <CommandGroup
+                                key={section.id}
+                                heading={
+                                    section.to
+                                        ? "Arbeitsbereich"
+                                        : section.label
+                                }
+                            >
                                 {commandEntries(section).map((item) => {
                                     const Icon = item.icon;
                                     return (
@@ -385,7 +466,8 @@ export function AppShell({
                                             onSelect={() => go(item.to!)}
                                         >
                                             {Icon && <Icon />}
-                                            {item.resource && item.label !== item.resource.label
+                                            {item.resource &&
+                                            item.label !== item.resource.label
                                                 ? `${item.resource.label} · ${item.label}`
                                                 : item.label}
                                         </CommandItem>

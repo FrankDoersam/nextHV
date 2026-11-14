@@ -355,3 +355,84 @@ describe("standard record mutations", () => {
         expect(save).toHaveBeenCalledWith(resource, { has_balcony: true }, old);
     });
 });
+
+it("patches infinite pages without replacing unrelated rows, pages or another provider", async () => {
+    const { client, wrapper } = setup();
+    const first = { data: [old], total: 2, current_page: 1, last_page: 2 };
+    const second = { data: [other], total: 2, current_page: 2, last_page: 2 };
+    const key = ["resources", "properties", "infinite", {}];
+    const otherKey = [
+        "providers",
+        "external",
+        "resources",
+        "properties",
+        "infinite",
+        {},
+    ];
+    const data = { pages: [first, second], pageParams: [1, 2] };
+    client.setQueryData(key, data);
+    client.setQueryData(otherKey, data);
+    const otherBefore = client.getQueryData(otherKey);
+    const saved = { ...old, name: "Aktualisiert" };
+    vi.spyOn(dataProvider, "save").mockResolvedValue(saved);
+    const { result } = renderHook(() => useSaveRecord(resource), { wrapper });
+    await act(async () => {
+        await result.current({ name: saved.name }, old);
+    });
+    const patched = client.getQueryData<typeof data>(key)!;
+    expect(patched.pages[0].data[0].name).toBe("Aktualisiert");
+    expect(patched.pages[1]).toBe(second);
+    expect(client.getQueryData(otherKey)).toBe(otherBefore);
+    expect(client.getQueryState(key)?.isInvalidated).toBe(true);
+});
+
+it("cancels a detail lookup when its observer unmounts", async () => {
+    const { wrapper } = setup();
+    let signal: AbortSignal | undefined;
+    vi.spyOn(dataProvider, "one").mockImplementation(
+        (_resource, _id, abort) => {
+            signal = abort;
+            return new Promise(() => {});
+        },
+    );
+    const { unmount } = renderHook(() => useResource(resource, 99), {
+        wrapper,
+    });
+    await waitFor(() => expect(signal).toBeDefined());
+    unmount();
+    expect(signal!.aborted).toBe(true);
+});
+
+it("separates list response projections when the same resource gains relation includes", async () => {
+    const { client, wrapper } = setup();
+    client.clear();
+    const list = vi
+        .spyOn(dataProvider, "list")
+        .mockImplementation(async (_resource, params) => ({
+            data: [
+                {
+                    ...old,
+                    ...(params?.includes?.length
+                        ? { units: [{ id: 44 }] }
+                        : {}),
+                },
+            ],
+            total: 1,
+            current_page: 1,
+            last_page: 1,
+        }));
+    const { result, rerender } = renderHook(
+        ({ related }) =>
+            useResourceList({
+                ...resource,
+                includes: related ? [{ relation: "units" }] : undefined,
+            }),
+        { wrapper, initialProps: { related: false } },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    rerender({ related: true });
+    await waitFor(() =>
+        expect(result.current.data?.data[0].units).toEqual([{ id: 44 }]),
+    );
+    expect(list).toHaveBeenCalledTimes(2);
+});

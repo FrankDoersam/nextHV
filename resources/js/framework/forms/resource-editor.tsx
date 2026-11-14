@@ -13,6 +13,7 @@ import { ChevronLeft, ChevronRight, Save, RefreshCw } from "lucide-react";
 import {
     useEffect,
     useId,
+    useRef,
     useState,
     type ComponentProps,
     type ReactNode,
@@ -30,7 +31,12 @@ import { resolveDataProvider } from "../data/provider-registry";
 import { RowActions } from "../tables/resource-collection";
 import { RelationCollection } from "../tables/relation-collection";
 import type { FlowControls } from "./flow";
-import type { FormGroupDefinition, FormRequest, Values } from "../types";
+import type {
+    FormGroupDefinition,
+    FormRequest,
+    Values,
+    RecordData,
+} from "../types";
 import { initialValues } from "./initial-values";
 import { creationDefaults, creationNames } from "./create-relations";
 import { RelationRepeater } from "./relation-repeater";
@@ -94,6 +100,9 @@ export function ResourceEditor({
         mode: "onBlur",
     });
     const [validating, setValidating] = useState(false);
+    const submissionLock = useRef(false);
+    const [working, setWorking] = useState(false);
+    const [completion, setCompletion] = useState<RecordData>();
     const [step, setStep] = useState(0);
     const [error, setError] = useState<unknown>();
     const [discard, setDiscard] = useState(false);
@@ -104,7 +113,7 @@ export function ResourceEditor({
     const reload = useReload();
     const saveRecord = useSaveRecord(resource);
     const dirty = form.formState.isDirty;
-    const busy = form.formState.isSubmitting || validating;
+    const busy = working || form.formState.isSubmitting || validating;
     useEffect(() => {
         onDirtyChange?.(dirty);
     }, [dirty, onDirtyChange]);
@@ -132,7 +141,10 @@ export function ResourceEditor({
     };
     const refresh = async () => {
         if (!row) return;
-        const latest = await resolveDataProvider(resource).one(resource, row.id);
+        const latest = await resolveDataProvider(resource).one(
+            resource,
+            row.id,
+        );
         setVersion(latest);
         form.reset(
             initialValues(
@@ -182,7 +194,35 @@ export function ResourceEditor({
                 Object.keys(errors)[0],
         );
     };
+    const complete = async (saved: RecordData) => {
+        try {
+            await request.onSaved?.(saved);
+            if (flow) flow.onSaved(saved);
+            else onClose();
+        } catch (failure) {
+            setError(
+                new Error(
+                    `Der Datensatz wurde gespeichert. Der Folgeschritt ist fehlgeschlagen: ${failure instanceof Error ? failure.message : "Bitte erneut versuchen."}`,
+                ),
+            );
+        }
+    };
+    const retryCompletion = async () => {
+        if (!completion || submissionLock.current) return;
+        submissionLock.current = true;
+        setWorking(true);
+        setError(undefined);
+        try {
+            await complete(completion);
+        } finally {
+            submissionLock.current = false;
+            setWorking(false);
+        }
+    };
     const save = form.handleSubmit(async (values) => {
+        if (submissionLock.current || completion) return;
+        submissionLock.current = true;
+        setWorking(true);
         setError(undefined);
         form.clearErrors();
         try {
@@ -209,9 +249,8 @@ export function ResourceEditor({
             setVersion(saved);
             form.reset(initialValues(resource.fields, saved));
             onDirtyChange?.(false);
-            await request.onSaved?.(saved);
-            if (flow) flow.onSaved(saved);
-            else onClose();
+            setCompletion(saved);
+            await complete(saved);
         } catch (e) {
             setError(e);
             if (e instanceof ApiError) {
@@ -220,10 +259,14 @@ export function ResourceEditor({
                     form.setError(name, { message });
                 errorStep(errors);
             }
+        } finally {
+            submissionLock.current = false;
+            setWorking(false);
         }
     }, errorStep);
     const next = async () => {
-        if (busy) return;
+        if (busy || submissionLock.current || completion) return;
+        submissionLock.current = true;
         const names = [
             ...fields
                 .filter((f) => (f.group ?? "general") === groups[step].id)
@@ -234,11 +277,11 @@ export function ResourceEditor({
                     creationNames(relation, form.getValues()),
                 ),
         ];
-        if (!(await form.trigger(names, { shouldFocus: true }))) return;
         setValidating(true);
         setError(undefined);
         form.clearErrors(names);
         try {
+            if (!(await form.trigger(names, { shouldFocus: true }))) return;
             if (names.length)
                 await resolveDataProvider(resource).validate(
                     resource,
@@ -256,6 +299,7 @@ export function ResourceEditor({
                 errorStep(errors);
             }
         } finally {
+            submissionLock.current = false;
             setValidating(false);
         }
     };
@@ -357,7 +401,7 @@ export function ResourceEditor({
                     </Badge>
                 )
             }
-            actions={headerActions}
+            actions={completion ? undefined : headerActions}
             tabs={
                 activeTab && editorTabs
                     ? {
@@ -384,7 +428,7 @@ export function ResourceEditor({
             }
             footerStart={
                 <>
-                    {request.wizard && step > 0 && (
+                    {!completion && request.wizard && step > 0 && (
                         <Button
                             type="button"
                             variant="outline"
@@ -395,7 +439,7 @@ export function ResourceEditor({
                             Zurück
                         </Button>
                     )}
-                    {flow?.onBack && (
+                    {!completion && flow?.onBack && (
                         <Button
                             type="button"
                             variant="outline"
@@ -443,9 +487,20 @@ export function ResourceEditor({
                         disabled={busy}
                         onClick={close}
                     >
-                        Abbrechen
+                        {completion ? "Schließen" : "Abbrechen"}
                     </Button>
-                    {request.wizard && step < groups.length - 1 ? (
+                    {completion ? (
+                        <Button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void retryCompletion()}
+                        >
+                            <RefreshCw />{" "}
+                            {busy
+                                ? "Wird fortgesetzt …"
+                                : "Folgeschritt wiederholen"}
+                        </Button>
+                    ) : request.wizard && step < groups.length - 1 ? (
                         <Button
                             key="wizard-next"
                             type="button"
@@ -522,94 +577,103 @@ export function ResourceEditor({
                             className="space-y-6"
                             noValidate
                         >
-                            <FormLayout
-                                aside={!!request.wizard || !!flow}
-                                summary={
-                                    summary ? (
-                                        <FormSummary
-                                            definition={summary}
-                                            record={version}
-                                        />
-                                    ) : undefined
-                                }
+                            <fieldset
+                                disabled={busy || !!completion}
+                                className="min-w-0"
                             >
-                                {groups.map((g, i) => (
-                                    <EditorSection
-                                        key={g.id}
-                                        hidden={
-                                            (request.wizard && step !== i) ||
-                                            (!!activeTab &&
-                                                !activeTab.groups?.includes(
-                                                    g.id,
-                                                ))
-                                        }
-                                        group={g}
-                                        variant={resource.editor?.sectionStyle}
-                                        collapsible={
-                                            request.wizard || flow
-                                                ? false
-                                                : g.collapsible
-                                        }
-                                        open={
-                                            openGroups[g.id] ??
-                                            (request.fields
-                                                ? true
-                                                : g.defaultOpen) ??
-                                            true
-                                        }
-                                        onOpenChange={(open) =>
-                                            setOpenGroups((current) => ({
-                                                ...current,
-                                                [g.id]: open,
-                                            }))
-                                        }
-                                    >
-                                        <FieldGrid>
-                                            {fields
+                                <FormLayout
+                                    aside={!!request.wizard || !!flow}
+                                    summary={
+                                        summary ? (
+                                            <FormSummary
+                                                definition={summary}
+                                                record={version}
+                                            />
+                                        ) : undefined
+                                    }
+                                >
+                                    {groups.map((g, i) => (
+                                        <EditorSection
+                                            key={g.id}
+                                            hidden={
+                                                (request.wizard &&
+                                                    step !== i) ||
+                                                (!!activeTab &&
+                                                    !activeTab.groups?.includes(
+                                                        g.id,
+                                                    ))
+                                            }
+                                            group={g}
+                                            variant={
+                                                resource.editor?.sectionStyle
+                                            }
+                                            collapsible={
+                                                request.wizard || flow
+                                                    ? false
+                                                    : g.collapsible
+                                            }
+                                            open={
+                                                openGroups[g.id] ??
+                                                (request.fields
+                                                    ? true
+                                                    : g.defaultOpen) ??
+                                                true
+                                            }
+                                            onOpenChange={(open) =>
+                                                setOpenGroups((current) => ({
+                                                    ...current,
+                                                    [g.id]: open,
+                                                }))
+                                            }
+                                        >
+                                            <FieldGrid>
+                                                {fields
+                                                    .filter(
+                                                        (f) =>
+                                                            (f.group ??
+                                                                "general") ===
+                                                            g.id,
+                                                    )
+                                                    .map((f) => (
+                                                        <ResourceField
+                                                            key={f.name}
+                                                            definition={
+                                                                request.context
+                                                                    ?.field ===
+                                                                    f.name &&
+                                                                request.context
+                                                                    .mode !==
+                                                                    "prefill"
+                                                                    ? {
+                                                                          ...f,
+                                                                          disabled: true,
+                                                                          lockedReason:
+                                                                              row
+                                                                                  ? undefined
+                                                                                  : "Durch den aktuellen Datensatz vorgegeben.",
+                                                                      }
+                                                                    : f
+                                                            }
+                                                            editing={!!row}
+                                                        />
+                                                    ))}
+                                            </FieldGrid>
+                                            {createRelations
                                                 .filter(
-                                                    (f) =>
-                                                        (f.group ??
-                                                            "general") === g.id,
+                                                    (relation) =>
+                                                        relation.group === g.id,
                                                 )
-                                                .map((f) => (
-                                                    <ResourceField
-                                                        key={f.name}
-                                                        definition={
-                                                            request.context
-                                                                ?.field ===
-                                                                f.name &&
-                                                            request.context
-                                                                .mode !==
-                                                                "prefill"
-                                                                ? {
-                                                                      ...f,
-                                                                      disabled: true,
-                                                                      lockedReason:
-                                                                          row
-                                                                              ? undefined
-                                                                              : "Durch den aktuellen Datensatz vorgegeben.",
-                                                                  }
-                                                                : f
-                                                        }
-                                                        editing={!!row}
+                                                .map((relation) => (
+                                                    <RelationRepeater
+                                                        key={relation.relation}
+                                                        definition={relation}
+                                                        disabled={busy}
                                                     />
                                                 ))}
-                                        </FieldGrid>
-                                        {createRelations
-                                            .filter(
-                                                (relation) =>
-                                                    relation.group === g.id,
-                                            )
-                                            .map((relation) => (
-                                                <RelationRepeater
-                                                    key={relation.relation}
-                                                    definition={relation}
-                                                    disabled={busy}
-                                                />
-                                            ))}
-                                    </EditorSection>
-                                ))}
-                            </FormLayout>
+                                        </EditorSection>
+                                    ))}
+                                </FormLayout>
+                            </fieldset>
                         </form>
                     </FormProvider>
                 </FormActionScope>

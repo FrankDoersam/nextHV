@@ -4,7 +4,7 @@ import {
     SlidersHorizontal,
     type LucideIcon,
 } from "lucide-react";
-import { can } from "./permissions";
+import { access, can } from "./permissions";
 import { resolveDataProvider } from "./data/provider-registry";
 import type { ActionContext, FieldDefinition, RecordData } from "./types";
 export type ActionPlacement =
@@ -23,6 +23,7 @@ export abstract class ResourceAction {
     selectableFields = false;
     bulk = false;
     destructive = false;
+    permissionDenied: "hide" | "disable" = "hide";
     location: "row" | "toolbar" | "both" = "both";
     fields: FieldDefinition[] = [];
     fieldsFor(_context: ActionContext): FieldDefinition[] {
@@ -92,15 +93,27 @@ export function actionVisible(
         ? context.rows.every(
               (row) =>
                   action.visible(row) &&
-                  can(context.resource.name, action.id, row),
+                  (action.permissionDenied === "disable" ||
+                      can(context.resource.name, action.id, row)),
           )
-        : action.visible() && can(context.resource.name, action.id);
+        : action.visible() &&
+              (action.permissionDenied === "disable" ||
+                  can(context.resource.name, action.id));
 }
 export function actionAvailability(
     action: ResourceAction,
     context: ActionContext,
 ): boolean | string {
     if (!actionVisible(action, context)) return false;
+    if (!action.children.length) {
+        for (const row of context.rows.length ? context.rows : [undefined]) {
+            const decision = access(context.resource.name, action.id, row);
+            if (!decision.allowed)
+                return (
+                    decision.reason ?? "Keine Berechtigung für diese Aktion."
+                );
+        }
+    }
     return action.enabled(context);
 }
 export class ActionGroup extends ResourceAction {
@@ -152,6 +165,10 @@ export class BulkEditAction extends ResourceAction {
         );
         if (!Object.keys(values).length)
             throw new Error("Bitte mindestens ein Feld zum Ändern auswählen.");
-        return resolveDataProvider(context.resource).saveMany(context.resource, values, context.rows);
+        return resolveDataProvider(context.resource).saveMany(
+            context.resource,
+            values,
+            context.rows,
+        );
     }
 }

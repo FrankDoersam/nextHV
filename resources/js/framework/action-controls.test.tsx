@@ -1,3 +1,4 @@
+import { configurePermissions } from "./permissions";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
@@ -90,6 +91,7 @@ beforeEach(() => {
 });
 afterEach(() => {
     cleanup();
+    configurePermissions({ enabled: false, adapter: { can: () => true } });
     vi.restoreAllMocks();
 });
 
@@ -353,4 +355,43 @@ describe("shared action runtime", () => {
             })),
         );
     });
+});
+
+it("shows an asynchronously denied action disabled with its reason and never executes it", async () => {
+    const execute = vi.fn();
+    class Restricted extends ResourceAction {
+        id = "archive";
+        label = "Archivieren";
+        permissionDenied = "disable" as const;
+        async execute() {
+            execute();
+        }
+    }
+    configurePermissions({
+        enabled: true,
+        adapter: {
+            can: async () => ({
+                allowed: false,
+                reason: "Nur die Objektleitung darf archivieren.",
+            }),
+        },
+    });
+    const user = userEvent.setup();
+    mount(
+        <ActionMenu
+            actions={[new Restricted()]}
+            target={{ resource, rows: [rows[0]] }}
+            placement="row"
+        />,
+    );
+    await user.click(screen.getByRole("button", { name: "Aktionen" }));
+    const item = await screen.findByRole("menuitem", { name: "Archivieren" });
+    await waitFor(() =>
+        expect(item).toHaveAccessibleDescription(
+            "Nur die Objektleitung darf archivieren.",
+        ),
+    );
+    expect(item).toHaveAttribute("aria-disabled", "true");
+    await user.click(item);
+    expect(execute).not.toHaveBeenCalled();
 });

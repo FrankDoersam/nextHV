@@ -4,6 +4,8 @@ Hausverwaltung mit Laravel 13, Laravel REST API 3, React 19 und einer wiederverw
 
 Das vollständige Entwicklerhandbuch einschließlich der Funktionen aus Basis- und Folgecommit steht in [docs/framework.md](docs/framework.md). Dort sind auch Erweiterungsbeispiele, Action-Rückgaben, Direktlinks, Tabellen-Props und die priorisierte Weiterentwicklung dokumentiert.
 
+Das [Framework-Konzept und der Refine-Vergleich](docs/framework-readiness.md) dokumentieren die Architektur, die Verbesserungen und die noch offenen Freigabekriterien. Der aktuelle Stand ist ein Entwicklungsframework; eine allgemeine Produktionsfreigabe, insbesondere für Mehrmandantenbetrieb, ist damit nicht zugesagt.
+
 ## Lokal starten
 
 Voraussetzungen: PHP **8.3+**, Composer 2, Node **22.12+** (CI: Node 24/PHP 8.5), SQLite oder eine konfigurierte relationale Datenbank. Benötigte PHP-Erweiterungen: Laravel-Standard einschließlich PDO, passendem Datenbanktreiber, mbstring, fileinfo und OpenSSL.
@@ -120,15 +122,8 @@ class MyAction extends ResourceAction {
     label = "Meine Aktion";
     bulk = true;
 
-    async execute(
-        { rows, resource, instance, values }: ActionContext,
-    ) {
-        await dataProvider.action(
-            resource.name,
-            this.id,
-            rows,
-            values,
-        );
+    async execute({ rows, resource, instance, values }: ActionContext) {
+        await dataProvider.action(resource.name, this.id, rows, values);
         instance.form?.setValue("notes", "Aktion ausgeführt", {
             shouldDirty: true,
         });

@@ -1,3 +1,4 @@
+import { usePermissionRevision } from "../permissions";
 import { useEffect, useState, type ReactNode } from "react";
 import { Pencil, RefreshCw } from "lucide-react";
 import { ErrorState } from "@/components/blocks/content";
@@ -47,12 +48,15 @@ export function ResourceView({
     );
     const [tab, setTab] = useState(tabs?.[0]?.id ?? "");
     const activeTab = tabs?.find((item) => item.id === tab) ?? tabs?.[0];
+    usePermissionRevision();
     const editable = can(resource.name, "edit", record);
     const refresh = async () => {
         setRefreshing(true);
         setError(undefined);
         try {
-            setRecord(await resolveDataProvider(resource).one(resource, record.id));
+            setRecord(
+                await resolveDataProvider(resource).one(resource, record.id),
+            );
         } catch (error) {
             setError(error);
         } finally {

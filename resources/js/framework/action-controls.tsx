@@ -1,3 +1,4 @@
+import { usePermissionRevision } from "./permissions";
 import { Circle, MoreHorizontal } from "lucide-react";
 import { useId } from "react";
 import { useNavigate } from "react-router";
@@ -29,6 +30,7 @@ export type ActionTarget = Pick<ActionContext, "resource" | "rows"> & {
     instance?: Partial<ResourceInstance>;
 };
 export function useActionContext(target: ActionTarget): ActionContext {
+    usePermissionRevision();
     const workbench = useWorkbench();
     const reload = useReload();
     const navigate = useNavigate();
@@ -86,6 +88,7 @@ function MenuAction({
     context: ActionContext;
     icons: boolean;
 }) {
+    usePermissionRevision();
     const workbench = useWorkbench();
     const descriptionId = useId();
     const availability = actionAvailability(action, context);
@@ -236,6 +239,7 @@ export function ActionButtons({
     icons?: boolean;
 }) {
     const context = useActionContext(target);
+    usePermissionRevision();
     const workbench = useWorkbench();
     return actions
         .filter(

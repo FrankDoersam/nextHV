@@ -1,3 +1,4 @@
+import { ResourceRouteBoundary } from "./permission-boundary";
 import { ResourceSchemaProvider } from "@/framework/data/resource-schema-provider";
 import React, { Suspense, lazy, useState } from "react";
 import { Routes, Route, useLocation } from "react-router";
@@ -45,7 +46,12 @@ function ApplicationWorkspace() {
                     <Suspense
                         fallback={
                             loadingResource ? (
-                                <CollectionLoading resource={loadingResource} activeView={new URLSearchParams(location.search).get("view")} />
+                                <CollectionLoading
+                                    resource={loadingResource}
+                                    activeView={new URLSearchParams(
+                                        location.search,
+                                    ).get("view")}
+                                />
                             ) : (
                                 <Loading />
                             )
@@ -58,23 +64,32 @@ function ApplicationWorkspace() {
                                     <Route
                                         path={`/${r.name}`}
                                         element={
-                                            <ResourcePage
-                                                key={r.name}
-                                                resource={r}
-                                            />
+                                            <ResourceRouteBoundary
+                                                resource={r.name}
+                                            >
+                                                <ResourcePage
+                                                    key={r.name}
+                                                    resource={r}
+                                                />
+                                            </ResourceRouteBoundary>
                                         }
                                     />
                                     <Route
                                         path={`/${r.name}/:id`}
                                         element={
-                                            r.name === "contracts" ? (
-                                                <ContractDetailPage />
-                                            ) : (
-                                                <DetailPage
-                                                    key={r.name}
-                                                    resource={r}
-                                                />
-                                            )
+                                            <ResourceRouteBoundary
+                                                resource={r.name}
+                                                detail
+                                            >
+                                                {r.name === "contracts" ? (
+                                                    <ContractDetailPage />
+                                                ) : (
+                                                    <DetailPage
+                                                        key={r.name}
+                                                        resource={r}
+                                                    />
+                                                )}
+                                            </ResourceRouteBoundary>
                                         }
                                     />
                                 </React.Fragment>

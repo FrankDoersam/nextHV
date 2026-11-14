@@ -1,3 +1,4 @@
+import { usePermissionRevision } from "../permissions";
 import { CellRenderer } from "./cell-renderer";
 import { recordValue } from "./cell-value";
 import { CollectionViews, collectionViewTabId } from "./collection-views";
@@ -59,7 +60,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { useReload } from "../data/hooks";
-import { can } from "../permissions";
+import { access, can } from "../permissions";
 import type {
     Filter,
     CollectionOptions,
@@ -182,17 +183,47 @@ export function ResourceCollection({
     const workbench = useWorkbench();
     const reload = useReload();
     const controller = useResourceTable({
-        resource, fixedFilters, views: configuredViews, pagination: paginationConfig,
-        filters: filterPresets, sorters: sortPresets, queryOptions, compact,
-        syncWithLocation, urlKey, searchable, filterable, groupable,
+        resource,
+        fixedFilters,
+        views: configuredViews,
+        pagination: paginationConfig,
+        filters: filterPresets,
+        sorters: sortPresets,
+        queryOptions,
+        compact,
+        syncWithLocation,
+        urlKey,
+        searchable,
+        filterable,
+        groupable,
         toolbarFilters: directFields,
     });
     const {
-        state, update, clearQuery, query, activeView, views, scopedQuery,
-        filterDefinitions, apiFilters, result, groupResult, effectiveGroup,
+        state,
+        update,
+        clearQuery,
+        query,
+        activeView,
+        views,
+        scopedQuery,
+        filterDefinitions,
+        apiFilters,
+        result,
+        groupResult,
+        effectiveGroup,
     } = controller;
     const paging = controller.paginationEnabled;
-    const { search, view, pagination, sorting, columnVisibility, filters, group, dense } = state;
+    const {
+        search,
+        view,
+        pagination,
+        sorting,
+        columnVisibility,
+        filters,
+        group,
+        dense,
+    } = state;
+    usePermissionRevision();
     const viewport = useRef<HTMLDivElement>(null);
     const [width, setWidth] = useState(0);
     const [columnPinning, setColumnPinning] = useState<ColumnPinningState>({
@@ -254,7 +285,9 @@ export function ResourceCollection({
     );
     const hasQuery =
         !!(searchable && search.trim()) ||
-        Object.keys(filters).some((field) => filterable || directFields.includes(field));
+        Object.keys(filters).some(
+            (field) => filterable || directFields.includes(field),
+        );
     const setSorting = controller.setSorters;
     const setColumnVisibility = (
         value: import("@tanstack/react-table").Updater<ColumnVisibilityState>,
@@ -263,14 +296,22 @@ export function ResourceCollection({
     const [selectingAll, setSelectingAll] = useState(false);
     const [selectionError, setSelectionError] = useState<string>();
     const pendingRowOpen = useRef<ReturnType<typeof setTimeout> | null>(null);
-    useEffect(() => () => {
-        if (pendingRowOpen.current) clearTimeout(pendingRowOpen.current);
-    }, []);
+    useEffect(
+        () => () => {
+            if (pendingRowOpen.current) clearTimeout(pendingRowOpen.current);
+        },
+        [],
+    );
     const directDefinitions = filterDefinitions.filter(
-        (definition) => directFields.includes(definition.field) && supportsDirectFilter(definition),
+        (definition) =>
+            directFields.includes(definition.field) &&
+            supportsDirectFilter(definition),
     );
     const builderDefinitions = filterDefinitions.filter(
-        (definition) => !directDefinitions.some((direct) => direct.field === definition.field),
+        (definition) =>
+            !directDefinitions.some(
+                (direct) => direct.field === definition.field,
+            ),
     );
     const rollups = useCollectionSummary(
         resource,
@@ -495,7 +536,8 @@ export function ResourceCollection({
                     <div
                         className={cn(
                             "min-w-0",
-                            c.field === resource.titleField && "font-medium text-foreground",
+                            c.field === resource.titleField &&
+                                "font-medium text-foreground",
                         )}
                     >
                         {formatCell(c, row.original)}
@@ -659,23 +701,34 @@ export function ResourceCollection({
     const selectedRows = controller.globalSelection.length
         ? controller.globalSelection
         : rows.filter(
-              (r) => selection[String(r.id)] &&
+              (r) =>
+                  selection[String(r.id)] &&
                   (typeof rowSelection !== "function" || rowSelection(r)),
           );
     const tableActions = resource.actions.filter(
         (action) =>
             actions !== false && (!actions || actions.includes(action.id)),
     );
-    const grouped = effectiveGroup === "none" || !groupResult.data
-        ? null
-        : Object.fromEntries(groupResult.data.groups.flatMap((entry): [string, { total: number; items: RecordData[] }][] => {
-              const key = String(entry.value ?? "—");
-              const items = rows.filter((record) =>
-                  String(record[effectiveGroup] ?? "—") === key,
+    const grouped =
+        effectiveGroup === "none" || !groupResult.data
+            ? null
+            : Object.fromEntries(
+                  groupResult.data.groups.flatMap(
+                      (
+                          entry,
+                      ): [string, { total: number; items: RecordData[] }][] => {
+                          const key = String(entry.value ?? "—");
+                          const items = rows.filter(
+                              (record) =>
+                                  String(record[effectiveGroup] ?? "—") === key,
+                          );
+                          // Do not mount hundreds of empty grids for groups absent from this page.
+                          return items.length
+                              ? [[key, { total: entry.count, items }]]
+                              : [];
+                      },
+                  ),
               );
-              // Do not mount hundreds of empty grids for groups absent from this page.
-              return items.length ? [[key, { total: entry.count, items }]] : [];
-          }));
     const emptyState = (
         <EmptyState
             title={hasQuery ? "Keine Treffer" : "Noch keine Einträge"}
@@ -712,7 +765,12 @@ export function ResourceCollection({
                   presentation: viewMode,
               });
     const openFromTable = (row: RecordData) => {
-        if (!detailLink || result.isPlaceholderData || !can(resource.name, "view", row))
+        const permission = access(resource.name, "view", row);
+        if (
+            !detailLink ||
+            result.isPlaceholderData ||
+            (!permission.allowed && !permission.pending)
+        )
             return;
         if (
             doubleClickEdit &&
@@ -744,7 +802,8 @@ export function ResourceCollection({
                 rowSelection
                     ? {
                           header:
-                              rowSelection === "single" || !selectAll ? undefined : (
+                              rowSelection === "single" ||
+                              !selectAll ? undefined : (
                                   <DataGridTableRowSelectAll />
                               ),
                           row: (row) => (
@@ -973,7 +1032,11 @@ export function ResourceCollection({
     return (
         <DataGrid
             table={table}
-            onRowClick={detailLink && !result.isPlaceholderData ? openFromTable : undefined}
+            onRowClick={
+                detailLink && !result.isPlaceholderData
+                    ? openFromTable
+                    : undefined
+            }
             recordCount={result.data?.total ?? 0}
             isLoading={result.isPending}
             loadingMode="skeleton"
@@ -1017,7 +1080,11 @@ export function ResourceCollection({
                             .closest("[data-row-id]")
                             ?.getAttribute("data-row-id");
                         const row = rows.find((r) => String(r.id) === id);
-                        if (row && can(resource.name, "edit", row)) {
+                        if (
+                            row &&
+                            (access(resource.name, "edit", row).pending ||
+                                can(resource.name, "edit", row))
+                        ) {
                             if (pendingRowOpen.current) {
                                 clearTimeout(pendingRowOpen.current);
                                 pendingRowOpen.current = null;
@@ -1130,17 +1197,38 @@ export function ResourceCollection({
                                                   : "min-h-24 md:flex-1 md:overflow-hidden",
                                         )}
                                     >
-                                        {effectiveGroup !== "none" && groupResult.isError && (
-                                            <div role="alert" className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/30 px-4 py-2 text-sm">
-                                                <span>Serverweite Gruppierung nicht verfügbar. Die Tabelle zeigt die normale Seitenansicht.</span>
-                                                <Button type="button" size="sm" variant="outline" onClick={() => void groupResult.refetch()}>
-                                                    Erneut versuchen
-                                                </Button>
-                                            </div>
-                                        )}
-                                        {effectiveGroup !== "none" && groupResult.isPending ? (
-                                            <div role="status" className="p-5 text-sm text-muted-foreground">
-                                                Gruppen werden serverseitig berechnet …
+                                        {effectiveGroup !== "none" &&
+                                            groupResult.isError && (
+                                                <div
+                                                    role="alert"
+                                                    className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/30 px-4 py-2 text-sm"
+                                                >
+                                                    <span>
+                                                        Serverweite Gruppierung
+                                                        nicht verfügbar. Die
+                                                        Tabelle zeigt die
+                                                        normale Seitenansicht.
+                                                    </span>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() =>
+                                                            void groupResult.refetch()
+                                                        }
+                                                    >
+                                                        Erneut versuchen
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        {effectiveGroup !== "none" &&
+                                        groupResult.isPending ? (
+                                            <div
+                                                role="status"
+                                                className="p-5 text-sm text-muted-foreground"
+                                            >
+                                                Gruppen werden serverseitig
+                                                berechnet …
                                             </div>
                                         ) : grouped && rows.length > 0 ? (
                                             <TableViewport
@@ -1181,14 +1269,23 @@ export function ResourceCollection({
                                                                 </span>
                                                                 <span className="font-normal text-muted-foreground">
                                                                     {
-                                                                        items!.items.length
+                                                                        items!
+                                                                            .items
+                                                                            .length
                                                                     }{" "}
-                                                                    auf dieser Seite · {items!.total} insgesamt
+                                                                    auf dieser
+                                                                    Seite ·{" "}
+                                                                    {
+                                                                        items!
+                                                                            .total
+                                                                    }{" "}
+                                                                    insgesamt
                                                                 </span>
                                                             </div>
                                                             {stackedRows ? (
                                                                 recordCards(
-                                                                    items!.items,
+                                                                    items!
+                                                                        .items,
                                                                 )
                                                             ) : (
                                                                 <GroupedGrid
@@ -1196,7 +1293,8 @@ export function ResourceCollection({
                                                                         columns
                                                                     }
                                                                     rows={
-                                                                        items!.items
+                                                                        items!
+                                                                            .items
                                                                     }
                                                                     selection={
                                                                         selection
@@ -1226,7 +1324,8 @@ export function ResourceCollection({
                                                                         resource,
                                                                     )}
                                                                     onRowClick={
-                                                                        detailLink && !result.isPlaceholderData
+                                                                        detailLink &&
+                                                                        !result.isPlaceholderData
                                                                             ? openFromTable
                                                                             : undefined
                                                                     }
@@ -1328,22 +1427,36 @@ export function ResourceCollection({
                                         setSelectionError(undefined);
                                         setSelectingAll(true);
                                         try {
-                                            const all = await controller.selectAllFiltered();
-                                            setSelection(Object.fromEntries(
-                                                all.map((record) => [String(record.id), true]),
-                                            ));
+                                            const all =
+                                                await controller.selectAllFiltered();
+                                            setSelection(
+                                                Object.fromEntries(
+                                                    all.map((record) => [
+                                                        String(record.id),
+                                                        true,
+                                                    ]),
+                                                ),
+                                            );
                                         } catch (error) {
-                                            setSelectionError(error instanceof Error ? error.message : "Auswahl fehlgeschlagen.");
+                                            setSelectionError(
+                                                error instanceof Error
+                                                    ? error.message
+                                                    : "Auswahl fehlgeschlagen.",
+                                            );
                                         } finally {
                                             setSelectingAll(false);
                                         }
                                     }}
                                 >
-                                    {selectingAll ? "Wird ausgewählt …" : `Alle ${result.data?.total ?? 0} Treffer auswählen`}
+                                    {selectingAll
+                                        ? "Wird ausgewählt …"
+                                        : `Alle ${result.data?.total ?? 0} Treffer auswählen`}
                                 </Button>
                             )}
                         {selectionError && (
-                            <span role="alert" className="max-w-xs text-xs">{selectionError}</span>
+                            <span role="alert" className="max-w-xs text-xs">
+                                {selectionError}
+                            </span>
                         )}
                         <ActionButtons
                             actions={tableActions.filter((action) =>

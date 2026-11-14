@@ -1,7 +1,15 @@
+import { configurePermissions } from "./permissions";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+    act,
+    cleanup,
+    fireEvent,
+    render,
+    screen,
+    waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router";
@@ -112,6 +120,7 @@ beforeEach(() => {
 });
 afterEach(() => {
     cleanup();
+    configurePermissions({ enabled: false, adapter: { can: () => true } });
     vi.restoreAllMocks();
 });
 
@@ -169,7 +178,11 @@ describe("shared view and section editors", () => {
         expect(
             await screen.findByRole("dialog", { name: "Sonnenhof" }),
         ).toBeVisible();
-        expect(dataProvider.one).toHaveBeenCalledWith(resource, 9);
+        expect(dataProvider.one).toHaveBeenCalledWith(
+            resource,
+            9,
+            expect.any(AbortSignal),
+        );
     });
     it("restores a section edit link with its collapsed-by-default section open and returns to view on cancel", async () => {
         const user = userEvent.setup();
@@ -421,4 +434,80 @@ describe("collapsible form regions and wizard summary", () => {
             "Parkhof",
         );
     });
+});
+
+it("retries only the failed follow-up after persistence and never creates the record twice", async () => {
+    const save = vi.spyOn(dataProvider, "save").mockResolvedValue(record);
+    const onSaved = vi
+        .fn()
+        .mockRejectedValueOnce(new Error("Picker offline"))
+        .mockResolvedValue(undefined);
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    mount(
+        <ResourceEditor
+            request={{ resource, mode: "create", onSaved }}
+            onClose={onClose}
+        />,
+    );
+    await user.click(screen.getByRole("button", { name: "Speichern" }));
+    expect(
+        await screen.findByText(
+            /Der Datensatz wurde gespeichert. Der Folgeschritt/,
+        ),
+    ).toBeVisible();
+    expect(
+        screen.queryByRole("button", { name: "Speichern" }),
+    ).not.toBeInTheDocument();
+    await user.click(
+        screen.getByRole("button", { name: "Folgeschritt wiederholen" }),
+    );
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(onSaved).toHaveBeenCalledTimes(2);
+    expect(onSaved).toHaveBeenLastCalledWith(record);
+});
+
+it("submits only once when two submit events arrive before a React render", async () => {
+    let finish!: (row: RecordData) => void;
+    const save = vi.spyOn(dataProvider, "save").mockImplementation(
+        () =>
+            new Promise((resolve) => {
+                finish = resolve;
+            }),
+    );
+    const onClose = vi.fn();
+    mount(
+        <ResourceEditor
+            request={{ resource, mode: "create" }}
+            onClose={onClose}
+        />,
+    );
+    const form = screen.getByRole("textbox", { name: "Name" }).closest("form")!;
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(
+        screen.getByRole("button", { name: /Wird gespeichert/ }),
+    ).toBeDisabled();
+    await act(async () => finish(record));
+    expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+it("denies a create deep link before hydrating a parent or mounting a form", async () => {
+    configurePermissions({
+        enabled: true,
+        adapter: {
+            can: async () => ({
+                allowed: false,
+                reason: "Anlegen ist gesperrt.",
+            }),
+        },
+    });
+    mount(null, { ...panel, mode: "create", id: undefined });
+    expect(await screen.findByText("Anlegen ist gesperrt.")).toBeVisible();
+    expect(
+        screen.queryByRole("button", { name: "Speichern" }),
+    ).not.toBeInTheDocument();
+    expect(dataProvider.one).not.toHaveBeenCalled();
 });
