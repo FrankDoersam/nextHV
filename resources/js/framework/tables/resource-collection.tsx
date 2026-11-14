@@ -765,7 +765,11 @@ export function ResourceCollection({
             <div className="flex min-w-0 flex-wrap items-center gap-2.5">
                 <div
                     data-slot="collection-controls"
+<<<<<<< HEAD
                     className="flex min-w-0 flex-1 basis-[32rem] flex-wrap items-center gap-2.5"
+=======
+                    className="flex min-w-0 max-w-full flex-auto flex-wrap items-center gap-2.5"
+>>>>>>> 295ac0c2347dca2a96344398238933dbbe2db4f7
                 >
                     <DirectFilters
                         definitions={directDefinitions}
@@ -903,259 +907,282 @@ export function ResourceCollection({
             }}
         >
             <div
-                ref={viewport}
-                data-slot="resource-collection"
-                aria-busy={result.isFetching}
-                className={cn(
-                    "relative flex min-h-0 flex-col gap-3",
-                    compact ? "" : "h-full",
-                )}
-                onDoubleClick={(event) => {
-                    if (
-                        !doubleClickEdit ||
-                        actions === false ||
-                        (actions && !actions.includes("edit")) ||
-                        result.isPlaceholderData ||
-                        (event.target as HTMLElement).closest(
-                            "button,a,input,[role=checkbox],[role=menuitem]",
-                        )
-                    )
-                        return;
-                    const id = (event.target as HTMLElement)
-                        .closest("[data-row-id]")
-                        ?.getAttribute("data-row-id");
-                    const row = rows.find((r) => String(r.id) === id);
-                    if (row && can(resource.name, "edit", row)) openEdit(row);
-                }}
+                className={cn("relative min-h-0 min-w-0", !compact && "h-full")}
             >
-                {result.isPending && (
-                    <span
-                        role="status"
-                        aria-label="Tabelle wird geladen"
-                        className="sr-only"
-                    >
-                        {resource.label} werden geladen.
-                    </span>
-                )}
-                {result.isFetching && !result.isPending && (
-                    <div
-                        role="status"
-                        className="absolute inset-x-0 -top-2 h-0.5 overflow-hidden bg-muted"
-                    >
-                        <div className="h-full w-full animate-pulse bg-primary/40" />
-                        <span className="sr-only">
-                            Daten werden aktualisiert
-                        </span>
-                    </div>
-                )}
-                {summary && resource.summary && (
-                    <CollectionKpis
-                        definition={resource.summary}
-                        values={rollups.data?.data}
-                        loading={rollups.isPending}
-                        refreshing={rollups.isFetching}
-                        error={rollups.error}
-                        retry={() => rollups.refetch()}
-                    />
-                )}
-                {views.length > 0 && (
-                    <CollectionViews
-                        icons={tabIcons}
-                        panelId={panelId}
-                        resource={resource}
-                        views={views}
-                        active={activeView!.id}
-                        fixedFilters={fixedFilters}
-                        onChange={(next) => update("view", next, true)}
-                    />
-                )}
                 <div
-                    id={panelId}
-                    role={views.length ? "tabpanel" : undefined}
-                    aria-labelledby={
-                        views.length
-                            ? collectionViewTabId(panelId, activeView!.id)
-                            : undefined
-                    }
-                    className="flex min-h-0 flex-1 flex-col gap-3"
+                    ref={viewport}
+                    data-slot="resource-collection"
+                    aria-busy={result.isFetching}
+                    className={cn(
+                        "flex min-h-0 min-w-0 flex-col gap-3",
+                        !compact &&
+                            "h-full overflow-x-hidden overflow-y-auto overscroll-contain",
+                    )}
+                    onDoubleClick={(event) => {
+                        if (
+                            !doubleClickEdit ||
+                            actions === false ||
+                            (actions && !actions.includes("edit")) ||
+                            result.isPlaceholderData ||
+                            (event.target as HTMLElement).closest(
+                                "button,a,input,[role=checkbox],[role=menuitem]",
+                            )
+                        )
+                            return;
+                        const id = (event.target as HTMLElement)
+                            .closest("[data-row-id]")
+                            ?.getAttribute("data-row-id");
+                        const row = rows.find((r) => String(r.id) === id);
+                        if (row && can(resource.name, "edit", row))
+                            openEdit(row);
+                    }}
                 >
-                    {toolbar && (
-                        <div className="space-y-3">
-                            {filterable && !!builderDefinitions.length ? (
-                                <ResourceFilters
-                                    definitions={builderDefinitions}
-                                    value={filters}
-                                    onChange={(next) =>
-                                        update("filters", next, true)
-                                    }
-                                    renderToolbar={renderToolbar}
-                                />
-                            ) : (
-                                renderToolbar()
-                            )}
+                    {result.isPending && (
+                        <span
+                            role="status"
+                            aria-label="Tabelle wird geladen"
+                            className="sr-only"
+                        >
+                            {resource.label} werden geladen.
+                        </span>
+                    )}
+                    {result.isFetching && !result.isPending && (
+                        <div
+                            role="status"
+                            className="absolute inset-x-0 -top-2 h-0.5 overflow-hidden bg-muted"
+                        >
+                            <div className="h-full w-full animate-pulse bg-primary/40" />
+                            <span className="sr-only">
+                                Daten werden aktualisiert
+                            </span>
                         </div>
                     )}
-                    {selectedRows.length > 0 && !result.isPlaceholderData && (
-                        <BulkActionBar
-                            count={selectedRows.length}
-                            onClear={() => setSelection({})}
-                        >
-                            <ActionButtons
-                                actions={tableActions.filter((action) =>
-                                    resource.bulkActions === false
-                                        ? false
-                                        : !resource.bulkActions ||
-                                          resource.bulkActions.includes(
-                                              action.id,
-                                          ),
-                                )}
-                                target={{
-                                    resource,
-                                    rows: selectedRows,
-                                    instance,
-                                }}
-                                placement="bulk"
-                                inverse
-                            />
-                        </BulkActionBar>
-                    )}
-                    {result.error ? (
-                        <ErrorState
-                            error={result.error}
-                            retry={() => result.refetch()}
+                    {summary && resource.summary && (
+                        <CollectionKpis
+                            definition={resource.summary}
+                            values={rollups.data?.data}
+                            loading={rollups.isPending}
+                            refreshing={rollups.isFetching}
+                            error={rollups.error}
+                            retry={() => rollups.refetch()}
                         />
-                    ) : (
-                        <>
-                            <div
-                                inert={result.isPlaceholderData}
-                                className={cn(
-                                    "min-h-0",
-                                    result.isPlaceholderData &&
-                                        "pointer-events-none opacity-60",
-                                    compact
-                                        ? "max-h-[32rem] overflow-hidden"
-                                        : "flex-1 overflow-hidden",
-                                )}
-                            >
-                                {grouped && rows.length > 0 ? (
-                                    <TableViewport compact={compact}>
-                                        <div className="space-y-4">
-                                            {Object.entries(grouped).map(
-                                                ([key, items]) => (
-                                                    <section
-                                                        key={key}
-                                                        className="overflow-hidden rounded-xl border"
-                                                    >
-                                                        <div className="flex items-center justify-between bg-muted/50 px-4 py-2 text-xs font-semibold">
-                                                            <span>
-                                                                {filterDefinitions
-                                                                    .find(
-                                                                        (
-                                                                            filter,
-                                                                        ) =>
-                                                                            filter.field ===
-                                                                            effectiveGroup,
-                                                                    )
-                                                                    ?.options?.find(
-                                                                        (
-                                                                            option,
-                                                                        ) =>
-                                                                            String(
-                                                                                option.value,
-                                                                            ) ===
-                                                                            key,
-                                                                    )?.label ??
-                                                                    label(key)}
-                                                            </span>
-                                                            <span className="font-normal text-muted-foreground">
-                                                                {items!.length}{" "}
-                                                                auf dieser Seite
-                                                            </span>
-                                                        </div>
-                                                        {stackedRows ? (
-                                                            recordCards(items!)
-                                                        ) : (
-                                                            <GroupedGrid
-                                                                columns={
-                                                                    columns
-                                                                }
-                                                                rows={items!}
-                                                                selection={
-                                                                    selection
-                                                                }
-                                                                onSelection={
-                                                                    setSelection
-                                                                }
-                                                                sorting={
-                                                                    sorting
-                                                                }
-                                                                onSorting={
-                                                                    setSorting
-                                                                }
-                                                                columnVisibility={
-                                                                    columnVisibility
-                                                                }
-                                                                onVisibility={
-                                                                    setColumnVisibility
-                                                                }
-                                                                selectionMode={
-                                                                    rowSelection
-                                                                }
-                                                                dense={dense}
-                                                                defaultVisibility={defaultColumnVisibility(
-                                                                    resource,
-                                                                )}
-                                                            />
-                                                        )}
-                                                    </section>
-                                                ),
-                                            )}
-                                        </div>
-                                    </TableViewport>
-                                ) : (
-                                    <DataGridContainer
-                                        className={cn(!compact && "h-full")}
-                                    >
-                                        {!stackedRows &&
-                                        rows.length > 0 &&
-                                        (virtualized === true ||
-                                            (virtualized === "auto" &&
-                                                rows.length >= 50)) &&
-                                        !result.isPending ? (
-                                            <DataGridTableVirtual
-                                                height={compact ? 480 : "100%"}
-                                                estimateSize={dense ? 36 : 44}
-                                                overscan={8}
-                                            />
-                                        ) : (
-                                            <TableViewport compact={compact}>
-                                                {stackedRows ? (
-                                                    recordCards(rows)
-                                                ) : (
-                                                    <DataGridTable />
-                                                )}
-                                            </TableViewport>
-                                        )}
-                                    </DataGridContainer>
-                                )}
-                            </div>
-                            <div className="shrink-0 border-t pt-3">
-                                {paging ? (
-                                    <DataGridPagination
-                                        className="w-full"
-                                        sizes={[10, 25, 50, 100]}
+                    )}
+                    {views.length > 0 && (
+                        <CollectionViews
+                            icons={tabIcons}
+                            panelId={panelId}
+                            resource={resource}
+                            views={views}
+                            active={activeView!.id}
+                            fixedFilters={fixedFilters}
+                            onChange={(next) => update("view", next, true)}
+                        />
+                    )}
+                    <div
+                        id={panelId}
+                        role={views.length ? "tabpanel" : undefined}
+                        aria-labelledby={
+                            views.length
+                                ? collectionViewTabId(panelId, activeView!.id)
+                                : undefined
+                        }
+                        className="flex min-h-0 flex-1 flex-col gap-3"
+                    >
+                        {toolbar && (
+                            <div className="space-y-3">
+                                {filterable && !!builderDefinitions.length ? (
+                                    <ResourceFilters
+                                        definitions={builderDefinitions}
+                                        value={filters}
+                                        onChange={(next) =>
+                                            update("filters", next, true)
+                                        }
+                                        renderToolbar={renderToolbar}
                                     />
                                 ) : (
-                                    <p className="text-xs text-muted-foreground">
-                                        {rows.length} von{" "}
-                                        {result.data?.total ?? 0} Einträgen ·
-                                        maximal 100 ohne Seitennavigation
-                                    </p>
+                                    renderToolbar()
                                 )}
                             </div>
-                        </>
-                    )}
+                        )}
+                        {result.error ? (
+                            <ErrorState
+                                error={result.error}
+                                retry={() => result.refetch()}
+                            />
+                        ) : (
+                            <>
+                                <div
+                                    inert={result.isPlaceholderData}
+                                    className={cn(
+                                        "min-h-0",
+                                        result.isPlaceholderData &&
+                                            "pointer-events-none opacity-60",
+                                        compact
+                                            ? "max-h-[32rem] overflow-hidden"
+                                            : "min-h-64 flex-1 overflow-hidden",
+                                    )}
+                                >
+                                    {grouped && rows.length > 0 ? (
+                                        <TableViewport compact={compact}>
+                                            <div className="space-y-4">
+                                                {Object.entries(grouped).map(
+                                                    ([key, items]) => (
+                                                        <section
+                                                            key={key}
+                                                            className="overflow-hidden rounded-xl border"
+                                                        >
+                                                            <div className="flex items-center justify-between bg-muted/50 px-4 py-2 text-xs font-semibold">
+                                                                <span>
+                                                                    {filterDefinitions
+                                                                        .find(
+                                                                            (
+                                                                                filter,
+                                                                            ) =>
+                                                                                filter.field ===
+                                                                                effectiveGroup,
+                                                                        )
+                                                                        ?.options?.find(
+                                                                            (
+                                                                                option,
+                                                                            ) =>
+                                                                                String(
+                                                                                    option.value,
+                                                                                ) ===
+                                                                                key,
+                                                                        )
+                                                                        ?.label ??
+                                                                        label(
+                                                                            key,
+                                                                        )}
+                                                                </span>
+                                                                <span className="font-normal text-muted-foreground">
+                                                                    {
+                                                                        items!
+                                                                            .length
+                                                                    }{" "}
+                                                                    auf dieser
+                                                                    Seite
+                                                                </span>
+                                                            </div>
+                                                            {stackedRows ? (
+                                                                recordCards(
+                                                                    items!,
+                                                                )
+                                                            ) : (
+                                                                <GroupedGrid
+                                                                    columns={
+                                                                        columns
+                                                                    }
+                                                                    rows={
+                                                                        items!
+                                                                    }
+                                                                    selection={
+                                                                        selection
+                                                                    }
+                                                                    onSelection={
+                                                                        setSelection
+                                                                    }
+                                                                    sorting={
+                                                                        sorting
+                                                                    }
+                                                                    onSorting={
+                                                                        setSorting
+                                                                    }
+                                                                    columnVisibility={
+                                                                        columnVisibility
+                                                                    }
+                                                                    onVisibility={
+                                                                        setColumnVisibility
+                                                                    }
+                                                                    selectionMode={
+                                                                        rowSelection
+                                                                    }
+                                                                    dense={
+                                                                        dense
+                                                                    }
+                                                                    defaultVisibility={defaultColumnVisibility(
+                                                                        resource,
+                                                                    )}
+                                                                />
+                                                            )}
+                                                        </section>
+                                                    ),
+                                                )}
+                                            </div>
+                                        </TableViewport>
+                                    ) : (
+                                        <DataGridContainer
+                                            className={cn(!compact && "h-full")}
+                                        >
+                                            {!stackedRows &&
+                                            rows.length > 0 &&
+                                            (virtualized === true ||
+                                                (virtualized === "auto" &&
+                                                    rows.length >= 50)) &&
+                                            !result.isPending ? (
+                                                <DataGridTableVirtual
+                                                    height={
+                                                        compact ? 480 : "100%"
+                                                    }
+                                                    estimateSize={
+                                                        dense ? 36 : 44
+                                                    }
+                                                    overscan={8}
+                                                />
+                                            ) : (
+                                                <TableViewport
+                                                    compact={compact}
+                                                >
+                                                    {stackedRows ? (
+                                                        recordCards(rows)
+                                                    ) : (
+                                                        <DataGridTable />
+                                                    )}
+                                                </TableViewport>
+                                            )}
+                                        </DataGridContainer>
+                                    )}
+                                </div>
+                                <div className="shrink-0 border-t pt-3">
+                                    {paging ? (
+                                        <DataGridPagination
+                                            className="w-full"
+                                            sizes={[10, 25, 50, 100]}
+                                        />
+                                    ) : (
+                                        <p className="text-xs text-muted-foreground">
+                                            {rows.length} von{" "}
+                                            {result.data?.total ?? 0} Einträgen
+                                            · maximal 100 ohne Seitennavigation
+                                        </p>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
+                {selectedRows.length > 0 && !result.isPlaceholderData && (
+                    <BulkActionBar
+                        count={selectedRows.length}
+                        onClear={() => setSelection({})}
+                    >
+                        <ActionButtons
+                            actions={tableActions.filter((action) =>
+                                resource.bulkActions === false
+                                    ? false
+                                    : !resource.bulkActions ||
+                                      resource.bulkActions.includes(action.id),
+                            )}
+                            target={{
+                                resource,
+                                rows: selectedRows,
+                                instance,
+                            }}
+                            placement="bulk"
+                            inverse
+                        />
+                    </BulkActionBar>
+                )}
             </div>
         </DataGrid>
     );

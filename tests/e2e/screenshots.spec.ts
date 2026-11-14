@@ -194,6 +194,25 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         ).toBeLessThanOrEqual(1);
     }
     await capture("36-filter-toolbar-mobil");
+<<<<<<< HEAD
+=======
+    const mobileRecords = page.locator('[data-slot="scroll-area-viewport"]');
+    expect((await mobileRecords.boundingBox())!.height).toBeGreaterThanOrEqual(
+        240,
+    );
+    await page
+        .getByRole("button", { name: "MV-001-01", exact: true })
+        .scrollIntoViewIfNeeded();
+    await expect(
+        page.getByRole("button", { name: "MV-001-01", exact: true }),
+    ).toBeInViewport();
+    await capture("37-filter-mobile-datensatz");
+    await page
+        .locator('[data-slot="resource-collection"]')
+        .evaluate((element) => {
+            element.scrollTop = 0;
+        });
+>>>>>>> 295ac0c2347dca2a96344398238933dbbe2db4f7
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page
         .getByRole("button", {
