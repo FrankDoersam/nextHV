@@ -1511,11 +1511,13 @@ Formulare und Relationsfilter übernehmen diese Metadaten. Gleiche Wohnungsnamen
 
 ### Relationszellen und Export
 
-Der Schema-Adapter erkennt `BelongsTo`-Spalten wie `contract.code` und erzeugt daraus `ColumnDefinition.reference`. `CellReference` stellt diese linksbündig als Navigation zum verknüpften Datensatz dar. `reference: false` schaltet die Verlinkung gezielt ab; `{ resource: "contracts", idField: "contract_id" }` erlaubt eine explizite Zuordnung. Ungültige oder fehlende IDs werden als Text ausgegeben.
+Relationsspalten wie `property.name` und `contract.code` zeigen im Grid den Namen beziehungsweise die Vertragsnummer **als normalen Text**, ohne zusätzlichen `Cell`-/Link-Wrapper. Nur die eigentliche Titelspalte öffnet den Datensatz. Die Anzeige und der CSV-Export lesen verschachtelte Werte direkt aus dem mitgeladenen Relationsdatensatz.
+
+Für `BelongsTo`-Namen kann eine Spalte bewusst `sortable: true` setzen. Der Schema-Adapter prüft dann das deklarierte Relationsziel und dessen native Sortierfreigabe; abweichende Antwortnamen werden per `sortField` in den kanonischen API-Pfad übersetzt. Die echte Sortierung erfolgt **serverseitig** über `search.sorts`, beispielsweise `property.name` für Einheiten. Unbekannte Relationspfade und verbotene Sortierungen bleiben Aufgaben der REST-Validierung; reine Anzeige-Relationsfelder werden nicht automatisch sortierbar.
 
 `ColumnDefinition.options` wird unabhängig von der Filteranzeige aus den PHP-Metadaten übernommen. Zellanzeige und CSV verwenden diese Beschriftungen: `tenant` wird zu `Mieter`, boolesche Werte zu `Ja`/`Nein`. Spaltenüberschriften und Dateiname sind fachlich benannt. `exportValue(row)` bleibt der bewusste Override. Exportiert wird weiterhin nur die aktuelle Seite bzw. Auswahl; der Schutz vor CSV-Formeln bleibt aktiv.
 
-Browseraufnahmen `40`–`44` prüfen die einspaltige Rollentabelle, CSV-Beschriftungen, Suche/Navigation über Vertragsnummern, das kontextgebundene Bearbeiten, Tabs bei 390/768 px und die Einheiten-Auswahl mit Objektbezug. Backendtests prüfen zusätzlich kombinierte Suchbegriffe, wörtliche Wildcard-Zeichen und den unveränderten Elternfilter.
+Browseraufnahmen `40`–`44` prüfen die einspaltige Rollentabelle, CSV-Beschriftungen, Suche über Vertragsnummern, Navigation über die reguläre Vertragsliste, das kontextgebundene Bearbeiten, Tabs bei 390/768 px und die Einheiten-Auswahl mit Objektbezug. Backendtests prüfen zusätzlich kombinierte Suchbegriffe, wörtliche Wildcard-Zeichen und den unveränderten Elternfilter.
 
 Die umfangreiche Screenshot-Tour berücksichtigt an Aufnahmegrenzen und vor zusätzlichen Szenarioblöcken die Rate-Limit-Header des Servers. Bei knappem Anfragebudget wartet sie auf die Rücksetzung und beginnt die Budgetmessung neu; damit werden auch zusätzliche Sidebar-Count-Abfragen berücksichtigt. Das Testzeitlimit von 180 Sekunden umfasst diese möglichen Wartezeiten. Das produktive API-Limit bleibt unverändert.
 
