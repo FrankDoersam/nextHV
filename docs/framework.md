@@ -167,7 +167,7 @@ Tabellenspalten mit `kind: "date"` werden zentral als **dd.MM.yyyy** dargestellt
 - Speichern/Weiter rechts, Abbrechen daneben, Zurück links. Im Wizard steht kein zusätzlicher Schritttext im Footer. Schließen, Escape und Abbrechen durchlaufen denselben Dirty-Check; laufendes Speichern blockiert Schließen.
 - Wizard validiert den aktuellen Schritt mit Laravel Precognition vor Weiter, bewahrt Werte beim Zurückgehen und springt bei Fehlern in den betreffenden Schritt.
 - Mehrere Serverfehler erscheinen gesammelt ohne identische Wiederholungen; konkrete Feldfehler bleiben am Feld sichtbar.
-- Jede Neu-/Bearbeiten-/View-Ansicht wird standardmäßig als `panels`-Descriptor in der URL abgebildet. Ein neu geladener Link lädt den Datensatz erneut über die API. Abschnittsbearbeitung ergänzt eine Feldliste und die Rückkehr zur Ansicht.
+- Jede Neu-/Bearbeiten-/View-Ansicht erhält standardmäßig lesbare URL-Parameter, z. B. `?panel=units/new&parent=properties/16&bind=property_id&reduced=1` oder `?panel=contracts/8/edit`. Ein neu geladener Link lädt den Datensatz erneut über die API. Abschnittsbearbeitung ergänzt eine Feldliste und die Rückkehr zur Ansicht.
 - In der URL stehen Ressource, Modus, ID, Darstellungsart und Relationskontext. Ungespeicherte Formularinhalte, Ausweisnummern und Callbacks werden nicht serialisiert.
 - Browser-Zurück/Navigation fragt bei ungespeicherten Formularen nach. Für Reload/Tab-Schließen wird der native Browserhinweis verwendet.
 - Bis zu acht verschachtelte Formulare. Eltern bleiben gemountet und rücken visuell zurück; Base UI übernimmt Fokus und Modalverhalten. Reduzierte Bewegung wird berücksichtigt.
@@ -358,7 +358,7 @@ Die Detailseite priorisiert Einheiten, Belegung, nächste Prüfung und Verantwor
 
 Session-Endpunkte: `/auth/user`, `/auth/login`, `/auth/logout`; Sanctum-CSRF, Same-Origin-Credentials und Login-Rate-Limit. `/docs/api` ist authentifiziert geschützt.
 
-Updates übertragen `updated_at` als `version`. Bei `409` kann das Formular aktualisiert werden; lokale Dirty-Werte bleiben erhalten und müssen geprüft werden. `422` wird in Feldfehler und Fehlerliste übersetzt. `428` hält Action-Eingaben und Auswahl für die explizite Bestätigung fest. Nach Mutationen werden Ressourcen- und Kennzahlenqueries invalidiert.
+Updates übertragen `updated_at` als `version`. Bei `409` kann das Formular aktualisiert werden; lokale Dirty-Werte bleiben erhalten und müssen geprüft werden. `422` wird in Feldfehler und Fehlerliste übersetzt. Nach dem Klick im Action-Dialog wird ein `428`-Token einmal mit unveränderten Eingaben und derselben Auswahl zurückgesendet. Es gibt keine zweite Bestätigungsstufe; währenddessen sind Submit und Schließen gesperrt. Nach Mutationen werden Ressourcen- und Kennzahlenqueries invalidiert.
 
 ## 13. Was aus Refine, Filament und Plugins sinnvoll ist
 
@@ -761,7 +761,7 @@ Die Auswertung der echten CI-Aufnahmen zeigte vier gemeinsame Ursachen: falsche 
 
 | Bereich             | Standard und Erweiterungspunkt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Theme / AppShell    | Kühle neutrale Flächen, weiße Inhaltskarten, Blau für aktive Navigation, Aktionen und Diagramm-Hervorhebung. Farben einschließlich Sidebar zentral in `resources/css/app.css`. Kompakte einzeilige Marke ohne weiße Logokarte; Suche in Sidebar und per Strg/⌘ K. Kein zusätzlicher Suchbutton rechts im Header.                                                                                                                                                                                                                                                                              |
+| Theme / AppShell    | Kühle neutrale Flächen, weiße Inhaltskarten, Blau für aktive Navigation, Aktionen und Diagramm-Hervorhebung. Farben einschließlich Sidebar zentral in `resources/css/app.css`. Kompakte einzeilige Marke ohne weiße Logokarte; Keine Suchzeile in der Sidebar; die Bereichssuche bleibt per Strg/⌘ K verfügbar. Kein zusätzlicher Suchbutton rechts im Header.                                                                                                                                                                                                                                |
 | Tabs / LazyTabs     | Das `orientation`-Prop wird an Base UI weitergegeben. Selektoren verwenden dessen tatsächliches `data-orientation`. Horizontale Tabs stehen über dem Inhalt; vertikale Tabs daneben. Die Tab-Leiste darf innerhalb ihrer eigenen Breite scrollen; Panels bleiben `min-width: 0`. Aktiver Unterstrich, Zähler und Tastaturfokus zentral. URL und verzögertes Laden unverändert.                                                                                                                                                                                                                |
 | Karten / Kennzahlen | `WorkspaceCard` übernimmt lesbare Kopf- und Fußzeilen sowie umbrechende Actions. `WorkspaceColumns` besitzt begrenzte Grid-Spalten und `min-width: 0`. Ein einzelner sichtbarer Baustein belegt die volle Breite.                                                                                                                                                                                                                                                                                                                                                                             |
 | Dashboard           | Der Zeitraum verwendet denselben durchsuchbaren `ChoicePicker` im Menümodus wie Gruppierung und Filter. Bereits vor dem Öffnen erscheinen übersetzte Labels. Monats-/Quartalsauswahl passt Betrag, Titel und Balkenauswahl an. Die Demo-Kennzeichnung bleibt sichtbar.                                                                                                                                                                                                                                                                                                                        |
@@ -1420,7 +1420,7 @@ editor: {
 },
 ```
 
-`sectionStyle` unterstützt `card` (Standard), `plain` und `collapsible`; `view.sectionStyle` überschreibt die Darstellung für den Lesemodus, andernfalls gilt der Editor-Stil. Gruppen sind standardmäßig offen. `group.collapsible` überschreibt den Gruppenstil, `defaultOpen` bestimmt den Anfangszustand und `summary(values)` die kompakte Zusammenfassung im Kopf. `FormSection` kapselt Header, Actions, Auf-/Zuklappen und Inhalt. Ein Serverfehler öffnet den betroffenen Tab und Abschnitt und fokussiert das Feld; eingeklappte Regionen verlieren keine Eingaben.
+`sectionStyle` unterstützt `card` (Standard), `plain` und `collapsible`; `view.sectionStyle` überschreibt die Darstellung für den Lesemodus, andernfalls gilt der Editor-Stil. Gruppen sind standardmäßig offen. `group.collapsible` überschreibt den Gruppenstil, `defaultOpen` bestimmt den Anfangszustand und `summary(values)` die kompakte Zusammenfassung im Kopf. `group.stepLabel` erlaubt einen kurzen Schrittnamen neben dem ausführlicheren Abschnittstitel. Bei mehr als vier Schritten stehen die Beschriftungen unter den Indikatoren, damit die horizontale Navigation lesbar bleibt. `FormSection` kapselt Header, Actions, Auf-/Zuklappen und Inhalt. Ein Serverfehler öffnet den betroffenen Tab und Abschnitt und fokussiert das Feld; eingeklappte Regionen verlieren keine Eingaben.
 
 Der Header-Stepper orientiert sich an Wizard-4: zentrierte horizontale Schrittnavigation, aktuelle/abgeschlossene Schritte, klare Footer-Actions ohne zusätzlichen Schrittzähler. Im Wizard bleibt die aktive Gruppe offen. `editor.summary` liefert die gemeinsame Key-Value-Zusammenfassung; `editor.wizardSummary` kann alternativ ausschließlich für Wizard/Flow gesetzt werden und hat dort Vorrang. Beide Summary-Props sind optionale Erweiterungspunkte; sie sind in der aktuellen Objekt- und Vertragsanlage nicht gesetzt.
 
@@ -1442,3 +1442,40 @@ Die AppShell setzt ihn bereits; normale Pages sollen keinen zweiten Wrapper erg�
 `ContentCard`, `FormSection`, `KeyValueCard` und `KeyValueRows` nutzen gemeinsame REUI-Frame- und Feldkomponenten im Aufbau der Form-/Form-6-Vorschauen: ruhiger Rahmen, klar getrennte Titel-/Inhaltsbereiche, kurze lesbare Werte und zentrale Action-Slots. Die Login-Komponente orientiert sich an Auth-8 mit einer zentrierten Karte vor dem lokal ausgelieferten Bild `public/images/auth-residence.webp`; kein Split-Layout, kein zusätzliches Logo, kein äußerer Footer und keine externe Bildanfrage beim Login. Farben, Abstände und Größen bleiben in Tokens und gemeinsamen Komponenten, nicht in Pages.
 
 Die benannten REUI-Blockvorschauen sind Gestaltungsreferenzen, keine Behauptung einer Übernahme lizenzpflichtiger Blockquellen. Die konkreten Quellen und Assets stehen in [ui-sources.json](ui-sources.json). Der Ausbau erleichtert weitere CRUD-Module; die Freigabegrenzen aus Abschnitt 31 bleiben bestehen.
+
+## 32. Lesbare Links und Rückmeldungen ohne Toasts
+
+`framework/navigation/panels.ts` ist der einzige URL-Codec. Das Standard-Sheet braucht keinen Darstellungsparameter; `layout=dialog` ist optional. `parent=properties/16&bind=property_id` bindet eine neue Einheit an das Objekt. `prefill=1` macht den Bezug editierbar, ohne diesen Parameter bleibt er gesperrt. `wizard=1`, `reduced=1`, `fields=notes,code` und `back=view` steuern die Oberfläche. Für weitere Ebenen verwenden dieselben Parameter `p2.`, `p3.` usw. Die maximal acht Ebenen funktionieren nach Reload und mit Browser-Zurück; private Formwerte und zufällige UI-Schlüssel stehen nie im Link. Alte `panels=[…]`-Links werden weiterhin gelesen und beim nächsten Panel-Wechsel in das neue Format geschrieben. Legacy-Flows behalten `flow`, `step` und gespeicherte `records`-Referenzen; unbekannte oder unvollständige Abläufe werden verworfen.
+
+Der Klick auf **Löschen** im geöffneten `ActionDialog` ist die ausdrückliche Zustimmung. Vorprüfungen bleiben erhalten. Falls die API `428` mit einem signierten Token sendet, führt derselbe Dialog genau eine Folgeanfrage aus. Während der Ausführung sind Schließen und Submit gesperrt. Erfolgreiche Aktionen aktualisieren die betroffenen Ansichten und schließen den Dialog; Validierungs-, Versions- und Netzwerkfehler bleiben darin sichtbar. Eine erneut abgelehnte Token-Anfrage wird nicht automatisch wiederholt. Auch alle anderen Dialog-Actions verwenden diesen Ablauf. Schlägt nach einer erfolgreichen Mutation nur die Aktualisierung fehl, bleibt die Erfolgsanzeige erhalten und erneutes Ausführen ist gesperrt.
+
+Toasts und die `sonner`-Abhängigkeit sind entfernt. Speichern zeigt das aktualisierte Formular bzw. schließt den Editor; Fehler bleiben am Formular. Kopierte Direktlinks werden am Kopierbutton bestätigt. Fehler direkter Actions erscheinen als beständiger Fehlerdialog, Abmeldefehler im Arbeitsbereich. Fachliche Ergebnisse wie PDF und Detailauswertungen behalten ihren Ergebnisdialog.
+
+### Einheitliche Toolbars und Mehrfachfilter
+
+Suche, Filter, Gruppieren, Export, Aktualisieren und Hinzufügen verwenden eine Höhe von 36 px – auch in eingebetteten Relationstabellen. Mehrfachfilter zeigen den ersten Titel mit `+N` für weitere ausgewählte Werte; Anzahl, Chevron und Entfernen bleiben getrennt und schrumpfen nicht. Der Tooltip enthält alle Titel, im geöffneten Picker bleiben sämtliche Werte vorausgewählt. Daten und OR-/IN-Filterverhalten ändern sich durch die kompaktere Anzeige nicht.
+
+### Icons in Tabs
+
+`TabsTrigger` akzeptiert `icon={Building2}` und `icons={false}`. Icons sind standardmäßig eingeschaltet, sofern eines konfiguriert ist. Dasselbe gilt für `LazyTabs` (`tabs[].icon`, `icons`), `Overlay` (`tabs.items[].icon`, `tabs.icons`) und `CollectionViews` (`views[].icon`, `icons`). Ressourcen setzen `editor.tabs[].icon` und optional `editor.tabIcons: false`; Collections verwenden `tabIcons: false`. Relationstabs nutzen standardmäßig das Icon der verknüpften Ressource, mit `relation.icon` als Überschreibung. Tab-Inhalte werden weiterhin erst beim Aktivieren geladen.
+
+```tsx
+<LazyTabs
+    icons
+    tabs={[
+        {
+            id: "overview",
+            label: "Übersicht",
+            icon: LayoutDashboard,
+            render: () => <Overview />,
+        },
+        {
+            id: "units",
+            label: "Einheiten",
+            icon: Building2,
+            count: 5,
+            render: () => <Units />,
+        },
+    ]}
+/>
+```

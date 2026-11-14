@@ -12,7 +12,6 @@ import { useWorkbench } from "@/framework/workbench";
 import { properties } from "@/modules/registry";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
-import { toast } from "sonner";
 const fields: FieldDefinition[] = [
     {
         name: "product",
@@ -158,11 +157,7 @@ export default function ComponentsPage() {
                 description="Interaktive Vorschau der wiederverwendbaren Komponenten."
             >
                 <FormProvider {...form}>
-                    <form
-                        onSubmit={form.handleSubmit(() =>
-                            toast.success("Alle Felder sind gültig."),
-                        )}
-                    >
+                    <form onSubmit={form.handleSubmit(() => undefined)}>
                         <Stack>
                             <FieldGrid>
                                 {fields.map((f) => (
@@ -203,7 +198,11 @@ export default function ComponentsPage() {
                                     ],
                                 }}
                             />
-                            <Button type="submit">Validierung prüfen</Button>
+                            <Button type="submit">
+                                {form.formState.isSubmitSuccessful
+                                    ? "Felder geprüft"
+                                    : "Validierung prüfen"}
+                            </Button>
                         </Stack>
                     </form>
                 </FormProvider>

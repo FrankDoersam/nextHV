@@ -203,6 +203,90 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         element.scrollTop = 0;
     });
     await page
+        .getByRole("combobox", { name: "Filter hinzufügen", exact: true })
+        .click();
+    await page.getByRole("option", { name: "Einheit", exact: true }).click();
+    await page.getByRole("textbox", { name: "Verträge durchsuchen" }).fill("");
+    const unitFilter = page.getByRole("combobox", {
+        name: "Einheit Werte",
+        exact: true,
+    });
+    await unitFilter.click();
+    await page
+        .getByRole("combobox", {
+            name: "Einheit Werte durchsuchen",
+            exact: true,
+        })
+        .fill("Wohnung");
+    const unitChoices = page.getByRole("option").filter({ hasText: "Wohnung" });
+    await unitChoices.first().click();
+    await unitChoices.nth(1).click();
+    await page.keyboard.press("Escape");
+    await expect(
+        unitFilter.locator('[data-slot="selection-count"]'),
+    ).toHaveText("+1");
+    const filterChip = page.getByRole("group", {
+        name: "Filter Einheit",
+        exact: true,
+    });
+    expect(
+        await filterChip.evaluate((el) => el.scrollWidth - el.clientWidth),
+    ).toBeLessThanOrEqual(1);
+    const valueBox = await unitFilter.boundingBox();
+    const removeBox = await filterChip
+        .getByRole("button", { name: "Einheit Filter entfernen" })
+        .boundingBox();
+    expect(valueBox!.x + valueBox!.width).toBeLessThanOrEqual(removeBox!.x + 1);
+    await capture("32-mehrfachfilter");
+    await filterChip
+        .getByRole("button", { name: "Einheit Filter entfernen" })
+        .click();
+
+    await page.getByRole("textbox", { name: "Verträge durchsuchen" }).fill("");
+    await expect(
+        page.locator('[data-slot="resource-collection"]'),
+    ).not.toHaveAttribute("aria-busy", "true");
+    const tableViewport = page
+        .locator(
+            '[data-slot="resource-collection"] [data-slot="scroll-area-viewport"]',
+        )
+        .first();
+    const beforeSelection = await tableViewport.boundingBox();
+    await expect(tableViewport.locator("tr[data-row-id]")).toHaveCount(25);
+    expect(
+        await tableViewport.evaluate((element) => element.scrollHeight),
+    ).toBeGreaterThan(beforeSelection!.height);
+    await tableViewport.evaluate((element) => {
+        element.scrollTop = element.scrollHeight;
+    });
+    const lastRow = tableViewport.locator("tr[data-row-id]").last();
+    const lastRowBox = await lastRow.boundingBox();
+    const stickyHeaderBox = await tableViewport.locator("thead").boundingBox();
+    expect(
+        Math.abs(stickyHeaderBox!.y - beforeSelection!.y),
+    ).toBeLessThanOrEqual(1);
+    expect(lastRowBox!.y + lastRowBox!.height).toBeLessThanOrEqual(
+        beforeSelection!.y + beforeSelection!.height + 1,
+    );
+    await capture("28-grid-letzte-zeile");
+    await page
+        .getByRole("button", { name: "Nächste Seite", exact: true })
+        .click();
+    await expect(tableViewport.locator("tr[data-row-id]")).toHaveCount(18);
+    expect(await tableViewport.evaluate((element) => element.scrollTop)).toBe(
+        0,
+    );
+    await expect(
+        page.locator('[data-slot="data-grid-pagination"]'),
+    ).toContainText("26–43 von 43");
+    await page
+        .getByRole("button", { name: "Vorherige Seite", exact: true })
+        .click();
+    await expect(tableViewport.locator("tr[data-row-id]")).toHaveCount(25);
+    await tableViewport.evaluate((element) => {
+        element.scrollTop = 0;
+    });
+    await page
         .getByRole("checkbox", { name: "Alle Zeilen dieser Seite auswählen" })
         .click();
     const bulkBar = page.getByRole("region", { name: "Auswahlaktionen" });
@@ -219,6 +303,20 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         page.getByRole("heading", { name: "Löschen", exact: true }),
     ).toBeVisible();
     await capture("08-bulk-loeschen");
+    const deletion = page.getByRole("dialog", { name: "Löschen", exact: true });
+    await deletion
+        .getByRole("button", { name: "Löschen", exact: true })
+        .click();
+    await expect(
+        deletion.getByText(
+            "Aktive oder historische Verträge bleiben erhalten. Vertrag beenden statt löschen.",
+        ),
+    ).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(1);
+    await expect(
+        page.getByRole("button", { name: "Löschen bestätigen" }),
+    ).toHaveCount(0);
+    await capture("31-loeschen-fehler");
     await page.getByRole("button", { name: "Abbrechen", exact: true }).click();
     await bulkBar.getByRole("button", { name: "Auswahl aufheben" }).click();
 
@@ -245,7 +343,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(page.getByLabel("Nummer", { exact: false })).toHaveValue(
         "MV-001-01",
     );
-    await expect(page).toHaveURL(/panels=/);
+    await expect(page).toHaveURL(/panel=/);
     const editSheet = page.getByRole("dialog");
     await expect(
         editSheet.getByRole("tab", { name: "Grunddaten" }),
@@ -346,9 +444,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await capture("11-wizard-mobil");
     await page.setViewportSize({ width: 1440, height: 1000 });
     const dialogUrl = new URL(page.url());
-    const panels = JSON.parse(dialogUrl.searchParams.get("panels")!);
-    panels[0].presentation = "dialog";
-    dialogUrl.searchParams.set("panels", JSON.stringify(panels));
+    dialogUrl.searchParams.set("layout", "dialog");
     await page.goto(dialogUrl.toString());
     await expect(page.locator('[data-slot="dialog-content"]')).toBeVisible();
     await expect(
@@ -566,10 +662,24 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await capture("18-einheiten-spalten");
     await page
         .getByRole("combobox", { name: "Filter hinzufügen", exact: true })
+<<<<<<< HEAD
+=======
         .click();
     await page.getByRole("option", { name: "Objekt", exact: true }).click();
     await page
         .getByRole("combobox", { name: "Objekt Werte", exact: true })
+>>>>>>> fe9e0a173267de8fffa0eadd5e51e156e83144b3
+        .click();
+    await page.getByRole("option", { name: "Objekt", exact: true }).click();
+    await page
+<<<<<<< HEAD
+        .getByRole("combobox", { name: "Objekt Werte", exact: true })
+=======
+        .getByRole("combobox", {
+            name: "Objekt Werte durchsuchen",
+            exact: true,
+        })
+>>>>>>> fe9e0a173267de8fffa0eadd5e51e156e83144b3
         .fill("Linden");
     await page.getByRole("option", { name: /Lindenhöfe/ }).click();
     await page.keyboard.press("Escape");
@@ -630,9 +740,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     for (const presentation of ["sheet", "dialog"]) {
         if (presentation === "dialog") {
             const url = new URL(page.url());
-            const panels = JSON.parse(url.searchParams.get("panels")!);
-            panels[0].presentation = presentation;
-            url.searchParams.set("panels", JSON.stringify(panels));
+            url.searchParams.set("layout", presentation);
             await page.goto(url.toString());
         }
         const editor = page.getByRole("dialog");
@@ -662,5 +770,52 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         );
         await page.keyboard.press("Escape");
     }
+    await page.goto("/properties");
+    await page
+        .getByRole("textbox", { name: "Objekte durchsuchen" })
+        .fill("Linden");
+    await page.getByRole("button", { name: "Lindenhöfe", exact: true }).click();
+    await page.getByRole("tab", { name: /Einheiten/ }).click();
+    await expect(
+        page.getByRole("button", { name: "Wohnung 01", exact: true }),
+    ).toBeVisible();
+    const unitTab = page.getByRole("tab", { name: /Einheiten/ });
+    await expect(unitTab.locator("svg")).toBeVisible();
+    await expect(
+        page.getByRole("button", { name: "Bereiche suchen", exact: true }),
+    ).toHaveCount(0);
+    const embedded = page.getByRole("tabpanel");
+    const controlHeights = await Promise.all(
+        [
+            embedded.getByRole("textbox", { name: "Einheiten durchsuchen" }),
+            embedded.getByRole("button", { name: "Hinzufügen", exact: true }),
+            embedded.getByRole("button", {
+                name: "Aktualisieren",
+                exact: true,
+            }),
+            embedded.getByRole("button", {
+                name: "Aktuelle Seite als CSV exportieren",
+                exact: true,
+            }),
+        ].map(async (control) => (await control.boundingBox())!.height),
+    );
+    expect(
+        Math.max(...controlHeights) - Math.min(...controlHeights),
+    ).toBeLessThanOrEqual(1);
+    await capture("33-objekt-einheiten-toolbar");
+    await embedded
+        .getByRole("button", { name: "Hinzufügen", exact: true })
+        .click();
+    await expect(page).toHaveURL(/panel=units\/new/);
+    expect(new URL(page.url()).searchParams.has("panels")).toBe(false);
+    await page.reload();
+    const newUnit = page.getByRole("dialog", {
+        name: "Einheit anlegen",
+        exact: true,
+    });
+    const lockedProperty = newUnit.getByRole("combobox", { name: /Objekt/ });
+    await expect(lockedProperty).toBeDisabled();
+    await expect(lockedProperty).toHaveValue("Lindenhöfe");
+    await capture("34-einheit-kontext-link");
     expect(errors).toEqual([]);
 });

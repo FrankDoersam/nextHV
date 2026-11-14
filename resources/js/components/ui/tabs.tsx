@@ -1,5 +1,6 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs as TabsPrimitive } from "@base-ui/react/tabs";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -52,7 +53,13 @@ function TabsList({
     );
 }
 
-function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
+function TabsTrigger({
+    className,
+    icon: Icon,
+    icons = true,
+    children,
+    ...props
+}: TabsPrimitive.Tab.Props & { icon?: LucideIcon; icons?: boolean }) {
     return (
         <TabsPrimitive.Tab
             data-slot="tabs-trigger"
@@ -64,7 +71,10 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
                 className,
             )}
             {...props}
-        />
+        >
+            {icons && Icon && <Icon aria-hidden="true" />}
+            {children}
+        </TabsPrimitive.Tab>
     );
 }
 

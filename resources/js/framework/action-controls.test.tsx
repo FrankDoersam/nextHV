@@ -326,7 +326,10 @@ describe("shared action runtime", () => {
         expect(actionAt(action, "detail")).toBe(true);
         await user.click(screen.getByText("Direkt ausführen"));
         expect(execute).not.toHaveBeenCalled();
-        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        expect(
+            screen.getByRole("dialog", { name: "Aktion nicht möglich" }),
+        ).toBeVisible();
+        expect(screen.getByText("Noch nicht freigegeben.")).toBeVisible();
     });
     it("uses native versioned batch payloads, excludes readonly and unknown properties, and preserves explicit clearing", () => {
         expect(

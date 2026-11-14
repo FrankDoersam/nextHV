@@ -69,7 +69,7 @@ Beim Duplizieren werden nur Objekt-/Einheitenstammdaten kopiert. Verträge, Bete
 - Fremdschlüssel, eindeutige Nummern und Konditionsstichtage, Transaktionen und Zeilensperren für Vertragsoperationen.
 - Ein serverseitiges Regelwerk für Formulare und API, inkl. Laufzeiten, Duplikaten und Hauptansprechpartnern; Wizard-Schritte prüfen über Laravel Precognition vor dem Weitergehen.
 - Optimistische Versionsprüfung bei CRUD-Updates: `updated_at` wird als `version` übertragen; bei Konflikt antwortet die API mit `409`.
-- Löschen und verbindliche Actions verlangen den signierten Bestätigungstoken der API (`428` → Bestätigung → erneute Anfrage).
+- Löschen und verbindliche Actions verlangen den signierten Bestätigungstoken der API (`428` → signierter Token → einmalige Folgeanfrage nach dem Klick auf „Löschen“ im Dialog).
 - Aktive Objekte sowie Objekte mit Einheiten (auch gelöschten), Einheiten mit Vertragsgeschichte und aktivierte Verträge werden nicht einfach gelöscht. Stammdatentabellen verwenden Soft Deletes; es gibt in dieser Oberfläche noch keinen Papierkorb.
 - Ausweisnummern sind schreibbar, aber nicht lesbar über die API. Nur die letzten vier Zeichen werden angezeigt. Dateien liegen verschlüsselt auf dem privaten Disk; Download nur authentifiziert, ohne Browsercache. Upload: PDF/JPEG/PNG bis 10 MB.
 
@@ -139,7 +139,7 @@ class MyAction extends ResourceAction {
 }
 ```
 
-Die Workbench führt nach erfolgreicher Action den Reload aus. Bei `428` werden Eingaben und ausgewählte Zeilen für die Bestätigung beibehalten. `bulk = false` verhindert die Ausführung mit mehreren Zeilen auch auf Framework-Ebene. Das Backend legt separat `maxResources` fest.
+Die Workbench führt nach erfolgreicher Action den Reload aus. Nach einer ausdrücklichen Bestätigung im Action-Dialog vervollständigt das Framework den `428`-Token-Ablauf automatisch mit denselben Eingaben und Zeilen. Eine zweite Rückfrage entfällt; Fehler bleiben im Dialog. `bulk = false` verhindert die Ausführung mit mehreren Zeilen auch auf Framework-Ebene. Das Backend legt separat `maxResources` fest.
 
 Für eine neue Ressource: Migration und Model mit Relationen erstellen, fachliche Regeln/Actions ergänzen, REST-Resource + Controller + Policy registrieren, Frontend-Definition im Fachmodul anlegen und in `registry.ts` aufnehmen. Nur bei abweichendem fachlichem Verhalten ist eine eigene Seite nötig.
 

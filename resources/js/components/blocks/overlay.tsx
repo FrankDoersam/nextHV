@@ -14,7 +14,7 @@ import {
     SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { X, Layers } from "lucide-react";
+import { X, Layers, type LucideIcon } from "lucide-react";
 import type { Presentation } from "@/framework/types";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -60,7 +60,13 @@ export function Overlay({
     tabs?: {
         value: string;
         onValueChange: (value: string) => void;
-        items: { value: string; label: string; count?: number }[];
+        icons?: boolean;
+        items: {
+            value: string;
+            label: string;
+            count?: number;
+            icon?: LucideIcon;
+        }[];
     };
 }) {
     const close = () => {
@@ -120,7 +126,12 @@ export function Overlay({
                 className="data-[orientation=horizontal]:h-12 min-w-max gap-3 [&_[data-slot=tabs-trigger][data-active]]:text-foreground [&_[data-slot=tabs-trigger]]:after:bg-foreground"
             >
                 {tabs.items.map((tab) => (
-                    <TabsTrigger key={tab.value} value={tab.value}>
+                    <TabsTrigger
+                        key={tab.value}
+                        value={tab.value}
+                        icon={tab.icon}
+                        icons={tabs.icons}
+                    >
                         {tab.label}
                         {tab.count != null && (
                             <span className="text-xs text-muted-foreground tabular-nums">

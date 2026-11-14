@@ -98,6 +98,7 @@ export function RecordTable({
                     dense,
                     width: "fixed",
                     headerBackground: true,
+                    headerSticky: true,
                     rowBorder: true,
                 }}
             >

@@ -304,6 +304,33 @@ describe("CRUD interactions", () => {
         expect(load).toHaveBeenCalled();
         expect(screen.getByText("Geladene Verträge")).toBeVisible();
     });
+    it("shows configured tab icons by default and hides them through the shared prop", () => {
+        const tabs = [
+            {
+                id: "overview",
+                label: "Übersicht",
+                icon: Building2,
+                render: () => <p>Grunddaten</p>,
+            },
+        ];
+        const view = render(
+            <MemoryRouter>
+                <LazyTabs tabs={tabs} />
+            </MemoryRouter>,
+        );
+        expect(
+            screen.getByRole("tab", { name: "Übersicht" }).querySelector("svg"),
+        ).not.toBeNull();
+        view.rerender(
+            <MemoryRouter>
+                <LazyTabs tabs={tabs} icons={false} />
+            </MemoryRouter>,
+        );
+        expect(
+            screen.getByRole("tab", { name: "Übersicht" }).querySelector("svg"),
+        ).toBeNull();
+        expect(screen.getByText("Grunddaten")).toBeVisible();
+    });
     it("supports searchable custom list renderers", async () => {
         const user = userEvent.setup();
         wrap(

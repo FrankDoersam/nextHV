@@ -2,7 +2,6 @@ import React, { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "sonner";
 import { AuthProvider } from "@/framework/auth";
 import { Loading } from "@/components/blocks/content";
 import { ErrorBoundary } from "@/components/blocks/error-boundary";
@@ -27,7 +26,6 @@ const router = createBrowserRouter([
                         <Application />
                     </Suspense>
                 </AuthProvider>
-                <Toaster richColors closeButton position="bottom-right" />
             </QueryClientProvider>
         ),
     },

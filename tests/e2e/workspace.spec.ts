@@ -86,7 +86,7 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     await expect(
         page.getByRole("heading", { name: "Objekt bearbeiten", exact: true }),
     ).toBeVisible();
-    await expect(page).toHaveURL(/panels=/);
+    await expect(page).toHaveURL(/panel=/);
     const sheet = page.locator('[data-slot="sheet-content"]');
     expect((await sheet.boundingBox())!.width).toBeGreaterThan(600);
     await page.reload();

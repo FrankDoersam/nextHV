@@ -138,6 +138,7 @@ export function ResourceCollection({
     exportable = true,
     refreshable = true,
     toolbar = true,
+    tabIcons = true,
     summary = !compact,
     views: configuredViews = compact ? false : resource.views,
     toolbarFilters: directFields = resource.toolbarFilters ?? [],
@@ -328,6 +329,13 @@ export function ResourceCollection({
     ]);
     useEffect(() => {
         setSelection({});
+        viewport.current
+            ?.querySelectorAll<HTMLElement>(
+                '[data-slot="scroll-area-viewport"], [data-slot="data-grid-table-viewport"]',
+            )
+            .forEach((node) => {
+                node.scrollTop = 0;
+            });
     }, [
         JSON.stringify(sorting),
         query,
@@ -810,7 +818,7 @@ export function ResourceCollection({
                     {exportable && (
                         <Button
                             variant="outline"
-                            size="icon"
+                            size="icon-lg"
                             aria-label={
                                 selectedRows.length
                                     ? "Auswahl als CSV exportieren"
@@ -834,7 +842,7 @@ export function ResourceCollection({
                     {refreshable && (
                         <Button
                             variant="outline"
-                            size="icon"
+                            size="icon-lg"
                             onClick={() => {
                                 void result.refetch();
                                 if (summary && resource.summary)
@@ -850,10 +858,7 @@ export function ResourceCollection({
                         </Button>
                     )}
                     {creatable && can(resource.name, "create") && (
-                        <Button
-                            onClick={create}
-                            size={compact ? "sm" : "default"}
-                        >
+                        <Button onClick={create} size="lg">
                             <Plus />
                             {compact
                                 ? "Hinzufügen"
@@ -940,6 +945,7 @@ export function ResourceCollection({
                 )}
                 {views.length > 0 && (
                     <CollectionViews
+                        icons={tabIcons}
                         panelId={panelId}
                         resource={resource}
                         views={views}
@@ -1093,10 +1099,14 @@ export function ResourceCollection({
                                     </TableViewport>
                                 ) : (
                                     <DataGridContainer
+<<<<<<< HEAD
                                         className={cn(
                                             "[&_[data-slot=data-grid-table-viewport]]:overflow-x-hidden! [&_[data-slot=data-grid-table-viewport]]:[scrollbar-gutter:stable]",
                                             !compact && "h-full",
                                         )}
+=======
+                                        className={cn(!compact && "h-full")}
+>>>>>>> fe9e0a173267de8fffa0eadd5e51e156e83144b3
                                     >
                                         {!stackedRows &&
                                         rows.length > 0 &&

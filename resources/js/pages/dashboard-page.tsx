@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Plus } from "lucide-react";
+import { Plus, LayoutDashboard, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader, Stack } from "@/components/blocks/layout";
 import { LazyTabs } from "@/components/blocks/lazy-tabs";
@@ -67,6 +67,7 @@ export default function DashboardPage() {
                 tabs={[
                     {
                         id: "overview",
+                        icon: LayoutDashboard,
                         label: "Übersicht",
                         render: () => (
                             <Stack>
@@ -147,6 +148,7 @@ export default function DashboardPage() {
                     {
                         id: "portfolio",
                         label: "Bestand",
+                        icon: Building2,
                         render: () => (
                             <Stack>
                                 <OverviewMetrics />

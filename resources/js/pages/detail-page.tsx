@@ -21,7 +21,19 @@ import { useWorkbench } from "@/framework/workbench";
 import { date } from "@/lib/format";
 import { formatFieldValue } from "@/framework/forms/field-display";
 import { OverviewMetrics } from "@/modules/properties/property-overview";
-import { Pencil, RefreshCw } from "lucide-react";
+import { getResource } from "@/modules/registry";
+import {
+    Pencil,
+    RefreshCw,
+    LayoutDashboard,
+    FileText,
+    Gauge,
+    ClipboardCheck,
+    FolderKanban,
+    Wallet,
+    Paperclip,
+    Link2,
+} from "lucide-react";
 import { lazy, Suspense } from "react";
 import { useParams } from "react-router";
 const PropertyOverview = lazy(
@@ -29,7 +41,12 @@ const PropertyOverview = lazy(
 );
 const RelationPanel = lazy(() => import("@/modules/relations/relation-panel"));
 const DocumentFile = lazy(() => import("@/modules/documents/document-file"));
-const futureTabs = ["Zähler", "Prüfungen", "Projekte", "Zahlungen"];
+const futureTabs = [
+    { label: "Zähler", icon: Gauge },
+    { label: "Prüfungen", icon: ClipboardCheck },
+    { label: "Projekte", icon: FolderKanban },
+    { label: "Zahlungen", icon: Wallet },
+];
 export default function DetailPage({
     resource,
 }: {
@@ -47,6 +64,7 @@ export default function DetailPage({
     const tabs: LazyTab[] = [
         {
             id: "overview",
+            icon: LayoutDashboard,
             label: "Übersicht",
             render: () =>
                 resource.name === "properties" ? (
@@ -60,6 +78,7 @@ export default function DetailPage({
         tabs.push({
             id: relation.resource + relation.field,
             label: relation.label,
+            icon: relation.icon ?? getResource(relation.resource).icon,
             count: relation.countRelation
                 ? Number(record[relation.countRelation + "_count"])
                 : undefined,
@@ -73,6 +92,7 @@ export default function DetailPage({
     if (resource.name === "properties") {
         tabs.push({
             id: "contracts",
+            icon: FileText,
             label: "Verträge",
             render: () => (
                 <RelationPanel
@@ -82,9 +102,10 @@ export default function DetailPage({
                 />
             ),
         });
-        for (const name of futureTabs)
+        for (const { label: name, icon } of futureTabs)
             tabs.push({
                 id: name,
+                icon,
                 label: name,
                 count: null,
                 render: () => (
@@ -100,6 +121,7 @@ export default function DetailPage({
     if (resource.name === "contracts")
         tabs.push({
             id: "incoming-links",
+            icon: Link2,
             label: "Eingehende Verknüpfungen",
             count: Number(record.incoming_links_count ?? 0),
             render: () => (
@@ -115,6 +137,7 @@ export default function DetailPage({
     if (resource.name === "identity-documents")
         tabs.push({
             id: "file",
+            icon: Paperclip,
             label: "Datei",
             render: () => <DocumentFile record={record} />,
         });

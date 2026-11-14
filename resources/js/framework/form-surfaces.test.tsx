@@ -76,7 +76,7 @@ const resource: ResourceDefinition = {
     view: { sectionStyle: "collapsible" },
 };
 const panel: PanelLink = {
-    key: "view-8",
+    key: "p1",
     resource: "properties",
     mode: "view",
     id: 8,
@@ -156,6 +156,21 @@ describe("shared view and section editors", () => {
         );
     });
 
+    it("hydrates another record when browser navigation reuses the same panel slot", async () => {
+        const nextRecord = { ...record, id: 9, name: "Sonnenhof" };
+        vi.mocked(dataProvider.one).mockImplementation(async (_resource, id) =>
+            id === 9 ? nextRecord : record,
+        );
+        const { router } = mount(null, panel);
+        await screen.findByRole("dialog", { name: "Lindenhöfe" });
+        await router.navigate(
+            `/properties?${panelSearch("", [{ ...panel, id: 9 }])}`,
+        );
+        expect(
+            await screen.findByRole("dialog", { name: "Sonnenhof" }),
+        ).toBeVisible();
+        expect(dataProvider.one).toHaveBeenCalledWith(resource, 9);
+    });
     it("restores a section edit link with its collapsed-by-default section open and returns to view on cancel", async () => {
         const user = userEvent.setup();
         const { router } = mount(null, {

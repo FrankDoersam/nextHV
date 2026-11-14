@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormProvider, useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { ShieldAlert, Trash2 } from "lucide-react";
+import { Check, LoaderCircle, ShieldAlert, Trash2 } from "lucide-react";
 import { ErrorState, Loading } from "@/components/blocks/content";
 import { FieldGrid } from "@/components/blocks/layout";
 import { Overlay } from "@/components/blocks/overlay";
@@ -34,12 +33,9 @@ export function ActionDialog({
     const fields = useMemo(() => action.fieldsFor(context), [action, context]);
     const [selected, setSelected] = useState<string[]>([]);
     const [error, setError] = useState<unknown>();
-    const [confirmation, setConfirmation] = useState<{
-        token: string;
-        message: string;
-        values: Values;
-    }>();
     const [busy, setBusy] = useState(false);
+    const [succeeded, setSucceeded] = useState(false);
+    const running = useRef(false);
     const preparation = useQuery({
         queryKey: [
             "action-prepare",
@@ -62,8 +58,8 @@ export function ActionDialog({
     }, [preparation.data, fields, form]);
     const blockers = preparation.data?.blockers ?? [];
     const blocked = !!blockers.length;
-    const execute = async (values: Values, token?: string) => {
-        if (busy) return;
+    const execute = async (values: Values) => {
+        if (running.current || succeeded) return;
         const availability = actionAvailability(action, context);
         if (availability !== true) {
             setError(
@@ -75,23 +71,39 @@ export function ActionDialog({
             );
             return;
         }
-        const submitted =
-            action.selectableFields && !token
-                ? Object.fromEntries(
-                      Object.entries(values).filter(([name]) =>
-                          selected.includes(name),
-                      ),
-                  )
-                : values;
+        const submitted = action.selectableFields
+            ? Object.fromEntries(
+                  Object.entries(values).filter(([name]) =>
+                      selected.includes(name),
+                  ),
+              )
+            : values;
+        running.current = true;
         setBusy(true);
         setError(undefined);
         form.clearErrors();
+        let completed = false;
         try {
-            const response = await action.execute(
-                { ...context, values: submitted },
-                token,
-            );
+            // The dialog's submit is the user's consent. Complete the server handshake once.
+            const requestContext = { ...context, values: submitted };
+            let response: unknown;
+            try {
+                response = await action.execute(requestContext);
+            } catch (challenge) {
+                if (
+                    !(challenge instanceof ApiError) ||
+                    challenge.status !== 428 ||
+                    !challenge.confirmation?.token
+                )
+                    throw challenge;
+                response = await action.execute(
+                    requestContext,
+                    challenge.confirmation.token,
+                );
+            }
             onComplete(response);
+            completed = true;
+            setSucceeded(true);
             const records = (response as { records?: RecordData[] } | undefined)
                 ?.records;
             if (Array.isArray(records)) {
@@ -111,25 +123,22 @@ export function ActionDialog({
             } else if (action.refresh) await context.instance.reload();
             if (action.refresh || records)
                 await context.instance.refreshForm?.();
-            toast.success(`${action.label}: erfolgreich`);
             onClose();
         } catch (e) {
-            if (e instanceof ApiError && e.status === 428 && e.confirmation)
-                setConfirmation({
-                    token: e.confirmation.token,
-                    message: e.message,
-                    values: submitted,
-                });
-            else {
-                setConfirmation(undefined);
-                setError(e);
-                if (e instanceof ApiError)
-                    for (const [name, message] of Object.entries(
-                        normalizeValidationErrors(e.errors),
-                    ))
-                        form.setError(name, { message });
-            }
+            setError(
+                completed
+                    ? new Error(
+                          "Die Aktion wurde erfolgreich ausgeführt. Die Ansicht konnte nicht aktualisiert werden. Bitte lade die Seite neu.",
+                      )
+                    : e,
+            );
+            if (e instanceof ApiError)
+                for (const [name, message] of Object.entries(
+                    normalizeValidationErrors(e.errors),
+                ))
+                    form.setError(name, { message });
         } finally {
+            running.current = false;
             setBusy(false);
         }
     };
@@ -142,15 +151,15 @@ export function ActionDialog({
             title={blocked ? "Löschen nicht möglich" : action.label}
             description={
                 action.description ??
-                `${context.rows.length} ${context.resource.label} ausgewählt`
+                `${context.rows.length} ${context.rows.length === 1 ? context.resource.singular : context.resource.label} ausgewählt`
             }
             presentation="dialog"
             footer={
                 <>
                     <Button variant="outline" disabled={busy} onClick={onClose}>
-                        {blocked ? "Schließen" : "Abbrechen"}
+                        {blocked || succeeded ? "Schließen" : "Abbrechen"}
                     </Button>
-                    {!blocked && (
+                    {!blocked && !succeeded && (
                         <Button
                             variant={
                                 action.destructive ? "destructive" : "default"
@@ -161,22 +170,20 @@ export function ActionDialog({
                                 preparation.isError ||
                                 (action.selectableFields && !selected.length)
                             }
-                            onClick={
-                                confirmation
-                                    ? () =>
-                                          execute(
-                                              confirmation.values,
-                                              confirmation.token,
-                                          )
-                                    : form.handleSubmit((v) => execute(v))
-                            }
+                            onClick={form.handleSubmit((values) =>
+                                execute(values),
+                            )}
                         >
-                            {action.destructive && <Trash2 />}
+                            {busy ? (
+                                <LoaderCircle className="animate-spin" />
+                            ) : action.destructive ? (
+                                <Trash2 />
+                            ) : null}
                             {busy
-                                ? "Wird ausgeführt …"
-                                : confirmation
-                                  ? `${action.label} bestätigen`
-                                  : action.label}
+                                ? action.destructive
+                                    ? "Wird gelöscht …"
+                                    : "Wird ausgeführt …"
+                                : action.label}
                         </Button>
                     )}
                 </>
@@ -194,7 +201,7 @@ export function ActionDialog({
                     <Alert variant="warning">
                         <ShieldAlert />
                         <AlertTitle className="line-clamp-none">
-                            Diese Auswahl enthält geschützte Objekte
+                            Diese Auswahl kann nicht gelöscht werden
                         </AlertTitle>
                         <AlertDescription>
                             <ul className="space-y-3">
@@ -219,34 +226,29 @@ export function ActionDialog({
                 ) : (
                     <>
                         {!!error && <ErrorState error={error} />}
-                        {confirmation ? (
-                            <Alert
-                                variant={
-                                    action.destructive ? "warning" : "info"
-                                }
+                        {succeeded && (
+                            <p
+                                role="status"
+                                className="flex items-center gap-2 text-sm"
                             >
-                                <ShieldAlert />
-                                <AlertTitle>
-                                    Bestätigung erforderlich
-                                </AlertTitle>
-                                <AlertDescription>
-                                    {confirmation.message}
-                                </AlertDescription>
-                            </Alert>
-                        ) : (
-                            <FormActionScope
-                                target={{
-                                    ...context,
-                                    resource: { ...context.resource, fields },
-                                }}
-                            >
-                                <FormProvider {...form}>
-                                    <form
-                                        noValidate
-                                        onSubmit={form.handleSubmit((v) =>
-                                            execute(v),
-                                        )}
-                                    >
+                                <Check className="size-4" />
+                                {action.label}: erfolgreich.
+                            </p>
+                        )}
+                        <FormActionScope
+                            target={{
+                                ...context,
+                                resource: { ...context.resource, fields },
+                            }}
+                        >
+                            <FormProvider {...form}>
+                                <form
+                                    noValidate
+                                    onSubmit={form.handleSubmit((v) =>
+                                        execute(v),
+                                    )}
+                                >
+                                    <fieldset disabled={busy || succeeded}>
                                         <FieldGrid>
                                             {fields.map((field) =>
                                                 action.selectableFields ? (
@@ -301,17 +303,17 @@ export function ActionDialog({
                                                 ),
                                             )}
                                         </FieldGrid>
-                                        {!fields.length && (
-                                            <p className="text-sm leading-6 text-muted-foreground">
-                                                {action.destructive
-                                                    ? "Die Auswahl wird vor dem Löschen serverseitig geprüft. Anschließend ist eine ausdrückliche Bestätigung erforderlich."
-                                                    : `${action.label} für die Auswahl ausführen.`}
-                                            </p>
-                                        )}
-                                    </form>
-                                </FormProvider>
-                            </FormActionScope>
-                        )}
+                                    </fieldset>
+                                    {!fields.length && !succeeded && (
+                                        <p className="text-sm leading-6 text-muted-foreground">
+                                            {action.destructive
+                                                ? `${context.rows.length} ${context.rows.length === 1 ? "Datensatz" : "Datensätze"} endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden.`
+                                                : `${action.label} für die Auswahl ausführen.`}
+                                        </p>
+                                    )}
+                                </form>
+                            </FormProvider>
+                        </FormActionScope>
                     </>
                 )}
             </div>

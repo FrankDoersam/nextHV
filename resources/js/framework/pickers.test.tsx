@@ -86,6 +86,34 @@ describe("searchable choice controls", () => {
             await screen.findByRole("option", { name: /Entwurf/ }),
         ).toHaveAttribute("aria-selected", "true");
     });
+    it("summarizes multiple filter values with a stable count while preserving the full selection on reopen", async () => {
+        const user = userEvent.setup();
+        render(
+            <SelectDemo
+                presentation="chip"
+                multiple
+                aria-label="Status Werte"
+            />,
+        );
+        const trigger = screen.getByRole("combobox", { name: "Status Werte" });
+        await user.click(trigger);
+        await user.click(
+            await screen.findByRole("option", { name: /Entwurf/ }),
+        );
+        await user.keyboard("{Escape}");
+        expect(trigger).toHaveAttribute("title", "Aktiv, Entwurf");
+        expect(trigger).toHaveTextContent("Aktiv");
+        expect(trigger).not.toHaveTextContent("Entwurf");
+        expect(screen.getByLabelText("2 ausgewählt")).toHaveTextContent("+1");
+        await user.click(trigger);
+        expect(
+            await screen.findByRole("option", { name: /Aktiv/ }),
+        ).toHaveAttribute("aria-selected", "true");
+        expect(screen.getByRole("option", { name: /Entwurf/ })).toHaveAttribute(
+            "aria-selected",
+            "true",
+        );
+    });
     it("keeps multiple selections checked on reopen and supports clearing without secondary captions", async () => {
         const user = userEvent.setup();
         render(<SelectDemo multiple />);

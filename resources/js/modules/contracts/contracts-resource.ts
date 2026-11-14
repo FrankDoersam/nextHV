@@ -1,3 +1,4 @@
+import { NotebookPen, Network, CreditCard, CircleOff } from "lucide-react";
 import { DeleteAction, EditAction } from "@/framework/actions";
 import type { ResourceDefinition } from "@/framework/types";
 import {
@@ -25,22 +26,25 @@ export const contracts: ResourceDefinition = {
     titleField: "code",
     bulkActions: ["delete"],
     views: [
-        { id: "all", label: "Alle", count: true },
+        { id: "all", label: "Alle", icon: FileText, count: true },
         {
             id: "active",
             label: "Aktiv",
+            icon: CircleCheck,
             filters: [{ field: "status", value: "active" }],
             count: true,
         },
         {
             id: "draft",
             label: "Entwürfe",
+            icon: FilePenLine,
             filters: [{ field: "status", value: "draft" }],
             count: true,
         },
         {
             id: "ended",
             label: "Beendet",
+            icon: CircleOff,
             filters: [{ field: "status", value: "ended" }],
             count: true,
         },
@@ -67,10 +71,16 @@ export const contracts: ResourceDefinition = {
     editor: {
         sectionStyle: "card",
         tabs: [
-            { id: "general", label: "Grunddaten", groups: ["general", "term"] },
+            {
+                id: "general",
+                label: "Grunddaten",
+                icon: FileText,
+                groups: ["general", "term"],
+            },
             {
                 id: "finance",
                 label: "Zahlung",
+                icon: CreditCard,
                 groups: ["finance"],
                 summary: {
                     title: "Zahlungsvereinbarung",
@@ -98,14 +108,24 @@ export const contracts: ResourceDefinition = {
                     ],
                 },
             },
-            { id: "details", label: "Hinweise", groups: ["details"] },
-            { id: "relations", label: "Beziehungen", relations: true },
+            {
+                id: "details",
+                label: "Hinweise",
+                icon: NotebookPen,
+                groups: ["details"],
+            },
+            {
+                id: "relations",
+                label: "Beziehungen",
+                icon: Network,
+                relations: true,
+            },
         ],
     },
     groups: [
-        { id: "general", label: "Vertragsgrundlagen" },
-        { id: "term", label: "Laufzeit & Kündigung" },
-        { id: "finance", label: "Zahlung & Kaution" },
+        { id: "general", label: "Vertragsgrundlagen", stepLabel: "Vertrag" },
+        { id: "term", label: "Laufzeit & Kündigung", stepLabel: "Laufzeit" },
+        { id: "finance", label: "Zahlung & Kaution", stepLabel: "Zahlung" },
         { id: "details", label: "Hinweise" },
         { id: "parties", label: "Beteiligte" },
         { id: "conditions", label: "Konditionen" },

@@ -27,7 +27,6 @@ import {
     Menu,
     PanelLeftClose,
     PanelLeftOpen,
-    Search,
     Shapes,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -94,32 +93,10 @@ export function AppShell({
     };
     const navigation = (rail: boolean) => (
         <>
-            <div className={cn("p-3", rail && "px-2")}>
-                <Button
-                    variant="outline"
-                    className={cn(
-                        "h-9 w-full justify-start bg-card text-xs text-muted-foreground",
-                        rail && "justify-center px-0",
-                    )}
-                    aria-label="Bereiche suchen"
-                    title={rail ? "Bereiche suchen · Strg/⌘ K" : undefined}
-                    onClick={() => setSearch(true)}
-                >
-                    <Search />{" "}
-                    {!rail && (
-                        <>
-                            <span>Bereiche suchen</span>
-                            <kbd className="ml-auto rounded border bg-muted px-1 text-[10px]">
-                                ⌘ K
-                            </kbd>
-                        </>
-                    )}
-                </Button>
-            </div>
             <nav
                 aria-label="Hauptnavigation"
                 className={cn(
-                    "min-h-0 flex-1 overflow-y-auto px-3",
+                    "min-h-0 flex-1 overflow-y-auto px-3 pt-3",
                     rail && "px-2",
                 )}
             >

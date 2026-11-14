@@ -12,10 +12,14 @@ import {
     useLocation,
     UNSAFE_DataRouterContext,
 } from "react-router";
-import { toast } from "sonner";
 import { actionAvailability, type ResourceAction } from "./actions";
 import { useReload } from "./data/hooks";
-import { readPanels, panelSearch, type PanelLink } from "./navigation/panels";
+import {
+    readPanels,
+    panelSearch,
+    panelKey,
+    type PanelLink,
+} from "./navigation/panels";
 import { NavigationGuard } from "./navigation/navigation-guard";
 import { advanceFlow, flowPanel, type RecordReference } from "./forms/flow";
 import { getFlow } from "@/modules/flows";
@@ -26,7 +30,7 @@ const FormLayer = lazy(() =>
 const ActionDialog = lazy(() =>
     import("./forms/action-dialog").then((m) => ({ default: m.ActionDialog })),
 );
-import { Loading } from "@/components/blocks/content";
+import { Loading, ErrorState } from "@/components/blocks/content";
 import { Overlay } from "@/components/blocks/overlay";
 import {
     actionResult,
@@ -80,14 +84,30 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
     } | null>(null);
     const [result, setResult] =
         useState<Exclude<ActionUIResult, { type: "form-patch" }>>();
+    const [failure, setFailure] = useState<unknown>();
     const [presentation, setPresentation] = useState<Presentation>("sheet");
     const dataRouter = useContext(UNSAFE_DataRouterContext);
+    const cachedFor = (panel: PanelLink) => {
+        const request = cached.current.get(panel.key);
+        if (
+            !request ||
+            request.resource.name !== panel.resource ||
+            (panel.mode !== "create" && request.row?.id !== panel.id) ||
+            request.context?.resource !== panel.context?.resource ||
+            request.context?.id !== panel.context?.id ||
+            request.context?.field !== panel.context?.field ||
+            (request.context?.mode ?? "locked") !==
+                (panel.context?.mode ?? "locked")
+        )
+            return undefined;
+        return request;
+    };
     const openForm = (request: FormRequest) => {
         if (panels.length >= 8) {
-            toast.error("Bitte schließe zunächst ein Formular.");
+            setFailure(new Error("Bitte schließe zunächst ein Formular."));
             return;
         }
-        const key = crypto.randomUUID();
+        const key = panelKey(panels.length);
         cached.current.set(key, request);
         const descriptor: PanelLink = {
             key,
@@ -107,7 +127,7 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
     const closeAt = (index: number) => {
         const current = panels[index];
         if (current.returnToView) {
-            const request = cached.current.get(current.key);
+            const request = cachedFor(current);
             if (request)
                 cached.current.set(current.key, {
                     ...request,
@@ -148,7 +168,7 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
     };
     const editAt = (index: number, row: RecordData, fields?: string[]) => {
         const current = panels[index];
-        const previous = cached.current.get(current.key);
+        const previous = cachedFor(current);
         cached.current.set(current.key, {
             ...previous,
             resource: previous?.resource ?? getResource(current.resource),
@@ -176,13 +196,13 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
     };
     const openFlow: Workbench["openFlow"] = (id, options) => {
         if (panels.length >= 8) {
-            toast.error("Bitte schließe zunächst ein Formular.");
+            setFailure(new Error("Bitte schließe zunächst ein Formular."));
             return;
         }
         const panel = flowPanel(
             getFlow(id),
             { id, step: 0, records: {}, parent: options?.parent },
-            crypto.randomUUID(),
+            panelKey(panels.length),
             options?.presentation ?? presentation,
         );
         navigate({ search: panelSearch(location.search, [...panels, panel]) });
@@ -246,7 +266,8 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
         const fullContext = { ...context, instance, values: {} };
         const availability = actionAvailability(definition, fullContext);
         if (availability !== true || definition.children.length) {
-            if (typeof availability === "string") toast.error(availability);
+            if (typeof availability === "string")
+                setFailure(new Error(availability));
             return;
         }
         if (definition.interaction === "immediate") {
@@ -263,10 +284,10 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
                         await instance.refreshForm?.();
                     }
                 } catch (error) {
-                    toast.error(
+                    setFailure(
                         error instanceof Error
-                            ? error.message
-                            : "Die Action ist fehlgeschlagen.",
+                            ? error
+                            : new Error("Die Action ist fehlgeschlagen."),
                     );
                 } finally {
                     immediateRunning.current = false;
@@ -295,7 +316,6 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
                         ui.values[field.name],
                         { shouldDirty: true, shouldValidate: true },
                     );
-            if (ui.message) toast.success(ui.message);
         } else if (ui) setResult(ui);
         const native = (
             response as {
@@ -304,10 +324,18 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
         )?.data?.result;
         if (native?.type === "danger")
             throw new Error(native.message ?? "Die Action wurde abgebrochen.");
-        if (native?.type === "message" && native.message)
-            toast.success(native.message);
     };
-    const tail = action ? (
+    const tail = failure ? (
+        <Overlay
+            open
+            presentation="dialog"
+            size="compact"
+            title="Aktion nicht möglich"
+            onClose={() => setFailure(undefined)}
+        >
+            <ErrorState error={failure} />
+        </Overlay>
+    ) : action ? (
         <ActionDialog
             key={
                 action.definition.id +
@@ -329,13 +357,13 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
         if (!panel) return tail;
         return (
             <FormLayer
-                key={`${panel.key}:${panel.flow?.step ?? "form"}:${panel.mode}:${panel.fields?.join(",") ?? "all"}`}
+                key={`${panel.key}:${panel.resource}:${panel.id ?? "new"}:${JSON.stringify(panel.context ?? {})}:${panel.flow?.step ?? "form"}:${panel.mode}:${panel.fields?.join(",") ?? "all"}`}
                 panel={panel}
-                cached={cached.current.get(panel.key)}
+                cached={cachedFor(panel)}
                 onClose={() => closeAt(index)}
                 onEdit={(row, fields) => editAt(index, row, fields)}
                 onSaved={(row) => {
-                    const previous = cached.current.get(panel.key);
+                    const previous = cachedFor(panel);
                     cached.current.set(panel.key, {
                         ...previous,
                         resource:
