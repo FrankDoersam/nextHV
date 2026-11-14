@@ -34,7 +34,11 @@ export function MetricCard({
         <Frame data-slot="metric-card" className="h-full min-w-0" spacing="sm">
             <FramePanel className="flex min-w-0 flex-col gap-3 p-3 sm:p-4">
                 <dl className="flex min-w-0 flex-1 flex-col gap-3">
+<<<<<<< HEAD
                     <dt className="flex min-h-5 min-w-0 items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
+=======
+                    <dt className="flex min-h-10 min-w-0 items-start justify-between gap-2 text-xs font-medium text-muted-foreground sm:min-h-5 sm:items-center">
+>>>>>>> 992761df80975cf576da5b2c1904e3860a5e6101
                         <span className="min-w-0 break-words">{label}</span>
                         {actions ??
                             (Icon && (
@@ -69,7 +73,11 @@ export function MetricCard({
                 {children}
                 {hint && (
                     <div className="min-w-0 border-t pt-2.5 text-xs leading-5 text-muted-foreground">
+<<<<<<< HEAD
                         {hint}
+=======
+                        <div className="min-h-10 sm:min-h-5">{hint}</div>
+>>>>>>> 992761df80975cf576da5b2c1904e3860a5e6101
                     </div>
                 )}
             </FramePanel>

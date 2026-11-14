@@ -27,7 +27,11 @@ function TabLabel({ tab, icons }: { tab: NavigationTab; icons: boolean }) {
             {icons && Icon && <Icon aria-hidden />}
             <span className="min-w-0 truncate">{tab.label}</span>
             {tab.count != null && (
+<<<<<<< HEAD
                 <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[11px] leading-4 text-muted-foreground tabular-nums">
+=======
+                <span className="ml-auto shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[11px] leading-4 text-muted-foreground tabular-nums">
+>>>>>>> 992761df80975cf576da5b2c1904e3860a5e6101
                     {tab.count}
                 </span>
             )}
@@ -159,7 +163,11 @@ export function ResponsiveTabList({
                             <DropdownMenuItem
                                 key={tab.id}
                                 onClick={() => onChange(tab.id)}
+<<<<<<< HEAD
                                 className="gap-2 px-3 py-2.5 [&>span:last-child]:ml-auto"
+=======
+                                className="gap-2 px-3 py-2.5"
+>>>>>>> 992761df80975cf576da5b2c1904e3860a5e6101
                             >
                                 <TabLabel tab={tab} icons={icons} />
                             </DropdownMenuItem>

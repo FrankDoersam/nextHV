@@ -166,7 +166,7 @@ export default function ContractOverview({ record }: { record: RecordData }) {
                                     record.parties_count ??
                                     0,
                             )}{" "}
-                            Beteiligte · vollständig im Tab „Vertragsbeteiligte“
+                            Beteiligte · vollständig im Tab „Beteiligte“
                         </span>
                     }
                 >
