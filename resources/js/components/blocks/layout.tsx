@@ -27,23 +27,24 @@ import {
     type NavigationItemDefinition,
     type NavigationGroupSettings,
 } from "@/framework/navigation/sidebar-model";
-import {
-    SidebarNavigation,
-    useSidebarExpansion,
-} from "@/framework/navigation/sidebar";
+import { SidebarNavigation, useSidebarExpansion } from "@/framework/navigation/sidebar";
 import { cn } from "@/lib/utils";
 import {
+    Building2,
     ChevronRight,
+    House,
     LogOut,
     Menu,
     PanelLeftClose,
     PanelLeftOpen,
+    Search,
     Shapes,
+    X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
 
-/** Header-first REUI workspace shell. All navigation surfaces share one resolved tree. */
+/** Sidebar-first shell: navigation, location and search keep independent chrome. */
 export function AppShell({
     resources,
     navigation,
@@ -53,7 +54,6 @@ export function AppShell({
     children,
 }: {
     resources: ResourceDefinition[];
-    /** An optional complete navigation tree; omitted means resource-derived navigation. */
     navigation?: NavigationItemDefinition[];
     navigationGroups?: Record<string, NavigationGroupSettings>;
     user: { id?: number; name: string; email: string };
@@ -63,17 +63,15 @@ export function AppShell({
     const [mobile, setMobile] = useState(false);
     const [compact, setCompact] = useState(() => {
         try {
-            return (
-                window.localStorage.getItem("nexthv.sidebar.compact") === "1"
-            );
+            return window.localStorage.getItem("nexthv.sidebar.compact") === "1";
         } catch {
             return false;
         }
     });
     const [search, setSearch] = useState(false);
     const location = useLocation();
-    const scrollArea = useRef<HTMLElement>(null);
     const navigate = useNavigate();
+    const scrollArea = useRef<HTMLElement>(null);
     const navigationItems = useMemo(
         () =>
             resolveNavigation(
@@ -81,37 +79,29 @@ export function AppShell({
                 resources,
                 user,
             ),
-        [
-            resources,
-            navigation,
-            navigationGroups,
-            user.id,
-            user.name,
-            user.email,
-        ],
+        [resources, navigation, navigationGroups, user.id, user.name, user.email],
     );
     const controls = useSidebarExpansion(navigationItems, user.id);
-    const trail = navigationPath(
-        navigationItems,
-        location.pathname,
-        location.search,
-    );
-    const leaf = trail.at(-1);
+    const trail = navigationPath(navigationItems, location.pathname, location.search);
     const current = resources.find(
         (resource) =>
-            location.pathname === `/${resource.name}` ||
-            location.pathname.startsWith(`/${resource.name}/`),
+            location.pathname === "/" + resource.name ||
+            location.pathname.startsWith("/" + resource.name + "/"),
     );
     const collection = resources.some(
-        (resource) => location.pathname === `/${resource.name}`,
+        (resource) => location.pathname === "/" + resource.name,
     );
-    const currentTitle = current
-        ? leaf?.view
-            ? `${current.label} · ${leaf.label}`
-            : current.label
+    const detailId =
+        current && location.pathname.startsWith("/" + current.name + "/")
+            ? location.pathname.slice(current.name.length + 2).split("/")[0]
+            : null;
+    const leaf = trail.at(-1);
+    const currentTitle = detailId && current
+        ? current.singular + " #" + detailId
         : location.pathname === "/components"
           ? "Komponenten"
-          : "Übersicht";
+          : leaf?.label ?? current?.label ?? "Übersicht";
+    const breadcrumbs = detailId ? trail : trail.slice(0, -1);
 
     useEffect(() => {
         try {
@@ -120,7 +110,7 @@ export function AppShell({
                 compact ? "1" : "0",
             );
         } catch {
-            // Optional workspace preference.
+            // Optional preference; navigation must work without storage.
         }
     }, [compact]);
     useEffect(() => {
@@ -139,13 +129,45 @@ export function AppShell({
     useEffect(() => {
         scrollArea.current?.scrollTo({ top: 0, left: 0 });
     }, [location.pathname]);
+
     const go = (path: string) => {
         setSearch(false);
         setMobile(false);
         navigate(path);
     };
-    const sidebar = (rail: boolean) => (
+    const sidebar = (rail: boolean, mobileView = false) => (
         <>
+            <div
+                data-slot="shell-sidebar-brand"
+                className={cn(
+                    "flex h-14 shrink-0 items-center gap-2 border-b px-3",
+                    rail && "justify-center px-2",
+                )}
+            >
+                {rail ? (
+                    <Link
+                        to="/"
+                        aria-label="nextHV Startseite"
+                        className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary focus-visible:outline-2 focus-visible:outline-ring"
+                    >
+                        <Building2 className="size-5" />
+                    </Link>
+                ) : (
+                    <div className="min-w-0 flex-1 px-1"><Brand /></div>
+                )}
+                {!rail && (
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={mobileView ? "Menü schließen" : "Navigation umschalten"}
+                        aria-expanded={!compact}
+                        title={mobileView ? "Menü schließen" : "Navigation einklappen"}
+                        onClick={() => mobileView ? setMobile(false) : setCompact(true)}
+                    >
+                        {mobileView ? <X /> : <PanelLeftClose />}
+                    </Button>
+                )}
+            </div>
             <SidebarNavigation
                 items={navigationItems}
                 rail={rail}
@@ -154,8 +176,9 @@ export function AppShell({
                 onExpandRail={() => setCompact(false)}
             />
             <div
+                data-slot="shell-sidebar-footer"
                 className={cn(
-                    "shrink-0 space-y-2 border-t p-3",
+                    "shrink-0 border-t p-3",
                     rail && "px-2",
                 )}
             >
@@ -166,26 +189,25 @@ export function AppShell({
                     aria-label={rail ? "Komponenten" : undefined}
                     className={({ isActive }) =>
                         cn(
-                            "nav-item focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                            "nav-item mb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                             rail && "justify-center px-0",
                             isActive && "nav-item-active",
                         )
                     }
                 >
-                    <Shapes size={16} /> {!rail && "Komponenten"}
+                    <Shapes size={16} />
+                    {!rail && "Komponenten"}
                 </NavLink>
                 <div
                     className={cn(
-                        "flex items-center gap-2.5 rounded-lg p-1",
-                        rail && "flex-col gap-2",
+                        "flex min-w-0 items-center gap-2.5 rounded-xl bg-muted/40 p-2",
+                        rail && "flex-col gap-2 bg-transparent p-1",
                     )}
                 >
                     <PersonAvatar person={{ id: "me", name: user.name }} />
                     {!rail && (
                         <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-medium">
-                                {user.name}
-                            </p>
+                            <p className="truncate text-xs font-semibold">{user.name}</p>
                             <p className="truncate text-[10px] text-muted-foreground">
                                 {user.email}
                             </p>
@@ -201,6 +223,20 @@ export function AppShell({
                         <LogOut />
                     </Button>
                 </div>
+                {rail && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Navigation umschalten"
+                        aria-expanded={!compact}
+                        title="Navigation ausklappen"
+                        className="mt-2 flex w-full"
+                        onClick={() => setCompact(false)}
+                    >
+                        <PanelLeftOpen />
+                    </Button>
+                )}
             </div>
         </>
     );
@@ -209,20 +245,39 @@ export function AppShell({
             ...(section.to ? [section] : []),
             ...flattenNavigation(section.children),
         ].filter((item) => item.to && !item.disabledReason);
+
     return (
         <div
             data-slot="app-shell"
-            className="flex h-dvh min-w-0 flex-col overflow-hidden bg-background"
+            className="flex h-dvh min-w-0 overflow-hidden bg-background"
         >
-            <header
-                data-slot="shell-header"
-                className="z-20 flex h-13 shrink-0 items-center gap-3 border-b bg-card px-3 sm:px-4"
+            <aside
+                data-slot="shell-sidebar"
+                data-collapsed={compact || undefined}
+                className={cn(
+                    "hidden shrink-0 flex-col border-r bg-sidebar transition-[width] duration-200 motion-reduce:transition-none lg:flex",
+                    compact ? "w-[68px]" : "w-64",
+                )}
             >
-                <div
-                    className={cn(
-                        "flex shrink-0 items-center gap-3",
-                        compact ? "lg:w-auto" : "lg:w-[204px]",
-                    )}
+                {sidebar(compact)}
+            </aside>
+            <Sheet open={mobile} onOpenChange={setMobile}>
+                <SheetContent
+                    side="left"
+                    showCloseButton={false}
+                    className="w-72 gap-0 bg-sidebar p-0"
+                >
+                    <SheetTitle className="sr-only">Navigation</SheetTitle>
+                    <SheetDescription className="sr-only">
+                        Bereiche deiner Hausverwaltung öffnen.
+                    </SheetDescription>
+                    {sidebar(false, true)}
+                </SheetContent>
+            </Sheet>
+            <div data-slot="shell-main" className="flex min-h-0 min-w-0 flex-1 flex-col">
+                <header
+                    data-slot="shell-header"
+                    className="z-20 flex h-14 shrink-0 items-center gap-3 border-b bg-card px-3 sm:px-5"
                 >
                     <Button
                         variant="ghost"
@@ -233,79 +288,76 @@ export function AppShell({
                     >
                         <Menu />
                     </Button>
-                    <Brand />
+                    <nav
+                        aria-label="Seitenpfad"
+                        data-slot="shell-breadcrumb"
+                        className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-sm"
+                    >
+                        {location.pathname === "/" ? (
+                            <span className="truncate font-semibold text-foreground" aria-current="page">
+                                Übersicht
+                            </span>
+                        ) : (
+                            <>
+                                <Link
+                                    to="/"
+                                    aria-label="Zur Übersicht"
+                                    title="Übersicht"
+                                    className="hidden size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring sm:inline-flex"
+                                >
+                                    <House className="size-4" />
+                                </Link>
+                                {breadcrumbs.map((item) => (
+                                    <span
+                                        key={item.id}
+                                        className="hidden min-w-0 items-center gap-2 sm:inline-flex"
+                                    >
+                                        <ChevronRight className="size-3.5 shrink-0 text-muted-foreground/70" />
+                                        {item.to && !item.disabledReason ? (
+                                            <Link
+                                                to={item.to}
+                                                className="max-w-40 truncate text-muted-foreground hover:text-foreground"
+                                            >
+                                                {item.label}
+                                            </Link>
+                                        ) : (
+                                            <span className="max-w-40 truncate text-muted-foreground">
+                                                {item.label}
+                                            </span>
+                                        )}
+                                    </span>
+                                ))}
+                                <ChevronRight className="hidden size-3.5 shrink-0 text-muted-foreground/70 sm:block" />
+                                <span className="min-w-0 truncate font-semibold text-foreground" aria-current="page">
+                                    {currentTitle}
+                                </span>
+                            </>
+                        )}
+                    </nav>
                     <Button
+                        type="button"
+                        variant="outline"
+                        className="hidden h-9 shrink-0 gap-2 text-muted-foreground sm:inline-flex"
+                        aria-label="Bereich suchen"
+                        onClick={() => setSearch(true)}
+                    >
+                        <Search className="size-4" />
+                        <span>Bereich suchen</span>
+                        <kbd className="ml-3 rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium">
+                            Strg K
+                        </kbd>
+                    </Button>
+                    <Button
+                        type="button"
                         variant="ghost"
                         size="icon-sm"
-                        className="ml-auto hidden lg:flex"
-                        aria-label="Navigation umschalten"
-                        aria-expanded={!compact}
-                        onClick={() => setCompact((value) => !value)}
+                        className="sm:hidden"
+                        aria-label="Suche öffnen"
+                        onClick={() => setSearch(true)}
                     >
-                        {compact ? <PanelLeftOpen /> : <PanelLeftClose />}
+                        <Search />
                     </Button>
-                </div>
-                <span className="hidden h-5 border-l sm:block" aria-hidden />
-                <nav
-                    aria-label="Seitenpfad"
-                    className="flex min-w-0 items-center gap-2 text-xs"
-                >
-                    <Link
-                        to="/"
-                        className="hidden text-muted-foreground hover:text-foreground md:inline"
-                    >
-                        Arbeitsbereich
-                    </Link>
-                    {trail.slice(0, -1).map((item) => (
-                        <span
-                            key={item.id}
-                            className="hidden min-w-0 items-center gap-2 md:inline-flex"
-                        >
-                            <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
-                            {item.to ? (
-                                <Link
-                                    to={item.to}
-                                    className="truncate text-muted-foreground hover:text-foreground"
-                                >
-                                    {item.label}
-                                </Link>
-                            ) : (
-                                <span className="truncate text-muted-foreground">
-                                    {item.label}
-                                </span>
-                            )}
-                        </span>
-                    ))}
-                    <ChevronRight className="hidden size-3 text-muted-foreground md:block" />
-                    <span className="truncate font-medium" aria-current="page">
-                        {currentTitle}
-                    </span>
-                </nav>
-            </header>
-            <div className="flex min-h-0 min-w-0 flex-1">
-                <aside
-                    className={cn(
-                        "hidden shrink-0 flex-col border-r bg-sidebar lg:flex",
-                        compact ? "w-16" : "w-60",
-                    )}
-                >
-                    {sidebar(compact)}
-                </aside>
-                <Sheet open={mobile} onOpenChange={setMobile}>
-                    <SheetContent
-                        side="left"
-                        className="w-72 gap-0 bg-sidebar p-0"
-                    >
-                        <div className="px-5 py-5">
-                            <Brand />
-                        </div>
-                        <SheetTitle className="sr-only">Navigation</SheetTitle>
-                        <SheetDescription className="sr-only">
-                            Bereiche deiner Hausverwaltung öffnen.
-                        </SheetDescription>
-                        {sidebar(false)}
-                    </SheetContent>
-                </Sheet>
+                </header>
                 <main
                     ref={scrollArea}
                     data-slot="workspace-scroll"
@@ -329,24 +381,22 @@ export function AppShell({
                         {navigationItems.map((section) => (
                             <CommandGroup
                                 key={section.id}
-                                heading={
-                                    section.to
-                                        ? "Arbeitsbereich"
-                                        : section.label
-                                }
+                                heading={section.to ? "Arbeitsbereich" : section.label}
                             >
                                 {commandEntries(section).map((item) => {
                                     const Icon = item.icon;
                                     return (
                                         <CommandItem
                                             key={item.id}
-                                            value={`${item.resource?.label ?? ""} ${item.label} ${item.description ?? ""}`}
+                                            value={
+                                                (item.resource?.label ?? "") + " " +
+                                                item.label + " " + (item.description ?? "")
+                                            }
                                             onSelect={() => go(item.to!)}
                                         >
                                             {Icon && <Icon />}
-                                            {item.resource &&
-                                            item.label !== item.resource.label
-                                                ? `${item.resource.label} · ${item.label}`
+                                            {item.resource && item.label !== item.resource.label
+                                                ? item.resource.label + " · " + item.label
                                                 : item.label}
                                         </CommandItem>
                                     );

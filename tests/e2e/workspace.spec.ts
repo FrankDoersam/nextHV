@@ -121,10 +121,13 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
         .click();
     await page.getByRole("button", { name: "Abbrechen", exact: true }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(
+        page.getByRole("checkbox", { name: "Zeile auswählen", exact: true }),
+    ).toHaveCount(0);
     await page
-        .getByRole("checkbox", { name: "Zeile auswählen", exact: true })
+        .getByRole("button", { name: "Aktionen für Browser Test Objekt" })
         .click();
-    await page.getByRole("button", { name: "Löschen", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Löschen", exact: true }).click();
     const deletion = page.getByRole("dialog", { name: "Löschen", exact: true });
     await expect(deletion).toBeVisible();
     await deletion

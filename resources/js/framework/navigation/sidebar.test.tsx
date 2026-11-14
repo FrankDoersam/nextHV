@@ -169,9 +169,10 @@ it("lets the icon rail open a parent's subtree and preserves labelled controls",
     const expand = vi.fn();
     mount(true, expand);
     const opener = screen.getByRole("button", {
-        name: "Objekte Untermenü öffnen",
+        name: "Stammdaten Untermenü öffnen",
     });
 
     await userEvent.setup().click(opener);
     expect(expand).toHaveBeenCalledOnce();
+    expect(screen.getByRole("button", { name: "Stammdaten Untermenü öffnen" })).toBeVisible();
 });

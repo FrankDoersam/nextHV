@@ -35,6 +35,12 @@ export const properties: ResourceDefinition = {
         },
     ],*/
     titleField: "name",
+    collection: {
+        rowSelection: false,
+        filterable: false,
+        groupable: false,
+        toolbarFilters: [],
+    },
     //supportsClone: true,
     editor: {
         sectionStyle: "collapsible",
