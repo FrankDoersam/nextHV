@@ -256,7 +256,15 @@ export function ActionButtons({
                     key={action.id}
                     type="button"
                     variant={inverse ? "secondary" : "ghost"}
-                    size={iconOnly ? "icon-xs" : "sm"}
+                    size={
+                        placement === "table"
+                            ? iconOnly
+                                ? "icon-lg"
+                                : "lg"
+                            : iconOnly
+                              ? "icon-xs"
+                              : "sm"
+                    }
                     aria-label={action.label}
                     title={
                         typeof available === "string"

@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { useParams } from "react-router";
-import { Pencil, RefreshCw } from "lucide-react";
+import { Pencil, RefreshCw, LayoutDashboard, Link2 } from "lucide-react";
 import { DetailPageLayout, PageHeader } from "@/components/blocks/layout";
 import { ErrorState, Loading } from "@/components/blocks/content";
 import { LazyTabs } from "@/components/blocks/lazy-tabs";
@@ -9,6 +9,7 @@ import { useResource } from "@/framework/data/hooks";
 import { useWorkbench } from "@/framework/workbench";
 import { RowActions } from "@/framework/tables/resource-collection";
 import { RelationCollection } from "@/framework/tables/relation-collection";
+import { getResource } from "@/modules/registry";
 import { contracts } from "@/modules/contracts/contracts-resource";
 import { label } from "@/lib/format";
 const ContractOverview = lazy(
@@ -65,12 +66,16 @@ export default function ContractDetailPage() {
                     tabs={[
                         {
                             id: "overview",
+                            icon: LayoutDashboard,
                             label: "Übersicht",
                             render: () => <ContractOverview record={record} />,
                         },
                         ...contracts.relations!.map((relation) => ({
                             id: relation.resource,
                             label: relation.label,
+                            icon:
+                                relation.icon ??
+                                getResource(relation.resource).icon,
                             count: Number(
                                 record[`${relation.countRelation}_count`] ?? 0,
                             ),
@@ -83,6 +88,7 @@ export default function ContractDetailPage() {
                         })),
                         {
                             id: "incoming-links",
+                            icon: Link2,
                             label: "Eingehende Verknüpfungen",
                             count: Number(record.incoming_links_count ?? 0),
                             render: () => (

@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Link, Pencil, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
+import { Pencil, RefreshCw } from "lucide-react";
+import { CopyLinkButton } from "@/components/blocks/copy-link-button";
 import { ErrorState } from "@/components/blocks/content";
 import { FormSection } from "@/components/blocks/form-section";
 import { KeyValueRows } from "@/components/blocks/key-value-rows";
@@ -85,34 +85,18 @@ export function ResourceView({
                     ? {
                           value: activeTab.id,
                           onValueChange: setTab,
+                          icons: resource.editor?.tabIcons,
                           items: tabs.map((item) => ({
                               value: item.id,
                               label: item.label,
+                              icon: item.icon ?? resource.icon,
                           })),
                       }
                     : undefined
             }
             actions={
                 <div className="flex items-center gap-1">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label="Direktlink kopieren"
-                        onClick={() =>
-                            navigator.clipboard
-                                .writeText(window.location.href)
-                                .then(
-                                    () => toast.success("Direktlink kopiert"),
-                                    () =>
-                                        toast.error(
-                                            "Direktlink konnte nicht kopiert werden.",
-                                        ),
-                                )
-                        }
-                    >
-                        <Link />
-                    </Button>
+                    <CopyLinkButton onError={setError} />
                     <Button
                         type="button"
                         variant="ghost"

@@ -3,7 +3,6 @@ import { patchRecord } from "../data/record-cache";
 import { useEffect, useState, type ReactNode } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { Check, Pencil, X } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ResourceField } from "@/components/fields/field";
 import { CheckboxList } from "@/components/fields/checkbox-list";
@@ -139,7 +138,6 @@ function PropertyEditor({
                             snapshot,
                         );
                         onSaved(updated);
-                        toast.success(`${field.label} gespeichert`);
                     } catch (e) {
                         setError(e);
                         if (e instanceof ApiError)
@@ -258,7 +256,6 @@ export function BooleanPropertyList({
                     setError(undefined);
                     try {
                         await save(changes, record);
-                        toast.success("Eigenschaften gespeichert");
                     } catch (e) {
                         setError(e);
                     } finally {

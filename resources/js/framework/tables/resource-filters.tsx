@@ -106,7 +106,7 @@ export function ResourceFilters({
                         data-slot="filter-chip"
                         role="group"
                         aria-label={`Filter ${field.label}`}
-                        className="inline-flex min-w-0 max-w-full flex-wrap items-center rounded-lg border bg-card shadow-xs"
+                        className="inline-flex min-w-0 max-w-full items-center rounded-lg border bg-card shadow-xs"
                     >
                         <span className="shrink-0 border-r px-2.5 text-xs font-medium">
                             {field.label}
@@ -149,7 +149,7 @@ export function ResourceFilters({
                             <>
                                 <span className="h-4 border-l" aria-hidden />
                                 {field.kind === "relation" && field.resource ? (
-                                    <div className="w-52 min-w-0">
+                                    <div className="flex min-w-0 max-w-52 flex-1 [&>div]:w-full">
                                         <RelationPicker
                                             presentation="chip"
                                             aria-label={`${field.label} Werte`}
@@ -217,7 +217,7 @@ export function ResourceFilters({
                 <Button
                     type="button"
                     variant="ghost"
-                    size="icon"
+                    size="icon-lg"
                     className="shrink-0 text-muted-foreground"
                     aria-label={`Alle ${active.length} Filter zurücksetzen`}
                     title={`Alle ${active.length} Filter zurücksetzen`}

@@ -18,12 +18,14 @@ export function CollectionViews({
     fixedFilters,
     panelId,
     onChange,
+    icons = true,
 }: {
     resource: ResourceDefinition;
     views: CollectionViewDefinition[];
     active: string;
     fixedFilters: Filter[];
     panelId: string;
+    icons?: boolean;
     onChange: (view: string) => void;
 }) {
     const counts = useQueries({
@@ -72,6 +74,8 @@ export function CollectionViews({
                     {views.map((view, i) => (
                         <TabsTrigger
                             key={view.id}
+                            icon={view.icon}
+                            icons={icons}
                             value={view.id}
                             id={collectionViewTabId(panelId, view.id)}
                             aria-controls={panelId}

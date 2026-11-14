@@ -92,6 +92,10 @@ export function ChoicePicker({
     const richSelection =
         selectedDisplay === "rich" && !multiple ? selected[0] : undefined;
     const caption = selected.map((option) => option.label).join(", ");
+    const triggerCaption =
+        presentation === "chip" && multiple && ids.length > 1
+            ? (selected[0]?.label ?? placeholder)
+            : caption || placeholder;
     const updateQuery = (text: string) => {
         setQuery(text);
         onSearch?.(text);
@@ -146,7 +150,10 @@ export function ChoicePicker({
             {presentation !== "input" ? (
                 <div
                     ref={anchor}
-                    className="inline-flex min-w-0 max-w-64 items-center"
+                    className={cn(
+                        "inline-flex min-w-0 max-w-64 items-center",
+                        presentation === "chip" && "max-w-full",
+                    )}
                 >
                     <Combobox.Trigger
                         id={id}
@@ -186,12 +193,18 @@ export function ChoicePicker({
                         }}
                     >
                         {triggerIcon}
-                        <span className="min-w-0 truncate">
-                            {caption || placeholder}
+                        <span className="min-w-0 flex-1 truncate text-left">
+                            {triggerCaption}
                         </span>
                         {multiple && ids.length > 1 && (
-                            <span className="rounded bg-muted px-1.5 text-[10px] tabular-nums">
-                                {ids.length}
+                            <span
+                                data-slot="selection-count"
+                                aria-label={`${ids.length} ausgewählt`}
+                                className="shrink-0 rounded bg-muted px-1.5 text-[10px] leading-5 tabular-nums"
+                            >
+                                {presentation === "chip"
+                                    ? `+${ids.length - 1}`
+                                    : ids.length}
                             </span>
                         )}
                         <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />

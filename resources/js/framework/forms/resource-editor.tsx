@@ -9,7 +9,7 @@ import { Overlay } from "@/components/blocks/overlay";
 import { ResourceField } from "@/components/fields/field";
 import { WizardProgress } from "@/components/blocks/wizard-progress";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Save, Link, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save, RefreshCw } from "lucide-react";
 import {
     useEffect,
     useId,
@@ -23,7 +23,7 @@ import {
     useFormContext,
     useWatch,
 } from "react-hook-form";
-import { toast } from "sonner";
+import { CopyLinkButton } from "@/components/blocks/copy-link-button";
 import { useReload, useSaveRecord } from "../data/hooks";
 import { ApiError } from "../data/http";
 import { dataProvider, normalizeValidationErrors } from "../data/provider";
@@ -210,7 +210,6 @@ export function ResourceEditor({
             form.reset(initialValues(resource.fields, saved));
             onDirtyChange?.(false);
             await request.onSaved?.(saved);
-            toast.success(`${resource.singular} gespeichert`);
             if (flow) flow.onSaved(saved);
             else onClose();
         } catch (e) {
@@ -262,23 +261,7 @@ export function ResourceEditor({
     };
     const headerActions = (
         <div className="flex gap-1">
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Direktlink kopieren"
-                onClick={() =>
-                    navigator.clipboard.writeText(window.location.href).then(
-                        () => toast.success("Direktlink kopiert"),
-                        () =>
-                            toast.error(
-                                "Direktlink konnte nicht kopiert werden.",
-                            ),
-                    )
-                }
-            >
-                <Link />
-            </Button>
+            <CopyLinkButton onError={setError} />
             {row && (
                 <>
                     <Button
@@ -380,9 +363,11 @@ export function ResourceEditor({
                     ? {
                           value: activeTab.id,
                           onValueChange: setTab,
+                          icons: resource.editor?.tabIcons,
                           items: editorTabs.map((tab) => ({
                               value: tab.id,
                               label: tab.label,
+                              icon: tab.icon ?? resource.icon,
                           })),
                       }
                     : undefined

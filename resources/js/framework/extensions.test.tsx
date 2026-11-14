@@ -602,7 +602,7 @@ describe("relation capabilities and server facets", () => {
         );
         await userEvent.dblClick(screen.getByText("Berlin"));
         expect(
-            new URLSearchParams(router.state.location.search).has("panels"),
+            new URLSearchParams(router.state.location.search).has("panel"),
         ).toBe(false);
     });
     it("sends REUI multi-choice filters to the server and restores them from the URL", async () => {

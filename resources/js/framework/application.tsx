@@ -1,12 +1,12 @@
 import { ResourceSchemaProvider } from "@/framework/data/resource-schema-provider";
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useState } from "react";
 import { Routes, Route, useLocation } from "react-router";
 import { useAuth } from "@/framework/auth";
 import { WorkbenchProvider } from "@/framework/workbench";
 import { resources } from "@/modules/registry";
 import { AppShell } from "@/components/blocks/layout";
 import { CollectionLoading } from "@/components/blocks/collection-loading";
-import { Loading, EmptyState } from "@/components/blocks/content";
+import { Loading, EmptyState, ErrorState } from "@/components/blocks/content";
 import { ErrorBoundary } from "@/components/blocks/error-boundary";
 const Dashboard = lazy(() => import("@/pages/dashboard-page"));
 const ResourcePage = lazy(() => import("@/pages/resource-page"));
@@ -27,19 +27,18 @@ function ApplicationWorkspace() {
         (resource) => location.pathname === "/" + resource.name,
     );
     const { user, logout } = useAuth();
+    const [logoutError, setLogoutError] = useState<unknown>();
     return (
         <WorkbenchProvider>
             <AppShell
                 resources={resources}
                 user={user}
-                onLogout={() =>
-                    logout().catch((e) =>
-                        import("sonner").then(({ toast }) =>
-                            toast.error(e.message),
-                        ),
-                    )
-                }
+                onLogout={() => {
+                    setLogoutError(undefined);
+                    void logout().catch(setLogoutError);
+                }}
             >
+                {!!logoutError && <ErrorState error={logoutError} />}
                 <ErrorBoundary>
                     <Suspense
                         fallback={

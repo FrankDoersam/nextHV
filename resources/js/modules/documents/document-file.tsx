@@ -5,7 +5,6 @@ import { request } from "@/framework/data/http";
 import type { RecordData } from "@/framework/types";
 import { Download, Eye, FileCheck, Upload } from "lucide-react";
 import { lazy, Suspense, useRef, useState } from "react";
-import { toast } from "sonner";
 import { Overlay } from "@/components/blocks/overlay";
 const PdfViewer = lazy(() => import("@/components/blocks/pdf-viewer"));
 export default function DocumentFile({ record }: { record: RecordData }) {
@@ -23,7 +22,6 @@ export default function DocumentFile({ record }: { record: RecordData }) {
             body.append("file", file);
             await request(`/api/v1/identity-documents/${record.id}/file`, body);
             await reload();
-            toast.success("Nachweis gespeichert");
         } catch (e) {
             setError(e);
         } finally {

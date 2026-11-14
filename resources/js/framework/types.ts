@@ -143,6 +143,7 @@ export interface FormSummaryDefinition {
     items: (values: Values, record?: RecordData) => KeyValueItem[];
 }
 export interface EditorTabDefinition {
+    icon?: LucideIcon;
     id: string;
     label: string;
     groups?: string[];
@@ -170,6 +171,7 @@ export interface FormGroupDefinition {
     summary?: (values: Values) => ReactNode;
 }
 export interface CollectionViewDefinition {
+    icon?: LucideIcon;
     id: string;
     label: string;
     filters?: Filter[];
@@ -214,6 +216,7 @@ export interface ResourceDefinition {
         titleBadge?: boolean;
         description?: string | false;
         tabs?: EditorTabDefinition[];
+        tabIcons?: boolean;
         sectionStyle?: "plain" | "card" | "collapsible";
         summary?: FormSummaryDefinition;
         wizardSummary?: FormSummaryDefinition;
@@ -229,6 +232,7 @@ export interface ResourceDefinition {
 /** The same capabilities apply to full-page grids and embedded relations. */
 export interface CollectionOptions {
     views?: CollectionViewDefinition[] | false;
+    tabIcons?: boolean;
     toolbarFilters?: string[];
     viewMode?: "page" | "sheet" | "dialog";
     summary?: boolean;
@@ -261,6 +265,7 @@ export interface RelationFormOptions {
     flow?: string | false;
 }
 export interface RelationDefinition {
+    icon?: LucideIcon;
     resource: string;
     label: string;
     field: string;
