@@ -181,6 +181,34 @@ describe("native REST description adapter", () => {
         });
         expect(denied.columns[1].sortable).toBe(false);
     });
+    it("sorts a related display alias by its canonical REST relation path", () => {
+        const definition = resource();
+        definition.columns[1] = {
+            field: "property_record.name",
+            label: "Objekt",
+            sortable: true,
+        };
+        const metadata = schema();
+        metadata.meta.ui.relations.property_id.responseKey = "property_record";
+        hydrateResources([definition], {
+            units: metadata,
+            properties: { ...schema(), fields: [field("name")] },
+        });
+        expect(definition.columns[1]).toMatchObject({
+            sortable: true,
+            sortField: "property.name",
+        });
+        const denied = resource();
+        denied.columns[1].field = "property_record.name";
+        const restricted = schema();
+        restricted.meta.ui.relations.property_id.responseKey = "property_record";
+        hydrateResources([denied], {
+            units: restricted,
+            properties: { ...schema(), fields: [{ ...field("name"), sort: false }] },
+        });
+        expect(denied.columns[1].sortable).toBe(false);
+    });
+
     it("honors native readonly fields and input hints without enabling client business validation", () => {
         const definition = resource();
         const metadata = schema();
