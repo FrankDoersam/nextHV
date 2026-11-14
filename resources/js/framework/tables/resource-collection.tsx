@@ -1,4 +1,5 @@
 import { CellRenderer } from "./cell-renderer";
+import { recordValue } from "./cell-value";
 import { Cell } from "@/components/blocks/cell";
 import { CollectionViews, collectionViewTabId } from "./collection-views";
 import { DirectFilters, supportsDirectFilter } from "./direct-filters";
@@ -293,7 +294,9 @@ export function ResourceCollection({
             ? [{ field: effectiveGroup, direction: "asc" as const }]
             : []),
         ...sorting.map((s) => ({
-            field: s.id,
+            field:
+                resource.columns.find((column) => column.field === s.id)
+                    ?.sortField ?? s.id,
             direction: s.desc ? ("desc" as const) : ("asc" as const),
         })),
     ];
@@ -469,7 +472,7 @@ export function ResourceCollection({
                 : []),
             ...resource.columns.map((c) => ({
                 id: c.field,
-                accessorFn: (row: RecordData) => row[c.field],
+                accessorFn: (row: RecordData) => recordValue(row, c.field),
                 ...sizing[c.field],
                 meta: {
                     headerTitle: c.label,
@@ -506,8 +509,7 @@ export function ResourceCollection({
                     >;
                 }) =>
                     c.field === resource.titleField &&
-                    detailLink &&
-                    !c.reference ? (
+                    detailLink ? (
                         <Cell
                             className="w-full"
                             title={
