@@ -33,6 +33,31 @@ class RelatedSearchTest extends TestCase
         $this->assertDatabaseCount('contract_parties', 2);
     }
 
+    public function test_units_can_sort_by_related_property_name_in_both_directions(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $alpha = Property::factory()->create(['name' => 'Alpha Objekt']);
+        $zeta = Property::factory()->create(['name' => 'Zeta Objekt']);
+        $alphaUnit = Unit::factory()->create(['property_id' => $alpha->id, 'name' => 'Gleiche Einheit']);
+        $zetaUnit = Unit::factory()->create(['property_id' => $zeta->id, 'name' => 'Gleiche Einheit']);
+
+        foreach ([
+            ['asc', [$alphaUnit->id, $zetaUnit->id]],
+            ['desc', [$zetaUnit->id, $alphaUnit->id]],
+        ] as [$direction, $expectedIds]) {
+            $response = $this->postJson('/api/v1/units/search', [
+                'search' => [
+                    'sorts' => [['field' => 'property.name', 'direction' => $direction]],
+                    'includes' => [['relation' => 'property']],
+                ],
+            ]);
+
+            $response->assertOk()->assertJsonPath('total', 2);
+            $this->assertSame($expectedIds, array_column($response->json('data'), 'id'));
+        }
+    }
+
     public function test_unit_picker_can_search_property_names_and_loads_context_in_one_include(): void
     {
         $this->actingAs(User::factory()->create());

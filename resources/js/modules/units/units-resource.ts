@@ -76,9 +76,7 @@ export const units: ResourceDefinition = {
         {
             field: "property.name",
             label: "Objekt",
-            sortable: false,
-            render: (r) =>
-                String((r.property as Record<string, unknown>)?.name ?? "—"),
+            sortable: true,
         },
         col("type", "Art", "badge"),
         col("area", "m²", "number"),

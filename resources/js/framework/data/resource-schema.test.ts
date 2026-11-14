@@ -15,6 +15,7 @@ import {
     type ResourceSchema,
 } from "./resource-schema";
 import { request } from "./http";
+import { readGridState } from "../tables/grid-state";
 vi.mock("./http", () => ({ request: vi.fn() }));
 const field = (
     name: string,
@@ -158,6 +159,27 @@ describe("native REST description adapter", () => {
             field: "property_id",
             kind: "relation",
         });
+    });
+    it("enables sorting by the authorized related property name without adding a reference link", () => {
+        const definition = resource();
+        hydrateResources([definition], {
+            units: schema(),
+            properties: { ...schema(), fields: [field("name")] },
+        });
+        expect(definition.columns[1].sortable).toBe(true);
+        expect(definition.columns[1].reference).toBeUndefined();
+        const state = readGridState(
+            new URLSearchParams('sort=[{"id":"property.name","desc":false}]'),
+            definition,
+        );
+        expect(state.sorting).toEqual([{ id: "property.name", desc: false }]);
+
+        const denied = resource();
+        hydrateResources([denied], {
+            units: schema(),
+            properties: { ...schema(), fields: [{ ...field("name"), sort: false }] },
+        });
+        expect(denied.columns[1].sortable).toBe(false);
     });
     it("honors native readonly fields and input hints without enabling client business validation", () => {
         const definition = resource();

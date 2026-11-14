@@ -51,7 +51,8 @@ it("reflows every visible business column into labelled values and keeps record 
     expect(action).toHaveBeenCalledExactlyOnceWith(row);
 });
 
-it("renders referenced mobile titles as direct links without nesting them in buttons", () => {
+it("uses the ordinary record action for referenced mobile titles and renders no extra link", async () => {
+    const open = vi.fn();
     render(
         <MemoryRouter>
             <ResponsiveRecordList
@@ -70,13 +71,14 @@ it("renders referenced mobile titles as direct links without nesting them in but
                         name: "Wohnung 17",
                     },
                 ]}
-                open={vi.fn()}
+                open={open}
             />
         </MemoryRouter>,
     );
 
-    const link = screen.getByRole("link", { name: "Wohnung 17" });
-    expect(link).toHaveAttribute("href", "/units/17");
-    expect(link).toHaveClass("text-foreground");
-    expect(link.closest("button")).toBeNull();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Wohnung 17" }));
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ id: 1, unit_id: 17 }),
+    );
 });

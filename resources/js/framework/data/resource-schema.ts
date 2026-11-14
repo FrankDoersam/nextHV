@@ -416,29 +416,24 @@ export function hydrateResources(
             ...column,
             options:
                 schema.meta.ui.fields[column.field]?.options ?? column.options,
-            reference:
-                column.reference ??
-                (() => {
-                    const prefix = column.field.split(".")[0];
-                    const relation = Object.entries(
-                        schema.meta.ui.relations,
-                    ).find(
-                        ([, relation]) =>
-                            column.field.includes(".") &&
-                            [relation.relation, relation.responseKey].includes(
-                                prefix,
-                            ),
-                    );
-                    return relation
-                        ? {
-                              resource: relation[1].resource,
-                              idField: relation[0],
-                          }
-                        : undefined;
-                })(),
             sortable:
                 column.sortable !== false &&
-                (nativeField(schema, column.field)?.sort ?? false),
+                (() => {
+                    const direct = nativeField(schema, column.field);
+                    if (direct) return direct.sort;
+                    const [relationName, ...fieldParts] = column.field.split(".");
+                    if (!relationName || fieldParts.length === 0) return false;
+                    const relation = Object.values(schema.meta.ui.relations).find(
+                        (entry) =>
+                            entry.relation === relationName ||
+                            entry.responseKey === relationName,
+                    );
+                    if (!relation) return false;
+                    const relatedField = schemas[relation.resource]?.fields.find(
+                        (field) => field.name === fieldParts.join("."),
+                    );
+                    return relatedField?.sort === true;
+                })(),
             filter:
                 column.filter === false
                     ? false
