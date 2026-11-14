@@ -31,6 +31,8 @@ const ActionDialog = lazy(() =>
     import("./forms/action-dialog").then((m) => ({ default: m.ActionDialog })),
 );
 import { Loading, ErrorState } from "@/components/blocks/content";
+import { ErrorBoundary } from "@/components/blocks/error-boundary";
+import { isChunkLoadError } from "./chunk-recovery";
 import { Overlay } from "@/components/blocks/overlay";
 import {
     actionResult,
@@ -434,24 +436,53 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
             }}
         >
             {children}
-            <Suspense
-                fallback={
+            <ErrorBoundary
+                resetKey={`${panels.map((panel) => `${panel.key}:${panel.mode}`).join("|")}:${action?.definition.id ?? ""}:${result?.type ?? ""}:${Boolean(failure)}`}
+                fallback={(error) => (
                     <Overlay
                         open
-                        title="Formular wird geladen"
-                        onClose={() =>
-                            panels.length
-                                ? closeAt(panels.length - 1)
-                                : setAction(null)
-                        }
+                        title="Dialog konnte nicht geladen werden"
                         presentation={panels.at(-1)?.presentation ?? "dialog"}
+                        onClose={() =>
+                            action
+                                ? setAction(null)
+                                : panels.length
+                                  ? closeAt(panels.length - 1)
+                                  : setResult(undefined)
+                        }
                     >
-                        <Loading />
+                        <ErrorState
+                            error={
+                                isChunkLoadError(error)
+                                    ? new Error(
+                                          "Die Ansicht konnte nicht geladen werden. Bitte die Seite neu laden.",
+                                      )
+                                    : error
+                            }
+                            retry={() => window.location.reload()}
+                        />
                     </Overlay>
-                }
+                )}
             >
-                {layer(0)}
-            </Suspense>
+                <Suspense
+                    fallback={
+                        <Overlay
+                            open
+                            title="Formular wird geladen"
+                            onClose={() =>
+                                panels.length
+                                    ? closeAt(panels.length - 1)
+                                    : setAction(null)
+                            }
+                            presentation={panels.at(-1)?.presentation ?? "dialog"}
+                        >
+                            <Loading />
+                        </Overlay>
+                    }
+                >
+                    {layer(0)}
+                </Suspense>
+            </ErrorBoundary>
             {dataRouter && <NavigationGuard dirty={dirty} />}
         </Context.Provider>
     );

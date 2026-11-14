@@ -16,4 +16,18 @@ class ExampleTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_a_missing_vite_chunk_is_not_rewritten_to_the_app_page(): void
+    {
+        $this->withoutVite()
+            ->get('/build/assets/form-layer-missing.js')
+            ->assertNotFound();
+    }
+
+    public function test_a_resource_deep_link_still_serves_the_app_page(): void
+    {
+        $this->withoutVite()
+            ->get('/contracts/123')
+            ->assertOk();
+    }
 }
