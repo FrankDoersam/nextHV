@@ -14,6 +14,7 @@ import {
 } from "react-router";
 import { actionAvailability, type ResourceAction } from "./actions";
 import { useReload } from "./data/hooks";
+import { ReportActionSheet } from "./report-action-sheet";
 import {
     readPanels,
     panelSearch,
@@ -29,11 +30,6 @@ const FormLayer = lazy(() =>
 );
 const ActionDialog = lazy(() =>
     import("./forms/action-dialog").then((m) => ({ default: m.ActionDialog })),
-);
-const ReportActionSheet = lazy(() =>
-    import("./report-action-sheet").then((module) => ({
-        default: module.ReportActionSheet,
-    })),
 );
 import { Loading, ErrorState } from "@/components/blocks/content";
 import { ErrorBoundary } from "@/components/blocks/error-boundary";

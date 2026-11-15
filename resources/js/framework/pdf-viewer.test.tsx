@@ -4,6 +4,7 @@ import { TransformStream as NodeTransformStream } from "node:stream/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import {
+    act,
     cleanup,
     render,
     screen,
@@ -324,6 +325,29 @@ function mountReport(action: ExampleReport) {
         </QueryClientProvider>,
     );
 }
+it("opens the final PDF sheet before the report resolves and retains it through rendering", async () => {
+    const action = new ExampleReport();
+    let releaseReport!: (value: typeof response) => void;
+    action.execute.mockImplementationOnce(
+        () => new Promise((resolve) => { releaseReport = resolve; }),
+    );
+    mountReport(action);
+    const sheet = screen.getByRole("dialog", { name: "Objektbericht" });
+    expect(sheet).toHaveAttribute("data-slot", "sheet-content");
+    expect(within(sheet).getByRole("status", { name: "PDF wird geladen" }))
+        .toHaveTextContent("Bericht wird vorbereitet");
+    expect(within(sheet).queryByLabelText("PDF-Seite 1")).not.toBeInTheDocument();
+    await waitFor(() => expect(action.execute).toHaveBeenCalledOnce());
+
+    await act(async () => { releaseReport(response); });
+    await renderedFirstPage();
+    expect(screen.getByRole("dialog", { name: "Objektbericht" })).toBe(sheet);
+    expect(within(sheet).queryByRole("status", { name: "PDF wird geladen" }))
+        .not.toBeInTheDocument();
+    expect(within(sheet).getByRole("link", { name: "PDF herunterladen" }))
+        .toHaveAttribute("download", "Objekt.pdf");
+});
+
 it("opens reports directly, retries in-place and never reloads the underlying table", async () => {
     const action = new ExampleReport();
     action.execute.mockRejectedValueOnce(

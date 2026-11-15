@@ -44,6 +44,14 @@ test("global records, audit, mapped relation import and protected PDF sheet work
         page.getByRole("list", { name: "Änderungsverlauf" }),
     ).toBeVisible();
     await capture("02-audit");
+    // Hold the HTTP response so we verify that the *final* PDF sheet opens
+    // immediately, before the report action / PDF bytes are available.
+    let releaseReport!: () => void;
+    const reportGate = new Promise<void>((resolve) => { releaseReport = resolve; });
+    await page.route("**/api/v1/properties/actions/report", async (route) => {
+        await reportGate;
+        await route.continue();
+    });
     await page
         .getByRole("button", { name: "Aktionen für Lindenhöfe", exact: true })
         .click();
@@ -52,9 +60,16 @@ test("global records, audit, mapped relation import and protected PDF sheet work
         .click();
     const pdf = page.getByRole("dialog");
     await expect(pdf).toHaveAttribute("data-slot", "sheet-content");
+    await expect(pdf.getByRole("status", { name: "PDF wird geladen" }))
+        .toContainText("Bericht wird vorbereitet");
+    await expect(pdf.getByLabel("PDF-Seite 1", { exact: true })).toHaveCount(0);
+    await pdf.evaluate((node) => node.setAttribute("data-same-pdf-sheet", "true"));
+    releaseReport();
     await expect(
         pdf.getByLabel("PDF-Seite 1", { exact: true }),
     ).toHaveAttribute("data-rendered", "true");
+    await expect(pdf).toHaveAttribute("data-same-pdf-sheet", "true");
+    await expect(pdf.getByRole("status", { name: "PDF wird geladen" })).toHaveCount(0);
     await expect(
         pdf
             .locator('[data-slot="overlay-actions"]')
