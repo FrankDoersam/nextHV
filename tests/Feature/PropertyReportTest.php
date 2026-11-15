@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Property\Actions\BuildPropertyReport;
+use App\Models\AuditEvent;
 use App\Models\Property;
 use App\Models\Unit;
 use App\Models\User;
@@ -23,5 +24,20 @@ class PropertyReportTest extends TestCase
         $this->assertStringStartsWith('%PDF-', $pdf);
         preg_match_all('~/Type /Page\b~', $pdf, $pages);
         $this->assertGreaterThan(2, count($pages[0]));
+    }
+
+    public function test_report_is_read_only_and_declares_a_downloadable_document_for_one_record(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $property = Property::factory()->create();
+        $version = $property->updated_at;
+        $events = AuditEvent::count();
+        $this->postJson('/api/v1/properties/actions/report', ['resources' => [$property->id]])
+            ->assertOk()->assertJsonPath('data.result.data.ui.mime', 'application/pdf')
+            ->assertJsonPath('data.result.data.ui.name', 'objekt-'.$property->id.'.pdf');
+        $this->assertTrue($property->fresh()->updated_at->equalTo($version));
+        $this->assertSame($events, AuditEvent::count());
+        $other = Property::factory()->create();
+        $this->postJson('/api/v1/properties/actions/report', ['resources' => [$property->id, $other->id]])->assertUnprocessable();
     }
 }

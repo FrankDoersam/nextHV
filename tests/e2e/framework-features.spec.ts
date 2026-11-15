@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// Full Chromium includes the native PDF viewer; headless-shell intentionally does not.
+// Reports render through the same PDF.js canvas on desktop and mobile.
 test.use({ channel: "chromium" });
 
 test("global records, audit, mapped relation import and protected PDF sheet work together", async ({
@@ -50,27 +50,45 @@ test("global records, audit, mapped relation import and protected PDF sheet work
     await page
         .getByRole("menuitem", { name: "Objektbericht als PDF", exact: true })
         .click();
-    await page
-        .getByRole("button", { name: "Objektbericht als PDF", exact: true })
-        .click();
     const pdf = page.getByRole("dialog");
     await expect(pdf).toHaveAttribute("data-slot", "sheet-content");
-    await expect(pdf.getByLabel("PDF-Seitenansicht")).toHaveAttribute(
-        "data",
-        /^blob:/,
-    );
     await expect(
-        pdf.getByRole("link", { name: "PDF", exact: true }),
+        pdf.getByLabel("PDF-Seite 1", { exact: true }),
+    ).toHaveAttribute("data-rendered", "true");
+    await expect(
+        pdf
+            .locator('[data-slot="overlay-actions"]')
+            .getByRole("link", { name: "PDF herunterladen" }),
     ).toHaveAttribute("download", /objekt-\d+\.pdf/);
+    await expect(pdf.locator("object, iframe")).toHaveCount(0);
+    const initialWidth = (await pdf
+        .getByLabel("PDF-Seite 1", { exact: true })
+        .boundingBox())!.width;
+    await pdf.getByRole("button", { name: "Vergrößern", exact: true }).click();
     await expect(
-        pdf.getByText(/Der Browser unterstützt keine eingebettete PDF-Anzeige/),
-    ).not.toBeVisible();
-    // Native PDF rasterization happens outside the page DOM. Allow its compositor
-    // to paint before taking evidence; object visibility only proves it mounted.
-    await page.waitForTimeout(2_000);
+        pdf.getByLabel("PDF-Seite 1", { exact: true }),
+    ).toHaveAttribute("data-rendered", "true");
+    expect(
+        (await pdf.getByLabel("PDF-Seite 1", { exact: true }).boundingBox())!
+            .width,
+    ).toBeGreaterThan(initialWidth);
+    await pdf.getByRole("button", { name: "An Breite anpassen" }).click();
+    await expect(
+        pdf.getByLabel("PDF-Seite 1", { exact: true }),
+    ).toHaveAttribute("data-rendered", "true");
     await capture("03-pdf-sheet");
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.waitForTimeout(600);
+    await expect(
+        pdf.getByLabel("PDF-Seite 1", { exact: true }),
+    ).toHaveAttribute("data-rendered", "true");
+    await expect
+        .poll(
+            async () =>
+                (await pdf
+                    .getByLabel("PDF-Seite 1", { exact: true })
+                    .boundingBox())!.width,
+        )
+        .toBeLessThan(390);
     await capture("04-pdf-sheet-mobile");
     await page.setViewportSize({ width: 1280, height: 720 });
     await pdf.getByRole("button", { name: "Schließen", exact: true }).click();

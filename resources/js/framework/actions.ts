@@ -1,4 +1,5 @@
 import {
+    FileText,
     Pencil,
     Trash2,
     SlidersHorizontal,
@@ -17,7 +18,7 @@ export abstract class ResourceAction {
     group?: string;
     placements?: ActionPlacement[];
     children: ResourceAction[] = [];
-    interaction: "dialog" | "immediate" = "dialog";
+    interaction: "dialog" | "immediate" | "report" = "dialog";
     requiresRecord = true;
     refresh = true;
     selectableFields = false;
@@ -169,6 +170,28 @@ export class BulkEditAction extends ResourceAction {
             context.resource,
             values,
             context.rows,
+        );
+    }
+}
+
+/** Read-only, single-record report. Parameters can use the normal dialog interaction explicitly. */
+export abstract class ReportAction extends ResourceAction {
+    icon = FileText;
+    interaction: ResourceAction["interaction"] = "report";
+    refresh = false;
+    location = "row" as const;
+    enabled(context: ActionContext): boolean | string {
+        return (
+            context.rows.length === 1 ||
+            "Bitte genau einen Datensatz auswählen."
+        );
+    }
+    async execute({ resource, rows, values }: ActionContext): Promise<unknown> {
+        return resolveDataProvider(resource).action(
+            resource.name,
+            this.id,
+            rows,
+            values,
         );
     }
 }

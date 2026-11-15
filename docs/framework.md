@@ -304,7 +304,7 @@ return ActionResponse::data(['ui' => [
 
 Das ist eine Formularänderung, keine heimliche Speicherung. Ohne Formular meldet der Dispatcher einen Fehler. `formResource` muss bei einem fremden Elternformular explizit mitgegeben werden; `ResourceEditor` erledigt dies für seine Relationslisten.
 
-Für PDF-Ergebnisse erzeugt das Backend eine zehn Minuten gültige relative signierte URL, gebunden an den aktuellen Benutzer. Der Abruf prüft erneut Authentifizierung, Policy, Signatur und Benutzer-ID. Die Antwort ist `application/pdf`, `private, no-store` und `nosniff`. Das Frontend akzeptiert nur dieselbe Origin unter `/api/`, prüft den MIME-Typ, lädt mit Sitzung und gibt erzeugte Blob-URLs nach dem Schließen frei. Die Darstellung übernimmt der browsernative PDF-Viewer innerhalb einer React-Komponente; Öffnen in neuem Tab und Download sind zusätzlich möglich.
+Für PDF-Ergebnisse erzeugt das Backend eine zehn Minuten gültige relative signierte URL, gebunden an den aktuellen Benutzer. Der Abruf prüft erneut Authentifizierung, Policy, Signatur und Benutzer-ID. Die Antwort ist `application/pdf`, `private, no-store` und `nosniff`. Das Frontend akzeptiert nur dieselbe Origin unter `/api/`, prüft den MIME-Typ, lädt mit Sitzung und gibt erzeugte Blob-URLs nach dem Schließen frei. Die Darstellung übernimmt ein bei Bedarf geladener PDF.js-Canvas-Viewer mit Zoom und Seitennavigation; Öffnen in neuem Tab und Download liegen in den zentralen Sheet-Actions (Abschnitt 45).
 
 ## 10. Zusammengesetzte und berechnete API-Felder
 
@@ -384,7 +384,7 @@ npm run build
 
 Featuretests decken unter anderem Auth, Seeder, Verträge, Historie, Dokumentenschutz, Versionskonflikte, Bestätigung, deaktivierte Permissions sowie direkte Löschfehler und transaktionales Zurückrollen einer Mehrfachlöschung, Klondefaults, virtuelle schreibgeschützte Felder und den PDF-Abruf ab. React-Tests prüfen Wizard/Dirty-State, echte REUI-Tabellen, URL-Zustand, Deep-Link-Hydrierung, Browser-Zurück, geschachtelte gesperrte Relationsformulare, Currency-Parsing, Mehrfachauswahl, Datumsformat und mehrteilige Alerts.
 
-Die Playwright-Suite prüft die Oberfläche mit einer isolierten Testdatenbank; der separate Screenshot-Workflow erzeugt die Aufnahmen aus Abschnitt 22. Ein blockierter oder fehlgeschlagener Browserstart ist keine visuelle Abnahme. Browsernative PDF-Einbettung, responsive Details und die tatsächliche Zielumgebung müssen geprüft werden; Komponententests ersetzen keine pixelgenaue Browserabnahme.
+Die Playwright-Suite prüft die Oberfläche mit einer isolierten Testdatenbank; der separate Screenshot-Workflow erzeugt die Aufnahmen aus Abschnitt 22. Ein blockierter oder fehlgeschlagener Browserstart ist keine visuelle Abnahme. PDF-Canvas-Rendering, responsive Details und die tatsächliche Zielumgebung müssen geprüft werden; Komponententests ersetzen keine pixelgenaue Browserabnahme.
 
 Keine vollständige Buchhaltung, Zahlungsabstimmung, Mandantentrennung, ausgebautes Rollenmodell, automatische rechtliche Fristbewertung oder persistierte gemeinsame Tabellenansichten. REUI unterstützt weitere Grid-Modi wie Tree Rows und Inline Editing; diese sind nicht automatisch Bestandteil des hier freigegebenen CRUD-Wrappers. Zeilenvirtualisierung gehört seit dem in Abschnitt 18 beschriebenen Ausbau dazu. Gerade Inline-Mutationen brauchen dieselben Vertrags- und Versionsregeln wie die Formulare.
 
@@ -607,7 +607,7 @@ Das Dashboard enthält bewusst gekennzeichnete **Beispieldaten** für Finanzen, 
 
 ### PDF
 
-Die React-Komponente `PdfViewer` nutzt den eingebauten PDF-Viewer des Browsers über ein `<object>`. **Keine zusätzliche PDF-Abhängigkeit:** `react-pdf`, `pdfjs-dist` und `vite-plugin-static-copy` wurden entfernt. Damit entfallen Renderer, Worker, CMaps, WASM und Fonts im Frontend-Build. Der bestehende Backend-Generator `setasign/tfpdf` bleibt für Objektberichte erforderlich.
+Die React-Komponente `PdfViewer` nutzt den gemeinsamen, bei Bedarf geladenen PDF.js-Canvas-Renderer. `pdfjs-dist` ist die einzige direkte Viewer-Abhängigkeit; React-PDF und weitere Viewer-Wrapper sind nicht installiert. Der Worker wird lokal gebündelt. Der bestehende Backend-Generator `setasign/tfpdf` bleibt für Objektberichte erforderlich. Report-Sheets und Erweiterungsvertrag sind in Abschnitt 45 beschrieben.
 
 ```tsx
 const PdfViewer = lazy(() => import("@/components/blocks/pdf-viewer"));
@@ -616,7 +616,7 @@ const PdfViewer = lazy(() => import("@/components/blocks/pdf-viewer"));
 </Suspense>;
 ```
 
-Die React-Hülle bietet eine helle Fläche, Ladezustand, wiederholbare Fehler, Dateiname, „Öffnen“ und Download. **Zoom, Druck, Suche und Seitennavigation hängen vom PDF-Viewer des jeweiligen Browsers ab**; die Anwendung verspricht keine eigenen Canvas-Bedienelemente mehr. Unterstützt der Browser keine Einbettung, gibt es einen Download-Fallback. Action-Ergebnisse und hinterlegte PDF-Ausweise verwenden dieselbe Komponente.
+Die Vorschau bietet eine helle Fläche, Ladezustand, wiederholbare Fehler, automatische Breitenanpassung, Zoom und Seitennavigation. Dokumentaktionen liegen bei Report-Sheets in `Overlay.actions`; eingebettete Ausweisdateien verwenden denselben Loader und Renderer. Textsuche, Textauswahl, Druck und Annotationen werden nicht im Canvas implementiert; dafür ist Öffnen/Download verfügbar.
 
 Der Abruf bleibt authentifiziert auf derselben Origin unter `/api/`, prüft den PDF-MIME-Typ und verwendet ein AbortSignal. Blob-URLs werden beim Dokumentwechsel/Schließen freigegeben. Kein externer PDF-Dienst erhält Dokumente. Die Komponente wird erst beim Öffnen geladen.
 
@@ -630,7 +630,7 @@ Der Abruf bleibt authentifiziert auf derselben Origin unter `/api/`, prüft den 
 - Fixierter Tabellenkopf, eigene Scrollfläche und Pagination im Footer. Sortierung, Filter, Suche, Paging, Gruppierung und Sichtbarkeit bleiben URL-basiert; Spaltenbreite und Fixierung sind weiterhin Sitzungszustand.
 - Form-Layer und Action-Dialoge werden zusätzlich bei Bedarf geladen; die PDF-Einbettung bleibt ein eigenes Lazy-Modul.
 
-Ergänzte Regressionstests prüfen gespeicherte Flow-Schritte und Zurückbearbeitung ohne Duplikate, URL-Bereinigung, abgeschaltete Relationsfunktionen, Mehrfachfilter, PDF-Bedienung und Aufräumen sowie die serverseitige Auswahl der gültigen Kondition. Die Playwright-Suite wurde auf browsernative PDF-Einbettung und die neue Vertragsakte angepasst; ein erfolgreicher Browserlauf wird damit nicht behauptet.
+Ergänzte Regressionstests prüfen gespeicherte Flow-Schritte und Zurückbearbeitung ohne Duplikate, URL-Bereinigung, abgeschaltete Relationsfunktionen, Mehrfachfilter, PDF-Bedienung und Aufräumen sowie die serverseitige Auswahl der gültigen Kondition. Die Playwright-Suite wartet auf gerenderte PDF-Canvas-Seiten und prüft Zoom, Mobilbreite und die zentrale Platzierung der Dokumentaktionen; siehe Abschnitt 45.
 
 Zusätzliche Primärquellen: [REUI Frame](https://reui.io/docs/components/base/frame), [REUI DataGrid-Beispiele](https://reui.io/components/data-grid), [Base-Nova Avatar](https://ui.shadcn.com/docs/components/base/avatar), [Base UI Combobox](https://base-ui.com/react/components/combobox), [REUI Checkbox](https://reui.io/components/checkbox).
 
@@ -1810,21 +1810,39 @@ Der neue `GET .../import/schema` liefert Felder, Pflichtfeldhinweise, Enum-Optio
 
 ## 45. Dokument-Actions und PDF-Vorschau im Sheet
 
-Die Objektaktion `report` gibt ein typisiertes Dokumentergebnis mit `presentation: 'sheet'` zurück. `ActionResultOverlay` leitet PDF-Ergebnisse zentral an `PdfPreviewSheet` weiter; neue Berichte brauchen keine eigene Seitendarstellung. Optional ist `presentation: 'dialog'` möglich. Unbekannte Präsentationswerte werden abgewiesen.
+Reports verwenden einen eigenen, rein lesenden Action-Ablauf: Ein Klick öffnet sofort das endgültige Sheet. Vorbereitung, Serverfehler mit Wiederholen und PDF-Ansicht bleiben in derselben Oberfläche. Es gibt keinen zusätzlichen Bestätigungsdialog und keinen automatischen Tabellen-/Formular-Reload. Neue Berichte benötigen keine eigene Seite oder Sheet-Implementierung.
+
+Backend: `PdfReportAction` setzt Einzelziel und View-Autorisierung. Die konkrete Action implementiert `report(Model $model, ActionFields $fields): DocumentResult`. `CreatePropertyReport` erzeugt eine benutzergebundene, zehn Minuten gültige Signatur für den geschützten Report-Controller. `DocumentResult` validiert lokale API-Quelle, Download-Dateiname und Präsentation und liefert den bestehenden `ui.type = document`-Vertrag:
 
 ```php
-'ui' => [
-    'type' => 'document',
-    'presentation' => 'sheet',
-    'title' => 'Objektbericht',
-    'mime' => 'application/pdf',
-    'name' => 'objekt-42.pdf',
-    'url' => $protectedSignedUrl,
-],
+return new DocumentResult(
+    title: 'Objektbericht · '.$model->name,
+    url: URL::temporarySignedRoute('properties.report', now()->addMinutes(10), [
+        'property' => $model->getKey(), 'user' => request()->user()->id,
+    ], absolute: false),
+    name: 'objekt-'.$model->getKey().'.pdf',
+);
 ```
 
-Angelehnt an das Architekturprinzip aus s4v2: Action und geschützter Controller → `BuildPropertyReport` sammelt Fachwerte → `Reports/PropertyReport` rendert → `StructuredPdfReport` stellt Ränder, Schrift, wiederholte Tabellenköpfe, Wortumbruch und Seitenzahlen bereit. Der Renderer führt keine Datenbankabfragen aus. Der Objektbericht enthält Überblick, Vertragskennzahlen und eine vollständige, bei Bedarf mehrseitige Einheitenliste. Die tatsächliche Bedeutung der Kennzahlen bleibt beschrieben; ein Hochrechnungswert wird nicht als Zahlungseingang ausgegeben.
+Der geschützte Controller prüft View-Policy, Signatur und Benutzerbindung und liefert `application/pdf`, `private, no-store`, `nosniff`. Aufbau: Action → Berichtsdaten (`BuildPropertyReport`) → Renderer (`PropertyReport` / `StructuredPdfReport`) → gemeinsame Vorschau. Der Renderer führt keine Datenbankabfragen aus. Neue Report-Routen müssen dieselbe Autorisierung und Dokumentantwort selbst deklarieren; der Result-DTO ersetzt keine Zugriffskontrolle.
 
-Die gemeinsame Overlay-Komponente bietet `bodyInset` und `bodyScroll="managed"`, damit Vorschauen eine stabile Fläche ohne doppelte Scrollcontainer verwenden. Das Sheet hat Titel, Dateiname und die zentralen Werkzeuge Aktualisieren, Öffnen und Download. Lade- und Fehlerzustand samt Wiederholen gehören zum Viewer. Beim Schließen oder Quellenwechsel werden Requests abgebrochen und Blob-URLs freigegeben.
+Frontend:
 
-Es wird weiterhin **keine zusätzliche PDF-Bibliothek** geladen: Browser-PDF-Anzeige mit nativer Zoom-/Druckbedienung und Öffnen/Download als Fallback. Die konkrete Zoom-Oberfläche ist browserabhängig, kein eigener Canvas-Renderer. Quellen bleiben auf geschützte API-URLs derselben Herkunft begrenzt; Backend prüft Sitzung, Signatur, Benutzerbindung und View-Policy, liefert `no-store` und `nosniff`. Die PDF-Ausgabe wurde mit langen Bezeichnungen und mehreren Seiten gerendert und visuell geprüft.
+```ts
+class PropertyReportAction extends ReportAction {
+    id = "report";
+    label = "Objektbericht als PDF";
+}
+```
+
+`ReportAction` nutzt den Resource-DataProvider, das PDF-Icon, `interaction: 'report'`, ein Einzelziel und `refresh: false`. `ReportActionSheet` erstellt eine eigene kurzlebige Query-Sitzung ohne automatische Retries oder Fokus-Refetch. Beim Schließen darf ein verspätetes Action-Ergebnis keine Vorschau erneut öffnen. Bei Wiederholen wird die Action erneut geprüft und eine neue Dokumentfreigabe angefordert. Für parametrisierte Berichte kann `interaction: 'dialog'` mit Action-Feldern verwendet werden; das Dokumentergebnis öffnet anschließend dieselbe Vorschau.
+
+**Aktionen verwenden ausschließlich nextHV-Sheet-Props:** `PdfPreviewSheet` übergibt Aktualisieren, Öffnen und Download an `Overlay.actions`. `bodyInset={false}` und `bodyScroll="managed"` überlassen dem Viewer den Dokumentbereich. Kein eigener Sheet-Header, keine aus s4v2 übernommene Action-Leiste und kein zweiter Download-Balken im Inhalt. Seitennavigation und Zoom sind Werkzeuge des gemeinsamen Viewers.
+
+Der Viewer übernimmt das Canvas-/Lazy-Loading-Prinzip aus s4v2 (`PdfCanvasPreview`, `DocumentPdfPreview`), angepasst an die vorhandenen nextHV-Komponenten. Eine direkte Abhängigkeit `pdfjs-dist` ersetzt die browserabhängige `<object>`-Anzeige; React-PDF und weitere Viewer-Wrapper sind nicht installiert. Engine und lokal gebündelter Worker laden erst beim Öffnen einer PDF-Vorschau.
+
+`usePdfDocument` lädt die geschützte Quelle einmal mit Sitzung und `no-store` und teilt Blob und Objekt-URL zwischen Viewer und Header. Abgebrochene/überholte Antworten werden ignoriert; beim Quellenwechsel oder Schließen werden Fetch, Renderarbeit, Worker und Objekt-URL freigegeben. Ein wiederverwendeter, separat eingebetteter `PdfViewer` nutzt dieselben Bausteine für Ausweisdateien.
+
+`PdfCanvasPreview` zeigt weiße Seiten auf hellem Hintergrund, passt initial an die Breite an und bietet Zoom (25–220 %), Breitenanpassung, Vor-/Zurück-Seiten sowie Ctrl/Cmd+Mausrad. Die realen PDF-Seitengrößen werden berücksichtigt, einschließlich Querformat und gemischter Formate. Nur Seiten im bzw. nahe dem sichtbaren Bereich erhalten einen Canvas; entfernte Canvas-Flächen werden freigegeben. Rasterflächen sind pro Seite auf 8 Millionen Pixel und maximal zweifache Pixeldichte begrenzt. Fehler beim Laden oder Rendern sind innerhalb der vorhandenen Oberfläche wiederholbar. Die Canvas-Vorschau bietet keine Textauswahl oder Annotationsbearbeitung; dafür bleiben Öffnen/Download verfügbar.
+
+Tests prüfen einmalige geschützte Downloads, tatsächliche Seitengrößen, Zoom, Cleanup, veraltete Antworten, Fehler/Wiederholen, zentrale Action-Platzierung und Report-Abbruch. Der Browserablauf wartet auf wirklich gerenderte PDF-Seiten und prüft Zoom und Mobilbreite, statt nur das Vorhandensein eines Browser-Plugins nachzuweisen.

@@ -30,6 +30,7 @@ const FormLayer = lazy(() =>
 const ActionDialog = lazy(() =>
     import("./forms/action-dialog").then((m) => ({ default: m.ActionDialog })),
 );
+import { ReportActionSheet } from "./report-action-sheet";
 import { Loading, ErrorState } from "@/components/blocks/content";
 import { ErrorBoundary } from "@/components/blocks/error-boundary";
 import { isChunkLoadError } from "./chunk-recovery";
@@ -338,16 +339,28 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
             <ErrorState error={failure} />
         </Overlay>
     ) : action ? (
-        <ActionDialog
-            key={
-                action.definition.id +
-                action.context.rows.map((r) => r.id).join("-")
-            }
-            action={action.definition}
-            context={action.context}
-            onClose={() => setAction(null)}
-            onComplete={(r) => completed(r, action.context)}
-        />
+        action.definition.interaction === "report" ? (
+            <ReportActionSheet
+                key={
+                    action.definition.id +
+                    action.context.rows.map((row) => row.id).join("-")
+                }
+                action={action.definition}
+                context={action.context}
+                onClose={() => setAction(null)}
+            />
+        ) : (
+            <ActionDialog
+                key={
+                    action.definition.id +
+                    action.context.rows.map((r) => r.id).join("-")
+                }
+                action={action.definition}
+                context={action.context}
+                onClose={() => setAction(null)}
+                onComplete={(r) => completed(r, action.context)}
+            />
+        )
     ) : result ? (
         <ActionResultOverlay
             result={result}
@@ -474,7 +487,9 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
                                     ? closeAt(panels.length - 1)
                                     : setAction(null)
                             }
-                            presentation={panels.at(-1)?.presentation ?? "dialog"}
+                            presentation={
+                                panels.at(-1)?.presentation ?? "dialog"
+                            }
                         >
                             <Loading />
                         </Overlay>

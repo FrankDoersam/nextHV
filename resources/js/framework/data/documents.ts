@@ -14,6 +14,7 @@ export async function fetchPdf(
     const response = await fetch(safeDocumentUrl(url), {
         credentials: "same-origin",
         signal,
+        cache: "no-store",
         headers: { Accept: "application/pdf" },
     });
     if (response.status === 401)

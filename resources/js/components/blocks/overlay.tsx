@@ -188,7 +188,10 @@ export function Overlay({
         </div>
     );
     const controls = (
-        <div className="flex shrink-0 items-center gap-1">
+        <div
+            data-slot="overlay-actions"
+            className="flex shrink-0 items-center gap-1"
+        >
             {actions}
             {actions && <span className="mx-1 h-5 border-l" />}
             {closeButton}
