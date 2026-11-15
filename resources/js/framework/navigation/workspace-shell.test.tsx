@@ -43,11 +43,19 @@ function mount(path = "/properties/12") {
     return render(
         <MemoryRouter initialEntries={[path]}>
             <QueryClientProvider
-                client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+                client={
+                    new QueryClient({
+                        defaultOptions: { queries: { retry: false } },
+                    })
+                }
             >
                 <AppShell
                     resources={[propertyResource]}
-                    user={{ id: 42, name: "Beispiel", email: "team@example.test" }}
+                    user={{
+                        id: 42,
+                        name: "Beispiel",
+                        email: "team@example.test",
+                    }}
                     onLogout={vi.fn()}
                 >
                     <div>Arbeitsinhalt</div>
@@ -63,8 +71,12 @@ it("places branding in the sidebar and shows a readable location breadcrumb", ()
     const topbar = container.querySelector('[data-slot="shell-header"]');
     expect(sidebar).not.toBeNull();
     expect(topbar).not.toBeNull();
-    expect(sidebar).toContainElement(screen.getAllByRole("link", { name: "nextHV Startseite" })[0]);
-    expect(topbar).not.toContainElement(screen.getAllByRole("link", { name: "nextHV Startseite" })[0]);
+    expect(sidebar).toContainElement(
+        screen.getAllByRole("link", { name: "nextHV Startseite" })[0],
+    );
+    expect(topbar).not.toContainElement(
+        screen.getAllByRole("link", { name: "nextHV Startseite" })[0],
+    );
     const breadcrumb = screen.getByRole("navigation", { name: "Seitenpfad" });
     expect(breadcrumb).toHaveTextContent("Stammdaten");
     expect(breadcrumb).toHaveTextContent("Objekte");
@@ -76,16 +88,68 @@ it("collapses and expands the desktop rail without losing the current page", asy
     const user = userEvent.setup();
     const sidebar = container.querySelector('[data-slot="desktop-sidebar"]')!;
 
-    await user.click(screen.getByRole("button", { name: "Navigation einklappen" }));
+    await user.click(
+        screen.getByRole("button", { name: "Navigation einklappen" }),
+    );
     expect(sidebar).toHaveAttribute("data-collapsed", "true");
     expect(window.localStorage.getItem("nexthv.sidebar.compact")).toBe("1");
-    await user.click(screen.getByRole("button", { name: "Navigation ausklappen" }));
+    await user.click(
+        screen.getByRole("button", { name: "Navigation ausklappen" }),
+    );
     expect(sidebar).not.toHaveAttribute("data-collapsed");
-    expect(screen.getByRole("navigation", { name: "Seitenpfad" })).toHaveTextContent("#12");
+    expect(
+        screen.getByRole("navigation", { name: "Seitenpfad" }),
+    ).toHaveTextContent("#12");
 });
 
 it("opens the shared command palette from the topbar", async () => {
     mount("/");
-    await userEvent.setup().click(screen.getByRole("button", { name: "Bereiche suchen" }));
-    expect(await screen.findByRole("dialog", { name: "Bereich öffnen" })).toBeVisible();
+    await userEvent
+        .setup()
+        .click(screen.getByRole("button", { name: "Datensätze suchen" }));
+    expect(
+        await screen.findByRole("dialog", { name: "Datensätze suchen" }),
+    ).toBeVisible();
+});
+
+it("searches server records and never filters matches again by their captions", async () => {
+    const fetcher = vi
+        .fn()
+        .mockResolvedValue(
+            new Response(
+                JSON.stringify({
+                    data: [
+                        {
+                            resource: "units",
+                            label: "Einheiten",
+                            total: 1,
+                            items: [
+                                {
+                                    id: 1,
+                                    title: "Wohnung 01",
+                                    subtitle: "Lindenhof · E-01",
+                                    url: "/units/1",
+                                },
+                            ],
+                        },
+                    ],
+                }),
+                {
+                    status: 200,
+                    headers: { "Content-Type": "application/json" },
+                },
+            ),
+        );
+    vi.stubGlobal("fetch", fetcher);
+    mount("/");
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Datensätze suchen" }));
+    expect(fetcher).not.toHaveBeenCalled();
+    await user.type(
+        screen.getByRole("combobox", { name: "Datensätze suchen" }),
+        "Lindenhof",
+    );
+    expect(await screen.findByText("Wohnung 01")).toBeVisible();
+    expect(fetcher.mock.calls[0][0]).toBe("/api/v1/global-search");
+    expect(fetcher.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
 });

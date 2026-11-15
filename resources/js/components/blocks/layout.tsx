@@ -1,3 +1,5 @@
+import { GlobalSearch } from "./global-search";
+import { useI18n } from "@/framework/i18n";
 import { LanguagePicker } from "./language-picker";
 import { usePermissionRevision } from "@/framework/permissions";
 import { Brand } from "./brand";
@@ -9,15 +11,6 @@ import {
     SheetTitle,
     SheetDescription,
 } from "@/components/ui/sheet";
-import {
-    Command,
-    CommandDialog,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from "@/components/ui/command";
 import { PersonAvatar } from "./people-avatar";
 import type { ResourceDefinition } from "@/framework/types";
 import {
@@ -25,7 +18,6 @@ import {
     flattenNavigation,
     navigationPath,
     resolveNavigation,
-    type NavigationItem,
     type NavigationItemDefinition,
     type NavigationGroupSettings,
 } from "@/framework/navigation/sidebar-model";
@@ -71,6 +63,7 @@ export function AppShell({
     onLogout: () => void;
     children: ReactNode;
 }) {
+    const { t } = useI18n();
     const [mobile, setMobile] = useState(false);
     const [compact, setCompact] = useState(() => {
         try {
@@ -84,7 +77,6 @@ export function AppShell({
     const [search, setSearch] = useState(false);
     const location = useLocation();
     const scrollArea = useRef<HTMLElement>(null);
-    const navigate = useNavigate();
     const permissionRevision = usePermissionRevision();
     const navigationItems = useMemo(
         () =>
@@ -152,11 +144,6 @@ export function AppShell({
         scrollArea.current?.scrollTo({ top: 0, left: 0 });
         setMobile(false);
     }, [location.pathname]);
-    const go = (path: string) => {
-        setSearch(false);
-        setMobile(false);
-        navigate(path);
-    };
     const sidebar = (rail: boolean) => (
         <>
             <SidebarNavigation
@@ -225,12 +212,6 @@ export function AppShell({
             </div>
         </>
     );
-    const commandEntries = (section: NavigationItem) =>
-        [
-            ...(section.to ? [section] : []),
-            ...flattenNavigation(section.children),
-        ].filter((item) => item.to && !item.disabledReason);
-
     return (
         <div
             data-slot="app-shell"
@@ -422,12 +403,12 @@ export function AppShell({
                         variant="outline"
                         size="sm"
                         className="h-8 shrink-0 gap-2 px-2.5 text-muted-foreground"
-                        aria-label="Bereiche suchen"
+                        aria-label={t("searchRecords")}
                         onClick={() => setSearch(true)}
                     >
                         <Search className="size-4" />
                         <span className="hidden sm:inline">
-                            Bereiche suchen
+                            {t("searchRecords")}
                         </span>
                         <kbd className="hidden rounded border bg-muted/60 px-1.5 py-0.5 text-[10px] leading-none lg:inline">
                             Ctrl K
@@ -444,46 +425,7 @@ export function AppShell({
                     </PageWrapper>
                 </main>
             </div>
-            <CommandDialog
-                open={search}
-                onOpenChange={setSearch}
-                title="Bereich öffnen"
-                description="Suche in den verfügbaren Bereichen deiner Hausverwaltung."
-            >
-                <Command>
-                    <CommandInput placeholder="Objekte, Verträge, Geschäftspartner …" />
-                    <CommandList>
-                        <CommandEmpty>Kein Bereich gefunden.</CommandEmpty>
-                        {navigationItems.map((section) => (
-                            <CommandGroup
-                                key={section.id}
-                                heading={
-                                    section.to
-                                        ? "Arbeitsbereich"
-                                        : section.label
-                                }
-                            >
-                                {commandEntries(section).map((item) => {
-                                    const Icon = item.icon;
-                                    return (
-                                        <CommandItem
-                                            key={item.id}
-                                            value={`${item.resource?.label ?? ""} ${item.label} ${item.description ?? ""}`}
-                                            onSelect={() => go(item.to!)}
-                                        >
-                                            {Icon && <Icon />}
-                                            {item.resource &&
-                                            item.label !== item.resource.label
-                                                ? `${item.resource.label} · ${item.label}`
-                                                : item.label}
-                                        </CommandItem>
-                                    );
-                                })}
-                            </CommandGroup>
-                        ))}
-                    </CommandList>
-                </Command>
-            </CommandDialog>
+            <GlobalSearch open={search} onOpenChange={setSearch} />
         </div>
     );
 }
