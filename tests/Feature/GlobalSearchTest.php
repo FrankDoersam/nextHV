@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Contract;
 use App\Models\Property;
 use App\Models\Unit;
 use App\Models\User;
@@ -17,11 +18,15 @@ class GlobalSearchTest extends TestCase
     {
         $this->actingAs(User::factory()->create());
         $property = Property::factory()->create(['name' => 'Suchbarer Lindenhof', 'notes' => 'PRIVATE NOTE']);
-        Unit::factory()->create(['property_id' => $property->id, 'name' => 'Wohnung 01']);
+        $unit = Unit::factory()->create(['property_id' => $property->id, 'name' => 'Wohnung 01']);
+        Contract::create(['code' => 'MV-SUCHBAR', 'unit_id' => $unit->id, 'starts_on' => '2026-01-01']);
         $response = $this->postJson('/api/v1/global-search', ['query' => 'Lindenhof'])->assertOk();
         $this->assertSame('Suchbarer Lindenhof', $response->json('data.0.items.0.title'));
         $this->assertStringContainsString('Lindenhof', $response->json('data.1.items.0.subtitle'));
         $response->assertDontSee('PRIVATE NOTE');
+        $contracts = $this->postJson('/api/v1/global-search', ['query' => 'MV-SUCHBAR'])->assertOk();
+        $this->assertStringContainsString('Wohnung 01', $contracts->json('data.3.items.0.subtitle'));
+        $this->assertStringContainsString('Lindenhof', $contracts->json('data.3.items.0.subtitle'));
     }
 
     public function test_search_is_authenticated_bounded_and_honours_disabled_resources_and_policies(): void

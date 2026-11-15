@@ -6,6 +6,8 @@ Das vollständige Entwicklerhandbuch einschließlich der Funktionen aus Basis- u
 
 Das [Framework-Konzept und der Refine-Vergleich](docs/framework-readiness.md) dokumentieren die Architektur, die Verbesserungen und die noch offenen Freigabekriterien. Der aktuelle Stand ist ein Entwicklungsframework; eine allgemeine Produktionsfreigabe, insbesondere für Mehrmandantenbetrieb, ist damit nicht zugesagt.
 
+Der [aktuelle Framework-Ausbau](docs/framework-expansion.md) ergänzt i18n, globale Datensatzsuche, Audit-Timeline, CSV-Import mit Relationsvorschau und PDF-Sheets. Aktiviert wird je Modell in `config/resource_features.php`; Upgrade: `php artisan migrate --force`. Der Laravel-Scheduler bereinigt täglich abgelaufene Importvorschauen.
+
 ## Lokal starten
 
 Voraussetzungen: PHP **8.3+**, Composer 2, Node **22.12+** (CI: Node 24/PHP 8.5), SQLite oder eine konfigurierte relationale Datenbank. Benötigte PHP-Erweiterungen: Laravel-Standard einschließlich PDO, passendem Datenbanktreiber, mbstring, fileinfo und OpenSSL.

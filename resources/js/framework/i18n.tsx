@@ -32,7 +32,7 @@ export const coreMessages: Record<string, TranslationCatalog> = {
         search: "Suchen",
         searchRecords: "Datensätze suchen",
         loading: "Wird geladen …",
-        empty: "Keine Einträge gefunden",
+        empty: "Noch keine Einträge",
         noMatches: "Keine Treffer",
         noMatchesDescription:
             "Für diese Suche und Filter wurden keine passenden Datensätze gefunden.",

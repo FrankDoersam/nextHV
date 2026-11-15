@@ -21,3 +21,9 @@ Optimistische Vertrags-/Konditionsänderungen und Auto-Save werden nicht pauscha
 ## Nachweise
 
 Pro Feature: fokussierte Tests für den Erfolgsweg und relevante Fehler-/Autorisierungsfälle; TypeScript und Build bei Frontendänderungen; PHP-Tests und Formatierung bei Backendänderungen. Abschließend bestehende Gesamtsuite und Browserprüfung. Dokumentation und Aktivierungsbeispiele werden im jeweiligen Feature-Commit ergänzt.
+
+## Umsetzung und Betrieb
+
+Alle fünf Erweiterungen sind separat committet und im [Framework-Handbuch, Abschnitte 41–45](framework.md), mit Aktivierung, Beispielen und Grenzen dokumentiert. `config/resource_features.php` bündelt die Freigabe je Modell; PHP-REST-Felder bleiben die Quelle für fachliche Validierung. Das Audit-Protokoll und die kurzlebigen Importvorschauen benötigen die neuen Migrationen (`php artisan migrate --force`). Für die tägliche Bereinigung verschlüsselter Importvorschauen muss der Laravel-Scheduler betrieben werden.
+
+Der automatisierte Browserpfad prüft die echte globale Suche, Audit-Tab, geschützte PDF-Action und einen CSV-Import mit aufgelöstem Objektbezug zusammen. Zusätzliche Tests prüfen Locale-Wechsel mit ungespeicherten Formularen, transaktionalen Audit-Rollback, Importfehler und Wiederholungen. Die ursprünglichen Freigabekriterien bleiben bestehen; die neuen Features sind keine pauschale Produktionszertifizierung.

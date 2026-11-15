@@ -27,6 +27,14 @@ class ContractResource extends Resource
 {
     public static string $model = Contract::class;
 
+    public function uiPicker(): array
+    {
+        return ['secondaryFields' => ['unit.name', 'unit.property.name'], 'includes' => [[
+            'relation' => 'unit', 'selects' => [['field' => 'id'], ['field' => 'name'], ['field' => 'code']],
+            'includes' => [['relation' => 'property', 'selects' => [['field' => 'name']]]],
+        ]]];
+    }
+
     public function mutating(MutationNode $entry, Model $model): void
     {
         parent::mutating($entry, $model);

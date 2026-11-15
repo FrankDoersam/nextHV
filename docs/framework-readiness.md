@@ -19,7 +19,7 @@ Abhängigkeiten: `Module → ResourceDefinition → Framework-Hooks → DataProv
 | Berechtigungen        | Asynchrones `can`, Cache, Gründe, `CanAccess`, UI-Integrationen                    | Synchroner, nicht reaktiver Adapter; direkte Routen/Formlinks nicht zentral abgeschirmt            | Optionalen Adapter erweitern, sichere Lade-/Fehlerzustände und zentrale Zugriffsgrenzen               |
 | Formulare             | RHF-Integration, Serverfehler, Dirty-Warnung, Mutationzustände, optional Auto-Save | RHF, Servervalidierung, Wizard, verschachtelte Flows, Dirty-Warnung, Versionsprüfung vorhanden     | Doppelte Übermittlung verhindern; fehlgeschlagenen Folgeschritt von erfolgtem Speichern unterscheiden |
 | Komponenten           | Integrationen für mehrere UI-Systeme, headless nutzbar                             | Spezialisierte REUI-Felder, RelationPicker, Repeater, Cards, Tabs, Sheet/Dialog, PDF, Action-Menüs | Bestehende Komponenten härten statt fremde UI parallel einzubauen                                     |
-| Realtime              | Austauschbarer Live-Provider, automatische/manuelle Ereignisbehandlung             | Kein durchgängiger Live-Provider                                                                   | Für spätere Mehrbenutzersynchronisierung separater Vertrag; keine simulierte Realtime-Funktion        |
+| Realtime              | Austauschbarer Live-Provider, automatische/manuelle Ereignisbehandlung             | Kein durchgängiger Live-Provider                                                                   | Auf ausdrücklichen Wunsch ausgeschlossen; kein Live-Provider                                          |
 | Audit                 | Provider/Hooks; Refine empfiehlt sicherheitsrelevante Logs im Backend              | Fachliche Aktionen/Versionsprüfung, kein vollständiger revisionssicherer Auditdienst               | Produktionslücke explizit benennen; keine Browserlogs als revisionssicher verkaufen                   |
 | Internationalisierung | Eigener i18n-Provider                                                              | Deutsche Geschäftsanwendung und globale Fehlerbeschriftung                                         | Übersetzungsvertrag vor allgemeiner Framework-Paketveröffentlichung                                   |
 | Ökosystem             | Adapter, Beispiele, dokumentierte Erweiterungspunkte                               | Anwendungsrepository mit integrierter Framework-Schicht                                            | Stabilen Erweiterungsvertrag dokumentieren; Paketaufteilung erst nach bewiesener Wiederverwendung     |
@@ -79,10 +79,26 @@ Ein grüner Testlauf erfüllt nicht automatisch alle diese Kriterien. Das Reposi
 - [Refine Live Provider](https://refine.dev/core/docs/realtime/live-provider/): Subscription-/Publish-Vertrag.
 - [Refine Audit Log Provider](https://refine.dev/core/docs/audit-logs/audit-log-provider/): Audit-Schnittstellen und Empfehlung serverseitiger Logs.
 
-Keine Refine-Quelltexte kopiert; die Vergleiche beschreiben Konzepte. Quellen abgerufen am 14.11.2026.
+Keine Refine-Quelltexte kopiert; die Vergleiche beschreiben Konzepte. Quellen abgerufen am 14./15.11.2026. Der folgende Ausbau aktualisiert die ursprüngliche Bestandsaufnahme.
 
 ## Implementierter Stand
 
 Die oben priorisierten Korrekturen wurden im bestehenden Framework umgesetzt. Details und Einrichtungsbeispiele stehen in [Abschnitt 39 des Entwicklerhandbuchs](framework.md#39-verlässliche-abfragen-berechtigungen-und-formularabschluss). Zusätzlich verhindert der AuthProvider, dass eine verspätete Identitätsantwort eine bereits abgelaufene Sitzung wiederherstellt. Es wurden keine neuen Laufzeitabhängigkeiten hinzugefügt.
 
 Der Build meldet weiterhin einen großen Entry-Chunk (rund 540 kB minifiziert). Das ist ein offener Mess- und Optimierungspunkt, kein durch Verschieben einer Warnschwelle gelöstes Performanceproblem. Ebenso ersetzen bestehende Screenshot-/Browsertests keine vollständige WCAG-Prüfung und keine Lasttests auf echten Mobilgeräten.
+
+## Ergänzung vom 15.11.2026
+
+Die [dreifach geprüfte Ausbauplanung](framework-expansion.md) ist für i18n, globale Datensatzsuche, Audit-Timeline, CSV-Import und PDF-Sheet umgesetzt. Aktivierung und API-Beispiele stehen in den Abschnitten 40–45 des Handbuchs.
+
+| Fähigkeit    | Aktueller Umfang                                                                                                                                  | Verbleibende Grenze                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Formularkern | Headless `useResourceForm`, native Servervalidierung, Double-Submit-Sperre, Wiederholung nur des Folgeschritts, Dirty-Daten beim Refresh erhalten | Kein pauschales Auto-Save oder Undo für Vertragsänderungen                                                  |
+| Daten        | `useResourceMany` lädt fehlende Picker-Werte gebündelt; gezielte Invalidierung, stabile Zeilenpatches                                             | Keine behauptete Überlegenheit ohne reproduzierbaren Benchmark                                              |
+| i18n         | Provider/Adapter, de/en-Kernkatalog, Locale-Wechsel ohne Formular-Remount, Intl-Formatierung                                                      | Fachschemas und Backendmeldungen deutsch; neue Module brauchen eigene Katalogeinträge                       |
+| Suche        | Authentifizierte Datensatzsuche über freigegebene Ressourcen, Gruppierung, Relationskontext, Begrenzung und Abbruch                               | Kein Volltextindex oder frei konfigurierbarer globaler DataProvider                                         |
+| Audit        | Serverseitige Feldfreigabe, Akteur, transaktionale Ereignisse, lazy Timeline mit Cursor                                                           | Keine rückwirkende Historie, Query-Builder-Massenwrites ausgenommen, keine Manipulationssicherheitsgarantie |
+| CSV          | Dynamischer Dialog, Mapping, eindeutige Relationsauflösung, Vorschau, atomarer idempotenter Create-Import                                         | 100 Zeilen/2 MB; kein Hintergrundjob, Upsert oder verschachtelter Import                                    |
+| PDF          | Action-Ergebnis öffnet zentrales Sheet; getrennter Daten-/Renderpfad, mehrseitige Tabellen                                                        | Native Browser-Zoomoberfläche; kein eigener PDF-Editor                                                      |
+
+Damit sind diese konkreten Refine-orientierten Bausteine integriert. Refine hat weiterhin das breitere Adapter-/UI-Ökosystem. Allgemeine Marktreife, WCAG-Konformität, Mandantentrennung und ein unabhängiger Sicherheitsnachweis werden daraus nicht abgeleitet. **Live bleibt ausgeschlossen.**
