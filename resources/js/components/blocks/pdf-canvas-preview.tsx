@@ -267,6 +267,28 @@ export default function PdfCanvasPreview({ blob }: { blob: Blob }) {
                 );
         });
     }, []);
+    const fitToWidth = useCallback(() => {
+        const state = zoomState.current;
+        if (state.width === 0) return;
+        const fittedZoom =
+            Math.max(0.1, (state.width - 32) / state.size.width) * 100;
+        const previousZoom = state.fit ? fittedZoom : state.zoom;
+        const node = viewport.current;
+        const center = node
+            ? (node.scrollTop + node.clientHeight / 2) / previousZoom
+            : 0;
+        setFit(true);
+        // A previous zoom may have scrolled the top 16px gutter out of view.
+        // Restore the reading position at the fitted scale instead of keeping
+        // that stale scroll offset after the page shrinks.
+        requestAnimationFrame(() => {
+            if (node)
+                node.scrollTop = Math.max(
+                    0,
+                    center * fittedZoom - node.clientHeight / 2,
+                );
+        });
+    }, []);
     useEffect(() => {
         const node = viewport.current;
         if (!node) return;
@@ -371,7 +393,7 @@ export default function PdfCanvasPreview({ blob }: { blob: Blob }) {
                         title="An Breite anpassen"
                         aria-pressed={fit}
                         disabled={!pdf}
-                        onClick={() => setFit(true)}
+                        onClick={fitToWidth}
                     >
                         <Maximize />
                     </Button>

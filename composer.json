@@ -10,12 +10,13 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "ext-gd": "*",
         "dedoc/scramble": "^0.13.48",
         "laravel/framework": "^13.30",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
         "lomkit/laravel-rest-api": "^3.0",
-        "setasign/tfpdf": "^1.34"
+        "setasign/fpdf": "^1.9"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

@@ -8,7 +8,7 @@ Dieses Dokument beschreibt den aktuellen Framework-Stand einschließlich nativer
 - React 19, React Router 7, TanStack Query, TanStack Table 9, React Hook Form; Geschäftsregeln der REST-Formulare werden ausschließlich auf dem Laravel-Server geprüft; Controls prüfen Eingabeformat und Bediengrenzen. Zod bleibt nur für die isolierte Komponenten-Demo und deren Tests.
 - REUI Base Nova, Base UI, Tailwind 4; gemeinsame Farben und Abstände in `resources/css/app.css` und zentralen Komponenten.
 - PHP 8.3+, Composer 2, Node 22.12+; CI verwendet Node 24/PHP 8.5. SQLite für lokale Entwicklung und Tests.
-- `setasign/tfpdf` erzeugt Unicode-PDFs; keine externe PDF-Website und kein HTML-Renderer erforderlich.
+- `setasign/fpdf` (wie in s4v2) erstellt PDF-Berichte serverseitig. Die FPDF-Kernschriften unterstützen Windows-1252; UTF-8-Daten werden vor Messung und Ausgabe entsprechend konvertiert.
 
 Installation und Admin-Anlage stehen im [README](../README.md). Für ein bestehendes Checkout nach diesem Update:
 
@@ -259,7 +259,7 @@ Am Objekt sind zwei ausführbare Beispiele vorhanden:
 | Frontend                | Backend                                        | Ergebnis                                                                |
 | ----------------------- | ---------------------------------------------- | ----------------------------------------------------------------------- |
 | `InspectPropertyAction` | `InspectProperty`                              | Zugriff auf Model, Einheitenzahl/-fläche und Stammdaten; Details-Dialog |
-| `PropertyReportAction`  | `CreatePropertyReport` → `BuildPropertyReport` | Echter Unicode-PDF-Bericht, automatische Vorschau und Download          |
+| `PropertyReportAction`  | `CreatePropertyReport` → `BuildPropertyReport` | FPDF-Objektbericht, automatische Vorschau und Download          |
 
 REST-Actions verwenden die bestehenden Lomkit-Antworten. Die Erweiterung liegt in `ActionResponse::data()` unter `ui`:
 
@@ -607,7 +607,7 @@ Das Dashboard enthält bewusst gekennzeichnete **Beispieldaten** für Finanzen, 
 
 ### PDF
 
-Die React-Komponente `PdfViewer` nutzt den gemeinsamen, bei Bedarf geladenen PDF.js-Canvas-Renderer. `pdfjs-dist` ist die einzige direkte Viewer-Abhängigkeit; React-PDF und weitere Viewer-Wrapper sind nicht installiert. Der Worker wird lokal gebündelt. Der bestehende Backend-Generator `setasign/tfpdf` bleibt für Objektberichte erforderlich. Report-Sheets und Erweiterungsvertrag sind in Abschnitt 45 beschrieben.
+Die React-Komponente `PdfViewer` nutzt den gemeinsamen, bei Bedarf geladenen PDF.js-Canvas-Renderer. `pdfjs-dist` ist die einzige direkte Viewer-Abhängigkeit; React-PDF und weitere Viewer-Wrapper sind nicht installiert. Der Worker wird lokal gebündelt. Die Backend-Generierung nutzt `setasign/fpdf`; die React-Vorschau bleibt unverändert. Report-Sheets und Erweiterungsvertrag sind in Abschnitt 45 beschrieben.
 
 ```tsx
 const PdfViewer = lazy(() => import("@/components/blocks/pdf-viewer"));
@@ -1811,6 +1811,8 @@ Der neue `GET .../import/schema` liefert Felder, Pflichtfeldhinweise, Enum-Optio
 ## 45. Dokument-Actions und PDF-Vorschau im Sheet
 
 Reports verwenden einen eigenen, rein lesenden Action-Ablauf: Ein Klick öffnet sofort das endgültige Sheet. Vorbereitung, Serverfehler mit Wiederholen und PDF-Ansicht bleiben in derselben Oberfläche. Es gibt keinen zusätzlichen Bestätigungsdialog und keinen automatischen Tabellen-/Formular-Reload. Neue Berichte benötigen keine eigene Seite oder Sheet-Implementierung.
+
+Der Objektbericht trennt wie s4v2 `BuildPropertyReport` (nur fachliche Projektion), `PropertyReport` (Inhalt), `StructuredPdfReport` (Textfluss, Tabellen, wiederholte Tabellenköpfe, Seitenumbrüche) und `ReportPdfDocument` (FPDF, Kopf/Fuß, Zeichencodierung). Da nextHV noch kein Organisationsprofil besitzt, bleibt der Dokumentfuß auf die bisherige nextHV-Kennung beschränkt.
 
 Backend: `PdfReportAction` setzt Einzelziel und View-Autorisierung. Die konkrete Action implementiert `report(Model $model, ActionFields $fields): DocumentResult`. `CreatePropertyReport` erzeugt eine benutzergebundene, zehn Minuten gültige Signatur für den geschützten Report-Controller. `DocumentResult` validiert lokale API-Quelle, Download-Dateiname und Präsentation und liefert den bestehenden `ui.type = document`-Vertrag:
 
