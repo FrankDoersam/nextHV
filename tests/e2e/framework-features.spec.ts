@@ -76,6 +76,23 @@ test("global records, audit, mapped relation import and protected PDF sheet work
     await expect(
         pdf.getByLabel("PDF-Seite 1", { exact: true }),
     ).toHaveAttribute("data-rendered", "true");
+    // Fit-to-width must restore the 16px top gutter after zoom, matching
+    // the left inset rather than leaving the canvas tucked under the toolbar.
+    const pageInsetError = () =>
+        pdf.getByRole("region", { name: "PDF lesen" }).evaluate((viewport) => {
+            const first = viewport.querySelector<HTMLElement>('[data-page="1"]');
+            if (!first) return Number.POSITIVE_INFINITY;
+            const surface = viewport.getBoundingClientRect();
+            const sheet = first.getBoundingClientRect();
+            const top = sheet.top - surface.top;
+            const left = sheet.left - surface.left;
+            return Math.max(
+                Math.abs(top - 16),
+                Math.abs(left - 16),
+                Math.abs(top - left),
+            );
+        });
+    await expect.poll(pageInsetError).toBeLessThan(2);
     await capture("03-pdf-sheet");
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(
@@ -89,6 +106,7 @@ test("global records, audit, mapped relation import and protected PDF sheet work
                     .boundingBox())!.width,
         )
         .toBeLessThan(390);
+    await expect.poll(pageInsetError).toBeLessThan(2);
     await capture("04-pdf-sheet-mobile");
     await page.setViewportSize({ width: 1280, height: 720 });
     await pdf.getByRole("button", { name: "Schließen", exact: true }).click();
