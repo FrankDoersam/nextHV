@@ -196,6 +196,7 @@ describe("PDF canvas reader", () => {
             (percent) => updates.push(percent),
         );
         expect(blob.size).toBe(8);
+        expect(blob.type).toBe("application/pdf");
         expect(updates[0]).toBe(0);
         expect(updates.at(-1)).toBe(100);
         expect(fetch).toHaveBeenCalledOnce();

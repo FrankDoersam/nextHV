@@ -54,7 +54,11 @@ export async function fetchPdf(
             },
         }),
     );
-    const blob = await new Response(stream).blob();
+    // Preserve the PDF MIME type on the new Response; otherwise Blob URLs
+    // are served as application/octet-stream and new-tab PDF viewing breaks.
+    const blob = await new Response(stream, {
+        headers: { "Content-Type": "application/pdf" },
+    }).blob();
     signal.throwIfAborted();
     onProgress(100);
     return blob;
