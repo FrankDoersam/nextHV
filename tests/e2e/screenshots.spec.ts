@@ -145,21 +145,13 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         .getByRole("combobox", { name: "Filter hinzufügen" })
         .boundingBox();
     expect(Math.abs(searchBox!.y - filterBox!.y)).toBeLessThanOrEqual(4);
-    const kpis = page.getByRole("region", {
-        name: "Kennzahlen der gefilterten Auswahl",
-    });
-    await expect(kpis).not.toHaveAttribute("aria-busy", "true");
-    await expect(
-        kpis.getByText("Vereinbarte Kaution", { exact: true }),
-    ).toBeVisible();
-    await page.getByRole("tab", { name: /^Aktiv/ }).click();
-    await expect(page).toHaveURL(/view=active/);
+    // Collection views and KPI metrics are intentionally absent. The single
+    // visible table is the only data query, and its filter still works.
+    await expect(page.locator('[data-slot="collection-kpis"]')).toHaveCount(0);
+    await expect(page.locator('[data-slot="collection-surface"] [role="tablist"]')).toHaveCount(0);
     await expect(
         page.locator('[data-slot="resource-collection"]'),
     ).not.toHaveAttribute("aria-busy", "true");
-    await expect(page.getByRole("tab", { name: /^Aktiv/ })).not.toContainText(
-        "—",
-    );
     await capture("02-vertraege-tabelle");
     await page
         .getByRole("combobox", { name: "Status Werte", exact: true })
@@ -1022,16 +1014,8 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         );
         await expect(records.first()).toBeVisible();
         const surface = page.locator('[data-slot="collection-surface"]');
-        const tabs = surface.getByRole("tablist");
-        if (await tabs.count())
-            expect((await tabs.boundingBox())!.height).toBeLessThanOrEqual(45);
-        const metrics = page.locator('[data-slot="collection-kpis"]');
-        if (await metrics.count()) {
-            expect((await metrics.boundingBox())!.height).toBeLessThan(220);
-            expect(
-                await metrics.locator('[data-slot="metric-card"]').count(),
-            ).toBe(4);
-        }
+        await expect(surface.getByRole("tablist")).toHaveCount(0);
+        await expect(page.locator('[data-slot="collection-kpis"]')).toHaveCount(0);
         const first = (await records.first().boundingBox())!;
         const pager = page.locator('[data-slot="data-grid-pagination"]');
         expect(first.y + first.height).toBeLessThanOrEqual(
@@ -1122,22 +1106,15 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
             height: width === 390 ? 844 : 1000,
         });
         await page.goto("/contracts");
-        await expect(
-            page.locator('[data-slot="collection-kpis"]'),
-        ).toBeVisible();
+        await expect(page.locator('[data-slot="collection-kpis"]')).toHaveCount(0);
+        await expect(page.locator('[data-slot="collection-surface"] [role="tablist"]')).toHaveCount(0);
         await expect(
             page.locator('[data-slot="resource-collection"]'),
         ).not.toHaveAttribute("aria-busy", "true");
-        if (width === 390)
-            expect(
-                (await page
-                    .locator('[data-slot="collection-kpis"]')
-                    .boundingBox())!.height,
-            ).toBeLessThan(220);
         await capture(
             width === 390
-                ? "55-vertraege-kpi-mobil"
-                : "54-vertraege-kpi-desktop",
+                ? "55-vertraege-tabelle-mobil"
+                : "54-vertraege-tabelle-desktop",
         );
     }
     expect(errors).toEqual([]);
