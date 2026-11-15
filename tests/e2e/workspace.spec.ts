@@ -35,9 +35,7 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
         page.getByRole("heading", { name: "Lindenhöfe", exact: true }),
     ).toBeVisible();
     await page.getByRole("tab", { name: /Einheiten/ }).click();
-    await expect(
-        page.getByText("Wohnung 01", { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText("Wohnung 01", { exact: true })).toBeVisible();
     await page.getByRole("tab", { name: "Zähler", exact: true }).click();
     await expect(
         page.getByRole("heading", { name: "Zähler · vorbereitet" }),
@@ -108,13 +106,9 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     await page
         .getByRole("menuitem", { name: "Objektbericht als PDF", exact: true })
         .click();
-    await page
-        .getByRole("button", { name: "Objektbericht als PDF", exact: true })
-        .click();
-    await expect(page.getByLabel("PDF-Seitenansicht")).toHaveAttribute(
-        "data",
-        /^blob:/,
-    );
+    await expect(
+        page.getByLabel("PDF-Seite 1", { exact: true }),
+    ).toHaveAttribute("data-rendered", "true");
     await page
         .getByRole("button", { name: "Schließen", exact: true })
         .last()
@@ -125,7 +119,10 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
         page.getByRole("checkbox", { name: "Zeile auswählen", exact: true }),
     ).toHaveCount(0);
     await page
-        .getByRole("button", { name: "Aktionen für Browser Test Objekt", exact: true })
+        .getByRole("button", {
+            name: "Aktionen für Browser Test Objekt",
+            exact: true,
+        })
         .click();
     await page.getByRole("menuitem", { name: "Löschen", exact: true }).click();
     const deletion = page.getByRole("dialog", { name: "Löschen", exact: true });
