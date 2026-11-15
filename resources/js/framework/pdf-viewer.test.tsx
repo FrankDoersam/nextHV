@@ -255,8 +255,10 @@ it("places document operations exclusively in the existing overlay actions slot"
             onClose={close}
         />,
     );
-    const sheet = await screen.findByRole("dialog", { name: "Objektbericht" });
     await renderedFirstPage();
+    // The lazy loading overlay is replaced by the completed report sheet.
+    // Assert against the live dialog instead of a detached fallback node.
+    const sheet = screen.getByRole("dialog", { name: "Objektbericht" });
     expect(sheet).toHaveAttribute("data-slot", "sheet-content");
     const actions = sheet.querySelector('[data-slot="overlay-actions"]')!;
     expect(actions).toContainElement(
