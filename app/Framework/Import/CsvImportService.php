@@ -11,7 +11,10 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Lomkit\Rest\Facades\Rest;
 use Lomkit\Rest\Fields\Details\FieldDetails;
+use Lomkit\Rest\Fields\MutationOperation;
 use Lomkit\Rest\Fields\WriteOperation;
+use Lomkit\Rest\Mutations\Contextual;
+use Lomkit\Rest\Mutations\MutationContext;
 
 class CsvImportService
 {
@@ -32,7 +35,8 @@ class CsvImportService
             $detail = FieldDetails::of($field)->jsonSerialize();
             $relation = $config['import']['relations'][$field->name] ?? null;
             $target = $relation ? new $relation['resource'] : null;
-            $rules = [...$detail['rules']['all'], ...$detail['rules']['create']];
+            $context = new MutationContext(MutationOperation::Create, null, 0);
+            $rules = array_merge(...array_map(fn ($rule): array => $rule instanceof Contextual ? $rule->resolve($context) : [$rule], $field->getRules()->forWrite(WriteOperation::Create)));
             $fields[$field->name] = [
                 'name' => $field->name,
                 'label' => ResourceMetadata::label($field),
