@@ -1,6 +1,6 @@
 import { Collapsible } from "@base-ui/react/collapsible";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, FolderClosed } from "lucide-react";
 import { useEffect, useState, type ReactElement } from "react";
 import { Link, useLocation } from "react-router";
 import {
@@ -298,9 +298,8 @@ export function SidebarNavigation({
     onExpandRail: () => void;
 }) {
     const { pathname, search } = useLocation();
-    const railItems = items.flatMap((item) =>
-        item.children.length && !item.to ? item.children : [item],
-    );
+    // One icon per navigation group, not one icon for every resource.
+    const railItems = items;
     return (
         <TooltipProvider delay={250}>
             <nav
@@ -319,8 +318,7 @@ export function SidebarNavigation({
                 {rail ? (
                     <div className="space-y-1">
                         {railItems.map((item, index) => {
-                            const Icon = item.icon;
-                            if (!Icon) return null;
+                            const Icon = item.icon ?? FolderClosed;
                             const selected = navigationBranchActive(
                                 item,
                                 pathname,
@@ -340,7 +338,11 @@ export function SidebarNavigation({
                                 <button
                                     type="button"
                                     aria-label={`${item.label} Untermenü öffnen`}
-                                    onClick={onExpandRail}
+                                    onClick={() => {
+                                        // Open the clicked group, even if a user previously collapsed it.
+                                        controls.setOpen(item.id, true);
+                                        onExpandRail();
+                                    }}
                                     className={cn(
                                         "relative flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                                         selected && "bg-muted text-foreground",

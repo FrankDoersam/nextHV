@@ -93,10 +93,15 @@ it("collapses and expands the desktop rail without losing the current page", asy
     );
     expect(sidebar).toHaveAttribute("data-collapsed", "true");
     expect(window.localStorage.getItem("nexthv.sidebar.compact")).toBe("1");
+    // Collapsed navigation displays groups, and the group click opens the rail.
+    expect(screen.getByRole("button", { name: "Stammdaten Untermenü öffnen" })).toBeVisible();
     await user.click(
-        screen.getByRole("button", { name: "Navigation ausklappen" }),
+        screen.getByRole("button", { name: "Stammdaten Untermenü öffnen" }),
     );
     expect(sidebar).not.toHaveAttribute("data-collapsed");
+    expect(
+        screen.getByRole("navigation", { name: "Hauptnavigation" }),
+    ).toHaveTextContent("Objekte");
     expect(
         screen.getByRole("navigation", { name: "Seitenpfad" }),
     ).toHaveTextContent("#12");

@@ -169,9 +169,15 @@ it("lets the icon rail open a parent's subtree and preserves labelled controls",
     const expand = vi.fn();
     mount(true, expand);
     const opener = screen.getByRole("button", {
-        name: "Objekte Untermenü öffnen",
+        name: "Stammdaten Untermenü öffnen",
     });
+    expect(screen.queryByRole("button", { name: "Objekte Untermenü öffnen" })).not.toBeInTheDocument();
 
     await userEvent.setup().click(opener);
     expect(expand).toHaveBeenCalledOnce();
+    expect(
+        JSON.parse(
+            window.localStorage.getItem("nexthv.sidebar.expanded.v1.42") ?? "{}",
+        ),
+    ).toHaveProperty("group:Stammdaten", true);
 });

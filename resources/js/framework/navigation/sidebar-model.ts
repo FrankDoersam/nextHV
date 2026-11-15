@@ -57,6 +57,7 @@ export type NavigationGroupSettings = Partial<Pick<
     NavigationItemDefinition,
     | "description"
     | "tooltip"
+    | "icon"
     | "badge"
     | "defaultOpen"
     | "visible"
