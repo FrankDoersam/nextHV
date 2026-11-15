@@ -1699,11 +1699,11 @@ Integriert sind die gemeinsamen Grid-Beschriftungen/Pagination, zentrale Formula
 
 Topbar und `Ctrl/Cmd+K` öffnen jetzt den gemeinsamen `GlobalSearch`-Dialog. Ab zwei Zeichen wird `POST /api/v1/global-search` ausgeführt (250 ms Debounce, maximal 100 Zeichen, abbrechbare Anfrage). Ergebnisse sind nach Ressource gruppiert; mehr als zehn Treffer führen mit dem Suchbegriff in die vollständige Tabellenansicht. Clientseitiges erneutes Caption-Filtern ist deaktiviert, damit Treffer über verwandte Objekte sichtbar bleiben.
 
-Aktivierung ausschließlich in `config/resource_features.php`: Resource-Klasse, lesbarer Bereichsname und `search => ['subtitle' => [...]]`. `search => false` deaktiviert eine Ressource. Der Endpoint verwendet `Rest::search(...)->as($user)` und damit native Feld-/Relationssuche und Autorisierung; er umgeht keine Scopes mit einem selbstgebauten SQL-OR. Er liefert nur ID, Titel, Unterzeile und lokale Zielroute. Ausweise sind nicht registriert. Mitgelieferte Ressourcen: Objekte, Einheiten, Geschäftspartner, Verträge. Organisationsgrenzen bleiben gemäß bisheriger Entscheidung zurückgestellt und werden durch diese Suche nicht ergänzt.
+Aktivierung direkt am Modell über `framework(): ModelFeatures` und `->search(subtitle: [...], title: 'code', limit: 10, priority: 10)`. Ohne `search()` bleibt das Modell aus der globalen Suche ausgeschlossen. Registrierte REST-Routen liefern die Ressourcen automatisch, auch bei Route-Cache. Caption-Relationen werden gezielt vorgeladen; Titel, Trefferlimit (1–50) und Reihenfolge sind konfigurierbar. Die durchsuchbaren Felder kommen weiterhin aus `->searchable()` und `searchableRelations()` der REST-Ressource; sie werden nicht nochmals im Modell definiert. Der Endpoint verwendet `Rest::search(...)->as($user)` und damit native Feld-/Relationssuche und Autorisierung; er umgeht keine Scopes mit einem selbstgebauten SQL-OR. Er liefert nur ID, Titel, Unterzeile und lokale Zielroute. Ausweise sind nicht registriert. Mitgelieferte Ressourcen: Objekte, Einheiten, Geschäftspartner, Verträge. Organisationsgrenzen bleiben gemäß bisheriger Entscheidung zurückgestellt und werden durch diese Suche nicht ergänzt.
 
 ## 43. Audit-Timeline
 
-`config/resource_features.php` schaltet mit `audit => ['code', 'name', ...]` je registrierter REST-Ressource die Historie frei. Die Liste ist eine ausdrückliche Datenfreigabe, keine automatische Kopie aller Modellattribute. Versteckte Modellattribute werden zusätzlich ausgeschlossen. Standardmäßig erfasst: ausgewählte Stammdaten von Objekten, Einheiten, Partnern und Verträgen; keine Ausweisnummern, Bankdaten oder freien Notizen. Werte sind auf 500 Zeichen begrenzt. Nicht eingetragene Felder haben keine Historie.
+`Model::framework()` schaltet mit `->audit(fields: ['code', 'name', ...], events: ['created', 'updated', 'deleted', 'restored'])` die Historie frei. `HasModelFeatures` registriert die Modellereignisse. Akteur und Zeitpunkt werden automatisch erfasst; ohne `audit()` bleibt die Historie deaktiviert. Die Liste ist eine ausdrückliche Datenfreigabe, keine automatische Kopie aller Modellattribute. Versteckte Modellattribute werden zusätzlich ausgeschlossen. Standardmäßig erfasst: ausgewählte Stammdaten von Objekten, Einheiten, Partnern und Verträgen; keine Ausweisnummern, Bankdaten oder freien Notizen. Werte sind auf 500 Zeichen begrenzt. Nicht eingetragene Felder haben keine Historie.
 
 Der `AuditObserver` erfasst `created`, `updated`, `deleted`, `restored` mit Akteur und Vorher-/Nachher-Werten. Er schreibt synchron auf derselben DB-Verbindung; innerhalb der bestehenden REST-Schreibtransaktion werden Audit und Fachänderung gemeinsam zurückgerollt. Eigene Jobs/Actions müssen ihre fachlichen Writes wie üblich in einer Transaktion ausführen; direkte Query-Builder-Updates ohne Modellereignisse werden nicht erfasst. Systemänderungen haben den Akteur „System“. Die Vergangenheit wird nicht rekonstruiert.
 
@@ -1713,29 +1713,44 @@ Nach `php artisan migrate --force` erscheint der Tab bei Ressourcen mit `feature
 
 `CsvImportDialog` ist ein gemeinsam genutzter, lazy geladener Dialog. `ResourceCollection` zeigt ihn automatisch für serverseitig freigegebene Ressourcen und vorhandene Create-Berechtigung. `importable={false}` blendet ihn aus. In eingebetteten, durch Elternfilter eingeschränkten Tabellen ist er standardmäßig aus: Ein Import darf keine scheinbar gesperrte Elternbeziehung umgehen. Für andere DataProvider ist dieser Laravel-Import nicht automatisch aktiviert.
 
-Die Freigabe liegt in `config/resource_features.php`; Objekte und Einheiten sind eingerichtet:
+Die Freigabe liegt direkt am Modell; Objekte und Einheiten sind eingerichtet. Die zentrale Konfigurationsdatei wurde entfernt. Eine Modell-Definition sieht so aus:
 
 ```php
-'import' => [
-    'fields' => ['property_id', 'code', 'name', 'type', 'area'],
-    'relations' => [
-        'property_id' => [
-            'resource' => PropertyResource::class,
-            'match' => ['code', 'name'],
-        ],
-    ],
-],
+use App\Contracts\Framework\DefinesModelFeatures;
+use App\Framework\HasModelFeatures;
+use App\Framework\ModelFeatures;
+
+class Unit extends Model implements DefinesModelFeatures
+{
+    use HasModelFeatures;
+
+    public static function framework(): ModelFeatures
+    {
+        return ModelFeatures::make()->label('Einheiten')
+            ->search(subtitle: ['property.name', 'property.city', 'code'], priority: 20)
+            ->audit(fields: ['code', 'name', 'property_id', 'type', 'status', 'area'])
+            ->import(
+                fields: ['property_id', 'code', 'name', 'type', 'status', 'area'],
+                relations: ['property' => ['code', 'name']],
+                aliases: ['property_id' => ['Objektnummer', 'Objekt-Nr.']],
+            );
+    }
+}
 ```
+
+`relations` benennt die vorhandene Eloquent-/REST-BelongsTo-Beziehung und deren erlaubte Suchmerkmale. Fremdschlüssel und Zielressource werden abgeleitet. Die vorhandenen Picker-Filter gelten sowohl beim Auflösen als auch bei der Übernahme. Andere Relationsarten werden nicht implizit importiert. `aliases` ergänzt alternative CSV-Spaltenüberschriften; bei mehrdeutiger Erkennung erfolgt keine automatische Zuordnung.
+
+`php artisan framework:check` prüft alle registrierten Ressourcen auf unbekannte/versteckte Felder, nicht schreibbare Importfelder und fehlende oder ungültige Relationsdefinitionen. Dieser Check ist Teil der CI. Die Registry ist pro Request/Job-Lifecycle scoped; es gibt keinen tenant- oder benutzerübergreifenden Entscheidungscache.
 
 Die Liste ist eine Importfreigabe, kein zweites Validierungsschema. Beschriftungen, Typen, Enum-Bezeichnungen und Schreibrechte stammen aus PHP-REST-Feldern. `ImportMutationRequest` verwendet die native Mutation-Pipeline; gleiche Serverregeln, Policies, Model-Observer und Transaktionen wie die normale Anlage. Bei weiteren Ressourcen muss die Freigabe alle fachlich notwendigen Anlagefelder umfassen. Diese Version legt neue Datensätze an; kein verdecktes Upsert, keine verschachtelte Vertragsanlage per CSV.
 
-Ablauf: Datei prüfen → Zuordnung (automatisch vorgeschlagen anhand Feldname oder Beschriftung) → Relation über ein freigegebenes Merkmal suchen → Vorschau mit aufgelöstem Titel und Fehlern je Datensatz/Feld → verbindlich übernehmen. Relationen werden exakt innerhalb der nativen Such-/Policy-Grenzen gesucht, pro identischem Suchwert zwischengespeichert; null oder mehrere Treffer blockieren. Bei Übernahme werden Sichtbarkeit und Geschäftsregeln erneut geprüft. Geschäftsregeln in Mutation-Hooks werden erst bei der Übernahme ausgeführt; die Vorschau behauptet keine vollständige Simulation.
+Ablauf: Importfelder/erlaubte Werte ansehen und CSV-Vorlage herunterladen → Datei prüfen → Zuordnung (serverseitig vorgeschlagen anhand Feldname, Beschriftung oder Alias) → Relation über ein freigegebenes Merkmal suchen → Vorschau mit aufgelöstem Titel und Fehlern je Datensatz/Feld → verbindlich übernehmen. Relationen werden exakt innerhalb der nativen Such-/Policy-Grenzen gesucht, pro identischem Suchwert zwischengespeichert; null oder mehrere Treffer blockieren. Bei Übernahme werden Sichtbarkeit und Geschäftsregeln erneut geprüft. Geschäftsregeln in Mutation-Hooks werden erst bei der Übernahme ausgeführt; die Vorschau behauptet keine vollständige Simulation.
 
-Grenzen: UTF-8 mit optionalem BOM, Komma/Semikolon/Tab, korrekt gequotete Zellen einschließlich Zeilenumbrüchen, maximal 2 MB / 100 Datensätze / 50 Spalten / 10.000 Zeichen je Zelle. Deutsche Enum-Titel, Ja/Nein und `dd.MM.yyyy` werden normalisiert. Zahlen akzeptieren Dezimalpunkt oder -komma, keine mehrdeutigen Tausendertrennzeichen. Es gibt keinen zweiten Client-Validator für Fachregeln.
+Grenzen: UTF-8 mit optionalem BOM, Komma/Semikolon/Tab, korrekt gequotete Zellen einschließlich Zeilenumbrüchen, maximal 2 MB / 100 Datensätze / 50 Spalten / 10.000 Zeichen je Zelle. Deutsche Enum-Titel, Ja/Nein und `dd.MM.yyyy` werden normalisiert. Der Dialog zeigt die tatsächlich für die Anlage angebotenen Enum-Werte. Abweichende CSV-Werte (etwa „Whg“) können explizit „Wohnung“ zugeordnet werden; das Backend akzeptiert nur freigegebene Zielwerte. Die Vorschau zeigt lesbare, normalisierte Werte. Nicht erkannte oder mehrdeutige Enum-Werte ergeben einen Feldfehler mit erlaubten Bezeichnungen. Ein Fehlerfilter und Zähler zeigen betroffene Zeilen; Zurück erhält die Zuordnung, ein neues Öffnen startet eine neue Sitzung. Zahlen akzeptieren Dezimalpunkt oder -komma, keine mehrdeutigen Tausendertrennzeichen. Es gibt keinen zweiten Client-Validator für Fachregeln.
 
 Die geprüfte Nutzlast liegt verschlüsselt in `import_batches`; der Bestätigungsschlüssel ist an Benutzer und Ressource gebunden und 15 Minuten gültig. Ein transaktionaler Lock und gespeichertes Ergebnis machen wiederholte Bestätigung idempotent. Nach Erfolg wird die Nutzlast geleert. Bei einem Fehler werden alle Fachänderungen und Audit-Einträge zurückgerollt. Der täglich geplante `model:prune` entfernt abgelaufene Batches nach einem Tag; dafür muss der Laravel-Scheduler laufen. Große Hintergrundimporte und dauerhafte Importhistorie sind bewusst nicht Teil dieses synchronen Dialogs.
 
-Deployment: `php artisan migrate --force`. Tests decken Zuordnung, aufgelöste/mehrdeutige/gelöschte Beziehungen, Benutzerbindung, Ablauf, Opt-in/Create-Policy, native Fehler, atomaren Rollback und doppelte Bestätigung ab.
+Der neue `GET .../import/schema` liefert Felder, Pflichtfeldhinweise, Enum-Optionen, Relationssuchmerkmale und Vorlage; alle Beschriftungen stammen aus dem Backend. Die Hinweise ersetzen keine Servervalidierung. Deployment bei noch nicht ausgeführtem vorherigen Ausbau: `php artisan migrate --force`; dieser Modell-Umbau benötigt keine weitere Migration. Tests decken Zuordnung, aufgelöste/mehrdeutige/gelöschte Beziehungen, Benutzerbindung, Ablauf, Opt-in/Create-Policy, native Fehler, atomaren Rollback und doppelte Bestätigung ab.
 
 ## 45. Dokument-Actions und PDF-Vorschau im Sheet
 

@@ -82,7 +82,7 @@ test("global records, audit, mapped relation import and protected PDF sheet work
         name: "einheiten.csv",
         mimeType: "text/csv",
         buffer: Buffer.from(
-            `Objekt;Nummer;Bezeichnung\nOBJ-001;${code};Importierte Einheit`,
+            `Objektnummer;Nummer;Bezeichnung;Art;Zustand\nOBJ-001;${code};Importierte Einheit;Whg;Nutzbar`,
         ),
     });
     await dialog
@@ -91,6 +91,8 @@ test("global records, audit, mapped relation import and protected PDF sheet work
     await expect(
         dialog.getByRole("button", { name: "Vorschau prüfen", exact: true }),
     ).toBeEnabled();
+    await dialog.getByRole("combobox", { name: "Art: Whg zuordnen" }).click();
+    await page.getByRole("option", { name: "Wohnung", exact: true }).click();
     await capture("05-csv-mapping");
     await dialog
         .getByRole("button", { name: "Vorschau prüfen", exact: true })
