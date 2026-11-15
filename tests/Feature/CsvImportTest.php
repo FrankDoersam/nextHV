@@ -50,6 +50,10 @@ class CsvImportTest extends TestCase
         Property::factory()->create(['code' => 'P', 'status' => 'active']);
         $preview = $this->preview("Objekt;Nummer;Name\nP;;")->assertOk()->assertJsonPath('valid', false);
         $this->assertStringNotContainsString('mutate.', json_encode($preview->json('rows.0.errors')));
+        $this->postJson('/api/v1/resource-features/units/import/preview', [
+            'file' => UploadedFile::fake()->createWithContent('units.csv', "Nummer;Name\nE;Wohnung"),
+            'mapping' => json_encode([['field' => 'code', 'column' => 0], ['field' => 'name', 'column' => 1]]),
+        ])->assertOk()->assertJsonPath('valid', false)->assertJsonPath('token', null)->assertJsonStructure(['rows' => [['errors' => ['property_id']]]]);
         $this->assertDatabaseCount('units', 0);
     }
 
@@ -103,6 +107,7 @@ class CsvImportTest extends TestCase
         $this->assertSame('Objekte', $fields['property_id']['relation']['label']);
         $this->assertSame('Wohnung', $fields['type']['options'][0]['label']);
         $this->assertTrue($fields['code']['required']);
+        $this->assertTrue($fields['property_id']['required']);
         $this->assertStringContainsString('Bezeichnung', $schema->json('template'));
         $this->postJson('/api/v1/resource-features/units/import/inspect', [
             'file' => UploadedFile::fake()->createWithContent('units.csv', "Objektnummer;Einheitennummer;Einheitenname;Art\nP;U;Wohnung;Whg"),

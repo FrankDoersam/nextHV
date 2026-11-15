@@ -26,7 +26,7 @@ class Unit extends Model implements DefinesModelFeatures
             ->import(
                 fields: ['property_id', 'code', 'name', 'type', 'status', 'floor', 'area', 'rooms', 'has_balcony', 'barrier_free'],
                 relations: ['property' => ['code', 'name']],
-                aliases: ['property_id' => ['Objektnummer', 'Objekt-Nr.'], 'code' => ['Einheitennummer'], 'name' => ['Einheitenname']],
+                aliases: ['property_id' => ['Objektnummer', 'Objekt-Nr.'], 'code' => ['Einheitennummer'], 'name' => ['Einheitenname'], 'status' => ['Zustand']],
             );
     }
 

@@ -184,7 +184,10 @@ export function CsvImportMapping({
                                     <summary className="cursor-pointer text-sm font-medium">
                                         Auswahlwerte zuordnen{" "}
                                         <span className="font-normal text-muted-foreground">
-                                            · {values.length} Werte
+                                            · {values.length}{" "}
+                                            {values.length === 1
+                                                ? "Wert"
+                                                : "Werte"}
                                         </span>
                                     </summary>
                                     <p className="py-2 text-xs leading-5 text-muted-foreground">

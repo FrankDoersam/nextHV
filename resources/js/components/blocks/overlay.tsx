@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { X, Layers, type LucideIcon } from "lucide-react";
 import type { Presentation } from "@/framework/types";
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 export function Overlay({
     open,
@@ -41,7 +41,10 @@ export function Overlay({
     tabs,
     bodyInset = true,
     bodyScroll = "auto",
+    bodyResetKey,
 }: {
+    /** Reset scrolling on a flow step change without remounting form fields. */
+    bodyResetKey?: string | number;
     bodyInset?: boolean;
     bodyScroll?: "auto" | "managed";
     open: boolean;
@@ -76,6 +79,11 @@ export function Overlay({
         }[];
     };
 }) {
+    const bodyRef = useRef<HTMLDivElement>(null);
+    useLayoutEffect(() => {
+        if (bodyResetKey !== undefined && bodyRef.current)
+            bodyRef.current.scrollTop = 0;
+    }, [open, bodyResetKey]);
     const close = () => {
         if (!busy) onClose();
     };
@@ -105,6 +113,7 @@ export function Overlay({
                     </aside>
                 )}
                 <div
+                    ref={bodyRef}
                     data-slot="overlay-body"
                     className={cn(
                         "@container/form min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain bg-card px-5 py-6 sm:px-6",

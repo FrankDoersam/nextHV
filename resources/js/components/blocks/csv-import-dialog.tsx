@@ -156,6 +156,8 @@ function CsvImportSession({ resource, onClose, onImported }: Props) {
             icon={<FileSpreadsheet />}
             presentation="dialog"
             size="wide"
+            wizard
+            bodyResetKey={active}
             busy={busy}
             header={
                 <WizardProgress

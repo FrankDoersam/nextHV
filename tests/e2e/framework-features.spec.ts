@@ -98,6 +98,10 @@ test("global records, audit, mapped relation import and protected PDF sheet work
         .getByRole("button", { name: "Vorschau prüfen", exact: true })
         .click();
     await expect(dialog.getByText(/Lindenhöfe \(#/)).toBeVisible();
+    await expect(dialog.locator('[data-slot="overlay-body"]')).toHaveJSProperty(
+        "scrollTop",
+        0,
+    );
     await capture("06-csv-preview");
     await page.setViewportSize({ width: 390, height: 844 });
     await capture("07-csv-preview-mobile");

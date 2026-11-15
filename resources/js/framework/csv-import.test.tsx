@@ -120,8 +120,13 @@ it("maps server fields, previews resolved relations and confirms only the server
         .mockResolvedValueOnce({ count: 1 });
     mount();
     await upload();
+    const body = screen
+        .getByRole("dialog")
+        .querySelector<HTMLElement>('[data-slot="overlay-body"]')!;
+    body.scrollTop = 250;
     fireEvent.click(screen.getByRole("button", { name: "Vorschau prüfen" }));
     expect(await screen.findByText("Lindenhof (#1)")).toBeVisible();
+    expect(body.scrollTop).toBe(0);
     const mapping = JSON.parse(
         (call.mock.calls[2][1] as FormData).get("mapping") as string,
     );
