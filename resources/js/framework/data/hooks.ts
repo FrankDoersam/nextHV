@@ -102,6 +102,9 @@ export function useSaveRecord(resource: ResourceDefinition) {
         await client.cancelQueries({ queryKey: resourceKey(resource) });
         patchRecord(client, resource, saved);
         await client.invalidateQueries({
+            queryKey: [...resourceKey(resource), "audit", saved.id],
+        });
+        await client.invalidateQueries({
             queryKey: [...resourceKey(resource), "infinite"],
             refetchType: previous ? "none" : "active",
         });

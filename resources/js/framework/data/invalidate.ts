@@ -10,7 +10,8 @@ export type ResourceQueryKind =
     | "metric"
     | "groups"
     | "view-count"
-    | "panel";
+    | "panel"
+    | "audit";
 export interface InvalidateResourceOptions {
     kinds?: ResourceQueryKind[];
     ids?: number[];
@@ -41,7 +42,7 @@ export function invalidateResource(
             const kind = key[base.length] as ResourceQueryKind;
             if (kinds && !kinds.includes(kind)) return false;
             if (ids && !ids.length) return false;
-            if (ids && kind === "detail")
+            if (ids && (kind === "detail" || kind === "audit"))
                 return ids.includes(Number(key[base.length + 1]));
             if (ids && kind === "many") {
                 const selected = (key[base.length + 1] as { ids?: number[] })

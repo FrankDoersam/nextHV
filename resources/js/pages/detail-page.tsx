@@ -1,3 +1,4 @@
+import { auditTabs } from "@/components/blocks/audit-timeline";
 import { BooleanPropertyList } from "@/framework/forms/editable-key-value-list";
 import {
     DetailList,
@@ -74,6 +75,7 @@ export default function DetailPage({
                 ),
         },
     ];
+    tabs.push(...auditTabs(resource, record.id));
     for (const relation of resource.relations ?? [])
         tabs.push({
             id: relation.resource + relation.field,

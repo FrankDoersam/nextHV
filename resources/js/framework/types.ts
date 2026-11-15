@@ -1,6 +1,11 @@
 import type { KeyValueItem } from "@/components/blocks/key-value-card";
 import type { NavigationItemDefinition } from "./navigation/sidebar-model";
-import type { TableFilterPresets, TablePaginationOptions, TableQueryOptions, TableSortPresets } from "./tables/table-contract";
+import type {
+    TableFilterPresets,
+    TablePaginationOptions,
+    TableQueryOptions,
+    TableSortPresets,
+} from "./tables/table-contract";
 import type { ChoiceOption } from "@/components/fields/choice-picker";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
@@ -197,6 +202,7 @@ export interface CreateRelationDefinition {
     defaults?: (parent: Values) => Values;
 }
 export interface ResourceDefinition {
+    features?: { audit?: boolean; import?: boolean };
     name: string;
     label: string;
     singular: string;

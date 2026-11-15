@@ -1,3 +1,4 @@
+import { auditTabs } from "@/components/blocks/audit-timeline";
 import { lazy, Suspense } from "react";
 import { useParams } from "react-router";
 import { Pencil, RefreshCw, LayoutDashboard, Link2 } from "lucide-react";
@@ -70,6 +71,7 @@ export default function ContractDetailPage() {
                             label: "Übersicht",
                             render: () => <ContractOverview record={record} />,
                         },
+                        ...auditTabs(contracts, record.id),
                         ...contracts.relations!.map((relation) => ({
                             id: relation.resource,
                             label: relation.navigationLabel ?? relation.label,

@@ -13,6 +13,7 @@ use App\Models\Property;
 use App\Models\RentCondition;
 use App\Models\TerminationNotice;
 use App\Models\Unit;
+use App\Observers\AuditObserver;
 use App\Observers\BusinessPartnerObserver;
 use App\Observers\ContractLinkObserver;
 use App\Observers\ContractObserver;
@@ -56,6 +57,11 @@ class AppServiceProvider extends ServiceProvider
         IdentityDocument::observe(IdentityDocumentObserver::class);
         ContractLink::observe(ContractLinkObserver::class);
         TerminationNotice::observe(TerminationNoticeObserver::class);
+        foreach (config('resource_features', []) as $feature) {
+            if (! empty($feature['audit'])) {
+                $feature['resource']::$model::observe(AuditObserver::class);
+            }
+        }
         RateLimiter::for('login', fn (Request $r) => Limit::perMinute(5)->by(strtolower($r->string('email')).'|'.$r->ip()));
         RateLimiter::for('api', fn (Request $r) => Limit::perMinute(120)->by($r->user()?->id ?? $r->ip()));
         Gate::define('viewApiDocs', fn ($user) => $user !== null);

@@ -37,6 +37,7 @@ export interface ResourceSchema {
     meta: {
         ui: {
             version: 1;
+            features?: ResourceDefinition["features"];
             picker?: ResourceDefinition["picker"];
             fields: Record<
                 string,
@@ -53,7 +54,7 @@ export interface ResourceSchema {
 }
 const DETAILS =
     "?with=fields.capabilities,fields.filter,fields.rules,fields.meta,relations";
-const CACHE_PREFIX = "nexthv:resource-schema:v1:";
+const CACHE_PREFIX = "nexthv:resource-schema:v2:";
 const CACHE_TTL = 5 * 60 * 1000;
 const isObject = (value: unknown): value is Record<string, unknown> =>
     value !== null && typeof value === "object" && !Array.isArray(value);
@@ -86,6 +87,11 @@ export function parseResourceSchema(raw: unknown): ResourceSchema {
                                 isObject(include) &&
                                 typeof include.relation === "string",
                         ))))) ||
+        (ui.features !== undefined &&
+            (!isObject(ui.features) ||
+                Object.values(ui.features).some(
+                    (value) => typeof value !== "boolean",
+                ))) ||
         !isObject(ui.fields) ||
         !isObject(ui.relations) ||
         !isObject(ui.labels) ||
@@ -247,8 +253,8 @@ function columnSort(
 
     const [prefix, ...parts] = column.field.split(".");
     if (!prefix || !parts.length) return { sortable: false };
-    const relation = Object.values(schema.meta.ui.relations).find(
-        (entry) => [entry.relation, entry.responseKey].includes(prefix),
+    const relation = Object.values(schema.meta.ui.relations).find((entry) =>
+        [entry.relation, entry.responseKey].includes(prefix),
     );
     if (!relation) return { sortable: false };
     const related = schemas[relation.resource]?.fields.find(
@@ -463,6 +469,7 @@ export function hydrateResources(
         });
         return {
             resource,
+            features: schema.meta.ui.features,
             picker: schema.meta.ui.picker ?? template.picker,
             fields: template.fields.map((field) => hydrateField(field, schema)),
             columns,
