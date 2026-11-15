@@ -1,3 +1,4 @@
+import { useI18n } from "../i18n";
 import { FormSummary } from "./form-summary";
 import { FormActionScope } from "./form-action-scope";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,7 @@ export function ResourceEditor({
     stacked?: boolean;
     flow?: FlowControls;
 }) {
+    const { t } = useI18n();
     const formId = useId();
     const { resource, row } = request;
     const createRelations =
@@ -322,7 +324,7 @@ export function ResourceEditor({
                             onClick={() => setStep(step - 1)}
                         >
                             <ChevronLeft />
-                            Zurück
+                            {t("back")}
                         </Button>
                     )}
                     {!completion && flow?.onBack && (
@@ -337,7 +339,7 @@ export function ResourceEditor({
                                 } else flow.onBack?.();
                             }}
                         >
-                            <ChevronLeft /> Zurück
+                            <ChevronLeft /> {t("back")}
                         </Button>
                     )}
                 </>
@@ -373,7 +375,7 @@ export function ResourceEditor({
                         disabled={busy}
                         onClick={close}
                     >
-                        {completion ? "Schließen" : "Abbrechen"}
+                        {completion ? t("close") : t("cancel")}
                     </Button>
                     {completion ? (
                         <Button
@@ -396,7 +398,7 @@ export function ResourceEditor({
                                 void next();
                             }}
                         >
-                            {validating ? "Wird geprüft …" : "Weiter"}
+                            {validating ? t("checking") : t("next")}
                             <ChevronRight />
                         </Button>
                     ) : (
@@ -408,12 +410,12 @@ export function ResourceEditor({
                         >
                             <Save />
                             {busy
-                                ? "Wird gespeichert …"
+                                ? t("saving")
                                 : flow
                                   ? flow.index < flow.steps.length - 1
                                       ? "Speichern & weiter"
                                       : "Ablauf abschließen"
-                                  : "Speichern"}
+                                  : t("save")}
                         </Button>
                     )}
                 </>

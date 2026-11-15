@@ -1,3 +1,4 @@
+import { useGridI18n, useI18n } from "../i18n";
 import { usePermissionRevision } from "../permissions";
 import { CellRenderer } from "./cell-renderer";
 import { recordValue } from "./cell-value";
@@ -72,34 +73,6 @@ import type {
 } from "../types";
 import { useWorkbench } from "../workbench";
 const EMPTY_ROWS: RecordData[] = [];
-const i18n = {
-    labels: {
-        filterSelectedCount: (count: number) => `${count} ausgewählt`,
-        filterNoResults: "Keine passenden Optionen",
-        filterClear: "Filter zurücksetzen",
-        selectAll: "Alle Zeilen dieser Seite auswählen",
-        selectRow: "Zeile auswählen",
-        empty: "Keine Einträge gefunden",
-        loading: "Wird geladen …",
-        rowsPerPage: "Zeilen pro Seite",
-        previousPage: "Vorherige Seite",
-        nextPage: "Nächste Seite",
-        paginationInfo: ({
-            from,
-            to,
-            count,
-        }: {
-            from: number;
-            to: number;
-            count: number;
-        }) => `${from}–${to} von ${count}`,
-        goToPage: (page: number) => `Seite ${page}`,
-        toggleColumns: "Spalten",
-        columnsMenu: "Spalten",
-        sortAscending: "Aufsteigend",
-        sortDescending: "Absteigend",
-    },
-};
 export function RowActions({
     resource,
     row,
@@ -178,6 +151,8 @@ export function ResourceCollection({
     createForm?: RelationFormOptions;
     editForm?: Omit<RelationFormOptions, "flow">;
 } & CollectionOptions) {
+    const i18n = useGridI18n();
+    const { t } = useI18n();
     const navigate = useNavigate();
     const panelId = useId();
     const workbench = useWorkbench();
@@ -739,10 +714,10 @@ export function ResourceCollection({
               );
     const emptyState = (
         <EmptyState
-            title={hasQuery ? "Keine Treffer" : "Noch keine Einträge"}
+            title={hasQuery ? t("noMatches") : t("empty")}
             description={
                 hasQuery
-                    ? "Für diese Suche und Filter wurden keine passenden Datensätze gefunden."
+                    ? t("noMatchesDescription")
                     : "In diesem Bereich sind noch keine Datensätze vorhanden."
             }
             action={
@@ -752,7 +727,7 @@ export function ResourceCollection({
                         variant="outline"
                         onClick={clearQuery}
                     >
-                        Suche und Filter zurücksetzen
+                        {t("reset")}
                     </Button>
                 ) : !toolbar && creatable && can(resource.name, "create") ? (
                     <Button type="button" onClick={create}>
@@ -891,7 +866,7 @@ export function ResourceCollection({
                             triggerIcon={<ListFilter />}
                             iconOnly={compactControls}
                             aria-label="Gruppierung"
-                            placeholder="Gruppieren"
+                            placeholder={t("group")}
                             clearable={false}
                             value={group === "none" ? null : group}
                             onChange={(value) =>
@@ -1521,6 +1496,7 @@ function GroupedGrid({
     defaultVisibility: ColumnVisibilityState;
     onRowClick?: (row: RecordData) => void;
 }) {
+    const i18n = useGridI18n();
     const table = useTable({
         initialState: { columnVisibility: defaultVisibility },
         features: dataGridFeatures,

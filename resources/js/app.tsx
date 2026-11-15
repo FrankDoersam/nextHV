@@ -1,10 +1,14 @@
+import { I18nProvider } from "@/framework/i18n";
 import React, { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/framework/auth";
 import { Loading } from "@/components/blocks/content";
-import { ErrorBoundary, RouteErrorFallback } from "@/components/blocks/error-boundary";
+import {
+    ErrorBoundary,
+    RouteErrorFallback,
+} from "@/components/blocks/error-boundary";
 import { shouldReloadAfterChunkError } from "@/framework/chunk-recovery";
 import "@/../css/app.css";
 const Application = lazy(() => import("@/framework/application"));
@@ -43,8 +47,10 @@ const router = createBrowserRouter([
 ]);
 createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
-        <ErrorBoundary>
-            <RouterProvider router={router} />
-        </ErrorBoundary>
+        <I18nProvider>
+            <ErrorBoundary>
+                <RouterProvider router={router} />
+            </ErrorBoundary>
+        </I18nProvider>
     </React.StrictMode>,
 );

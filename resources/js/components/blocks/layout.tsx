@@ -1,3 +1,4 @@
+import { LanguagePicker } from "./language-picker";
 import { usePermissionRevision } from "@/framework/permissions";
 import { Brand } from "./brand";
 export { Brand } from "./brand";
@@ -188,6 +189,11 @@ export function AppShell({
                     <Shapes className="size-4" aria-hidden />
                     {!rail && "Komponenten"}
                 </NavLink>
+                {!rail && (
+                    <div className="mb-2">
+                        <LanguagePicker />
+                    </div>
+                )}
                 <div
                     className={cn(
                         "flex min-w-0 items-center gap-2 rounded-lg bg-muted/40 px-2 py-2",

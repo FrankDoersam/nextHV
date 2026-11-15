@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/blocks/content";
 import { Badge } from "@/components/ui/badge";
 import type { ColumnDefinition, RecordData } from "../types";
 import { cellItems, cellText, recordValue, optionLabel } from "./cell-value";
-import { date, money, number } from "@/lib/format";
+import { useI18n } from "../i18n";
 export function CellRenderer({
     column,
     row,
@@ -15,6 +15,7 @@ export function CellRenderer({
     column: ColumnDefinition;
     row: RecordData;
 }) {
+    const { date, money, number } = useI18n();
     if (column.render) return column.render(row);
     const cell = column.cell;
     if (cell) {

@@ -1686,3 +1686,11 @@ Gezielte Regressionstests decken Kontextwechsel, Abbruch, Projektionen, Infinite
 `useInvalidateResource()` liefert eine Funktion `(resource, {kinds, ids, refetchType})`. Beispiele: `{kinds: ['detail', 'many'], ids: [id]}` oder `{kinds: ['list', 'metric', 'view-count']}`. Benannte Provider bleiben getrennt. Panels werden nur mit dem ausdrücklichen Kind `panel` invalidiert. Ohne Kind wird der Ressourcencache aktualisiert, nicht die gesamte Anwendung. `refetchType: 'none'` markiert Daten lediglich als veraltet.
 
 Live-Schnittstellen werden auf ausdrücklichen Wunsch nicht implementiert.
+
+## 41. i18n-Provider
+
+Die App mountet `I18nProvider` oberhalb des Routers. `useI18n()` liefert `locale`, `setLocale`, `t`, `number`, `money` und `date`. Deutsch ist Standard, Englisch auswählbar im Sidebar-Fuß. Ein Sprachwechsel remountet keine Formulare. Die Auswahl wird lokal gespeichert; bei gesperrtem Storage funktioniert sie für die Sitzung.
+
+Erweiterung: `<I18nProvider messages={{en: {'module.title': 'Projects'}}} adapter={optionalAdapter}>`. Der optionale Adapter hat `translate(key, locale, params)` und kann `undefined` für den Katalog-Fallback liefern. `t('module.title', {}, 'Projekte')` verhindert technische Schlüssel als sichtbare Texte. Katalogeinträge unterstützen `{name}`-Interpolation und `{one, other}`-Pluralformen mit `count`. Eigene Locale-Codes müssen gültige Intl-Sprachcodes sein und in `locales` zugelassen werden.
+
+Integriert sind die gemeinsamen Grid-Beschriftungen/Pagination, zentrale Formular-Footer, Tabellenzellen und Tabellenkennzahlen. Fachliche Ressourcen-/Enum-Beschriftungen und Backend-Validierung bleiben im vorhandenen PHP-Schema; dies ist kein Anspruch auf eine vollständige englische Übersetzung sämtlicher Fachmodule. Neue Komponenten sollen `useI18n` statt fest kodierter Format-Locale verwenden. Die strikte deutsche Eingabegrammatik der bestehenden Date-/Currency-Felder bleibt erhalten, bis deren Eingabevertrag ausdrücklich um weitere Locales erweitert wird.

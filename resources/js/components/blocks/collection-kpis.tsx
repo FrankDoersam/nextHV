@@ -1,5 +1,5 @@
 import type { CollectionSummaryDefinition } from "@/framework/types";
-import { money, number } from "@/lib/format";
+import { useI18n } from "@/framework/i18n";
 import { MetricCard } from "./metric-card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,7 @@ export function CollectionKpis({
     error?: unknown;
     retry?: () => void;
 }) {
+    const { money, number } = useI18n();
     return (
         <section
             data-slot="collection-kpis"
