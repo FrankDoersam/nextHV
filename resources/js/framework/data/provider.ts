@@ -189,7 +189,9 @@ export const dataProvider = {
             data: { impacted: number; result?: { data?: { ids: number[] } } };
         };
         try {
-            return await request<ActionResponse>(path, body, "POST", signal);
+            return signal
+                ? await request<ActionResponse>(path, body, "POST", signal)
+                : await request<ActionResponse>(path, body);
         } catch (error) {
             // Only domain actions can require a signed handshake after the user's submit.
             // DELETE is a single request and never enters this path.
@@ -199,10 +201,13 @@ export const dataProvider = {
                 !error.confirmation?.token
             )
                 throw error;
-            return request<ActionResponse>(path, {
+            const confirmed = {
                 ...body,
                 confirmation: error.confirmation.token,
-            }, "POST", signal);
+            };
+            return signal
+                ? request<ActionResponse>(path, confirmed, "POST", signal)
+                : request<ActionResponse>(path, confirmed);
         }
     },
     summary: (

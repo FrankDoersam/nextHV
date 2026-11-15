@@ -119,7 +119,6 @@ export function ChoicePicker({
         <Combobox.Root<ChoiceOption, boolean>
             items={options}
             filteredItems={visibleOptions ?? matchingOptions}
-            // Filtering is independent of the caption displayed in the input.
             filter={null}
             multiple={multiple}
             value={multiple ? selected : (selected[0] ?? null)}
@@ -138,7 +137,7 @@ export function ChoicePicker({
                     setSearching(true);
                     updateQuery(text);
                 }
-            }
+            }}
             onValueChange={(next, event) => {
                 // Escape closes the surrounding surface; it must never erase a saved selection.
                 if (event.reason === "escape-key") {

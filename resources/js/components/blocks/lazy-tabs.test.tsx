@@ -3,10 +3,20 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { LazyTabs } from "./lazy-tabs";
 
-afterEach(cleanup);
+beforeEach(() => {
+    vi.stubGlobal("ResizeObserver", class {
+        observe() {}
+        disconnect() {}
+    });
+    Element.prototype.scrollIntoView = vi.fn();
+});
+afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+});
 
 it("renders detail tab content only when selected, not on the initial page load", async () => {
     const overview = vi.fn(() => <div>Übersicht geladen</div>);
