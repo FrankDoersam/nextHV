@@ -195,58 +195,39 @@ describe("collection scopes and cells", () => {
             screen.getByRole("combobox", { name: "Zeilen pro Seite" }),
         ).toBeVisible();
     });
-    it("persists query tabs, resets pagination and retains parent scope with builder/grouping disabled", async () => {
+    it("loads only the selected table and keeps direct filters without collection tabs", async () => {
         const user = userEvent.setup();
         mount();
         await screen.findByText("Haus");
-        expect(
-            screen.queryByRole("combobox", { name: "Filter hinzufügen" }),
-        ).not.toBeInTheDocument();
-        expect(
-            screen.queryByRole("combobox", { name: "Gruppierung" }),
-        ).not.toBeInTheDocument();
-        await user.click(screen.getByRole("tab", { name: "Aktive Verträge" }));
+        expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+        expect(screen.queryByRole("tabpanel")).not.toBeInTheDocument();
+        expect(screen.queryByRole("combobox", { name: "Filter hinzufügen" })).not.toBeInTheDocument();
+        expect(screen.queryByRole("combobox", { name: "Gruppierung" })).not.toBeInTheDocument();
+        expect(dataProvider.list).toHaveBeenCalledWith(
+            resource,
+            expect.objectContaining({
+                page: 3,
+                filters: [{ field: "property_id", value: 9 }],
+            }),
+            expect.any(AbortSignal),
+        );
+        await user.click(screen.getByRole("combobox", { name: "Status filtern" }));
+        await user.click(await screen.findByRole("option", { name: "Entwurf" }));
         await waitFor(() =>
             expect(dataProvider.list).toHaveBeenLastCalledWith(
                 resource,
                 expect.objectContaining({
-                    query: "Berlin",
                     page: 1,
                     filters: [
                         { field: "property_id", value: 9 },
-                        { field: "status", value: "active" },
-                    ],
-                }),
-                expect.any(AbortSignal),
-            ),
-        );
-        expect(screen.getByLabelText("URL")).toHaveTextContent("view=active");
-        expect(screen.getByLabelText("URL").textContent).not.toContain(
-            "page=3",
-        );
-        await user.click(
-            screen.getByRole("combobox", { name: "Status filtern" }),
-        );
-        await user.click(
-            await screen.findByRole("option", { name: "Entwurf" }),
-        );
-        await waitFor(() =>
-            expect(dataProvider.list).toHaveBeenLastCalledWith(
-                resource,
-                expect.objectContaining({
-                    filters: [
-                        { field: "property_id", value: 9 },
-                        { field: "status", value: "active" },
                         { field: "status", operator: "in", value: ["draft"] },
                     ],
                 }),
                 expect.any(AbortSignal),
             ),
         );
-        expect(screen.getByRole("tabpanel")).toHaveAttribute(
-            "aria-labelledby",
-            screen.getByRole("tab", { name: "Aktive Verträge" }).id,
-        );
+        expect(screen.getByLabelText("URL").textContent).not.toContain("page=3");
+        expect(screen.getByLabelText("URL").textContent).not.toContain("view=");
     });
     it("navigates from a passive table cell, not a checkbox or title button", async () => {
         mount("/");
@@ -294,7 +275,7 @@ describe("collection scopes and cells", () => {
         ).toBeVisible();
         expect(screen.getByText("0–0 von 0")).toBeVisible();
     });
-    it("shows refresh progress inside the tab panel, never above the tab strip", async () => {
+    it("shows refresh progress only in the table surface, without a tab strip", async () => {
         const sample = {
             data: [
                 {
@@ -323,7 +304,9 @@ describe("collection scopes and cells", () => {
         await userEvent
             .setup()
             .click(screen.getByRole("button", { name: "Aktualisieren" }));
-        const panel = screen.getByRole("tabpanel");
+        const panel = document.querySelector<HTMLElement>('[data-slot="collection-surface"]')!;
+        expect(panel).not.toBeNull();
+        expect(screen.queryByRole("tab")).not.toBeInTheDocument();
         await waitFor(() => {
             expect(
                 panel.querySelector('[data-slot="collection-table-progress"]'),

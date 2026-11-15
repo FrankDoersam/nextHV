@@ -69,7 +69,10 @@ export default function DetailPage({
             label: "Übersicht",
             render: () =>
                 resource.name === "properties" ? (
-                    <PropertyOverview property={record} />
+                    <>
+                        <OverviewMetrics propertyId={record.id} />
+                        <PropertyOverview property={record} />
+                    </>
                 ) : (
                     <GenericOverview resource={resource} record={record} />
                 ),
@@ -182,9 +185,6 @@ export default function DetailPage({
                     </>
                 }
             />
-            {resource.name === "properties" && (
-                <OverviewMetrics propertyId={record.id} />
-            )}
             <Suspense fallback={<Loading />}>
                 <LazyTabs tabs={tabs} />
             </Suspense>

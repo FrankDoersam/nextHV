@@ -341,6 +341,9 @@ it("opens reports directly, retries in-place and never reloads the underlying ta
 });
 it("passes the live AbortSignal into report actions and aborts when the sheet closes", async () => {
     const action = new ExampleReport();
+    action.execute.mockImplementationOnce(
+        async () => new Promise<typeof response>(() => {}),
+    );
     const view = mountReport(action);
     await waitFor(() => expect(action.execute).toHaveBeenCalledOnce());
     const signal = action.execute.mock.calls[0][1];

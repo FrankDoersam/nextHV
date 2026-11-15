@@ -31,7 +31,6 @@ export function PdfPreviewSheet({
     // the download is in flight. Keep both out of the initial app bundle.
     useEffect(() => {
         void import("./pdf-canvas-preview").catch(() => undefined);
-        void import("pdfjs-dist/legacy/build/pdf.mjs").catch(() => undefined);
     }, []);
     const document = usePdfDocument(loading ? undefined : url);
     const pending = loading || document.loading;
