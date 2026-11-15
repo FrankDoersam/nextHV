@@ -38,7 +38,7 @@ describe("PDF reader", () => {
         );
         expect(
             await screen.findByLabelText("PDF-Seitenansicht"),
-        ).toHaveAttribute("data", "blob:pdf-preview");
+        ).toHaveAttribute("data", "blob:pdf-preview#view=FitH&navpanes=0");
         expect(screen.getByRole("link", { name: /^PDF$/ })).toHaveAttribute(
             "download",
             "Objektbericht.pdf",

@@ -108,7 +108,7 @@ export default function PdfViewer({
             ) : active ? (
                 <object
                     aria-label="PDF-Seitenansicht"
-                    data={active}
+                    data={`${active}#view=FitH&navpanes=0`}
                     type="application/pdf"
                     className={cn(
                         "block w-full",

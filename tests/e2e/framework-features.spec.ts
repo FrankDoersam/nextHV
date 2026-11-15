@@ -65,8 +65,12 @@ test("global records, audit, mapped relation import and protected PDF sheet work
     await expect(
         pdf.getByText(/Der Browser unterstützt keine eingebettete PDF-Anzeige/),
     ).not.toBeVisible();
+    // Native PDF rasterization happens outside the page DOM. Allow its compositor
+    // to paint before taking evidence; object visibility only proves it mounted.
+    await page.waitForTimeout(2_000);
     await capture("03-pdf-sheet");
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(600);
     await capture("04-pdf-sheet-mobile");
     await page.setViewportSize({ width: 1280, height: 720 });
     await pdf.getByRole("button", { name: "Schließen", exact: true }).click();
