@@ -1,8 +1,10 @@
 <?php
 
+use App\Models\ImportBatch;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('nexthv:admin {email?} {--name=Administrator}', function () {
     $email = $this->argument('email') ?? $this->ask('E-Mail');
@@ -20,3 +22,5 @@ Artisan::command('nexthv:admin {email?} {--name=Administrator}', function () {
     User::create(['name' => $this->option('name'), 'email' => $email, 'password' => Hash::make($password)]);
     $this->info('Benutzer angelegt.');
 })->purpose('Create an application login without a hard-coded password');
+
+Schedule::command('model:prune', ['--model' => ImportBatch::class])->daily();

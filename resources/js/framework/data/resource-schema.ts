@@ -54,7 +54,7 @@ export interface ResourceSchema {
 }
 const DETAILS =
     "?with=fields.capabilities,fields.filter,fields.rules,fields.meta,relations";
-const CACHE_PREFIX = "nexthv:resource-schema:v2:";
+const CACHE_PREFIX = "nexthv:resource-schema:v3:";
 const CACHE_TTL = 5 * 60 * 1000;
 const isObject = (value: unknown): value is Record<string, unknown> =>
     value !== null && typeof value === "object" && !Array.isArray(value);

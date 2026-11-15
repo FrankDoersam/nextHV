@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuditTimelineController;
+use App\Http\Controllers\CsvImportController;
 use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\IdentityFileController;
 use App\Http\Controllers\PropertyOperationsController;
@@ -20,6 +21,9 @@ use Lomkit\Rest\Facades\Rest;
 
 Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(function () {
     Route::get('resource-features/{resource}/{id}/audit', AuditTimelineController::class)->whereNumber('id');
+    Route::post('resource-features/{resource}/import/inspect', [CsvImportController::class, 'inspect']);
+    Route::post('resource-features/{resource}/import/preview', [CsvImportController::class, 'preview']);
+    Route::post('resource-features/{resource}/import/commit', [CsvImportController::class, 'commit']);
     Route::post('global-search', GlobalSearchController::class);
     Route::get('properties/{property}/clone-defaults', [PropertyOperationsController::class, 'propertyCloneDefaults']);
     Route::get('units/{unit}/clone-defaults', [PropertyOperationsController::class, 'unitCloneDefaults']);

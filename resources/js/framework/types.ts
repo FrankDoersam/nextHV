@@ -285,6 +285,8 @@ export interface CollectionOptions {
     pinnable?: boolean;
     columnChooser?: boolean;
     exportable?: boolean;
+    /** Requires server opt-in; default off in constrained relation tables. */
+    importable?: boolean;
     refreshable?: boolean;
     toolbar?: boolean;
     /** false disables all record actions; an array allows only those action IDs. */

@@ -62,7 +62,7 @@ final readonly class ResourceMetadata
             ];
         }
 
-        return ['version' => 1, 'features' => ['audit' => ! empty(config('resource_features.'.$this->resource->uiResourceName().'.audit'))], 'fields' => (object) $fields, 'relations' => (object) $relations, 'picker' => $this->resource->uiPicker(), 'labels' => (object) config('ui.options', [])];
+        return ['version' => 1, 'features' => ['import' => ! empty(config('resource_features.'.$this->resource->uiResourceName().'.import')), 'audit' => ! empty(config('resource_features.'.$this->resource->uiResourceName().'.audit'))], 'fields' => (object) $fields, 'relations' => (object) $relations, 'picker' => $this->resource->uiPicker(), 'labels' => (object) config('ui.options', [])];
     }
 
     /** @return list<array{value: string|int, label: string}> */

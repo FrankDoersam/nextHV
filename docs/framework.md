@@ -1708,3 +1708,31 @@ Aktivierung ausschließlich in `config/resource_features.php`: Resource-Klasse, 
 Der `AuditObserver` erfasst `created`, `updated`, `deleted`, `restored` mit Akteur und Vorher-/Nachher-Werten. Er schreibt synchron auf derselben DB-Verbindung; innerhalb der bestehenden REST-Schreibtransaktion werden Audit und Fachänderung gemeinsam zurückgerollt. Eigene Jobs/Actions müssen ihre fachlichen Writes wie üblich in einer Transaktion ausführen; direkte Query-Builder-Updates ohne Modellereignisse werden nicht erfasst. Systemänderungen haben den Akteur „System“. Die Vergangenheit wird nicht rekonstruiert.
 
 Nach `php artisan migrate --force` erscheint der Tab bei Ressourcen mit `features.audit`. `auditTabs(resource, id)` integriert den lazy geladenen Verlauf in Detailseiten; `<AuditTimeline resource={resource} id={id} />` kann auch in einem Sheet benutzt werden. Der lesende Endpoint prüft den Zugriff über die native REST-Suche und View-Policy. Cursor-Seiten enthalten maximal 20 Einträge; Änderungen am Datensatz invalidieren dessen Historie. Keine Schreib-/Lösch-API für Audit-Einträge, Modelländerung/-löschung blockiert. Das ist eine nachvollziehbare Anwendungshistorie, keine revisionssichere oder gegen Datenbankadministratoren manipulationsgeschützte Archivierung.
+
+## 44. CSV-Import mit Zuordnung und Relationsvorschau
+
+`CsvImportDialog` ist ein gemeinsam genutzter, lazy geladener Dialog. `ResourceCollection` zeigt ihn automatisch für serverseitig freigegebene Ressourcen und vorhandene Create-Berechtigung. `importable={false}` blendet ihn aus. In eingebetteten, durch Elternfilter eingeschränkten Tabellen ist er standardmäßig aus: Ein Import darf keine scheinbar gesperrte Elternbeziehung umgehen. Für andere DataProvider ist dieser Laravel-Import nicht automatisch aktiviert.
+
+Die Freigabe liegt in `config/resource_features.php`; Objekte und Einheiten sind eingerichtet:
+
+```php
+'import' => [
+    'fields' => ['property_id', 'code', 'name', 'type', 'area'],
+    'relations' => [
+        'property_id' => [
+            'resource' => PropertyResource::class,
+            'match' => ['code', 'name'],
+        ],
+    ],
+],
+```
+
+Die Liste ist eine Importfreigabe, kein zweites Validierungsschema. Beschriftungen, Typen, Enum-Bezeichnungen und Schreibrechte stammen aus PHP-REST-Feldern. `ImportMutationRequest` verwendet die native Mutation-Pipeline; gleiche Serverregeln, Policies, Model-Observer und Transaktionen wie die normale Anlage. Bei weiteren Ressourcen muss die Freigabe alle fachlich notwendigen Anlagefelder umfassen. Diese Version legt neue Datensätze an; kein verdecktes Upsert, keine verschachtelte Vertragsanlage per CSV.
+
+Ablauf: Datei prüfen → Zuordnung (automatisch vorgeschlagen anhand Feldname oder Beschriftung) → Relation über ein freigegebenes Merkmal suchen → Vorschau mit aufgelöstem Titel und Fehlern je Datensatz/Feld → verbindlich übernehmen. Relationen werden exakt innerhalb der nativen Such-/Policy-Grenzen gesucht, pro identischem Suchwert zwischengespeichert; null oder mehrere Treffer blockieren. Bei Übernahme werden Sichtbarkeit und Geschäftsregeln erneut geprüft. Geschäftsregeln in Mutation-Hooks werden erst bei der Übernahme ausgeführt; die Vorschau behauptet keine vollständige Simulation.
+
+Grenzen: UTF-8 mit optionalem BOM, Komma/Semikolon/Tab, korrekt gequotete Zellen einschließlich Zeilenumbrüchen, maximal 2 MB / 100 Datensätze / 50 Spalten / 10.000 Zeichen je Zelle. Deutsche Enum-Titel, Ja/Nein und `dd.MM.yyyy` werden normalisiert. Zahlen akzeptieren Dezimalpunkt oder -komma, keine mehrdeutigen Tausendertrennzeichen. Es gibt keinen zweiten Client-Validator für Fachregeln.
+
+Die geprüfte Nutzlast liegt verschlüsselt in `import_batches`; der Bestätigungsschlüssel ist an Benutzer und Ressource gebunden und 15 Minuten gültig. Ein transaktionaler Lock und gespeichertes Ergebnis machen wiederholte Bestätigung idempotent. Nach Erfolg wird die Nutzlast geleert. Bei einem Fehler werden alle Fachänderungen und Audit-Einträge zurückgerollt. Der täglich geplante `model:prune` entfernt abgelaufene Batches nach einem Tag; dafür muss der Laravel-Scheduler laufen. Große Hintergrundimporte und dauerhafte Importhistorie sind bewusst nicht Teil dieses synchronen Dialogs.
+
+Deployment: `php artisan migrate --force`. Tests decken Zuordnung, aufgelöste/mehrdeutige/gelöschte Beziehungen, Benutzerbindung, Ablauf, Opt-in/Create-Policy, native Fehler, atomaren Rollback und doppelte Bestätigung ab.

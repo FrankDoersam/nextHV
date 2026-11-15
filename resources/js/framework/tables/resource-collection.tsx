@@ -20,7 +20,7 @@ import { useResourceTable } from "./use-resource-table";
 import { exportRows } from "./export";
 import { cn } from "@/lib/utils";
 import { isRowActivationEvent } from "@/lib/row-interaction";
-import { Download, X, Ellipsis } from "lucide-react";
+import { Download, Upload, X, Ellipsis } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -57,7 +57,15 @@ import {
     type ColumnPinningState,
 } from "@tanstack/react-table";
 import { ListFilter, Plus, RefreshCw, Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    lazy,
+    Suspense,
+    type ReactNode,
+} from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { useReload } from "../data/hooks";
@@ -72,6 +80,11 @@ import type {
     Values,
 } from "../types";
 import { useWorkbench } from "../workbench";
+const CsvImportDialog = lazy(() =>
+    import("@/components/blocks/csv-import-dialog").then((module) => ({
+        default: module.CsvImportDialog,
+    })),
+);
 const EMPTY_ROWS: RecordData[] = [];
 export function RowActions({
     resource,
@@ -126,6 +139,7 @@ export function ResourceCollection({
     groupable = !compact,
     columnChooser = true,
     exportable = true,
+    importable = !compact && !context && fixedFilters.length === 0,
     refreshable = true,
     toolbar = true,
     tabIcons = true,
@@ -151,6 +165,12 @@ export function ResourceCollection({
     createForm?: RelationFormOptions;
     editForm?: Omit<RelationFormOptions, "flow">;
 } & CollectionOptions) {
+    const [importOpen, setImportOpen] = useState(false);
+    const canImport =
+        importable &&
+        resource.features?.import &&
+        (!resource.dataProvider || resource.dataProvider === "default") &&
+        can(resource.name, "create");
     const i18n = useGridI18n();
     const { t } = useI18n();
     const navigate = useNavigate();
@@ -891,6 +911,16 @@ export function ResourceCollection({
                         target={{ resource, rows: [], instance }}
                         placement="table"
                     />
+                    {canImport && (
+                        <Button
+                            variant="outline"
+                            size="icon-lg"
+                            aria-label="CSV importieren"
+                            onClick={() => setImportOpen(true)}
+                        >
+                            <Upload />
+                        </Button>
+                    )}
                     {!compactControls && exportable && (
                         <Button
                             variant="outline"
@@ -1457,6 +1487,16 @@ export function ResourceCollection({
                             inverse
                         />
                     </BulkActionBar>
+                )}
+                {importOpen && (
+                    <Suspense fallback={null}>
+                        <CsvImportDialog
+                            resource={resource}
+                            open
+                            onClose={() => setImportOpen(false)}
+                            onImported={onSaved}
+                        />
+                    </Suspense>
                 )}
             </div>
         </DataGrid>

@@ -164,6 +164,7 @@ return [
         'roles' => 'Rollen', 'terminations' => 'Kündigungen', 'links' => 'Vertragsverknüpfungen', 'identityDocuments' => 'Ausweise',
     ],
     'attributes' => [
+        'file' => 'Datei', 'mapping' => 'Feldzuordnung', 'column' => 'CSV-Spalte', 'token' => 'Importbestätigung', 'query' => 'Suchbegriff',
         'code' => 'Nummer', 'name' => 'Bezeichnung', 'title' => 'Bezeichnung', 'status' => 'Status', 'type' => 'Art',
         'property_id' => 'Objekt', 'unit_id' => 'Einheit', 'contract_id' => 'Vertrag', 'related_contract_id' => 'Verknüpfter Vertrag',
         'business_partner_id' => 'Geschäftspartner', 'role' => 'Rolle', 'is_primary' => 'Hauptansprechpartner',
