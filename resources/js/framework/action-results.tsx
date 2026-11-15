@@ -1,9 +1,8 @@
-import { lazy, Suspense } from "react";
+import { PdfPreviewSheet } from "@/components/blocks/pdf-preview-sheet";
 import { Overlay } from "@/components/blocks/overlay";
-import { DetailList, Loading } from "@/components/blocks/content";
+import { DetailList } from "@/components/blocks/content";
 import { Button } from "@/components/ui/button";
 export { safeDocumentUrl } from "./data/documents";
-const PdfViewer = lazy(() => import("@/components/blocks/pdf-viewer"));
 import type { Values } from "./types";
 export type ActionUIResult =
     | {
@@ -11,6 +10,7 @@ export type ActionUIResult =
           title: string;
           url: string;
           mime: "application/pdf";
+          presentation?: "sheet" | "dialog";
           name: string;
       }
     | {
@@ -43,7 +43,10 @@ export function actionResult(response: unknown): ActionUIResult | undefined {
         typeof ui.url === "string" &&
         ui.mime === "application/pdf" &&
         typeof ui.title === "string" &&
-        typeof ui.name === "string"
+        typeof ui.name === "string" &&
+        (ui.presentation === undefined ||
+            ui.presentation === "sheet" ||
+            ui.presentation === "dialog")
     )
         return ui;
     if (
@@ -70,31 +73,28 @@ export function ActionResultOverlay({
     result: Exclude<ActionUIResult, { type: "form-patch" }>;
     onClose: () => void;
 }) {
+    if (result.type === "document") {
+        return (
+            <PdfPreviewSheet
+                url={result.url}
+                name={result.name}
+                title={result.title}
+                presentation={result.presentation}
+                onClose={onClose}
+            />
+        );
+    }
     return (
         <Overlay
             open
             onClose={onClose}
             presentation="dialog"
-            size={result.type === "document" ? "wide" : "compact"}
+            size="compact"
             title={result.title}
-            description={
-                result.type === "details"
-                    ? result.message
-                    : "Geschützter Objektbericht"
-            }
+            description={result.message}
             footer={<Button onClick={onClose}>Schließen</Button>}
         >
-            {result.type === "document" ? (
-                <Suspense fallback={<Loading />}>
-                    <PdfViewer
-                        url={result.url}
-                        name={result.name}
-                        title={result.title}
-                    />
-                </Suspense>
-            ) : (
-                <DetailList items={result.items} />
-            )}
+            <DetailList items={result.items} />
         </Overlay>
     );
 }

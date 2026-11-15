@@ -29,7 +29,7 @@ class CreatePropertyReport extends Action
     public function handle(ActionFields $fields, Collection $models): void
     {
         $property = $models->first();
-        $this->result = ['ui' => ['type' => 'document', 'title' => 'Objektbericht · '.$property->name, 'mime' => 'application/pdf', 'name' => 'objekt-'.$property->id.'.pdf', 'url' => URL::temporarySignedRoute('properties.report', now()->addMinutes(10), ['property' => $property->id, 'user' => request()->user()->id], absolute: false)]];
+        $this->result = ['ui' => ['type' => 'document', 'presentation' => 'sheet', 'title' => 'Objektbericht · '.$property->name, 'mime' => 'application/pdf', 'name' => 'objekt-'.$property->id.'.pdf', 'url' => URL::temporarySignedRoute('properties.report', now()->addMinutes(10), ['property' => $property->id, 'user' => request()->user()->id], absolute: false)]];
     }
 
     public function respond(ActionFields $fields, int $impacted): ?ActionResponse

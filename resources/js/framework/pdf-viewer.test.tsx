@@ -81,3 +81,34 @@ describe("PDF reader", () => {
         expect(fetch).not.toHaveBeenCalled();
     });
 });
+
+it("opens document action results in a managed sheet and rejects unknown presentations", async () => {
+    const { ActionResultOverlay, actionResult } =
+        await import("./action-results");
+    const result = {
+        type: "document" as const,
+        url: "/api/v1/report.pdf",
+        name: "Objekt.pdf",
+        title: "Objektbericht",
+        mime: "application/pdf" as const,
+    };
+    expect(() =>
+        actionResult({
+            data: {
+                result: {
+                    data: { ui: { ...result, presentation: "external" } },
+                },
+            },
+        }),
+    ).toThrow();
+    const onClose = vi.fn();
+    render(<ActionResultOverlay result={result} onClose={onClose} />);
+    const dialog = await screen.findByRole("dialog", { name: "Objektbericht" });
+    expect(dialog).toHaveAttribute("data-slot", "sheet-content");
+    expect(await screen.findByLabelText("PDF-Seitenansicht")).toBeVisible();
+    expect(dialog.querySelector('[data-slot="overlay-body"]')).toHaveClass(
+        "overflow-hidden",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Schließen" }));
+    expect(onClose).toHaveBeenCalledOnce();
+});

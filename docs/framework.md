@@ -1736,3 +1736,24 @@ Grenzen: UTF-8 mit optionalem BOM, Komma/Semikolon/Tab, korrekt gequotete Zellen
 Die geprüfte Nutzlast liegt verschlüsselt in `import_batches`; der Bestätigungsschlüssel ist an Benutzer und Ressource gebunden und 15 Minuten gültig. Ein transaktionaler Lock und gespeichertes Ergebnis machen wiederholte Bestätigung idempotent. Nach Erfolg wird die Nutzlast geleert. Bei einem Fehler werden alle Fachänderungen und Audit-Einträge zurückgerollt. Der täglich geplante `model:prune` entfernt abgelaufene Batches nach einem Tag; dafür muss der Laravel-Scheduler laufen. Große Hintergrundimporte und dauerhafte Importhistorie sind bewusst nicht Teil dieses synchronen Dialogs.
 
 Deployment: `php artisan migrate --force`. Tests decken Zuordnung, aufgelöste/mehrdeutige/gelöschte Beziehungen, Benutzerbindung, Ablauf, Opt-in/Create-Policy, native Fehler, atomaren Rollback und doppelte Bestätigung ab.
+
+## 45. Dokument-Actions und PDF-Vorschau im Sheet
+
+Die Objektaktion `report` gibt ein typisiertes Dokumentergebnis mit `presentation: 'sheet'` zurück. `ActionResultOverlay` leitet PDF-Ergebnisse zentral an `PdfPreviewSheet` weiter; neue Berichte brauchen keine eigene Seitendarstellung. Optional ist `presentation: 'dialog'` möglich. Unbekannte Präsentationswerte werden abgewiesen.
+
+```php
+'ui' => [
+    'type' => 'document',
+    'presentation' => 'sheet',
+    'title' => 'Objektbericht',
+    'mime' => 'application/pdf',
+    'name' => 'objekt-42.pdf',
+    'url' => $protectedSignedUrl,
+],
+```
+
+Angelehnt an das Architekturprinzip aus s4v2: Action und geschützter Controller → `BuildPropertyReport` sammelt Fachwerte → `Reports/PropertyReport` rendert → `StructuredPdfReport` stellt Ränder, Schrift, wiederholte Tabellenköpfe, Wortumbruch und Seitenzahlen bereit. Der Renderer führt keine Datenbankabfragen aus. Der Objektbericht enthält Überblick, Vertragskennzahlen und eine vollständige, bei Bedarf mehrseitige Einheitenliste. Die tatsächliche Bedeutung der Kennzahlen bleibt beschrieben; ein Hochrechnungswert wird nicht als Zahlungseingang ausgegeben.
+
+Die gemeinsame Overlay-Komponente bietet `bodyInset` und `bodyScroll="managed"`, damit Vorschauen eine stabile Fläche ohne doppelte Scrollcontainer verwenden. Das Sheet hat Titel, Dateiname und die zentralen Werkzeuge Aktualisieren, Öffnen und Download. Lade- und Fehlerzustand samt Wiederholen gehören zum Viewer. Beim Schließen oder Quellenwechsel werden Requests abgebrochen und Blob-URLs freigegeben.
+
+Es wird weiterhin **keine zusätzliche PDF-Bibliothek** geladen: Browser-PDF-Anzeige mit nativer Zoom-/Druckbedienung und Öffnen/Download als Fallback. Die konkrete Zoom-Oberfläche ist browserabhängig, kein eigener Canvas-Renderer. Quellen bleiben auf geschützte API-URLs derselben Herkunft begrenzt; Backend prüft Sitzung, Signatur, Benutzerbindung und View-Policy, liefert `no-store` und `nosniff`. Die PDF-Ausgabe wurde mit langen Bezeichnungen und mehreren Seiten gerendert und visuell geprüft.

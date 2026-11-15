@@ -39,7 +39,11 @@ export function Overlay({
     footerStart,
     sidebar,
     tabs,
+    bodyInset = true,
+    bodyScroll = "auto",
 }: {
+    bodyInset?: boolean;
+    bodyScroll?: "auto" | "managed";
     open: boolean;
     onClose: () => void;
     title: string;
@@ -105,6 +109,9 @@ export function Overlay({
                     className={cn(
                         "@container/form min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain bg-card px-5 py-6 sm:px-6",
                         wizard && "py-5 sm:py-5",
+                        !bodyInset && "p-0 sm:p-0",
+                        bodyScroll === "managed" &&
+                            "flex flex-col overflow-hidden",
                     )}
                 >
                     {tabs ? (
