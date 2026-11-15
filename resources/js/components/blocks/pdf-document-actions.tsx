@@ -24,7 +24,7 @@ export function PdfDocumentActions({
                 disabled={loading}
                 onClick={onReload}
             >
-                <RefreshCw className={loading ? "animate-spin" : undefined} />
+                <RefreshCw />
             </Button>
             {url && (
                 <>

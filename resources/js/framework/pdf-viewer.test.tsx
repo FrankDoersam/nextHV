@@ -335,7 +335,11 @@ it("opens the final PDF sheet before the report resolves and retains it through 
     const sheet = screen.getByRole("dialog", { name: "Objektbericht" });
     expect(sheet).toHaveAttribute("data-slot", "sheet-content");
     expect(within(sheet).getByRole("status", { name: "PDF wird geladen" }))
-        .toHaveTextContent("Bericht wird vorbereitet");
+        .toHaveTextContent("Bericht wird erstellt");
+    expect(within(sheet).queryByRole("progressbar")).not.toBeInTheDocument();
+    expect(sheet.querySelector('[data-slot="skeleton"]')).toBeNull();
+    expect(sheet.querySelector('[data-slot="pdf-preview-loading"]'))
+        .toHaveAttribute("aria-busy", "true");
     expect(within(sheet).queryByLabelText("PDF-Seite 1")).not.toBeInTheDocument();
     await waitFor(() => expect(action.execute).toHaveBeenCalledOnce());
 
@@ -346,6 +350,46 @@ it("opens the final PDF sheet before the report resolves and retains it through 
         .not.toBeInTheDocument();
     expect(within(sheet).getByRole("link", { name: "PDF herunterladen" }))
         .toHaveAttribute("download", "Objekt.pdf");
+});
+
+it("shows the actual byte percentage while downloading, never a fake preparation percentage", async () => {
+    vi.stubGlobal("TransformStream", NodeTransformStream);
+    let finishDownload!: () => void;
+    const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+            controller.enqueue(new TextEncoder().encode("%PDF"));
+            finishDownload = () => {
+                controller.enqueue(new TextEncoder().encode("-1.7"));
+                controller.close();
+            };
+        },
+    });
+    vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(stream, {
+            headers: {
+                "Content-Type": "application/pdf",
+                "Content-Length": "8",
+            },
+        }),
+    );
+    render(
+        <PdfPreviewSheet
+            title="Objektbericht"
+            url="/api/v1/report.pdf"
+            onClose={vi.fn()}
+        />,
+    );
+    const sheet = screen.getByRole("dialog", { name: "Objektbericht" });
+    await waitFor(() =>
+        expect(within(sheet).getByRole("progressbar", { name: "PDF-Übertragung" }))
+            .toHaveAttribute("value", "50"),
+    );
+    expect(within(sheet).getByRole("status", { name: "PDF wird geladen" }))
+        .toHaveTextContent("PDF wird übertragen");
+    expect(sheet.querySelector('[data-slot="skeleton"]')).toBeNull();
+    await act(async () => { finishDownload(); });
+    await renderedFirstPage();
+    expect(screen.getByRole("dialog", { name: "Objektbericht" })).toBe(sheet);
 });
 
 it("opens reports directly, retries in-place and never reloads the underlying table", async () => {

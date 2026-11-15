@@ -61,7 +61,11 @@ test("global records, audit, mapped relation import and protected PDF sheet work
     const pdf = page.getByRole("dialog");
     await expect(pdf).toHaveAttribute("data-slot", "sheet-content");
     await expect(pdf.getByRole("status", { name: "PDF wird geladen" }))
-        .toContainText("Bericht wird vorbereitet");
+        .toContainText("Bericht wird erstellt");
+    await expect(pdf.locator('[data-slot="pdf-preview-loading"]'))
+        .toHaveAttribute("aria-busy", "true");
+    await expect(pdf.locator('[data-slot="skeleton"]')).toHaveCount(0);
+    await expect(pdf.getByRole("progressbar")).toHaveCount(0);
     await expect(pdf.getByLabel("PDF-Seite 1", { exact: true })).toHaveCount(0);
     await pdf.evaluate((node) => node.setAttribute("data-same-pdf-sheet", "true"));
     await capture("03-pdf-sheet-loading");

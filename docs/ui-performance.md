@@ -19,8 +19,14 @@ der Vorschau geladen, während der Backend-Bericht vorbereitet bzw. die PDF
 Authentifizierung, `no-store`, MIME-Prüfung und Abbruch bei Schließen.
 Bei bekanntem `Content-Length` wird ein nativer Stream mit gedrosselter
 Fortschrittsanzeige verwendet; ohne Größenangabe gibt es einen neutralen
-Ladezustand. Vorschau und Download verwenden denselben Blob, der nach
-Schließen freigegeben wird. Es findet kein zweiter PDF-Fetch statt.
+Ladezustand. Für die serverseitige Erstellung und das Rendern (unbekannte Dauer)
+zeigt das sofort geöffnete Sheet eine dezente, unbestimmte Ladeanzeige mit
+konkreter Phase. Nur die echte Byte-Übertragung erhält bei bekanntem
+`Content-Length` eine Prozentanzeige. Keine simulierten Fortschrittswerte,
+fiktiven PDF-Seiten oder Skeleton-Werkzeugleisten. Die Statusregion ist
+barrierefrei beschriftet und respektiert reduzierte Bewegungen.
+Vorschau und Download verwenden denselben Blob, der nach Schließen
+freigegeben wird. Es findet kein zweiter PDF-Fetch statt.
 
 ## Selects und Relationen
 
