@@ -1812,7 +1812,9 @@ Der neue `GET .../import/schema` liefert Felder, Pflichtfeldhinweise, Enum-Optio
 
 Reports verwenden einen eigenen, rein lesenden Action-Ablauf: Ein Klick öffnet sofort das endgültige Sheet. Vorbereitung, Serverfehler mit Wiederholen und PDF-Ansicht bleiben in derselben Oberfläche. Es gibt keinen zusätzlichen Bestätigungsdialog und keinen automatischen Tabellen-/Formular-Reload. Neue Berichte benötigen keine eigene Seite oder Sheet-Implementierung.
 
-Der Objektbericht trennt wie s4v2 `BuildPropertyReport` (nur fachliche Projektion), `PropertyReport` (Inhalt), `StructuredPdfReport` (Textfluss, Tabellen, wiederholte Tabellenköpfe, Seitenumbrüche) und `ReportPdfDocument` (FPDF, Kopf/Fuß, Zeichencodierung). Da nextHV noch kein Organisationsprofil besitzt, bleibt der Dokumentfuß auf die bisherige nextHV-Kennung beschränkt.\n\nBackend: `PdfReportAction` setzt Einzelziel und View-Autorisierung. Die konkrete Action implementiert `report(Model $model, ActionFields $fields): DocumentResult`. `CreatePropertyReport` erzeugt eine benutzergebundene, zehn Minuten gültige Signatur für den geschützten Report-Controller. `DocumentResult` validiert lokale API-Quelle, Download-Dateiname und Präsentation und liefert den bestehenden `ui.type = document`-Vertrag:
+Der Objektbericht trennt wie s4v2 `BuildPropertyReport` (nur fachliche Projektion), `PropertyReport` (Inhalt), `StructuredPdfReport` (Textfluss, Tabellen, wiederholte Tabellenköpfe, Seitenumbrüche) und `ReportPdfDocument` (FPDF, Kopf/Fuß, Zeichencodierung). Da nextHV noch kein Organisationsprofil besitzt, bleibt der Dokumentfuß auf die bisherige nextHV-Kennung beschränkt.
+
+Backend: `PdfReportAction` setzt Einzelziel und View-Autorisierung. Die konkrete Action implementiert `report(Model $model, ActionFields $fields): DocumentResult`. `CreatePropertyReport` erzeugt eine benutzergebundene, zehn Minuten gültige Signatur für den geschützten Report-Controller. `DocumentResult` validiert lokale API-Quelle, Download-Dateiname und Präsentation und liefert den bestehenden `ui.type = document`-Vertrag:
 
 ```php
 return new DocumentResult(
