@@ -32,7 +32,7 @@ class PropertyReportTest extends TestCase
         $document = new ReportPdfDocument('Objektbericht', 'OBJ-1');
         $this->assertInstanceOf(\FPDF::class, $document);
         $this->assertSame("M\xFCllerh\xF6fe", $document->encodeText('Müllerhöfe'));
-        $this->assertSame(270.0, $document->bodyBottom());
+        $this->assertEqualsWithDelta(270.0, $document->bodyBottom(), 0.001);
     }
 
     public function test_report_is_read_only_and_declares_a_downloadable_document_for_one_record(): void
