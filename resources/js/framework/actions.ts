@@ -39,7 +39,7 @@ export abstract class ResourceAction {
     visible(_row?: RecordData): boolean {
         return true;
     }
-    abstract execute(context: ActionContext): Promise<unknown>;
+    abstract execute(context: ActionContext, signal?: AbortSignal): Promise<unknown>;
 }
 export class EditAction extends ResourceAction {
     id = "edit";
@@ -186,12 +186,13 @@ export abstract class ReportAction extends ResourceAction {
             "Bitte genau einen Datensatz auswählen."
         );
     }
-    async execute({ resource, rows, values }: ActionContext): Promise<unknown> {
+    async execute({ resource, rows, values }: ActionContext, signal?: AbortSignal): Promise<unknown> {
         return resolveDataProvider(resource).action(
             resource.name,
             this.id,
             rows,
             values,
+            signal,
         );
     }
 }

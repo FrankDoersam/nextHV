@@ -2,16 +2,13 @@ import { useGridI18n, useI18n } from "../i18n";
 import { usePermissionRevision } from "../permissions";
 import { CellRenderer } from "./cell-renderer";
 import { recordValue } from "./cell-value";
-import { CollectionViews, collectionViewTabId } from "./collection-views";
 import { DirectFilters, supportsDirectFilter } from "./direct-filters";
 import { GridCellSkeleton } from "@/components/blocks/collection-loading";
 import { resolveColumnLayout, stackRecordColumns } from "./column-layout";
 import { ResponsiveRecordList } from "./responsive-record-list";
 import { TableViewport } from "./table-viewport";
-import { useLayoutEffect, useId } from "react";
+import { useLayoutEffect } from "react";
 import { CollectionSurface } from "@/components/blocks/collection-surface";
-import { CollectionKpis } from "@/components/blocks/collection-kpis";
-import { useCollectionSummary } from "../data/hooks";
 import { BulkActionBar } from "@/components/blocks/bulk-action-bar";
 import { ActionMenu, ActionButtons } from "../action-controls";
 import type { ActionPlacement } from "../actions";
@@ -142,9 +139,6 @@ export function ResourceCollection({
     importable = !compact && !context && fixedFilters.length === 0,
     refreshable = true,
     toolbar = true,
-    tabIcons = true,
-    summary = !compact,
-    views: configuredViews = compact ? false : resource.views,
     toolbarFilters: directFields = resource.toolbarFilters ?? [],
     viewMode = "page",
     actions,
@@ -174,13 +168,13 @@ export function ResourceCollection({
     const i18n = useGridI18n();
     const { t } = useI18n();
     const navigate = useNavigate();
-    const panelId = useId();
     const workbench = useWorkbench();
     const reload = useReload();
     const controller = useResourceTable({
         resource,
         fixedFilters,
-        views: configuredViews,
+        // No list tabs: fetch only the active table when its page mounts.
+        views: false,
         pagination: paginationConfig,
         filters: filterPresets,
         sorters: sortPresets,
@@ -198,11 +192,7 @@ export function ResourceCollection({
         update,
         clearQuery,
         query,
-        activeView,
-        views,
-        scopedQuery,
         filterDefinitions,
-        apiFilters,
         result,
         groupResult,
         effectiveGroup,
@@ -210,7 +200,6 @@ export function ResourceCollection({
     const paging = controller.paginationEnabled;
     const {
         search,
-        view,
         pagination,
         sorting,
         columnVisibility,
@@ -316,11 +305,6 @@ export function ResourceCollection({
                 (direct) => direct.field === definition.field,
             ),
     );
-    const rollups = useCollectionSummary(
-        resource,
-        { query: scopedQuery, filters: apiFilters },
-        summary,
-    );
     const rows = result.data?.data ?? EMPTY_ROWS;
     useEffect(() => {
         if (paging && !result.isFetching && result.data && query === search) {
@@ -381,7 +365,6 @@ export function ResourceCollection({
         group,
         JSON.stringify(filters),
         JSON.stringify(fixedFilters),
-        activeView?.id,
     ]);
     const tableRef = useRef<unknown>(null);
     const instance: Partial<ResourceInstance> = {
@@ -951,8 +934,7 @@ export function ResourceCollection({
                             size="icon-lg"
                             onClick={() => {
                                 void result.refetch();
-                                if (summary && resource.summary)
-                                    void rollups.refetch();
+
                             }}
                             aria-label="Aktualisieren"
                         >
@@ -981,8 +963,7 @@ export function ResourceCollection({
                                     <DropdownMenuItem
                                         onClick={() => {
                                             void result.refetch();
-                                            if (summary && resource.summary)
-                                                void rollups.refetch();
+
                                         }}
                                     >
                                         <RefreshCw />
@@ -1115,47 +1096,8 @@ export function ResourceCollection({
                             {resource.label} werden geladen.
                         </span>
                     )}
-                    <CollectionSurface
-                        compact={compact}
-                        summary={
-                            summary && resource.summary ? (
-                                <CollectionKpis
-                                    definition={resource.summary}
-                                    values={rollups.data?.data}
-                                    loading={rollups.isPending}
-                                    refreshing={rollups.isFetching}
-                                    error={rollups.error}
-                                    retry={() => rollups.refetch()}
-                                />
-                            ) : undefined
-                        }
-                        navigation={
-                            views.length > 0 ? (
-                                <CollectionViews
-                                    icons={tabIcons}
-                                    panelId={panelId}
-                                    resource={resource}
-                                    views={views}
-                                    active={activeView!.id}
-                                    fixedFilters={fixedFilters}
-                                    onChange={(next) =>
-                                        update("view", next, true)
-                                    }
-                                />
-                            ) : undefined
-                        }
-                    >
+                    <CollectionSurface compact={compact}>
                         <div
-                            id={panelId}
-                            role={views.length ? "tabpanel" : undefined}
-                            aria-labelledby={
-                                views.length
-                                    ? collectionViewTabId(
-                                          panelId,
-                                          activeView!.id,
-                                      )
-                                    : undefined
-                            }
                             className="relative flex min-w-0 flex-col md:min-h-0 md:flex-1"
                         >
                             {toolbar && (

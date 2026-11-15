@@ -30,7 +30,11 @@ const FormLayer = lazy(() =>
 const ActionDialog = lazy(() =>
     import("./forms/action-dialog").then((m) => ({ default: m.ActionDialog })),
 );
-import { ReportActionSheet } from "./report-action-sheet";
+const ReportActionSheet = lazy(() =>
+    import("./report-action-sheet").then((module) => ({
+        default: module.ReportActionSheet,
+    })),
+);
 import { Loading, ErrorState } from "@/components/blocks/content";
 import { ErrorBoundary } from "@/components/blocks/error-boundary";
 import { isChunkLoadError } from "./chunk-recovery";
@@ -481,14 +485,20 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
                     fallback={
                         <Overlay
                             open
-                            title="Formular wird geladen"
+                            title={
+                                action?.definition.interaction === "report"
+                                    ? "Bericht wird geöffnet"
+                                    : "Formular wird geladen"
+                            }
                             onClose={() =>
                                 panels.length
                                     ? closeAt(panels.length - 1)
                                     : setAction(null)
                             }
                             presentation={
-                                panels.at(-1)?.presentation ?? "dialog"
+                                action?.definition.interaction === "report"
+                                    ? "sheet"
+                                    : (panels.at(-1)?.presentation ?? "dialog")
                             }
                         >
                             <Loading />

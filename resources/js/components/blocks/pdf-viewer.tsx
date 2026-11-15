@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { usePdfDocument } from "@/framework/data/use-pdf-document";
 import { ErrorState, Loading } from "./content";
 import { PdfDocumentActions } from "./pdf-document-actions";
@@ -19,6 +19,10 @@ export default function PdfViewer({
     fill?: boolean;
     showName?: boolean;
 }) {
+    useEffect(() => {
+        void import("./pdf-canvas-preview").catch(() => undefined);
+        void import("pdfjs-dist/legacy/build/pdf.mjs").catch(() => undefined);
+    }, []);
     const document = usePdfDocument(url);
     return (
         <section

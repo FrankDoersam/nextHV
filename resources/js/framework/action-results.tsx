@@ -1,4 +1,10 @@
-import { PdfPreviewSheet } from "@/components/blocks/pdf-preview-sheet";
+import { lazy, Suspense } from "react";
+import { Loading } from "@/components/blocks/content";
+const PdfPreviewSheet = lazy(() =>
+    import("@/components/blocks/pdf-preview-sheet").then((module) => ({
+        default: module.PdfPreviewSheet,
+    })),
+);
 import { Overlay } from "@/components/blocks/overlay";
 import { DetailList } from "@/components/blocks/content";
 import { Button } from "@/components/ui/button";
@@ -75,13 +81,26 @@ export function ActionResultOverlay({
 }) {
     if (result.type === "document") {
         return (
-            <PdfPreviewSheet
-                url={result.url}
-                name={result.name}
-                title={result.title}
-                presentation={result.presentation}
-                onClose={onClose}
-            />
+            <Suspense fallback={
+                <Overlay
+                    open
+                    onClose={onClose}
+                    title={result.title}
+                    presentation={result.presentation}
+                    size="wide"
+                    fill
+                >
+                    <Loading />
+                </Overlay>
+            }>
+                <PdfPreviewSheet
+                    url={result.url}
+                    name={result.name}
+                    title={result.title}
+                    presentation={result.presentation}
+                    onClose={onClose}
+                />
+            </Suspense>
         );
     }
     return (

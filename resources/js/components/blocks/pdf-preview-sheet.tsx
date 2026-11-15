@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { FileText, LoaderCircle } from "lucide-react";
 import { Overlay } from "./overlay";
 import { ErrorState, Loading } from "./content";
@@ -27,6 +27,12 @@ export function PdfPreviewSheet({
     error?: unknown;
     onRetry?: () => void;
 }) {
+    // Warm PDF.js and the canvas chunk while the signed URL is prepared and
+    // the download is in flight. Keep both out of the initial app bundle.
+    useEffect(() => {
+        void import("./pdf-canvas-preview").catch(() => undefined);
+        void import("pdfjs-dist/legacy/build/pdf.mjs").catch(() => undefined);
+    }, []);
     const document = usePdfDocument(loading ? undefined : url);
     const pending = loading || document.loading;
     const failure = error ?? document.error;
@@ -62,7 +68,21 @@ export function PdfPreviewSheet({
                     className="flex min-h-64 flex-1 items-center justify-center gap-2 bg-muted/30 text-sm text-muted-foreground"
                 >
                     <LoaderCircle className="size-4 animate-spin" />
-                    Bericht wird vorbereitet …
+                    <span>
+                        {loading
+                            ? "Bericht wird vorbereitet …"
+                            : document.progress !== undefined
+                              ? `PDF wird geladen · ${document.progress} %`
+                              : "Dokument wird übertragen …"}
+                    </span>
+                    {!loading && document.progress !== undefined && (
+                        <progress
+                            aria-label="PDF-Downloadfortschritt"
+                            max={100}
+                            value={document.progress}
+                            className="h-1.5 w-24 accent-primary"
+                        />
+                    )}
                 </div>
             ) : (
                 <Suspense fallback={<Loading />}>

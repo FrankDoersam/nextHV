@@ -175,6 +175,7 @@ export const dataProvider = {
         action: string,
         rows: RecordData[],
         values: Values = {},
+        signal?: AbortSignal,
     ) => {
         const path = `/api/v1/${resource}/actions/${action}`;
         const body = {
@@ -188,7 +189,7 @@ export const dataProvider = {
             data: { impacted: number; result?: { data?: { ids: number[] } } };
         };
         try {
-            return await request<ActionResponse>(path, body);
+            return await request<ActionResponse>(path, body, "POST", signal);
         } catch (error) {
             // Only domain actions can require a signed handshake after the user's submit.
             // DELETE is a single request and never enters this path.
@@ -201,7 +202,7 @@ export const dataProvider = {
             return request<ActionResponse>(path, {
                 ...body,
                 confirmation: error.confirmation.token,
-            });
+            }, "POST", signal);
         }
     },
     summary: (

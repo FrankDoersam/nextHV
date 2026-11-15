@@ -2,6 +2,7 @@ import { ChoiceContent } from "./choice-content";
 import { Combobox } from "@base-ui/react/combobox";
 import { Check, ChevronDown, ChevronsUpDown, Search, X } from "lucide-react";
 import {
+    useMemo,
     useRef,
     useState,
     type AriaAttributes,
@@ -80,6 +81,7 @@ export function ChoicePicker({
 }: ChoicePickerProps) {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState("");
+    const [searching, setSearching] = useState(false);
     const anchor = useRef<HTMLDivElement>(null);
     const ids = multiple
         ? Array.isArray(value)
@@ -102,27 +104,41 @@ export function ChoicePicker({
         setQuery(text);
         onSearch?.(text);
     };
+    // The selected label belongs to the field value, not to the transient
+    // search query. Opening the menu must not turn it into an empty input.
+    const matchingOptions = useMemo(() => {
+        if (onSearch || !open || !query.trim()) return options;
+        const term = query.toLocaleLowerCase("de");
+        return options.filter((option) =>
+            `${option.label} ${option.description ?? ""}`
+                .toLocaleLowerCase("de")
+                .includes(term),
+        );
+    }, [onSearch, open, options, query]);
     return (
         <Combobox.Root<ChoiceOption, boolean>
             items={options}
-            filteredItems={visibleOptions ?? (onSearch ? options : undefined)}
-            filter={
-                onSearch
-                    ? null
-                    : (item, search) =>
-                          `${item.label} ${item.description ?? ""}`
-                              .toLocaleLowerCase("de")
-                              .includes(search.toLocaleLowerCase("de"))
-            }
+            filteredItems={visibleOptions ?? matchingOptions}
+            // Filtering is independent of the caption displayed in the input.
+            filter={null}
             multiple={multiple}
             value={multiple ? selected : (selected[0] ?? null)}
             isItemEqualToValue={(a, b) => a.value === b.value}
             itemToStringLabel={(option) => option.label}
             itemToStringValue={(option) => String(option.value)}
-            inputValue={presentation === "input" && !open ? caption : query}
+            inputValue={
+                presentation === "input"
+                    ? !open || !searching
+                        ? caption
+                        : query
+                    : query
+            }
             onInputValueChange={(text, event) => {
-                if (event.reason === "input-change") updateQuery(text);
-            }}
+                if (event.reason === "input-change") {
+                    setSearching(true);
+                    updateQuery(text);
+                }
+            }
             onValueChange={(next, event) => {
                 // Escape closes the surrounding surface; it must never erase a saved selection.
                 if (event.reason === "escape-key") {
@@ -130,21 +146,41 @@ export function ChoicePicker({
                     event.allowPropagation();
                     return;
                 }
+                // Base UI can emit a null selection while editing the search
+                // input. Only an explicit item choice or our clear button may
+                // change the saved field value.
+                if (!Array.isArray(next) && next == null) {
+                    event.cancel();
+                    return;
+                }
                 if (Array.isArray(next)) {
+                    if (
+                        ["input-change", "input-clear"].includes(event.reason)
+                    ) {
+                        event.cancel();
+                        return;
+                    }
                     if (maxSelected && next.length > maxSelected) {
                         event.cancel();
                         return;
                     }
                     onChange(next.map((option) => option.value));
+                    setSearching(false);
                     updateQuery("");
-                } else if (next || clearable) onChange(next?.value ?? null);
-                else event.cancel();
+                } else {
+                    onChange(next.value);
+                    setSearching(false);
+                    updateQuery("");
+                }
             }}
             open={open}
             onOpenChange={(next) => {
                 setOpen(next);
                 onOpenChange?.(next);
-                if (!next) updateQuery("");
+                if (!next) {
+                    setSearching(false);
+                    updateQuery("");
+                }
             }}
             disabled={disabled}
             autoHighlight

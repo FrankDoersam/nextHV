@@ -10,6 +10,7 @@ export function safeDocumentUrl(url: string) {
 export async function fetchPdf(
     url: string,
     signal: AbortSignal,
+    onProgress?: (percent: number) => void,
 ): Promise<Blob> {
     const response = await fetch(safeDocumentUrl(url), {
         credentials: "same-origin",
@@ -25,5 +26,36 @@ export async function fetchPdf(
         );
     if (!response.headers.get("Content-Type")?.startsWith("application/pdf"))
         throw new Error("Die Antwort ist kein PDF-Dokument.");
-    return response.blob();
+    const total = Number(response.headers.get("Content-Length") ?? 0);
+    if (
+        !onProgress ||
+        !Number.isSafeInteger(total) ||
+        total <= 0 ||
+        !response.body ||
+        typeof TransformStream === "undefined"
+    )
+        return response.blob();
+
+    // Track progress without buffering/copying chunks in JavaScript.
+    // Native Response.blob() still owns the byte assembly.
+    let received = 0;
+    let reported = 0;
+    onProgress(0);
+    const stream = response.body.pipeThrough(
+        new TransformStream<Uint8Array, Uint8Array>({
+            transform(chunk, controller) {
+                controller.enqueue(chunk);
+                received += chunk.byteLength;
+                const progress = Math.min(99, Math.floor(received / total * 100));
+                if (progress >= reported + 5) {
+                    reported = progress;
+                    if (!signal.aborted) onProgress(progress);
+                }
+            },
+        }),
+    );
+    const blob = await new Response(stream).blob();
+    signal.throwIfAborted();
+    onProgress(100);
+    return blob;
 }

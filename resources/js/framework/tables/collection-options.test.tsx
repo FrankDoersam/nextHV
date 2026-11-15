@@ -29,6 +29,14 @@ const resource: ResourceDefinition = {
         options: [{ value: "active", label: "Aktiv" }],
     }],
     groupBy: [{ value: "status", label: "Status" }],
+    views: [
+        { id: "all", label: "Alle", count: true },
+        { id: "active", label: "Aktiv", count: true, filters: [{ field: "status", value: "active" }] },
+    ],
+    summary: {
+        metric: "overview",
+        items: [{ key: "total", label: "Bestand", kind: "number" }],
+    },
 };
 
 beforeEach(() => {
@@ -96,4 +104,15 @@ it("supports grouping without filter builder or selection", async () => {
     expect(screen.getByRole("combobox", { name: "Gruppierung" })).toBeVisible();
     expect(screen.queryByRole("combobox", { name: "Filter hinzufügen" })).not.toBeInTheDocument();
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+});
+
+
+it("does not mount collection KPI or view tabs, nor issue their eager requests", async () => {
+    const summaryRequest = vi.spyOn(dataProvider, "summary");
+    mount({ summary: true, views: resource.views, rowSelection: false });
+    await screen.findByText("Objekt Nord");
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+    expect(document.querySelector('[data-slot="collection-kpis"]')).toBeNull();
+    expect(summaryRequest).not.toHaveBeenCalled();
+    expect(vi.mocked(dataProvider.list).mock.calls.every(([, params]) => params?.limit !== 10)).toBe(true);
 });

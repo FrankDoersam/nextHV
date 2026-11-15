@@ -21,7 +21,7 @@ export function ReportActionSheet({
         queryFn: async ({ signal }) => {
             if (actionAvailability(action, context) !== true)
                 throw new Error("Dieser Bericht ist derzeit nicht verfügbar.");
-            const response = await action.execute(context);
+            const response = await action.execute(context, signal);
             signal.throwIfAborted();
             const result = actionResult(response);
             if (result?.type !== "document")

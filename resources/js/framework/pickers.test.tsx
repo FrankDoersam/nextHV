@@ -62,6 +62,37 @@ function SelectDemo(props: Partial<ChoicePickerProps>) {
     );
 }
 describe("searchable choice controls", () => {
+    it("keeps the committed value visible on focus and never clears it while typing a search", async () => {
+        const user = userEvent.setup();
+        render(<SelectDemo />);
+        const input = screen.getByRole("combobox", { name: "Status" });
+        expect(input).toHaveValue("Aktiv");
+        await user.click(input);
+        expect(input).toHaveValue("Aktiv");
+        expect(screen.getByText('"active"', { exact: true })).toBeVisible();
+        expect(await screen.findByRole("option", { name: /Entwurf/ })).toBeVisible();
+        await user.clear(input);
+        expect(input).toHaveValue("");
+        expect(screen.getByText('"active"', { exact: true })).toBeVisible();
+        await user.type(input, "Entw");
+        expect(input).toHaveValue("Entw");
+        expect(screen.getByText('"active"', { exact: true })).toBeVisible();
+        await user.click(await screen.findByRole("option", { name: /Entwurf/ }));
+        expect(input).toHaveValue("Entwurf");
+        expect(screen.getByText('"draft"', { exact: true })).toBeVisible();
+    });
+
+    it("opens a rich selected value without replacing it with an empty input", async () => {
+        const user = userEvent.setup();
+        render(<SelectDemo selectedDisplay="rich" />);
+        const input = screen.getByRole("combobox", { name: "Status" });
+        await user.click(input);
+        expect(input).toHaveValue("Aktiv");
+        expect(screen.getByText('"active"', { exact: true })).toBeVisible();
+        await user.keyboard("{Escape}");
+        expect(input).toHaveValue("Aktiv");
+    });
+
     it("searches on typing after Tab, commits by keyboard and shows only the title when closed", async () => {
         const user = userEvent.setup();
         render(<SelectDemo />);

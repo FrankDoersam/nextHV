@@ -10,13 +10,22 @@ export function usePdfDocument(url?: string) {
         blob?: Blob;
         objectUrl?: string;
         error?: unknown;
+        progress?: number;
     }>();
     useEffect(() => {
         setState(undefined);
         if (!url) return;
         const controller = new AbortController();
+        setState({ url, attempt });
         let objectUrl: string | undefined;
-        fetchPdf(url, controller.signal)
+        fetchPdf(url, controller.signal, (progress) => {
+            if (controller.signal.aborted) return;
+            setState((previous) =>
+                previous?.url === url && previous.attempt === attempt
+                    ? { ...previous, progress }
+                    : previous,
+            );
+        })
             .then((blob) => {
                 if (controller.signal.aborted) return;
                 objectUrl = URL.createObjectURL(blob);
@@ -35,7 +44,7 @@ export function usePdfDocument(url?: string) {
         state?.url === url && state?.attempt === attempt ? state : undefined;
     return {
         ...current,
-        loading: !!url && !current,
+        loading: !!url && !current?.blob && !current?.error,
         reload: () => setAttempt((value) => value + 1),
     };
 }

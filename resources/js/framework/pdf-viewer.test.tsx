@@ -1,5 +1,6 @@
 import React from "react";
 import { Blob as NodeBlob } from "node:buffer";
+import { TransformStream as NodeTransformStream } from "node:stream/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import {
@@ -178,6 +179,28 @@ describe("PDF canvas reader", () => {
         await renderedFirstPage();
         expect(screen.getAllByRole("dialog")).toHaveLength(1);
     });
+    it("tracks protected PDF byte progress without a second fetch or an extra JS byte buffer", async () => {
+        vi.stubGlobal("TransformStream", NodeTransformStream);
+        vi.mocked(fetch).mockResolvedValueOnce(
+            new Response("%PDF-1.7", {
+                headers: {
+                    "Content-Type": "application/pdf",
+                    "Content-Length": "8",
+                },
+            }),
+        );
+        const updates: number[] = [];
+        const blob = await fetchPdf(
+            "/api/v1/report.pdf",
+            new AbortController().signal,
+            (percent) => updates.push(percent),
+        );
+        expect(blob.size).toBe(8);
+        expect(updates[0]).toBe(0);
+        expect(updates.at(-1)).toBe(100);
+        expect(fetch).toHaveBeenCalledOnce();
+    });
+
     it("refuses external sources before fetching", async () => {
         await expect(
             fetchPdf(
@@ -279,7 +302,7 @@ const context: ActionContext = {
 class ExampleReport extends ReportAction {
     id = "report";
     label = "Objektbericht";
-    execute = vi.fn(async () => response);
+    execute = vi.fn(async (_context: ActionContext, _signal?: AbortSignal) => response);
 }
 function mountReport(action: ExampleReport) {
     return render(
@@ -316,6 +339,16 @@ it("opens reports directly, retries in-place and never reloads the underlying ta
     expect(context.instance.reload).not.toHaveBeenCalled();
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
 });
+it("passes the live AbortSignal into report actions and aborts when the sheet closes", async () => {
+    const action = new ExampleReport();
+    const view = mountReport(action);
+    await waitFor(() => expect(action.execute).toHaveBeenCalledOnce());
+    const signal = action.execute.mock.calls[0][1];
+    expect(signal).toBeInstanceOf(AbortSignal);
+    view.unmount();
+    expect(signal?.aborted).toBe(true);
+});
+
 it("closing a pending report prevents a late response from starting a document download", async () => {
     const action = new ExampleReport();
     let resolve!: (value: typeof response) => void;
