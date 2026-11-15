@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDebounced, useResourceList } from "@/framework/data/hooks";
+import { useResourceMany } from "@/framework/data/many";
 import { resolveDataProvider } from "@/framework/data/provider-registry";
 import { recordValue } from "@/framework/tables/cell-value";
 import { can } from "@/framework/permissions";
@@ -87,18 +88,11 @@ export function RelationPicker({
         .map(Number)
         .filter((id) => Number.isInteger(id) && id > 0);
     // One batched hydration request, independent of the current search term.
-    const selected = useResourceList(
-        resource,
-        {
-            filters: [{ field: "id", operator: "in", value: ids }],
-            limit: 100,
-            includes,
-            aggregates: [],
-        },
-        ids.length > 0,
-        false,
-        30_000,
-    );
+    const selected = useResourceMany(resource, ids, {
+        includes,
+        aggregates: [],
+        staleTime: 30_000,
+    });
     const result = useResourceList(
         resource,
         { query, limit: 25, filters, includes, aggregates: [] },
@@ -107,13 +101,10 @@ export function RelationPicker({
         30_000,
     );
     const rows = new Map<number, RecordData>();
-    if (!query)
-        for (const row of selected.data?.data ?? []) rows.set(row.id, row);
+    if (!query) for (const row of selected.records) rows.set(row.id, row);
     for (const row of result.data?.data ?? []) rows.set(row.id, row);
     // The selected title must remain available while a different term is searched.
-    const displayRows = !open
-        ? (selected.data?.data ?? [])
-        : [...rows.values()];
+    const displayRows = !open ? selected.records : [...rows.values()];
     const options: ChoiceOption[] = displayRows.map((row) => ({
         ...optionMeta?.(row),
         value: row.id,
@@ -123,7 +114,7 @@ export function RelationPicker({
     // Retain the caption during loading and for a current value that is no longer available.
     for (const id of ids)
         if (!options.some((option) => option.value === id)) {
-            const row = selected.data?.data.find((record) => record.id === id);
+            const row = selected.records.find((record) => record.id === id);
             options.push({
                 ...(row ? optionMeta?.(row) : {}),
                 value: id,

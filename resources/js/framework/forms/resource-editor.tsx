@@ -13,21 +13,13 @@ import { ChevronLeft, ChevronRight, Save, RefreshCw } from "lucide-react";
 import {
     useEffect,
     useId,
-    useRef,
     useState,
     type ComponentProps,
     type ReactNode,
 } from "react";
-import {
-    FormProvider,
-    useForm,
-    useFormContext,
-    useWatch,
-} from "react-hook-form";
-import { useReload, useSaveRecord } from "../data/hooks";
+import { FormProvider, useFormContext, useWatch } from "react-hook-form";
+import { useReload } from "../data/hooks";
 import { ApiError } from "../data/http";
-import { normalizeValidationErrors } from "../data/provider";
-import { resolveDataProvider } from "../data/provider-registry";
 import { RowActions } from "../tables/resource-collection";
 import { RelationCollection } from "../tables/relation-collection";
 import type { FlowControls } from "./flow";
@@ -37,8 +29,8 @@ import type {
     Values,
     RecordData,
 } from "../types";
-import { initialValues } from "./initial-values";
-import { creationDefaults, creationNames } from "./create-relations";
+import { useResourceForm } from "./use-resource-form";
+import { creationNames } from "./create-relations";
 import { RelationRepeater } from "./relation-repeater";
 export function ResourceEditor({
     request,
@@ -90,30 +82,36 @@ export function ResourceEditor({
           activeTab?.summary ??
           resource.editor?.summary)
         : undefined;
-    const defaults = initialValues(resource.fields, row, request.defaults);
-    const form = useForm<Values>({
-        defaultValues: {
-            ...defaults,
-            ...(!row && !flow ? creationDefaults(resource, defaults) : {}),
-        },
-        shouldUnregister: false,
-        mode: "onBlur",
-    });
-    const [validating, setValidating] = useState(false);
-    const submissionLock = useRef(false);
-    const [working, setWorking] = useState(false);
-    const [completion, setCompletion] = useState<RecordData>();
     const [step, setStep] = useState(0);
-    const [error, setError] = useState<unknown>();
     const [discard, setDiscard] = useState(false);
     const [pendingBack, setPendingBack] = useState(false);
-    const [version, setVersion] = useState(row);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
     const [focusField, setFocusField] = useState<string>();
     const reload = useReload();
-    const saveRecord = useSaveRecord(resource);
-    const dirty = form.formState.isDirty;
-    const busy = working || form.formState.isSubmitting || validating;
+    const {
+        form,
+        version,
+        error,
+        setError,
+        completion,
+        dirty,
+        busy,
+        validating,
+        save,
+        validate,
+        refresh,
+        retryCompletion,
+    } = useResourceForm({
+        ...request,
+        includeCreateRelations: !flow,
+        onInvalid: errorStep,
+        onSaved: async (saved) => {
+            onDirtyChange?.(false);
+            await request.onSaved?.(saved);
+            if (flow) flow.onSaved(saved);
+            else onClose();
+        },
+    });
     useEffect(() => {
         onDirtyChange?.(dirty);
     }, [dirty, onDirtyChange]);
@@ -139,25 +137,7 @@ export function ResourceEditor({
             else onClose();
         }
     };
-    const refresh = async () => {
-        if (!row) return;
-        const latest = await resolveDataProvider(resource).one(
-            resource,
-            row.id,
-        );
-        setVersion(latest);
-        form.reset(
-            initialValues(
-                resource.fields,
-                latest,
-                request.context
-                    ? { [request.context.field]: request.context.id }
-                    : undefined,
-            ),
-            { keepDirtyValues: true },
-        );
-    };
-    const errorStep = (errors: Record<string, unknown>) => {
+    function errorStep(errors: Record<string, unknown>) {
         errors = Object.fromEntries(
             errorPaths(errors).map((name) => [name, true]),
         );
@@ -193,80 +173,9 @@ export function ResourceEditor({
             fields.find((field) => errors[field.name])?.name ??
                 Object.keys(errors)[0],
         );
-    };
-    const complete = async (saved: RecordData) => {
-        try {
-            await request.onSaved?.(saved);
-            if (flow) flow.onSaved(saved);
-            else onClose();
-        } catch (failure) {
-            setError(
-                new Error(
-                    `Der Datensatz wurde gespeichert. Der Folgeschritt ist fehlgeschlagen: ${failure instanceof Error ? failure.message : "Bitte erneut versuchen."}`,
-                ),
-            );
-        }
-    };
-    const retryCompletion = async () => {
-        if (!completion || submissionLock.current) return;
-        submissionLock.current = true;
-        setWorking(true);
-        setError(undefined);
-        try {
-            await complete(completion);
-        } finally {
-            submissionLock.current = false;
-            setWorking(false);
-        }
-    };
-    const save = form.handleSubmit(async (values) => {
-        if (submissionLock.current || completion) return;
-        submissionLock.current = true;
-        setWorking(true);
-        setError(undefined);
-        form.clearErrors();
-        try {
-            const valuesWithContext = {
-                ...values,
-                ...(request.context && request.context.mode !== "prefill"
-                    ? { [request.context.field]: request.context.id }
-                    : {}),
-            };
-            const attributes = request.fields
-                ? Object.fromEntries(
-                      fields
-                          .filter(
-                              (field) =>
-                                  !field.readonlyOnEdit && !field.disabled,
-                          )
-                          .map((field) => [
-                              field.name,
-                              valuesWithContext[field.name],
-                          ]),
-                  )
-                : valuesWithContext;
-            const saved = await saveRecord(attributes, version);
-            setVersion(saved);
-            form.reset(initialValues(resource.fields, saved));
-            onDirtyChange?.(false);
-            setCompletion(saved);
-            await complete(saved);
-        } catch (e) {
-            setError(e);
-            if (e instanceof ApiError) {
-                const errors = normalizeValidationErrors(e.errors);
-                for (const [name, message] of Object.entries(errors))
-                    form.setError(name, { message });
-                errorStep(errors);
-            }
-        } finally {
-            submissionLock.current = false;
-            setWorking(false);
-        }
-    }, errorStep);
+    }
     const next = async () => {
-        if (busy || submissionLock.current || completion) return;
-        submissionLock.current = true;
+        if (busy || completion) return;
         const names = [
             ...fields
                 .filter((f) => (f.group ?? "general") === groups[step].id)
@@ -277,31 +186,8 @@ export function ResourceEditor({
                     creationNames(relation, form.getValues()),
                 ),
         ];
-        setValidating(true);
-        setError(undefined);
-        form.clearErrors(names);
-        try {
-            if (!(await form.trigger(names, { shouldFocus: true }))) return;
-            if (names.length)
-                await resolveDataProvider(resource).validate(
-                    resource,
-                    form.getValues(),
-                    version,
-                    names,
-                );
+        if (await validate(names))
             setStep((current) => Math.min(current + 1, groups.length - 1));
-        } catch (e) {
-            setError(e);
-            if (e instanceof ApiError) {
-                const errors = normalizeValidationErrors(e.errors);
-                for (const [name, message] of Object.entries(errors))
-                    form.setError(name, { type: "server", message });
-                errorStep(errors);
-            }
-        } finally {
-            submissionLock.current = false;
-            setValidating(false);
-        }
     };
     const headerActions = (
         <div className="flex gap-1">

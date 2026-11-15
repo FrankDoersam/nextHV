@@ -47,6 +47,13 @@ export function patchRecord(
             };
         },
     );
+    client.setQueriesData<RecordData[]>(
+        { queryKey: [...base, "many"] },
+        (records) =>
+            records?.some((row) => row.id === record.id)
+                ? records.map((row) => (row.id === record.id ? record : row))
+                : records,
+    );
     // Do not overwrite a mounted editor's local form. On remount it hydrates fresh.
     client.setQueriesData<RecordData>(
         {

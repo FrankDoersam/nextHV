@@ -1676,3 +1676,13 @@ Ein unterbrochener Netzwerkaufruf mit unklarer Serverbestätigung ist dadurch no
 ### Prüfung und Veröffentlichung
 
 Gezielte Regressionstests decken Kontextwechsel, Abbruch, Projektionen, Infinite-Patches, asynchrone Rechte, Sitzungswechsel, direkte Formlinks, Mehrfach-Submit und wiederholbare Nachverarbeitung ab. Die bestehende CI prüft PHP, REST-Vertrag, React, Production Build und Browserabläufe. Performance gegenüber Refine wurde nicht unter vergleichbaren Lastbedingungen gemessen; es wird daher kein pauschaler Geschwindigkeitsvorteil behauptet.
+
+## 40. Headless-Formulare und gezielte Datenabfragen
+
+`useResourceForm` aus `framework/forms/use-resource-form` steuert jetzt auch den Standard-Editor. Eigene Seiten können denselben Controller mit `FormProvider` verwenden: `useResourceForm({resource, row, defaults, context, fields, onSaved, onInvalid, transformValues})`. Der Hook liefert `form`, `save`, `validate(names)`, `refresh`, `retryCompletion`, `busy`, `phase`, `error`, `version` und `completion`. Ein Controller gehört genau zu einem Datensatz; bei Wechsel nach Provider/Ressource/ID remounten. `transformValues` adaptiert Darstellungswerte; die Geschäftsvalidierung bleibt im Backend. Gesperrte Kontextwerte werden nach der Transformation erneut angewendet. Refresh bewahrt Dirty-Felder, nimmt aber die aktuelle Serverversion auf. Ein gespeicherter Datensatz wird bei einem Callback-Fehler nicht erneut angelegt.
+
+`useResourceMany(resource, ids, {includes, aggregates, enabled, staleTime})` hydratisiert ausgewählte Relationen in maximal 100 IDs je Anfrage (insgesamt maximal 1.000). Identische ID-Mengen teilen eine Abfrage unabhängig von ihrer Reihenfolge; `records` bleibt in Auswahlreihenfolge, `missingIds` enthält nicht verfügbare IDs. Der RelationPicker verwendet diesen Hook; erfolgreiche Saves patchen auch diese Caches.
+
+`useInvalidateResource()` liefert eine Funktion `(resource, {kinds, ids, refetchType})`. Beispiele: `{kinds: ['detail', 'many'], ids: [id]}` oder `{kinds: ['list', 'metric', 'view-count']}`. Benannte Provider bleiben getrennt. Panels werden nur mit dem ausdrücklichen Kind `panel` invalidiert. Ohne Kind wird der Ressourcencache aktualisiert, nicht die gesamte Anwendung. `refetchType: 'none'` markiert Daten lediglich als veraltet.
+
+Live-Schnittstellen werden auf ausdrücklichen Wunsch nicht implementiert.
