@@ -1,5 +1,6 @@
 <?php
 
+use App\Framework\FeatureRegistry;
 use App\Models\ImportBatch;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
@@ -24,3 +25,22 @@ Artisan::command('nexthv:admin {email?} {--name=Administrator}', function () {
 })->purpose('Create an application login without a hard-coded password');
 
 Schedule::command('model:prune', ['--model' => ImportBatch::class])->daily();
+
+Artisan::command('framework:check', function (FeatureRegistry $features) {
+    try {
+        foreach ($features->all() as $name => $definition) {
+            $this->line($name.': '.implode(', ', array_filter([
+                $definition['search'] ? 'search' : null,
+                $definition['audit'] ? 'audit' : null,
+                $definition['import'] ? 'import' : null,
+            ])));
+        }
+    } catch (LogicException $exception) {
+        $this->error($exception->getMessage());
+
+        return 1;
+    }
+    $this->info('Model feature definitions are valid.');
+
+    return 0;
+})->purpose('Validate model search, audit and import declarations against the REST schema');

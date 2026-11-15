@@ -2,13 +2,24 @@
 
 namespace App\Models;
 
+use App\Contracts\Framework\DefinesModelFeatures;
+use App\Framework\HasModelFeatures;
+use App\Framework\ModelFeatures;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class BusinessPartner extends Model
+class BusinessPartner extends Model implements DefinesModelFeatures
 {
+    use HasModelFeatures;
     use SoftDeletes;
+
+    public static function framework(): ModelFeatures
+    {
+        return ModelFeatures::make()->label('Geschäftspartner')
+            ->search(subtitle: ['code'], priority: 30)
+            ->audit(fields: ['code', 'display_name', 'kind']);
+    }
 
     protected $guarded = ['id'];
 

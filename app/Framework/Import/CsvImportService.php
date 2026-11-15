@@ -2,7 +2,10 @@
 
 namespace App\Framework\Import;
 
+use App\Framework\FeatureRegistry;
 use App\Rest\Ui\ResourceMetadata;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -12,9 +15,11 @@ use Lomkit\Rest\Fields\WriteOperation;
 
 class CsvImportService
 {
+    public function __construct(private readonly FeatureRegistry $features) {}
+
     public function definition(string $name): array
     {
-        $config = config('resource_features.'.$name);
+        $config = $this->features->get($name);
         abort_unless(is_array($config) && ! empty($config['import']), 404);
         Gate::authorize('create', $config['resource']::$model);
         $resource = new $config['resource'];
@@ -25,14 +30,20 @@ class CsvImportService
                 continue;
             }
             $detail = FieldDetails::of($field)->jsonSerialize();
-            $label = __('validation.attributes.'.$field->name);
+            $relation = $config['import']['relations'][$field->name] ?? null;
+            $target = $relation ? new $relation['resource'] : null;
+            $rules = [...$detail['rules']['all'], ...$detail['rules']['create']];
             $fields[$field->name] = [
                 'name' => $field->name,
-                'label' => str_starts_with($label, 'validation.') ? $detail['label'] : $label,
+                'label' => ResourceMetadata::label($field),
+                'required' => in_array('required', $rules, true),
+                'aliases' => $config['import']['aliases'][$field->name] ?? [],
                 'type' => $detail['type'],
                 'nullable' => $detail['nullable'],
-                'options' => ((array) $metadata['fields'])[$field->name]['options'] ?? [],
-                'match' => $config['import']['relations'][$field->name]['match'] ?? [],
+                'options' => ((array) $metadata['fields'])[$field->name]['offeredOptions'] ?? ((array) $metadata['fields'])[$field->name]['options'] ?? [],
+                'match' => $relation['match'] ?? [],
+                'matchOptions' => array_map(fn (string $match): array => ['value' => $match, 'label' => ResourceMetadata::label($target->definition()->fields()->get($match))], $relation['match'] ?? []),
+                'relation' => $relation ? ['name' => $relation['relation'], 'label' => $this->features->forResource($target)['label']] : null,
             ];
         }
 
@@ -85,17 +96,28 @@ class CsvImportService
         return ['headers' => $headers, 'rows' => $rows];
     }
 
-    public function preview(array $csv, array $mapping, array $config, array $fields, $user): array
+    public function preview(array $csv, array $mapping, array $config, array $fields, Authenticatable $user): array
     {
         $mapped = [];
+        $columns = [];
         foreach ($mapping as $entry) {
-            if (! isset($fields[$entry['field']]) || ! isset($csv['headers'][$entry['column']]) || isset($mapped[$entry['field']])) {
+            if (! isset($fields[$entry['field']]) || ! isset($csv['headers'][$entry['column']]) || isset($mapped[$entry['field']]) || isset($columns[$entry['column']])) {
                 throw ValidationException::withMessages(['mapping' => 'Jedes freigegebene Zielfeld darf genau einer vorhandenen CSV-Spalte zugeordnet sein.']);
             }
             if ($fields[$entry['field']]['match'] && ! in_array($entry['match'] ?? '', $fields[$entry['field']]['match'], true)) {
                 throw ValidationException::withMessages(['mapping' => 'Bitte ein freigegebenes Suchmerkmal für die Beziehung wählen.']);
             }
+            $field = $fields[$entry['field']];
+            $seen = [];
+            foreach ($entry['values'] ?? [] as $valueMap) {
+                $key = $this->normalize($valueMap['from']);
+                if ($field['options'] === [] || isset($seen[$key]) || ! in_array($valueMap['to'], array_column($field['options'], 'value'), true)) {
+                    throw ValidationException::withMessages(['mapping' => 'Bitte jede CSV-Ausprägung genau einem erlaubten Auswahlwert zuordnen.']);
+                }
+                $seen[$key] = true;
+            }
             $mapped[$entry['field']] = $entry;
+            $columns[$entry['column']] = true;
         }
         $rows = [];
         $payload = [];
@@ -107,13 +129,20 @@ class CsvImportService
             foreach ($mapped as $name => $entry) {
                 $field = $fields[$name];
                 $value = $values[$entry['column']];
+                $display[$name] = $value;
                 try {
+                    foreach ($entry['values'] ?? [] as $valueMap) {
+                        if ($this->normalize($valueMap['from']) === $this->normalize($value)) {
+                            $value = (string) $valueMap['to'];
+                            break;
+                        }
+                    }
                     if ($field['match'] && $value !== '') {
                         $key = $name.'|'.$entry['match'].'|'.$value;
                         $target = $config['import']['relations'][$name]['resource'];
                         $title = (new $target)->uiTitleField();
                         $page = $cache[$key] ??= Rest::search($target)->as($user)->payload([
-                            'filters' => [['field' => $entry['match'], 'operator' => '=', 'value' => $value]],
+                            'filters' => [...$this->relationFilters($config, $name), ['field' => $entry['match'], 'operator' => '=', 'value' => $value]],
                             'selects' => [['field' => 'id'], ['field' => $title]], 'limit' => 10,
                         ])->render();
                         if ($page['total'] !== 1) {
@@ -123,8 +152,10 @@ class CsvImportService
                         $display[$name] = $page['data'][0][$title].' (#'.$attributes[$name].')';
                     } else {
                         $attributes[$name] = $this->convert($value, $field);
-                        $display[$name] = $value;
+                        $display[$name] = $this->display($attributes[$name], $field);
                     }
+                } catch (AuthorizationException) {
+                    $errors[$name] = [$field['label'].': Kein zugänglicher Datensatz gefunden.'];
                 } catch (ValidationException $exception) {
                     $errors[$name] = array_merge(...array_values($exception->errors()));
                 }
@@ -145,15 +176,72 @@ class CsvImportService
         return ['rows' => $rows, 'payload' => $payload, 'valid' => ! array_filter($rows, fn ($row) => (array) $row['errors'] !== [])];
     }
 
+    public function relationFilters(array $config, string $field): array
+    {
+        $resource = new $config['resource'];
+
+        return $resource->definition()->fields()->get($field)->getMeta()['ui']['picker']['filters'] ?? [];
+    }
+
+    public function mapping(array $csv, array $fields): array
+    {
+        $mapping = [];
+        $assigned = [];
+        foreach ($csv['headers'] as $column => $header) {
+            $candidates = array_filter($fields, fn (array $field): bool => ! isset($assigned[$field['name']]) && in_array($this->normalize($header), array_map($this->normalize(...), [$field['name'], $field['label'], ...$field['aliases']]), true));
+            if (count($candidates) !== 1) {
+                continue;
+            }
+            $field = array_values($candidates)[0];
+            $mapping[] = ['column' => $column, 'field' => $field['name'], ...($field['match'] ? ['match' => $field['match'][0]] : [])];
+            $assigned[$field['name']] = true;
+        }
+
+        return $mapping;
+    }
+
+    public function template(array $fields): string
+    {
+        $stream = fopen('php://temp', 'r+');
+        fputcsv($stream, array_column($fields, 'label'), ';', '"', '');
+        rewind($stream);
+        $csv = stream_get_contents($stream);
+        fclose($stream);
+
+        return "\xEF\xBB\xBF".$csv;
+    }
+
+    private function normalize(string $value): string
+    {
+        return mb_strtolower(trim($value));
+    }
+
+    private function display(mixed $value, array $field): string
+    {
+        foreach ($field['options'] as $option) {
+            if ($option['value'] === $value) {
+                return $option['label'];
+            }
+        }
+        if (is_bool($value)) {
+            return $value ? 'Ja' : 'Nein';
+        }
+
+        return (string) ($value ?? '');
+    }
+
     private function convert(string $value, array $field): mixed
     {
         if ($value === '') {
             return $field['nullable'] ? null : '';
         }
-        foreach ($field['options'] as $option) {
-            if (mb_strtolower((string) $option['value']) === mb_strtolower($value) || mb_strtolower($option['label']) === mb_strtolower($value)) {
-                return $option['value'];
+        if ($field['options'] !== []) {
+            $exact = array_values(array_filter($field['options'], fn (array $option): bool => (string) $option['value'] === $value));
+            $matches = $exact ?: array_values(array_filter($field['options'], fn (array $option): bool => $this->normalize((string) $option['value']) === $this->normalize($value) || $this->normalize($option['label']) === $this->normalize($value)));
+            if (count($matches) === 1) {
+                return $matches[0]['value'];
             }
+            throw ValidationException::withMessages([$field['name'] => $field['label'].': „'.$value.'“ ist kein eindeutiger Auswahlwert. Bitte zuordnen: '.implode(', ', array_column($field['options'], 'label')).'.']);
         }
         if ($field['type'] === 'boolean') {
             return match (mb_strtolower($value)) {

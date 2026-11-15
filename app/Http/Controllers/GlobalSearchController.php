@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Framework\FeatureRegistry;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -10,14 +11,14 @@ use Lomkit\Rest\Facades\Rest;
 
 class GlobalSearchController extends Controller
 {
-    public function __invoke(Request $request): JsonResponse
+    public function __invoke(Request $request, FeatureRegistry $features): JsonResponse
     {
         if (is_string($request->input('query'))) {
             $request->merge(['query' => trim($request->input('query'))]);
         }
         $values = $request->validate(['query' => ['required', 'string', 'min:2', 'max:100']]);
         $groups = [];
-        foreach (config('resource_features', []) as $name => $feature) {
+        foreach ($features->all() as $name => $feature) {
             if (empty($feature['search'])) {
                 continue;
             }
@@ -25,17 +26,16 @@ class GlobalSearchController extends Controller
             if (! Gate::allows('viewAny', $class::$model)) {
                 continue;
             }
-            $resource = new $class;
-            $title = $resource->uiTitleField();
+            $title = $feature['search']['title'];
             $subtitles = $feature['search']['subtitle'] ?? [];
-            $columns = array_values(array_unique(['id', $title, ...array_filter($subtitles, fn (string $field): bool => ! str_contains($field, '.'))]));
+            $columns = array_values(array_unique(['id', ...array_filter([$title, ...$subtitles], fn (string $field): bool => ! str_contains($field, '.'))]));
             try {
                 $page = Rest::search($class)->as($request->user())->payload([
                     'text' => ['value' => $values['query']],
                     'selects' => array_map(fn (string $field): array => ['field' => $field], $columns),
-                    'includes' => $resource->uiPicker()['includes'] ?? [],
+                    'includes' => $feature['search']['includes'],
                     'sorts' => [['field' => 'id', 'direction' => 'desc']],
-                    'limit' => 10,
+                    'limit' => $feature['search']['limit'] <= 10 ? 10 : ($feature['search']['limit'] <= 25 ? 25 : 50),
                 ])->render();
             } catch (AuthorizationException) {
                 continue;
@@ -46,10 +46,10 @@ class GlobalSearchController extends Controller
                 'total' => $page['total'],
                 'items' => array_map(fn (array $row): array => [
                     'id' => $row['id'],
-                    'title' => (string) ($row[$title] ?? '#'.$row['id']),
+                    'title' => (string) (data_get($row, $title, '#'.$row['id'])),
                     'subtitle' => implode(' · ', array_filter(array_map(fn (string $field): string => (string) data_get($row, $field, ''), $subtitles))),
                     'url' => '/'.$name.'/'.$row['id'],
-                ], $page['data']),
+                ], array_slice($page['data'], 0, $feature['search']['limit'])),
             ];
         }
 

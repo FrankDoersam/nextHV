@@ -2,12 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Property\Enums\UnitStatus;
 use App\Models\ImportBatch;
 use App\Models\Property;
 use App\Models\User;
+use App\Rest\Resources\UnitResource;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
+use Lomkit\Rest\Fields\Enum;
 use Tests\TestCase;
 
 class CsvImportTest extends TestCase
@@ -89,5 +92,91 @@ class CsvImportTest extends TestCase
         $this->postJson('/api/v1/resource-features/contracts/import/inspect')->assertNotFound();
         Gate::before(fn ($user, $ability) => $ability === 'create' ? false : null);
         $this->postJson('/api/v1/resource-features/units/import/inspect')->assertForbidden();
+    }
+
+    public function test_schema_and_inspection_derive_enum_choices_relation_labels_aliases_and_required_fields(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $schema = $this->getJson('/api/v1/resource-features/units/import/schema')->assertOk();
+        $fields = collect($schema->json('fields'))->keyBy('name');
+        $this->assertSame('Nummer', $fields['property_id']['matchOptions'][0]['label']);
+        $this->assertSame('Objekte', $fields['property_id']['relation']['label']);
+        $this->assertSame('Wohnung', $fields['type']['options'][0]['label']);
+        $this->assertTrue($fields['code']['required']);
+        $this->assertStringContainsString('Bezeichnung', $schema->json('template'));
+        $this->postJson('/api/v1/resource-features/units/import/inspect', [
+            'file' => UploadedFile::fake()->createWithContent('units.csv', "Objektnummer;Einheitennummer;Einheitenname;Art\nP;U;Wohnung;Whg"),
+        ])->assertOk()->assertJsonPath('mapping.0.field', 'property_id')->assertJsonPath('mapping.0.match', 'code')->assertJsonPath('mapping.2.field', 'name')->assertJsonPath('values.3.0', 'Whg');
+    }
+
+    public function test_custom_enum_mapping_normalizes_preview_and_preserves_server_validation(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $property = Property::factory()->create(['code' => 'P', 'status' => 'active']);
+        $data = [
+            'file' => UploadedFile::fake()->createWithContent('units.csv', "Objekt;Nummer;Name;Art;Zustand;Balkon\nP;E;Import;Whg;Nutzbar;Ja"),
+            'mapping' => json_encode([
+                ['field' => 'property_id', 'column' => 0, 'match' => 'code'], ['field' => 'code', 'column' => 1], ['field' => 'name', 'column' => 2],
+                ['field' => 'type', 'column' => 3, 'values' => [['from' => 'Whg', 'to' => 'apartment']]], ['field' => 'status', 'column' => 4], ['field' => 'has_balcony', 'column' => 5],
+            ]),
+        ];
+        $preview = $this->postJson('/api/v1/resource-features/units/import/preview', $data)->assertOk()->assertJsonPath('valid', true)->assertJsonPath('rows.0.values.type', 'Wohnung')->assertJsonPath('rows.0.values.has_balcony', 'Ja');
+        $this->postJson('/api/v1/resource-features/units/import/commit', ['token' => $preview->json('token')])->assertOk();
+        $this->assertDatabaseHas('units', ['property_id' => $property->id, 'type' => 'apartment', 'status' => 'ready', 'has_balcony' => 1]);
+        $maps = json_decode($data['mapping'], true);
+        $maps[3]['values'][0]['to'] = 'not-an-enum';
+        $data['mapping'] = json_encode($maps);
+        $this->postJson('/api/v1/resource-features/units/import/preview', $data)->assertUnprocessable()->assertJsonValidationErrors('mapping');
+        $this->assertDatabaseCount('units', 1);
+    }
+
+    public function test_unknown_enum_value_is_a_readable_row_error_and_foreign_keys_cannot_bypass_picker_filters(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $property = Property::factory()->create(['code' => 'P', 'status' => 'active']);
+        $response = $this->postJson('/api/v1/resource-features/units/import/preview', [
+            'file' => UploadedFile::fake()->createWithContent('units.csv', "Objekt;Nummer;Name;Art\nP;E;Wohnung;UNBEKANNT"),
+            'mapping' => json_encode([['field' => 'property_id', 'column' => 0, 'match' => 'code'], ['field' => 'code', 'column' => 1], ['field' => 'name', 'column' => 2], ['field' => 'type', 'column' => 3]]),
+        ])->assertOk()->assertJsonPath('valid', false)->assertJsonPath('token', null);
+        $this->assertStringContainsString('Wohnung', $response->json('rows.0.errors.type.0'));
+        $this->assertStringNotContainsString('mutate.', $response->json('rows.0.errors.type.0'));
+        $token = $this->preview("Objekt;Nummer;Name\nP;E;Wohnung")->assertOk()->json('token');
+        $property->update(['status' => 'archived']);
+        $this->postJson('/api/v1/resource-features/units/import/commit', ['token' => $token])->assertUnprocessable();
+        $this->preview("Objekt;Nummer;Name\nP;E;Wohnung")->assertOk()->assertJsonPath('valid', false)->assertJsonPath('token', null);
+        $this->assertDatabaseCount('units', 0);
+    }
+
+    public function test_duplicate_source_columns_and_forged_relation_match_fields_are_rejected(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $file = UploadedFile::fake()->createWithContent('units.csv', "Objekt;Nummer;Name\nP;E;Wohnung");
+        $this->postJson('/api/v1/resource-features/units/import/preview', ['file' => $file, 'mapping' => json_encode([
+            ['field' => 'code', 'column' => 1], ['field' => 'name', 'column' => 1],
+        ])])->assertUnprocessable();
+        $this->postJson('/api/v1/resource-features/units/import/preview', ['file' => $file, 'mapping' => json_encode([
+            ['field' => 'property_id', 'column' => 0, 'match' => 'manager_email'],
+        ])])->assertUnprocessable();
+        $this->assertDatabaseCount('import_batches', 0);
+    }
+
+    public function test_import_only_offers_and_accepts_currently_creatable_enum_choices(): void
+    {
+        $this->app->bind(UnitResource::class, fn () => new class extends UnitResource
+        {
+            public function fields(): array
+            {
+                return array_map(fn ($field) => $field instanceof Enum && $field->name === 'status' ? $field->offered([UnitStatus::Maintenance]) : $field, parent::fields());
+            }
+        });
+        $this->actingAs(User::factory()->create());
+        $response = $this->getJson('/api/v1/resource-features/units/import/schema')->assertOk();
+        $status = collect($response->json('fields'))->firstWhere('name', 'status');
+        $this->assertSame([['value' => 'maintenance', 'label' => 'Instandhaltung']], $status['options']);
+        $this->postJson('/api/v1/resource-features/units/import/preview', [
+            'file' => UploadedFile::fake()->createWithContent('units.csv', "Zustand\nNutzbar"),
+            'mapping' => json_encode([['field' => 'status', 'column' => 0]]),
+        ])->assertOk()->assertJsonPath('valid', false)->assertJsonPath('token', null);
+        $this->assertDatabaseCount('units', 0);
     }
 }

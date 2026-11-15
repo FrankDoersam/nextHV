@@ -2,6 +2,7 @@
 
 namespace App\Rest\Ui;
 
+use App\Framework\FeatureRegistry;
 use App\Rest\Resources\Resource;
 use Illuminate\Database\Eloquent\Relations\BelongsTo as EloquentBelongsTo;
 use Illuminate\Support\Str;
@@ -62,7 +63,16 @@ final readonly class ResourceMetadata
             ];
         }
 
-        return ['version' => 1, 'features' => ['import' => ! empty(config('resource_features.'.$this->resource->uiResourceName().'.import')), 'audit' => ! empty(config('resource_features.'.$this->resource->uiResourceName().'.audit'))], 'fields' => (object) $fields, 'relations' => (object) $relations, 'picker' => $this->resource->uiPicker(), 'labels' => (object) config('ui.options', [])];
+        $features = app(FeatureRegistry::class)->forResource($this->resource);
+
+        return ['version' => 1, 'features' => ['import' => ! empty($features['import']), 'audit' => ! empty($features['audit'])], 'fields' => (object) $fields, 'relations' => (object) $relations, 'picker' => $this->resource->uiPicker(), 'labels' => (object) config('ui.options', [])];
+    }
+
+    public static function label(Field $field): string
+    {
+        $translated = __('validation.attributes.'.$field->name);
+
+        return str_starts_with($translated, 'validation.') ? $field->getLabel() : $translated;
     }
 
     /** @return list<array{value: string|int, label: string}> */

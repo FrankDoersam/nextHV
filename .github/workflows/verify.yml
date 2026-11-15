@@ -28,6 +28,7 @@ jobs:
           APP_LOCALE: en
           APP_FALLBACK_LOCALE: en
       - run: php artisan rest:check
+      - run: php artisan framework:check
       - run: npm ci
       - run: npm test
       - run: npm run build

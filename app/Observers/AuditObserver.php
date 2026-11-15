@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Framework\FeatureRegistry;
 use App\Models\AuditEvent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -30,8 +31,8 @@ class AuditObserver
 
     private function record(Model $model, string $event): void
     {
-        foreach (config('resource_features', []) as $name => $feature) {
-            if (empty($feature['audit']) || $model::class !== $feature['resource']::$model) {
+        foreach (app(FeatureRegistry::class)->all() as $name => $feature) {
+            if (empty($feature['audit']) || ! in_array($event, $feature['audit_events'], true) || $model::class !== $feature['resource']::$model) {
                 continue;
             }
             $changes = [];

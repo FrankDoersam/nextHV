@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Framework\FeatureRegistry;
 use App\Models\Contract;
 use App\Models\Property;
 use App\Models\Unit;
@@ -36,7 +37,11 @@ class GlobalSearchTest extends TestCase
         Property::factory()->count(12)->create(['name' => 'Test Objekt']);
         $this->postJson('/api/v1/global-search', ['query' => 'Test'])->assertOk()->assertJsonCount(10, 'data.0.items')->assertJsonPath('data.0.total', 12);
         $this->postJson('/api/v1/global-search', ['query' => ' '])->assertUnprocessable();
-        config(['resource_features.units.search' => false]);
+        $features = app(FeatureRegistry::class)->all();
+        $features['units']['search'] = null;
+        $registry = $this->createPartialMock(FeatureRegistry::class, ['all']);
+        $registry->method('all')->willReturn($features);
+        $this->app->instance(FeatureRegistry::class, $registry);
         Gate::before(fn ($user, string $ability, array $arguments) => $ability === 'viewAny' && ($arguments[0] ?? null) === Property::class ? false : null);
         $response = $this->postJson('/api/v1/global-search', ['query' => 'Test'])->assertOk();
         $this->assertNotContains('properties', array_column($response->json('data'), 'resource'));

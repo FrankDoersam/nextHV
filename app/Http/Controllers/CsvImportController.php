@@ -14,13 +14,20 @@ use Lomkit\Rest\Facades\Rest;
 
 class CsvImportController extends Controller
 {
+    public function schema(string $resource, CsvImportService $service): JsonResponse
+    {
+        [, $fields] = $service->definition($resource);
+
+        return response()->json(['fields' => array_values($fields), 'template' => $service->template($fields), 'limits' => ['rows' => 100, 'bytes' => 2097152]], 200, ['Cache-Control' => 'private, no-store']);
+    }
+
     public function inspect(Request $request, string $resource, CsvImportService $service): JsonResponse
     {
         [, $fields] = $service->definition($resource);
         $request->validate(['file' => ['required', 'file', 'max:2048']]);
         $csv = $service->read($request->file('file'));
 
-        return response()->json(['fields' => array_values($fields), 'headers' => $csv['headers'], 'sample' => array_slice($csv['rows'], 0, 3), 'count' => count($csv['rows'])], 200, ['Cache-Control' => 'private, no-store']);
+        return response()->json(['fields' => array_values($fields), 'headers' => $csv['headers'], 'sample' => array_slice($csv['rows'], 0, 3), 'count' => count($csv['rows']), 'mapping' => $service->mapping($csv, $fields), 'values' => array_map(fn (int $column): array => array_values(array_unique(array_column($csv['rows'], $column))), array_keys($csv['headers']))], 200, ['Cache-Control' => 'private, no-store']);
     }
 
     public function preview(Request $request, string $resource, CsvImportService $service): JsonResponse
@@ -30,10 +37,14 @@ class CsvImportController extends Controller
         $mapping = json_decode($request->string('mapping'), true);
         validator(['mapping' => $mapping], [
             'mapping' => ['required', 'array', 'min:1', 'max:50'],
-            'mapping.*' => ['array:field,column,match'],
+            'mapping.*' => ['array:field,column,match,values'],
             'mapping.*.field' => ['required', 'string'],
             'mapping.*.column' => ['required', 'integer', 'min:0', 'max:49'],
             'mapping.*.match' => ['nullable', 'string'],
+            'mapping.*.values' => ['sometimes', 'array', 'max:100'],
+            'mapping.*.values.*' => ['array:from,to'],
+            'mapping.*.values.*.from' => ['present', 'string', 'max:10000'],
+            'mapping.*.values.*.to' => ['required'],
         ])->validate();
         $preview = $service->preview($service->read($request->file('file')), $mapping, $config, $fields, $request->user());
         $batch = $preview['valid'] ? ImportBatch::create([
@@ -48,7 +59,7 @@ class CsvImportController extends Controller
     {
         [$config, $fields] = $service->definition($resource);
         $values = $request->validate(['token' => ['required', 'uuid']]);
-        $result = DB::transaction(function () use ($values, $request, $resource, $config, $fields) {
+        $result = DB::transaction(function () use ($values, $request, $resource, $config, $fields, $service) {
             $batch = ImportBatch::whereKey($values['token'])->where('user_id', $request->user()->getAuthIdentifier())->where('resource', $resource)->lockForUpdate()->firstOrFail();
             if ($batch->completed_at) {
                 return ['count' => $batch->count, 'completed' => true];
@@ -67,7 +78,7 @@ class CsvImportController extends Controller
                 if ($ids === []) {
                     continue;
                 }
-                $page = Rest::search($relation['resource'])->as($request->user())->payload(['filters' => [['field' => 'id', 'operator' => 'in', 'value' => $ids]], 'limit' => 100, 'selects' => [['field' => 'id']]])->render();
+                $page = Rest::search($relation['resource'])->as($request->user())->payload(['filters' => [...$service->relationFilters($config, $field), ['field' => 'id', 'operator' => 'in', 'value' => $ids]], 'limit' => 100, 'selects' => [['field' => 'id']]])->render();
                 if ($page['total'] !== count($ids)) {
                     throw ValidationException::withMessages([$field => 'Mindestens eine zugeordnete Beziehung ist nicht mehr verfügbar. Bitte erneut prüfen.']);
                 }

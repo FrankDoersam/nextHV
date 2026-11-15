@@ -2,14 +2,25 @@
 
 namespace App\Models;
 
+use App\Contracts\Framework\DefinesModelFeatures;
+use App\Framework\HasModelFeatures;
+use App\Framework\ModelFeatures;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Contract extends Model
+class Contract extends Model implements DefinesModelFeatures
 {
+    use HasModelFeatures;
     use SoftDeletes;
+
+    public static function framework(): ModelFeatures
+    {
+        return ModelFeatures::make()->label('Verträge')
+            ->search(subtitle: ['unit.name', 'unit.property.name'], priority: 40)
+            ->audit(fields: ['code', 'unit_id', 'type', 'status', 'starts_on', 'ends_on']);
+    }
 
     protected $attributes = ['status' => 'draft'];
 

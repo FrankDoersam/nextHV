@@ -21,6 +21,7 @@ use Lomkit\Rest\Facades\Rest;
 
 Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(function () {
     Route::get('resource-features/{resource}/{id}/audit', AuditTimelineController::class)->whereNumber('id');
+    Route::get('resource-features/{resource}/import/schema', [CsvImportController::class, 'schema']);
     Route::post('resource-features/{resource}/import/inspect', [CsvImportController::class, 'inspect']);
     Route::post('resource-features/{resource}/import/preview', [CsvImportController::class, 'preview']);
     Route::post('resource-features/{resource}/import/commit', [CsvImportController::class, 'commit']);
