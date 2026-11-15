@@ -734,6 +734,8 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         page.locator('[data-slot="resource-collection"]'),
     ).not.toHaveAttribute("aria-busy", "true");
     await expect(page).toHaveURL(/property_id/);
+    // The URL changes before the filtered response replaces retained rows.
+    await expect(page.getByText("Wohnung 01", { exact: true })).toHaveCount(1);
     await capture("23-einheiten-objektfilter");
     await page.getByText("Wohnung 01", { exact: true }).click();
     const unitView = page.getByRole("dialog");
