@@ -45,7 +45,8 @@ export function GlobalSearch({
                 "POST",
                 signal,
             ),
-        staleTime: 15_000,
+        // Reopening search must see records created/imported since the last search.
+        staleTime: 0,
         gcTime: 60_000,
         retry: false,
     });

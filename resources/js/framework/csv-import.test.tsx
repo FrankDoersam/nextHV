@@ -97,9 +97,9 @@ it("maps server fields, previews resolved relations and confirms only the server
         { field: "name", column: 1 },
     ]);
     fireEvent.click(
-        screen.getByRole("button", { name: "1 Datensätze importieren" }),
+        screen.getByRole("button", { name: "1 Datensatz importieren" }),
     );
-    await screen.findByText("1 Datensätze importiert");
+    await screen.findByText("1 Datensatz importiert");
     expect(call.mock.calls[2][1]).toEqual({ token: "preview-token" });
     expect(call).toHaveBeenCalledTimes(3);
 });
@@ -123,7 +123,7 @@ it("shows row errors and prevents commit until the server validates a new previe
     fireEvent.click(screen.getByRole("button", { name: "Vorschau prüfen" }));
     expect(await screen.findByText("Objekt: Mehrere Treffer.")).toBeVisible();
     expect(
-        screen.getByRole("button", { name: "1 Datensätze importieren" }),
+        screen.getByRole("button", { name: "1 Datensatz importieren" }),
     ).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Zuordnung ändern" }));
     await waitFor(() =>

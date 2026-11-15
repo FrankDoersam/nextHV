@@ -47,6 +47,14 @@ jobs:
           APP_ENV: testing
           DB_DATABASE: ${{ github.workspace }}/database/e2e.sqlite
           E2E_PASSWORD: local-e2e-password-only
+      - name: Publish framework feature captures
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: framework-feature-captures
+          path: screenshots/features-*.png
+          if-no-files-found: ignore
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

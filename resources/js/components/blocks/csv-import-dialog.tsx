@@ -5,6 +5,7 @@ import { ErrorState, SectionCard } from "./content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChoicePicker } from "@/components/fields/choice-picker";
+import { useI18n } from "@/framework/i18n";
 import { request } from "@/framework/data/http";
 import { useInvalidateResource } from "@/framework/data/invalidate";
 import type { ResourceDefinition } from "@/framework/types";
@@ -49,6 +50,7 @@ export function CsvImportDialog({
     onClose: () => void;
     onImported?: () => void | Promise<void>;
 }) {
+    const { t } = useI18n();
     const [file, setFile] = useState<File>();
     const [inspection, setInspection] = useState<Inspection>();
     const [mapping, setMapping] = useState<Mapping[]>([]);
@@ -228,7 +230,9 @@ export function CsvImportDialog({
                             {busy
                                 ? "Wird verarbeitet …"
                                 : preview
-                                  ? `${preview.rows.length} Datensätze importieren`
+                                  ? t("importCount", {
+                                        count: preview.rows.length,
+                                    })
                                   : inspection
                                     ? "Vorschau prüfen"
                                     : "Datei prüfen"}
@@ -247,7 +251,7 @@ export function CsvImportDialog({
                         <CheckCircle2 className="size-6 shrink-0" />
                         <div>
                             <p className="font-medium">
-                                {completed} Datensätze importiert
+                                {t("importedCount", { count: completed })}
                             </p>
                             <p className="mt-1 text-sm text-muted-foreground">
                                 Die Datensätze wurden angelegt.
@@ -281,7 +285,7 @@ export function CsvImportDialog({
                         {inspection && !preview && (
                             <SectionCard
                                 title="Felder zuordnen"
-                                description={`${inspection.count} Datensätze. Nicht zugeordnete Spalten werden ignoriert; bestehende Datensätze bleiben unverändert.`}
+                                description={`${t("recordCount", { count: inspection.count })}. Nicht zugeordnete Spalten werden ignoriert; bestehende Datensätze bleiben unverändert.`}
                                 actions={
                                     <Button
                                         variant="ghost"

@@ -4,6 +4,16 @@ test("global records, audit, mapped relation import and protected PDF sheet work
     page,
 }) => {
     test.setTimeout(90_000);
+    const capture = async (name: string) => {
+        await page.evaluate(() => document.fonts.ready);
+        expect(
+            await page.evaluate(() => document.documentElement.scrollWidth),
+        ).toBeLessThanOrEqual(page.viewportSize()!.width);
+        await page.screenshot({
+            path: `screenshots/features-${name}.png`,
+            animations: "disabled",
+        });
+    };
     await page.goto("/");
     await page.getByLabel("E-Mail-Adresse").fill("e2e@example.test");
     await page
@@ -18,6 +28,8 @@ test("global records, audit, mapped relation import and protected PDF sheet work
     await search
         .getByRole("combobox", { name: "Datensätze suchen" })
         .fill("Lindenhöfe");
+    await expect(search.getByRole("option").first()).toBeVisible();
+    await capture("01-global-search");
     await search
         .getByRole("option")
         .filter({ hasText: "Lindenhöfe" })
@@ -28,6 +40,7 @@ test("global records, audit, mapped relation import and protected PDF sheet work
     await expect(
         page.getByRole("list", { name: "Änderungsverlauf" }),
     ).toBeVisible();
+    await capture("02-audit");
     await page
         .getByRole("button", { name: "Aktionen für Lindenhöfe", exact: true })
         .click();
@@ -46,6 +59,10 @@ test("global records, audit, mapped relation import and protected PDF sheet work
     await expect(
         pdf.getByRole("link", { name: "PDF", exact: true }),
     ).toHaveAttribute("download", /objekt-\d+\.pdf/);
+    await capture("03-pdf-sheet");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await capture("04-pdf-sheet-mobile");
+    await page.setViewportSize({ width: 1280, height: 720 });
     await pdf.getByRole("button", { name: "Schließen", exact: true }).click();
     await page.goto("/units");
     await page.getByRole("button", { name: "CSV importieren" }).click();
@@ -61,18 +78,27 @@ test("global records, audit, mapped relation import and protected PDF sheet work
     await dialog
         .getByRole("button", { name: "Datei prüfen", exact: true })
         .click();
+    await expect(
+        dialog.getByRole("button", { name: "Vorschau prüfen", exact: true }),
+    ).toBeEnabled();
+    await capture("05-csv-mapping");
     await dialog
         .getByRole("button", { name: "Vorschau prüfen", exact: true })
         .click();
     await expect(dialog.getByText(/Lindenhöfe \(#/)).toBeVisible();
+    await capture("06-csv-preview");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await capture("07-csv-preview-mobile");
+    await page.setViewportSize({ width: 1280, height: 720 });
     await dialog
-        .getByRole("button", { name: "1 Datensätze importieren", exact: true })
+        .getByRole("button", { name: "1 Datensatz importieren", exact: true })
         .click();
     await expect(
-        dialog.getByText("1 Datensätze importiert", { exact: true }),
+        dialog.getByText("1 Datensatz importiert", { exact: true }),
     ).toBeVisible();
     await dialog
         .getByRole("button", { name: "Schließen", exact: true })
+        .last()
         .click();
     await page
         .getByRole("textbox", { name: "Einheiten durchsuchen" })

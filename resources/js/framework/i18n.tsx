@@ -53,6 +53,15 @@ export const coreMessages: Record<string, TranslationCatalog> = {
         noOptions: "Keine passenden Optionen",
         clearFilters: "Filter zurücksetzen",
         import: "CSV importieren",
+        importCount: {
+            one: "{count} Datensatz importieren",
+            other: "{count} Datensätze importieren",
+        },
+        importedCount: {
+            one: "{count} Datensatz importiert",
+            other: "{count} Datensätze importiert",
+        },
+        recordCount: { one: "{count} Datensatz", other: "{count} Datensätze" },
         preview: "Vorschau",
         audit: "Änderungsverlauf",
         retry: "Erneut versuchen",
@@ -93,6 +102,15 @@ export const coreMessages: Record<string, TranslationCatalog> = {
         noOptions: "No matching options",
         clearFilters: "Clear filters",
         import: "Import CSV",
+        importCount: {
+            one: "Import {count} record",
+            other: "Import {count} records",
+        },
+        importedCount: {
+            one: "{count} record imported",
+            other: "{count} records imported",
+        },
+        recordCount: { one: "{count} record", other: "{count} records" },
         preview: "Preview",
         audit: "Change history",
         retry: "Try again",
