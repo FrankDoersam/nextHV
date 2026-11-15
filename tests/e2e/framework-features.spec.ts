@@ -1,5 +1,8 @@
 import { expect, test } from "@playwright/test";
 
+// Full Chromium includes the native PDF viewer; headless-shell intentionally does not.
+test.use({ channel: "chromium" });
+
 test("global records, audit, mapped relation import and protected PDF sheet work together", async ({
     page,
 }) => {
@@ -59,6 +62,9 @@ test("global records, audit, mapped relation import and protected PDF sheet work
     await expect(
         pdf.getByRole("link", { name: "PDF", exact: true }),
     ).toHaveAttribute("download", /objekt-\d+\.pdf/);
+    await expect(
+        pdf.getByText(/Der Browser unterstützt keine eingebettete PDF-Anzeige/),
+    ).not.toBeVisible();
     await capture("03-pdf-sheet");
     await page.setViewportSize({ width: 390, height: 844 });
     await capture("04-pdf-sheet-mobile");
