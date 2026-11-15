@@ -64,6 +64,7 @@ test("global records, audit, mapped relation import and protected PDF sheet work
         .toContainText("Bericht wird vorbereitet");
     await expect(pdf.getByLabel("PDF-Seite 1", { exact: true })).toHaveCount(0);
     await pdf.evaluate((node) => node.setAttribute("data-same-pdf-sheet", "true"));
+    await capture("03-pdf-sheet-loading");
     releaseReport();
     await expect(
         pdf.getByLabel("PDF-Seite 1", { exact: true }),
