@@ -2,66 +2,115 @@
 
 namespace App\Reports\Support;
 
-/** Shared print layout. Report renderers receive values, never query Eloquent models. */
-abstract class StructuredPdfReport extends \tFPDF
+use Closure;
+use Illuminate\Validation\ValidationException;
+
+/** s4v2-style shared typography, measured table rows and safe page breaks. */
+abstract class StructuredPdfReport
 {
-    protected string $reportTitle = '';
+    protected const LEFT = 18.0;
 
-    protected string $reference = '';
+    protected const WIDTH = 174.0;
 
-    public function __construct()
+    protected function document(string $title, string $reference, string $subject): ReportPdfDocument
     {
-        parent::__construct();
-        $this->SetMargins(18, 18, 18);
-        $this->SetAutoPageBreak(true, 22);
-        $this->AddFont('DejaVu', '', 'DejaVuSansCondensed.ttf', true);
-        $this->AddFont('DejaVu', 'B', 'DejaVuSansCondensed-Bold.ttf', true);
-        $this->AliasNbPages();
-        $this->SetCreator('nextHV');
+        $pdf = new ReportPdfDocument($title, $reference);
+        $pdf->SetTitle($pdf->encodeText($title.' · '.$reference));
+        $pdf->SetSubject($pdf->encodeText($subject));
+        $pdf->AddPage();
+
+        return $pdf;
     }
 
-    public function Header(): void
+    protected function section(ReportPdfDocument $pdf, string $title): void
     {
-        $this->SetFont('DejaVu', 'B', 10);
-        $this->SetTextColor(45, 49, 60);
-        $this->Cell(110, 6, 'nextHV / '.$this->reportTitle);
-        $this->SetFont('DejaVu', '', 8);
-        $this->Cell(64, 6, $this->reference, 0, 1, 'R');
-        $this->SetDrawColor(221, 224, 230);
-        $this->Line(18, 27, 192, 27);
-        $this->SetY(34);
+        $this->ensure($pdf, 22);
+        $pdf->Ln(4);
+        $this->paragraph($pdf, $title, 11, 'B', 5.7);
+        $pdf->Ln(1.5);
     }
 
-    public function Footer(): void
+    protected function tableHeader(ReportPdfDocument $pdf, array $labels, array $widths, ?array $alignments = null): void
     {
-        $this->SetY(-16);
-        $this->SetDrawColor(221, 224, 230);
-        $this->Line(18, $this->GetY() - 3, 192, $this->GetY() - 3);
-        $this->SetFont('DejaVu', '', 8);
-        $this->SetTextColor(112, 117, 129);
-        $this->Cell(120, 5, 'nextHV · '.$this->reportTitle);
-        $this->Cell(54, 5, 'Seite '.$this->PageNo().' / {nb}', 0, 0, 'R');
+        $this->tableRow($pdf, $labels, $widths, $alignments ?? array_map(
+            fn (int $index): string => $index === 0 ? 'L' : 'R',
+            array_keys($labels),
+        ), true, null, 6.9);
     }
 
-    protected function section(string $title): void
+    /** Keep a section title, its table header and first row together on one page. */
+    protected function tableSection(ReportPdfDocument $pdf, string $title, array $labels, array $widths, array $alignments, array $firstRow): Closure
     {
-        if ($this->GetY() > 245) {
-            $this->AddPage();
+        $header = $this->tableRowLayout($pdf, $labels, $widths, true, 6.9);
+        $first = $this->tableRowLayout($pdf, $firstRow, $widths, false, 8);
+        $this->ensure($pdf, max(34.0, 11.5 + $header['height'] + $first['height']));
+        $this->section($pdf, $title);
+        $this->tableHeader($pdf, $labels, $widths, $alignments);
+
+        return function () use ($pdf, $title, $labels, $widths, $alignments): void {
+            $this->paragraph($pdf, $title.' - Fortsetzung', 9, 'B', 5);
+            $this->tableHeader($pdf, $labels, $widths, $alignments);
+        };
+    }
+
+    protected function tableRow(ReportPdfDocument $pdf, array $values, array $widths, array $alignments, bool $strong = false, ?Closure $repeat = null, float $fontSize = 8): void
+    {
+        ['lines' => $lines, 'height' => $height] = $this->tableRowLayout($pdf, $values, $widths, $strong, $fontSize);
+        $this->ensure($pdf, $height, $repeat);
+        $pdf->SetFont('Arial', $strong ? 'B' : '', $fontSize);
+        $pdf->SetTextColor(35, 39, 44);
+        $y = $pdf->GetY();
+        if ($strong) {
+            $pdf->SetFillColor(240, 242, 244);
+            $pdf->Rect(self::LEFT, $y, self::WIDTH, $height, 'F');
         }
-        $this->SetFont('DejaVu', 'B', 11);
-        $this->SetTextColor(30, 34, 43);
-        $this->Cell(0, 10, $title, 0, 1);
+        $x = self::LEFT;
+        foreach ($lines as $index => $cellLines) {
+            foreach ($cellLines as $lineIndex => $line) {
+                $pdf->SetXY($x + 1.5, $y + 1.2 + $lineIndex * 4.1);
+                $pdf->Cell((float) $widths[$index] - 3.0, 4.1, $pdf->encodeText($line), 0, 0, $alignments[$index] ?? 'L');
+            }
+            $x += (float) $widths[$index];
+        }
+        $pdf->SetDrawColor(221, 224, 227);
+        $pdf->Line(self::LEFT, $y + $height, self::LEFT + self::WIDTH, $y + $height);
+        $pdf->SetY($y + $height);
     }
 
-    /** Character-aware wrapping also handles long codes/URLs without overflowing cells. */
-    private function lines(string $text, float $width): array
+    /** The measurement and drawing use the same FPDF encoding and font. */
+    protected function tableRowLayout(ReportPdfDocument $pdf, array $values, array $widths, bool $strong, float $fontSize): array
+    {
+        $pdf->SetFont('Arial', $strong ? 'B' : '', $fontSize);
+        $lines = [];
+        foreach ($values as $index => $value) {
+            $lines[] = $this->wrap($pdf, (string) $value, (float) $widths[$index] - 3.0);
+        }
+
+        return ['lines' => $lines, 'height' => max(7.0, max(array_map('count', $lines)) * 4.1 + 2.5)];
+    }
+
+    protected function paragraph(ReportPdfDocument $pdf, string $text, float $fontSize = 8.2, string $style = '', float $lineHeight = 4.2): void
+    {
+        $pdf->SetFont('Arial', $style, $fontSize);
+        $lines = $this->wrap($pdf, $text, self::WIDTH);
+        foreach ($lines as $line) {
+            $this->ensure($pdf, $lineHeight);
+            $pdf->SetFont('Arial', $style, $fontSize);
+            $pdf->SetTextColor($style === 'B' ? 35 : 83, $style === 'B' ? 39 : 88, $style === 'B' ? 44 : 94);
+            $pdf->SetX(self::LEFT);
+            $pdf->Cell(self::WIDTH, $lineHeight, $pdf->encodeText($line), 0, 1);
+        }
+    }
+
+    /** Wrap character by character when long identifiers have no spaces. */
+    protected function wrap(ReportPdfDocument $pdf, string $text, float $width): array
     {
         $lines = [];
-        foreach (explode("\n", str_replace("\r", '', $text)) as $paragraph) {
+        foreach (explode("\n", str_replace(["\r", "\t"], ['', ' '], $text)) as $paragraph) {
             $line = '';
-            foreach (preg_split('/\s+/u', trim($paragraph)) ?: [] as $word) {
+            foreach (preg_split('/ +/u', trim($paragraph), -1, PREG_SPLIT_NO_EMPTY) ?: [] as $word) {
                 $candidate = $line === '' ? $word : $line.' '.$word;
-                if ($this->GetStringWidth($candidate) <= $width) {
+                if ($pdf->GetStringWidth($pdf->encodeText($candidate)) <= $width) {
                     $line = $candidate;
 
                     continue;
@@ -70,8 +119,13 @@ abstract class StructuredPdfReport extends \tFPDF
                     $lines[] = $line;
                     $line = '';
                 }
+                if ($pdf->GetStringWidth($pdf->encodeText($word)) <= $width) {
+                    $line = $word;
+
+                    continue;
+                }
                 foreach (preg_split('//u', $word, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $character) {
-                    if ($this->GetStringWidth($line.$character) > $width) {
+                    if ($line !== '' && $pdf->GetStringWidth($pdf->encodeText($line.$character)) > $width) {
                         $lines[] = $line;
                         $line = '';
                     }
@@ -81,54 +135,21 @@ abstract class StructuredPdfReport extends \tFPDF
             $lines[] = $line;
         }
 
-        return $lines;
+        return $lines === [] ? [''] : $lines;
     }
 
-    /** @param iterable<list<string>> $rows */
-    protected function table(array $headers, array $widths, iterable $rows, array $alignments = []): void
+    /** Fail explicitly instead of drawing over the footer on an overfull page. */
+    protected function ensure(ReportPdfDocument $pdf, float $height, ?Closure $repeat = null): void
     {
-        $header = function () use ($headers, $widths, $alignments): void {
-            $this->SetFont('DejaVu', 'B', 8);
-            $this->SetFillColor(239, 241, 245);
-            foreach ($headers as $index => $label) {
-                $x = $this->GetX();
-                $this->Rect($x, $this->GetY(), $widths[$index], 9, 'F');
-                $this->SetX($x + 3);
-                $this->Cell($widths[$index] - 6, 9, $label, 0, 0, $alignments[$index] ?? 'L');
-                $this->SetX($x + $widths[$index]);
-            }
-            $this->Ln();
-        };
-        $header();
-        $index = 0;
-        foreach ($rows as $row) {
-            $this->SetFont('DejaVu', '', 9);
-            $lines = array_map(fn ($value, $width) => $this->lines((string) $value, $width - 6), $row, $widths);
-            $height = max(array_map('count', $lines)) * 5 + 6;
-            if ($this->GetY() + $height > 270) {
-                $this->AddPage();
-                $header();
-                $this->SetFont('DejaVu', '', 9);
-            }
-            $x = 18;
-            $y = $this->GetY();
-            $this->SetFillColor(...($index++ % 2 ? [247, 248, 250] : [255, 255, 255]));
-            $this->Rect(18, $y, 174, $height, 'F');
-            $this->SetTextColor(38, 42, 52);
-            foreach ($lines as $column => $textLines) {
-                foreach ($textLines as $line => $text) {
-                    $this->SetXY($x + 3, $y + 3 + $line * 5);
-                    $this->Cell($widths[$column] - 6, 5, $text, 0, 0, $alignments[$column] ?? 'L');
-                }
-                $x += $widths[$column];
-            }
-            $this->SetXY(18, $y + $height);
-            $this->SetDrawColor(230, 232, 237);
-            $this->Line(18, $this->GetY(), 192, $this->GetY());
+        if ($pdf->GetY() + $height <= $pdf->bodyBottom()) {
+            return;
         }
-        if ($index === 0) {
-            $this->SetFont('DejaVu', '', 9);
-            $this->Cell(0, 12, 'Keine Einträge vorhanden.', 0, 1);
+        $pdf->AddPage();
+        if ($repeat !== null) {
+            $repeat();
+        }
+        if ($pdf->GetY() + $height > $pdf->bodyBottom()) {
+            throw ValidationException::withMessages(['document' => 'Eine Berichtszeile ist zu hoch für die verfügbare Seitenfläche. Es wurde kein Inhalt abgeschnitten.']);
         }
     }
 }

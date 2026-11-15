@@ -7,6 +7,7 @@ use App\Models\AuditEvent;
 use App\Models\Property;
 use App\Models\Unit;
 use App\Models\User;
+use App\Reports\Support\ReportPdfDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -24,6 +25,14 @@ class PropertyReportTest extends TestCase
         $this->assertStringStartsWith('%PDF-', $pdf);
         preg_match_all('~/Type /Page\b~', $pdf, $pages);
         $this->assertGreaterThan(2, count($pages[0]));
+    }
+
+    public function test_report_uses_fpdf_document_with_encoded_german_text_and_reserved_footer(): void
+    {
+        $document = new ReportPdfDocument('Objektbericht', 'OBJ-1');
+        $this->assertInstanceOf(\FPDF::class, $document);
+        $this->assertSame("M\xFCllerh\xF6fe", $document->encodeText('Müllerhöfe'));
+        $this->assertSame(270.0, $document->bodyBottom());
     }
 
     public function test_report_is_read_only_and_declares_a_downloadable_document_for_one_record(): void

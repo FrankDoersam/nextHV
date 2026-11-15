@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6356b557adfeb12d199b6fecdccba463",
+    "content-hash": "f2d445f1d7b90417c4347cd81d2e1d09",
     "packages": [
         {
             "name": "brick/math",
@@ -3667,59 +3667,50 @@
             "published-time": "2026-09-16T11:41:15+00:00"
         },
         {
-            "name": "setasign/tfpdf",
-            "version": "v1.34",
+            "name": "setasign/fpdf",
+            "version": "1.9.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/Setasign/tFPDF.git",
-                "reference": "69b06444b929e0d54ffbb5efcadfe97ecbad831b"
+                "url": "https://github.com/Setasign/FPDF.git",
+                "reference": "051b70e4c57dedc88df41b1eff1c62894e5f9ed0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Setasign/tFPDF/zipball/69b06444b929e0d54ffbb5efcadfe97ecbad831b",
-                "reference": "69b06444b929e0d54ffbb5efcadfe97ecbad831b",
+                "url": "https://api.github.com/repos/Setasign/FPDF/zipball/051b70e4c57dedc88df41b1eff1c62894e5f9ed0",
+                "reference": "051b70e4c57dedc88df41b1eff1c62894e5f9ed0",
                 "shasum": ""
+            },
+            "require": {
+                "ext-gd": "*",
+                "ext-zlib": "*"
             },
             "type": "library",
             "autoload": {
                 "classmap": [
-                    "tfpdf.php",
-                    "font/unifont/ttfonts.php"
+                    "fpdf.php"
                 ]
             },
             "notification-url": "https://packagist.org/downloads/",
             "license": [
-                "LGPL-2.1"
+                "MIT"
             ],
             "authors": [
-                {
-                    "name": "Ian Back"
-                },
-                {
-                    "name": "Tycho Veltmeijer",
-                    "email": "tfpdf@tychoveltmeijer.nl",
-                    "role": "Maintainer"
-                },
                 {
                     "name": "Olivier Plathey",
                     "email": "oliver@fpdf.org",
                     "homepage": "http://fpdf.org/"
                 }
             ],
-            "description": "This class is a modified version of FPDF that adds UTF-8 support. The latest version is based on FPDF 1.85.",
-            "homepage": "http://fpdf.org/en/script/script92.php",
+            "description": "FPDF is a PHP class which allows to generate PDF files with pure PHP. F from FPDF stands for Free: you may use it for any kind of usage and modify it to suit your needs.",
+            "homepage": "http://www.fpdf.org",
             "keywords": [
                 "fpdf",
-                "pdf",
-                "tfpdf",
-                "unicode"
+                "pdf"
             ],
             "support": {
-                "issues": "https://github.com/Setasign/tFPDF/issues",
-                "source": "https://github.com/Setasign/tFPDF/tree/v1.34"
+                "source": "https://github.com/Setasign/FPDF/tree/1.9.0"
             },
-            "time": "2026-10-12T08:18:19+00:00",
-            "published-time": "2026-10-12T08:24:15+00:00"
+            "time": "2026-05-31T14:25:29+00:00"
         },
         {
             "name": "spatie/laravel-package-tools",
@@ -9302,7 +9293,8 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.3"
+        "php": "^8.3",
+        "ext-gd": "*"
     },
     "platform-dev": {},
     "platform-overrides": {
