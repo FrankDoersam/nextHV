@@ -2,6 +2,8 @@
 
 namespace App\Rest\Resources;
 
+use App\Contracts\Framework\HasGlobalSearch;
+use App\Framework\SearchDefinition;
 use App\Models\BusinessPartner;
 use App\Rest\Filters\ExpressionFilter;
 use App\Rest\Metrics\GroupedCounts;
@@ -15,8 +17,18 @@ use Lomkit\Rest\Mutations\Contextual;
 use Lomkit\Rest\Mutations\MutationContext;
 use Lomkit\Rest\Relations\HasMany;
 
-class BusinessPartnerResource extends Resource
+class BusinessPartnerResource extends Resource implements HasGlobalSearch
 {
+    public function uiLabel(): string
+    {
+        return 'Geschäftspartner';
+    }
+
+    public function globalSearch(): SearchDefinition
+    {
+        return new SearchDefinition(subtitle: ['code'], priority: 30);
+    }
+
     public static string $model = BusinessPartner::class;
 
     public function fields(): array
@@ -57,9 +69,9 @@ class BusinessPartnerResource extends Resource
             HasMany::make('identityDocuments', IdentityDocumentResource::class)->onlyOperations(),
         ];
     }
+
     public function metrics(): array
     {
         return [new GroupedCounts(['kind', 'city'])];
     }
-
 }

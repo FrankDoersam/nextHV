@@ -20,9 +20,9 @@ class AuditTimelineController extends Controller
         $row = Rest::search($feature['resource'])->as($request->user())->payload(['filters' => [['field' => 'id', 'value' => $id]], 'limit' => 10])->page()->first();
         abort_unless($row, 404);
         Gate::authorize('view', $row);
-        $definition = new $feature['resource'];
+        $definition = app($feature['resource']);
         $metadata = (new ResourceMetadata($definition))->toArray();
-        $events = AuditEvent::where('resource', $resource)->where('record_id', $id)->when(isset($input['before']), fn ($query) => $query->where('id', '<', $input['before']))->orderByDesc('id')->limit(21)->get();
+        $events = AuditEvent::on($row->getConnectionName())->where('resource', $feature['audit_stream'])->where('record_id', $id)->when(isset($input['before']), fn ($query) => $query->where('id', '<', $input['before']))->orderByDesc('id')->limit(21)->get();
         $hasMore = $events->count() > 20;
         $items = $events->take(20)->map(fn (AuditEvent $event): array => [
             'id' => $event->id, 'event' => $event->event, 'actor' => $event->actor_name, 'created_at' => $event->created_at->toIso8601String(),

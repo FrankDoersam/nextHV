@@ -2,6 +2,8 @@
 
 namespace App\Rest\Resources;
 
+use App\Contracts\Framework\HasGlobalSearch;
+use App\Framework\SearchDefinition;
 use App\Models\Contract;
 use App\Rest\Actions\ActivateContract;
 use App\Rest\Fields\Currency;
@@ -23,8 +25,18 @@ use Lomkit\Rest\Mutations\MutationNode;
 use Lomkit\Rest\Relations\BelongsTo;
 use Lomkit\Rest\Relations\HasMany;
 
-class ContractResource extends Resource
+class ContractResource extends Resource implements HasGlobalSearch
 {
+    public function uiLabel(): string
+    {
+        return 'Verträge';
+    }
+
+    public function globalSearch(): SearchDefinition
+    {
+        return new SearchDefinition(subtitle: ['unit.name', 'unit.property.name'], priority: 40);
+    }
+
     public static string $model = Contract::class;
 
     public function uiPicker(): array

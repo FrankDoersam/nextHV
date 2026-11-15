@@ -2,32 +2,25 @@
 
 namespace App\Models;
 
-use App\Contracts\Framework\DefinesModelFeatures;
+use App\Contracts\Framework\HasAuditTrail;
 use App\Domain\Property\Enums\UnitStatus;
 use App\Domain\Property\Enums\UnitType;
-use App\Framework\HasModelFeatures;
-use App\Framework\ModelFeatures;
+use App\Framework\AuditDefinition;
+use App\Framework\RecordsAuditTrail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Unit extends Model implements DefinesModelFeatures
+class Unit extends Model implements HasAuditTrail
 {
     use HasFactory, SoftDeletes;
-    use HasModelFeatures;
+    use RecordsAuditTrail;
 
-    public static function framework(): ModelFeatures
+    public static function auditTrail(): AuditDefinition
     {
-        return ModelFeatures::make()->label('Einheiten')
-            ->search(subtitle: ['property.name', 'property.city', 'code'], priority: 20)
-            ->audit(fields: ['code', 'name', 'property_id', 'type', 'status', 'area'])
-            ->import(
-                fields: ['property_id', 'code', 'name', 'type', 'status', 'floor', 'area', 'rooms', 'has_balcony', 'barrier_free'],
-                relations: ['property' => ['code', 'name']],
-                aliases: ['property_id' => ['Objektnummer', 'Objekt-Nr.'], 'code' => ['Einheitennummer'], 'name' => ['Einheitenname'], 'status' => ['Zustand']],
-            );
+        return new AuditDefinition(fields: ['code', 'name', 'property_id', 'type', 'status', 'area']);
     }
 
     protected $guarded = ['id'];

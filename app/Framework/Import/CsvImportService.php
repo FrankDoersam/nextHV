@@ -25,7 +25,7 @@ class CsvImportService
         $config = $this->features->get($name);
         abort_unless(is_array($config) && ! empty($config['import']), 404);
         Gate::authorize('create', $config['resource']::$model);
-        $resource = new $config['resource'];
+        $resource = app($config['resource']);
         $metadata = (new ResourceMetadata($resource))->toArray();
         $fields = [];
         foreach ($resource->definition()->fields() as $field) {
@@ -34,7 +34,7 @@ class CsvImportService
             }
             $detail = FieldDetails::of($field)->jsonSerialize();
             $relation = $config['import']['relations'][$field->name] ?? null;
-            $target = $relation ? new $relation['resource'] : null;
+            $target = $relation ? app($relation['resource']) : null;
             $context = new MutationContext(MutationOperation::Create, null, 0);
             $rules = array_merge(...array_map(fn ($rule): array => $rule instanceof Contextual ? $rule->resolve($context) : [$rule], $field->getRules()->forWrite(WriteOperation::Create)));
             $fields[$field->name] = [
@@ -182,7 +182,7 @@ class CsvImportService
 
     public function relationFilters(array $config, string $field): array
     {
-        $resource = new $config['resource'];
+        $resource = app($config['resource']);
 
         return $resource->definition()->fields()->get($field)->getMeta()['ui']['picker']['filters'] ?? [];
     }

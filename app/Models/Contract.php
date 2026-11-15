@@ -2,24 +2,22 @@
 
 namespace App\Models;
 
-use App\Contracts\Framework\DefinesModelFeatures;
-use App\Framework\HasModelFeatures;
-use App\Framework\ModelFeatures;
+use App\Contracts\Framework\HasAuditTrail;
+use App\Framework\AuditDefinition;
+use App\Framework\RecordsAuditTrail;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Contract extends Model implements DefinesModelFeatures
+class Contract extends Model implements HasAuditTrail
 {
-    use HasModelFeatures;
+    use RecordsAuditTrail;
     use SoftDeletes;
 
-    public static function framework(): ModelFeatures
+    public static function auditTrail(): AuditDefinition
     {
-        return ModelFeatures::make()->label('Verträge')
-            ->search(subtitle: ['unit.name', 'unit.property.name'], priority: 40)
-            ->audit(fields: ['code', 'unit_id', 'type', 'status', 'starts_on', 'ends_on']);
+        return new AuditDefinition(fields: ['code', 'unit_id', 'type', 'status', 'starts_on', 'ends_on']);
     }
 
     protected $attributes = ['status' => 'draft'];

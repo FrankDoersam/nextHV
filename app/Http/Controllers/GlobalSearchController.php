@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Framework\Feature;
 use App\Framework\FeatureRegistry;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -18,7 +19,7 @@ class GlobalSearchController extends Controller
         }
         $values = $request->validate(['query' => ['required', 'string', 'min:2', 'max:100']]);
         $groups = [];
-        foreach ($features->all() as $name => $feature) {
+        foreach ($features->all(Feature::Search) as $name => $feature) {
             if (empty($feature['search'])) {
                 continue;
             }

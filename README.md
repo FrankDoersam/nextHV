@@ -6,7 +6,7 @@ Das vollständige Entwicklerhandbuch einschließlich der Funktionen aus Basis- u
 
 Das [Framework-Konzept und der Refine-Vergleich](docs/framework-readiness.md) dokumentieren die Architektur, die Verbesserungen und die noch offenen Freigabekriterien. Der aktuelle Stand ist ein Entwicklungsframework; eine allgemeine Produktionsfreigabe, insbesondere für Mehrmandantenbetrieb, ist damit nicht zugesagt.
 
-Der [aktuelle Framework-Ausbau](docs/framework-expansion.md) ergänzt i18n, globale Datensatzsuche, Audit-Timeline, CSV-Import mit Relationsvorschau und PDF-Sheets. Aktiviert wird direkt im Modell über `framework(): ModelFeatures` (Beispiel in Abschnitt 44 des Handbuchs); `php artisan framework:check` prüft die Definitionen; Upgrade: `php artisan migrate --force`. Der Laravel-Scheduler bereinigt täglich abgelaufene Importvorschauen.
+Der [aktuelle Framework-Ausbau](docs/framework-expansion.md) ergänzt i18n, globale Datensatzsuche, Audit-Timeline, CSV-Import mit Relationsvorschau und PDF-Sheets. Aktiviert wird über kleine Capability-Interfaces an REST-Ressourcen (`HasGlobalSearch`, `HasCsvImport`) und am Modell (`HasAuditTrail`, siehe Abschnitt 44 des Handbuchs); `php artisan framework:check` prüft die Definitionen; Upgrade: `php artisan migrate --force`. Der Laravel-Scheduler bereinigt täglich abgelaufene Importvorschauen.
 
 ## Lokal starten
 

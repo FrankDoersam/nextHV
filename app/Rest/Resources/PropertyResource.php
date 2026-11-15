@@ -2,9 +2,13 @@
 
 namespace App\Rest\Resources;
 
+use App\Contracts\Framework\HasCsvImport;
+use App\Contracts\Framework\HasGlobalSearch;
 use App\Domain\Property\Enums\ManagementType;
 use App\Domain\Property\Enums\PropertyStatus;
 use App\Domain\Property\Enums\PropertyType;
+use App\Framework\ImportDefinition;
+use App\Framework\SearchDefinition;
 use App\Models\Property;
 use App\Models\Unit;
 use App\Rest\Actions\ArchiveProperties;
@@ -29,8 +33,26 @@ use Lomkit\Rest\Mutations\Contextual;
 use Lomkit\Rest\Mutations\MutationContext;
 use Lomkit\Rest\Relations\HasMany;
 
-class PropertyResource extends Resource
+class PropertyResource extends Resource implements HasCsvImport, HasGlobalSearch
 {
+    public function uiLabel(): string
+    {
+        return 'Objekte';
+    }
+
+    public function globalSearch(): SearchDefinition
+    {
+        return new SearchDefinition(subtitle: ['code', 'city'], priority: 10);
+    }
+
+    public function csvImport(): ImportDefinition
+    {
+        return new ImportDefinition(
+            fields: ['code', 'name', 'type', 'management_type', 'status', 'street', 'house_number', 'postal_code', 'city', 'country', 'construction_year', 'land_area', 'management_started_on', 'next_inspection_on'],
+            aliases: ['code' => ['Objektnummer', 'Objekt-Nr.'], 'name' => ['Objektname']],
+        );
+    }
+
     public static string $model = Property::class;
 
     public function fields(): array

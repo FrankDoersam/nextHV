@@ -28,7 +28,7 @@ Schedule::command('model:prune', ['--model' => ImportBatch::class])->daily();
 
 Artisan::command('framework:check', function (FeatureRegistry $features) {
     try {
-        foreach ($features->all() as $name => $definition) {
+        foreach ($features->all(applyAvailability: false) as $name => $definition) {
             $this->line($name.': '.implode(', ', array_filter([
                 $definition['search'] ? 'search' : null,
                 $definition['audit'] ? 'audit' : null,
@@ -40,7 +40,7 @@ Artisan::command('framework:check', function (FeatureRegistry $features) {
 
         return 1;
     }
-    $this->info('Model feature definitions are valid.');
+    $this->info('Resource capabilities and model audit definitions are valid.');
 
     return 0;
-})->purpose('Validate model search, audit and import declarations against the REST schema');
+})->purpose('Validate resource search/import capabilities and model audit declarations against the REST schema');

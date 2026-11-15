@@ -2,7 +2,7 @@
 
 namespace App\Observers;
 
-use App\Framework\FeatureRegistry;
+use App\Contracts\Framework\HasAuditTrail;
 use App\Models\AuditEvent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -31,30 +31,32 @@ class AuditObserver
 
     private function record(Model $model, string $event): void
     {
-        foreach (app(FeatureRegistry::class)->all() as $name => $feature) {
-            if (empty($feature['audit']) || ! in_array($event, $feature['audit_events'], true) || $model::class !== $feature['resource']::$model) {
-                continue;
-            }
-            $changes = [];
-            foreach ($feature['audit'] as $field) {
-                if (in_array($field, $model->getHidden(), true) || ($event === 'updated' && ! $model->wasChanged($field))) {
-                    continue;
-                }
-                $before = in_array($event, ['created', 'restored'], true) ? null : $model->getRawOriginal($field);
-                $after = $event === 'deleted' ? null : ($model->getAttributes()[$field] ?? null);
-                if ($before === $after) {
-                    continue;
-                }
-                $changes[$field] = ['before' => $this->scalar($before), 'after' => $this->scalar($after)];
-            }
-            if ($changes === [] && $event === 'updated') {
-                return;
-            }
-            $user = auth()->user();
-            AuditEvent::create(['resource' => $name, 'record_id' => $model->getKey(), 'actor_id' => $user?->getAuthIdentifier(), 'actor_name' => Str::limit($user?->name ?? 'System', 150), 'event' => $event, 'changes' => $changes, 'created_at' => now()]);
-
+        if (! $model instanceof HasAuditTrail) {
             return;
         }
+        $definition = $model::auditTrail();
+        if ($definition->fields === [] || ! in_array($event, $definition->events, true)) {
+            return;
+        }
+        $name = $definition->stream ?? Str::replace('_', '-', $model->getTable());
+        $changes = [];
+        foreach ($definition->fields as $field) {
+            if (in_array($field, $model->getHidden(), true) || ($event === 'updated' && ! $model->wasChanged($field))) {
+                continue;
+            }
+            $before = in_array($event, ['created', 'restored'], true) ? null : $model->getRawOriginal($field);
+            $after = $event === 'deleted' ? null : ($model->getAttributes()[$field] ?? null);
+            if ($before === $after) {
+                continue;
+            }
+            $changes[$field] = ['before' => $this->scalar($before), 'after' => $this->scalar($after)];
+        }
+        if ($changes === [] && $event === 'updated') {
+            return;
+        }
+        $user = auth()->user();
+        AuditEvent::on($model->getConnectionName())->create(['resource' => $name, 'record_id' => $model->getKey(), 'actor_id' => $user?->getAuthIdentifier(), 'actor_name' => Str::limit($user?->name ?? 'System', 150), 'event' => $event, 'changes' => $changes, 'created_at' => now()]);
+
     }
 
     private function scalar(mixed $value): string|int|float|bool|null

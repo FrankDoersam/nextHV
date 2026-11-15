@@ -40,6 +40,11 @@ abstract class Resource extends RestResource
         return Str::replace('_', '-', static::newModel()->getTable());
     }
 
+    public function uiLabel(): string
+    {
+        return Str::headline($this->uiResourceName());
+    }
+
     /** The picker title is declared once for forms and relation filters. */
     public function uiTitleField(): string
     {

@@ -2,8 +2,12 @@
 
 namespace App\Rest\Resources;
 
+use App\Contracts\Framework\HasCsvImport;
+use App\Contracts\Framework\HasGlobalSearch;
 use App\Domain\Property\Enums\UnitStatus;
 use App\Domain\Property\Enums\UnitType;
+use App\Framework\ImportDefinition;
+use App\Framework\SearchDefinition;
 use App\Models\Unit;
 use App\Rest\Actions\CloneUnit;
 use App\Rest\Metrics\GroupedCounts;
@@ -23,8 +27,27 @@ use Lomkit\Rest\Mutations\MutationNode;
 use Lomkit\Rest\Relations\BelongsTo;
 use Lomkit\Rest\Relations\HasMany;
 
-class UnitResource extends Resource
+class UnitResource extends Resource implements HasCsvImport, HasGlobalSearch
 {
+    public function uiLabel(): string
+    {
+        return 'Einheiten';
+    }
+
+    public function globalSearch(): SearchDefinition
+    {
+        return new SearchDefinition(subtitle: ['property.name', 'property.city', 'code'], priority: 20);
+    }
+
+    public function csvImport(): ImportDefinition
+    {
+        return new ImportDefinition(
+            fields: ['property_id', 'code', 'name', 'type', 'status', 'floor', 'area', 'rooms', 'has_balcony', 'barrier_free'],
+            relations: ['property' => ['code', 'name']],
+            aliases: ['property_id' => ['Objektnummer', 'Objekt-Nr.'], 'code' => ['Einheitennummer'], 'name' => ['Einheitenname'], 'status' => ['Zustand']],
+        );
+    }
+
     public static string $model = Unit::class;
 
     public function uiPicker(): array

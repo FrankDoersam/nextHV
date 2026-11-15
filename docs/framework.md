@@ -1699,11 +1699,11 @@ Integriert sind die gemeinsamen Grid-Beschriftungen/Pagination, zentrale Formula
 
 Topbar und `Ctrl/Cmd+K` öffnen jetzt den gemeinsamen `GlobalSearch`-Dialog. Ab zwei Zeichen wird `POST /api/v1/global-search` ausgeführt (250 ms Debounce, maximal 100 Zeichen, abbrechbare Anfrage). Ergebnisse sind nach Ressource gruppiert; mehr als zehn Treffer führen mit dem Suchbegriff in die vollständige Tabellenansicht. Clientseitiges erneutes Caption-Filtern ist deaktiviert, damit Treffer über verwandte Objekte sichtbar bleiben.
 
-Aktivierung direkt am Modell über `framework(): ModelFeatures` und `->search(subtitle: [...], title: 'code', limit: 10, priority: 10)`. Ohne `search()` bleibt das Modell aus der globalen Suche ausgeschlossen. Registrierte REST-Routen liefern die Ressourcen automatisch, auch bei Route-Cache. Caption-Relationen werden gezielt vorgeladen; Titel, Trefferlimit (1–50) und Reihenfolge sind konfigurierbar. Die durchsuchbaren Felder kommen weiterhin aus `->searchable()` und `searchableRelations()` der REST-Ressource; sie werden nicht nochmals im Modell definiert. Der Endpoint verwendet `Rest::search(...)->as($user)` und damit native Feld-/Relationssuche und Autorisierung; er umgeht keine Scopes mit einem selbstgebauten SQL-OR. Er liefert nur ID, Titel, Unterzeile und lokale Zielroute. Ausweise sind nicht registriert. Mitgelieferte Ressourcen: Objekte, Einheiten, Geschäftspartner, Verträge. Organisationsgrenzen bleiben gemäß bisheriger Entscheidung zurückgestellt und werden durch diese Suche nicht ergänzt.
+Die REST-Resource implementiert `HasGlobalSearch` mit `globalSearch(): SearchDefinition`, etwa `new SearchDefinition(subtitle: ['city'], title: 'code', limit: 10, priority: 10)`. Ohne Interface bleibt die Ressource aus der globalen Suche ausgeschlossen. `uiLabel()` bestimmt die Gruppenbeschriftung. Registrierte REST-Routen liefern die Ressourcen automatisch, auch bei Route-Cache. Caption-Relationen werden gezielt vorgeladen; Titel, Trefferlimit (1–50) und Reihenfolge sind konfigurierbar. Die durchsuchbaren Felder kommen weiterhin aus `->searchable()` und `searchableRelations()` der REST-Ressource; sie werden nicht nochmals im Modell definiert. Der Endpoint verwendet `Rest::search(...)->as($user)` und damit native Feld-/Relationssuche und Autorisierung; er umgeht keine Scopes mit einem selbstgebauten SQL-OR. Er liefert nur ID, Titel, Unterzeile und lokale Zielroute. Ausweise sind nicht registriert. Mitgelieferte Ressourcen: Objekte, Einheiten, Geschäftspartner, Verträge. Organisationsgrenzen bleiben gemäß bisheriger Entscheidung zurückgestellt und werden durch diese Suche nicht ergänzt.
 
 ## 43. Audit-Timeline
 
-`Model::framework()` schaltet mit `->audit(fields: ['code', 'name', ...], events: ['created', 'updated', 'deleted', 'restored'])` die Historie frei. `HasModelFeatures` registriert die Modellereignisse. Akteur und Zeitpunkt werden automatisch erfasst; ohne `audit()` bleibt die Historie deaktiviert. Die Liste ist eine ausdrückliche Datenfreigabe, keine automatische Kopie aller Modellattribute. Versteckte Modellattribute werden zusätzlich ausgeschlossen. Standardmäßig erfasst: ausgewählte Stammdaten von Objekten, Einheiten, Partnern und Verträgen; keine Ausweisnummern, Bankdaten oder freien Notizen. Werte sind auf 500 Zeichen begrenzt. Nicht eingetragene Felder haben keine Historie.
+Das Modell implementiert `HasAuditTrail` mit `public static function auditTrail(): AuditDefinition` und verwendet den Trait `RecordsAuditTrail`. Rückgabe z. B. `new AuditDefinition(fields: ['code', 'name'], events: ['created', 'updated', 'deleted', 'restored'])`. Akteur und Zeitpunkt werden automatisch erfasst. Ohne diesen Opt-in bleibt die Historie deaktiviert. Der Schreibpfad liest ausschließlich die Model-Definition, ohne Route-Discovery oder REST-Schema-Kompilierung. Der stabile Stream ist standardmäßig der Tabellenname mit Bindestrichen statt Unterstrichen; optional `stream: 'properties'`. Mehrere Resource-Ansichten desselben Models teilen diese Historie; UI-Verfügbarkeit schaltet die Aufzeichnung nicht ab. Bestehende Streamnamen bleiben erhalten. Die Liste ist eine ausdrückliche Datenfreigabe, keine automatische Kopie aller Modellattribute. Versteckte Modellattribute werden zusätzlich ausgeschlossen. Standardmäßig erfasst: ausgewählte Stammdaten von Objekten, Einheiten, Partnern und Verträgen; keine Ausweisnummern, Bankdaten oder freien Notizen. Werte sind auf 500 Zeichen begrenzt. Nicht eingetragene Felder haben keine Historie.
 
 Der `AuditObserver` erfasst `created`, `updated`, `deleted`, `restored` mit Akteur und Vorher-/Nachher-Werten. Er schreibt synchron auf derselben DB-Verbindung; innerhalb der bestehenden REST-Schreibtransaktion werden Audit und Fachänderung gemeinsam zurückgerollt. Eigene Jobs/Actions müssen ihre fachlichen Writes wie üblich in einer Transaktion ausführen; direkte Query-Builder-Updates ohne Modellereignisse werden nicht erfasst. Systemänderungen haben den Akteur „System“. Die Vergangenheit wird nicht rekonstruiert.
 
@@ -1713,34 +1713,90 @@ Nach `php artisan migrate --force` erscheint der Tab bei Ressourcen mit `feature
 
 `CsvImportDialog` ist ein gemeinsam genutzter, lazy geladener Dialog. `ResourceCollection` zeigt ihn automatisch für serverseitig freigegebene Ressourcen und vorhandene Create-Berechtigung. `importable={false}` blendet ihn aus. In eingebetteten, durch Elternfilter eingeschränkten Tabellen ist er standardmäßig aus: Ein Import darf keine scheinbar gesperrte Elternbeziehung umgehen. Für andere DataProvider ist dieser Laravel-Import nicht automatisch aktiviert.
 
-Die Freigabe liegt direkt am Modell; Objekte und Einheiten sind eingerichtet. Die zentrale Konfigurationsdatei wurde entfernt. Eine Modell-Definition sieht so aus:
+Die Freigabe liegt an der vorhandenen REST-Resource; Objekte und Einheiten sind eingerichtet. Die Resource ist bereits für Felder, Regeln, Beziehungen und Actions zuständig. Audit bleibt als Datenverhalten am Model. Alle Definitionen sind `final readonly` und verwenden benannte Constructor-Argumente:
 
 ```php
-use App\Contracts\Framework\DefinesModelFeatures;
-use App\Framework\HasModelFeatures;
-use App\Framework\ModelFeatures;
+use App\Contracts\Framework\HasCsvImport;
+use App\Contracts\Framework\HasGlobalSearch;
+use App\Framework\ImportDefinition;
+use App\Framework\SearchDefinition;
 
-class Unit extends Model implements DefinesModelFeatures
+class UnitResource extends Resource implements HasGlobalSearch, HasCsvImport
 {
-    use HasModelFeatures;
+    public static string $model = Unit::class;
 
-    public static function framework(): ModelFeatures
+    public function globalSearch(): SearchDefinition
     {
-        return ModelFeatures::make()->label('Einheiten')
-            ->search(subtitle: ['property.name', 'property.city', 'code'], priority: 20)
-            ->audit(fields: ['code', 'name', 'property_id', 'type', 'status', 'area'])
-            ->import(
-                fields: ['property_id', 'code', 'name', 'type', 'status', 'area'],
-                relations: ['property' => ['code', 'name']],
-                aliases: ['property_id' => ['Objektnummer', 'Objekt-Nr.']],
-            );
+        return new SearchDefinition(
+            subtitle: ['property.name', 'property.city', 'code'], priority: 20,
+        );
+    }
+
+    public function csvImport(): ImportDefinition
+    {
+        return new ImportDefinition(
+            fields: ['property_id', 'code', 'name', 'type', 'status', 'area'],
+            relations: ['property' => ['code', 'name']],
+            aliases: ['property_id' => ['Objektnummer', 'Objekt-Nr.']],
+        );
+    }
+
+    // Bestehende fields(), relations(), actions() bleiben die fachliche Quelle.
+}
+```
+
+```php
+use App\Contracts\Framework\HasAuditTrail;
+use App\Framework\AuditDefinition;
+use App\Framework\RecordsAuditTrail;
+
+class Unit extends Model implements HasAuditTrail
+{
+    use RecordsAuditTrail;
+
+    public static function auditTrail(): AuditDefinition
+    {
+        return new AuditDefinition(fields: ['code', 'name', 'property_id', 'status']);
     }
 }
 ```
 
+### Registrierung und Erweiterung durch Module
+
+Standard: vorhandene `Rest::resource(...)`-Routen registrieren die Ressource automatisch, auch mit Laravel-Route-Cache. Kein Model-Verzeichnisscan und kein zweiter Pflichtkatalog. Optionale Modulregistrierung in `ServiceProvider::register()`:
+
+```php
+$this->app->tag([ProjectResource::class], FeatureRegistry::RESOURCE_TAG);
+```
+
+Tags registrieren die Ressource für die Feature-Registry; die normalen REST-/React-Routen sind weiterhin separat anzulegen. Identische Registrierungen sind idempotent; verschiedene Klassen mit gleichem `uiResourceName()` werden abgewiesen. Austausch vorhandener Ressourcen erfolgt bewusst über Laravel-Bindings, nicht durch stille Überschreibreihenfolge. Resource-Konfiguration lässt sich bei größerem Umfang an eigene containeraufgelöste Klassen delegieren, z. B. `return app(UnitImportDefinition::class)->definition();`; deren Rückgabe bleibt `ImportDefinition`. Keine zusätzliche Importer-Klasse für jedes einfache Modul erforderlich.
+
+### Dynamische Verfügbarkeit und Laufzeitkosten
+
+Optional implementiert die Resource `HasFeatureAvailability`:
+
+```php
+public function featureAvailable(Feature $feature, FeatureContext $context): bool
+{
+    return match ($feature) {
+        Feature::Import => $context->actor !== null
+            && $context->actor->can('create', static::$model),
+        default => true,
+    };
+}
+```
+
+`FeatureContext` enthält den aktuellen Akteur und die Backend-Locale. Diese zusätzliche Einschränkung gilt für Metadaten, globale Suche, Audit-Lesen und jeden Import-Endpoint inklusive Bestätigung. Sie ersetzt keine Policy und aktiviert keine nicht deklarierte Fähigkeit. Audit-Schreiben richtet sich ausschließlich nach dem Modell. Beispiel-Policy erst aktivieren, wenn fachlich gewünscht; der bestehende Permission-Adapter bleibt unverändert.
+
+Die `FeatureRegistry` hält Discovery und kompilierte Definitionen nur im Laravel-Request-/Job-Scope. `FeatureDefinitionCompiler` prüft die Struktur einmal je Resource-Klasse und Lifecycle. Deklarationsmethoden müssen innerhalb dieses Lifecycles stabil sein; keine benutzerabhängigen Felder darin verstecken. Benutzer-/Locale-Entscheidungen gehören in `featureAvailable()` bzw. `uiLabel()` und werden nicht memoisiert. Globale Suche überspringt Klassen ohne Such-Interface bereits vor der Schema-Kompilierung. Audit-Writes lösen die Registry überhaupt nicht auf. Es gibt keinen persistenten Benutzer-, Berechtigungs- oder Tenant-Cache und keine zusätzliche Cache-Invalidierungspflicht. Aktuell werden bei der Discovery die registrierten Resource-Instanzen einmal pro Scope aufgelöst; ein persistentes Manifest ist erst nach Messung bei sehr großen Katalogen sinnvoll.
+
+### Migration der bisherigen API
+
+Die interne `Model::framework(): ModelFeatures`-API wurde vollständig ersetzt; keine parallelen Konfigurationspfade. `search()` wird `Resource::globalSearch()`, `import()` wird `Resource::csvImport()`, `audit()` wird `Model::auditTrail()`, `label()` wird `Resource::uiLabel()`. `DefinesModelFeatures`, `HasModelFeatures` und `ModelFeatures` entfallen. Alle mitgelieferten Modelle/Ressourcen sind migriert. Externe Module müssen die Imports, Interfaces und Methoden entsprechend umstellen. Datenbank und React-Metadatenvertrag bleiben kompatibel; keine neue Migration.
+
 `relations` benennt die vorhandene Eloquent-/REST-BelongsTo-Beziehung und deren erlaubte Suchmerkmale. Fremdschlüssel und Zielressource werden abgeleitet. Die vorhandenen Picker-Filter gelten sowohl beim Auflösen als auch bei der Übernahme. Andere Relationsarten werden nicht implizit importiert. `aliases` ergänzt alternative CSV-Spaltenüberschriften; bei mehrdeutiger Erkennung erfolgt keine automatische Zuordnung.
 
-`php artisan framework:check` prüft alle registrierten Ressourcen auf unbekannte/versteckte Felder, nicht schreibbare Importfelder und fehlende oder ungültige Relationsdefinitionen. Dieser Check ist Teil der CI. Die Registry ist pro Request/Job-Lifecycle scoped; es gibt keinen tenant- oder benutzerübergreifenden Entscheidungscache.
+`php artisan framework:check` prüft alle registrierten Ressourcen auf unbekannte/versteckte Felder, nicht schreibbare Importfelder und fehlende oder ungültige Relationsdefinitionen. Dieser Check ist Teil der CI und prüft auch momentan nicht verfügbare Fähigkeiten, damit dynamische Ausblendung keine ungültige Konfiguration verdeckt. Die Registry ist pro Request/Job-Lifecycle scoped; es gibt keinen tenant- oder benutzerübergreifenden Entscheidungscache.
 
 Die Liste ist eine Importfreigabe, kein zweites Validierungsschema. Beschriftungen, Typen, Enum-Bezeichnungen und Schreibrechte stammen aus PHP-REST-Feldern. `ImportMutationRequest` verwendet die native Mutation-Pipeline; gleiche Serverregeln, Policies, Model-Observer und Transaktionen wie die normale Anlage. Bei weiteren Ressourcen muss die Freigabe alle fachlich notwendigen Anlagefelder umfassen. Diese Version legt neue Datensätze an; kein verdecktes Upsert, keine verschachtelte Vertragsanlage per CSV.
 
@@ -1750,7 +1806,7 @@ Grenzen: UTF-8 mit optionalem BOM, Komma/Semikolon/Tab, korrekt gequotete Zellen
 
 Die geprüfte Nutzlast liegt verschlüsselt in `import_batches`; der Bestätigungsschlüssel ist an Benutzer und Ressource gebunden und 15 Minuten gültig. Ein transaktionaler Lock und gespeichertes Ergebnis machen wiederholte Bestätigung idempotent. Nach Erfolg wird die Nutzlast geleert. Bei einem Fehler werden alle Fachänderungen und Audit-Einträge zurückgerollt. Der täglich geplante `model:prune` entfernt abgelaufene Batches nach einem Tag; dafür muss der Laravel-Scheduler laufen. Große Hintergrundimporte und dauerhafte Importhistorie sind bewusst nicht Teil dieses synchronen Dialogs.
 
-Der neue `GET .../import/schema` liefert Felder, Pflichtfeldhinweise, Enum-Optionen, Relationssuchmerkmale und Vorlage; alle Beschriftungen stammen aus dem Backend. Die Hinweise ersetzen keine Servervalidierung. Deployment bei noch nicht ausgeführtem vorherigen Ausbau: `php artisan migrate --force`; dieser Modell-Umbau benötigt keine weitere Migration. Tests decken Zuordnung, aufgelöste/mehrdeutige/gelöschte Beziehungen, Benutzerbindung, Ablauf, Opt-in/Create-Policy, native Fehler, atomaren Rollback und doppelte Bestätigung ab.
+Der neue `GET .../import/schema` liefert Felder, Pflichtfeldhinweise, Enum-Optionen, Relationssuchmerkmale und Vorlage; alle Beschriftungen stammen aus dem Backend. Die Hinweise ersetzen keine Servervalidierung. Deployment bei noch nicht ausgeführtem vorherigen Ausbau: `php artisan migrate --force`; dieser Capability-Umbau benötigt keine weitere Migration. Tests decken Zuordnung, aufgelöste/mehrdeutige/gelöschte Beziehungen, Benutzerbindung, Ablauf, Opt-in/Create-Policy, native Fehler, atomaren Rollback und doppelte Bestätigung ab.
 
 ## 45. Dokument-Actions und PDF-Vorschau im Sheet
 
