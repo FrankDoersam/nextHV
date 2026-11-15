@@ -182,9 +182,9 @@ it("lets the icon rail open a parent's subtree and preserves labelled controls",
     ).toHaveProperty("group:Stammdaten", true);
 });
 
-it("uses a quiet full-row REUI selection without the old half-round left marker", () => {
+it("uses a quiet full-row REUI selection without the old half-round left marker", async () => {
     mount();
-    const link = screen.getByRole("link", { name: /Aktiv\s*7/ });
+    const link = await screen.findByRole("link", { name: /Aktiv\s*7/ });
     expect(link).toHaveAttribute("aria-current", "page");
     expect(link).toHaveAttribute("data-active", "true");
     expect(link.className).toContain("bg-primary/");
