@@ -337,6 +337,8 @@ it("opens the final PDF sheet before the report resolves and retains it through 
     expect(within(sheet).getByRole("status", { name: "PDF wird geladen" }))
         .toHaveTextContent("Bericht wird erstellt");
     expect(within(sheet).queryByRole("progressbar")).not.toBeInTheDocument();
+    expect(sheet.querySelector('[data-slot="pdf-preview-loading"] [data-slot="spinner"]'))
+        .toBeInTheDocument();
     expect(sheet.querySelector('[data-slot="skeleton"]')).toBeNull();
     expect(sheet.querySelector('[data-slot="pdf-preview-loading"]'))
         .toHaveAttribute("aria-busy", "true");
@@ -382,7 +384,7 @@ it("shows the actual byte percentage while downloading, never a fake preparation
     const sheet = screen.getByRole("dialog", { name: "Objektbericht" });
     await waitFor(() =>
         expect(within(sheet).getByRole("progressbar", { name: "PDF-Übertragung" }))
-            .toHaveAttribute("value", "50"),
+            .toHaveAttribute("aria-valuenow", "50"),
     );
     expect(within(sheet).getByRole("status", { name: "PDF wird geladen" }))
         .toHaveTextContent("PDF wird übertragen");

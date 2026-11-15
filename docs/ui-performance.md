@@ -20,11 +20,17 @@ Authentifizierung, `no-store`, MIME-Prüfung und Abbruch bei Schließen.
 Bei bekanntem `Content-Length` wird ein nativer Stream mit gedrosselter
 Fortschrittsanzeige verwendet; ohne Größenangabe gibt es einen neutralen
 Ladezustand. Für die serverseitige Erstellung und das Rendern (unbekannte Dauer)
-zeigt das sofort geöffnete Sheet eine dezente, unbestimmte Ladeanzeige mit
-konkreter Phase. Nur die echte Byte-Übertragung erhält bei bekanntem
-`Content-Length` eine Prozentanzeige. Keine simulierten Fortschrittswerte,
-fiktiven PDF-Seiten oder Skeleton-Werkzeugleisten. Die Statusregion ist
-barrierefrei beschriftet und respektiert reduzierte Bewegungen.
+zeigt das sofort geöffnete Sheet eine **REUI-Base-Nova-konforme** Kombination:
+den im Projekt vorhandenen Shadcn/REUI-Spinner als Inline-Status nach
+`@reui/c-spinner-9` (https://reui.io/components/spinner/c-spinner-9)
+und bei bekanntem `Content-Length` die `Progress.Root / Label / Value /
+Track / Indicator`-Komposition aus Base UI, wie im öffentlichen REUI-Progress-
+Muster (https://reui.io/components/progress) beschrieben. Damit sind die
+UI-Primitives im vorhandenen REUI/Base-Nova-Stack, ohne App-fremde Illustrationen,
+zusätzliche Karten oder selbst gezeichnete Fortschrittsleisten.
+Keine simulierten Fortschrittswerte, fiktiven PDF-Seiten oder
+Skeleton-Werkzeugleisten. Die Statusregion ist barrierefrei beschriftet
+und respektiert reduzierte Bewegungen.
 Vorschau und Download verwenden denselben Blob, der nach Schließen
 freigegeben wird. Es findet kein zweiter PDF-Fetch statt.
 

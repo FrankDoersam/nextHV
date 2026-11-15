@@ -1,5 +1,7 @@
 import { lazy, Suspense, useEffect } from "react";
-import { FileText, LoaderCircle } from "lucide-react";
+import { FileText } from "lucide-react";
+import { Progress } from "@base-ui/react/progress";
+import { Spinner } from "@/components/ui/spinner";
 import { Overlay } from "./overlay";
 import { ErrorState } from "./content";
 import { PdfDocumentActions } from "./pdf-document-actions";
@@ -8,9 +10,10 @@ import type { Presentation } from "@/framework/types";
 const PdfCanvasPreview = lazy(() => import("./pdf-canvas-preview"));
 
 /**
- * A PDF report is a multi-step operation, not a page whose missing content
- * can be approximated by skeleton rows. Show the real stage and only report a
- * percentage when the browser knows the document's transfer size.
+ * REUI Base-Nova composition:
+ * c-spinner-9 (inline spinner + status copy) for indeterminate work and
+ * Base UI Progress (label/value/track/indicator) for measured transfers.
+ * Unlike a skeleton, this does not pretend the document contents exist yet.
  */
 function PdfLoadState({
     stage,
@@ -44,52 +47,49 @@ function PdfLoadState({
         <div
             data-slot="pdf-preview-loading"
             aria-busy="true"
-            className="flex min-h-0 flex-1 items-center justify-center bg-muted/40 px-6 py-12"
+            className="flex min-h-0 flex-1 items-center justify-center bg-card p-6"
         >
-            <div className="flex w-full max-w-sm flex-col items-center text-center">
-                <div
-                    aria-hidden="true"
-                    className="flex size-14 items-center justify-center rounded-2xl border bg-card text-muted-foreground shadow-xs"
-                >
-                    <FileText className="size-6" />
-                </div>
+            <div className="w-full max-w-72">
                 <div
                     role="status"
                     aria-label="PDF wird geladen"
                     aria-live="polite"
                     aria-atomic="true"
-                    className="mt-5"
+                    className="flex items-start gap-3"
                 >
-                    <p className="text-sm font-semibold text-foreground">
-                        {copy.title}
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                        {copy.detail}
-                    </p>
-                </div>
-                <div className="mt-5 flex min-h-8 w-full max-w-56 items-center justify-center">
                     {hasProgress ? (
-                        <div className="w-full">
-                            <progress
-                                aria-label="PDF-Übertragung"
-                                max={100}
-                                value={progress}
-                                className="h-1.5 w-full overflow-hidden rounded-full accent-primary"
-                            />
-                            <p
-                                aria-hidden="true"
-                                className="mt-1.5 text-xs tabular-nums text-muted-foreground"
-                            >
-                                {Math.round(progress!)} %
-                            </p>
-                        </div>
+                        <span aria-hidden="true" className="size-4 shrink-0" />
                     ) : (
-                        <LoaderCircle
+                        <Spinner
+                            role="presentation"
                             aria-hidden="true"
-                            className="size-5 text-primary motion-safe:animate-spin"
+                            className="mt-0.5 size-4 shrink-0 text-primary motion-reduce:animate-none"
                         />
                     )}
+                    <div className="min-w-0 space-y-1">
+                        <p className="text-sm font-medium text-foreground">
+                            {copy.title}
+                        </p>
+                        <p className="text-xs leading-5 text-muted-foreground">
+                            {copy.detail}
+                        </p>
+                    </div>
                 </div>
+                {hasProgress && (
+                    <Progress.Root
+                        value={Math.round(progress)}
+                        locale="de-DE"
+                        className="mt-4 grid w-full grid-cols-[1fr_auto] gap-y-2"
+                    >
+                        <Progress.Label className="text-xs text-muted-foreground">
+                            PDF-Übertragung
+                        </Progress.Label>
+                        <Progress.Value className="text-right text-xs tabular-nums text-muted-foreground" />
+                        <Progress.Track className="col-span-2 h-1.5 overflow-hidden rounded-full bg-secondary">
+                            <Progress.Indicator className="block h-full rounded-full bg-primary motion-safe:transition-[width] motion-safe:duration-150" />
+                        </Progress.Track>
+                    </Progress.Root>
+                )}
             </div>
         </div>
     );

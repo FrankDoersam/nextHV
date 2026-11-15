@@ -226,5 +226,10 @@
         "file": "resources/js/components/blocks/collection-surface.tsx",
         "source": "https://reui.io/docs/components/base/data-grid",
         "note": "Gemeinsame Listenfläche auf vorhandenem REUI DataGrid mit integriertem Summary-Slot, einzeiligen Ansichtstabs und mobilem Seitenfluss. Eigenständige Anwendungskomposition."
+    },
+    {
+        "file": "resources/js/components/blocks/pdf-preview-sheet.tsx",
+        "source": "https://reui.io/components/spinner/c-spinner-9",
+        "note": "REUI Base-Nova: Inline Spinner/Status nach freiem c-spinner-9-Muster, Progress-Komposition aus @base-ui/react/progress nach https://reui.io/components/progress. Nutzt vorhandenes Overlay; keine zusätzlichen Renderer oder Abhängigkeiten."
     }
 ]
