@@ -181,3 +181,34 @@ it("lets the icon rail open a parent's subtree and preserves labelled controls",
         ),
     ).toHaveProperty("group:Stammdaten", true);
 });
+
+it("uses a quiet full-row REUI selection without the old half-round left marker", () => {
+    mount();
+    const link = screen.getByRole("link", { name: /Aktiv\s*7/ });
+    expect(link).toHaveAttribute("aria-current", "page");
+    expect(link).toHaveAttribute("data-active", "true");
+    expect(link.className).toContain("bg-primary/");
+    expect(link.className).not.toContain("border-l-2");
+    expect(link.className).not.toContain("rounded-r-full");
+
+    const section = screen.getByRole("button", { name: "Stammdaten" });
+    expect(section).toHaveAttribute("data-slot", "sidebar-group-trigger");
+    expect(section).toHaveAttribute("data-branch-active", "true");
+    expect(section.querySelector("svg")).not.toBeNull();
+    expect(section).toHaveAttribute("aria-expanded", "true");
+});
+
+it("keeps rail navigation to one icon per group without a corner chevron or dot", () => {
+    mount(true);
+    const group = screen.getByRole("button", {
+        name: "Stammdaten Untermenü öffnen",
+    });
+    expect(group).toHaveAttribute("data-slot", "sidebar-rail-group");
+    expect(group).toHaveAttribute("aria-pressed", "true");
+    expect(group.querySelectorAll("svg")).toHaveLength(1);
+    expect(group.querySelector(".lucide-chevron-right")).toBeNull();
+    expect(group.querySelector(".lucide-circle")).toBeNull();
+    expect(
+        screen.queryByRole("button", { name: "Objekte Untermenü öffnen" }),
+    ).not.toBeInTheDocument();
+});

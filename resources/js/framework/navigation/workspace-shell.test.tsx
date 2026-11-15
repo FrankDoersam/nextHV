@@ -93,6 +93,14 @@ it("collapses and expands the desktop rail without losing the current page", asy
     );
     expect(sidebar).toHaveAttribute("data-collapsed", "true");
     expect(window.localStorage.getItem("nexthv.sidebar.compact")).toBe("1");
+    // The compact rail uses its single fixed header instead of a second
+    // brand row plus a separate expand-button row.
+    expect(sidebar.querySelector('[data-slot="sidebar-header"]'))
+        .toContainElement(
+            screen.getByRole("button", { name: "Navigation ausklappen" }),
+        );
+    expect(sidebar.querySelector('[data-slot="sidebar-header"]')?.nextElementSibling)
+        .toHaveAttribute("data-slot", "sidebar-navigation");
     // Collapsed navigation displays groups, and the group click opens the rail.
     expect(screen.getByRole("button", { name: "Stammdaten Untermenü öffnen" })).toBeVisible();
     await user.click(

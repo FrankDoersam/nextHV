@@ -1092,6 +1092,33 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         await capture(
             width === 768 ? "50-objekte-ipad" : "51-appshell-objekte-desktop",
         );
+        if (width === 1440) {
+            const sidebar = page.locator('[data-slot="desktop-sidebar"]');
+            const active = sidebar.getByRole("link", {
+                name: "Objekte",
+                exact: true,
+            });
+            await expect(active).toHaveAttribute("data-active", "true");
+            await expect(active).toHaveCSS("border-left-width", "0px");
+            await capture("56-sidebar-desktop-expanded");
+
+            await sidebar.getByRole("button", {
+                name: "Navigation einklappen",
+            }).click();
+            await expect(sidebar).toHaveAttribute("data-collapsed", "true");
+            const railGroup = sidebar.getByRole("button", {
+                name: "Stammdaten Untermenü öffnen",
+            });
+            await expect(railGroup.locator("svg")).toHaveCount(1);
+            await capture("57-sidebar-desktop-rail");
+
+            await railGroup.click();
+            await expect(sidebar).not.toHaveAttribute("data-collapsed");
+            await expect(sidebar.getByRole("button", {
+                name: "Stammdaten",
+                exact: true,
+            })).toHaveAttribute("aria-expanded", "true");
+        }
     }
     await page.setViewportSize({ width: 390, height: 844 });
     await page.getByRole("button", { name: "Menü öffnen" }).click();

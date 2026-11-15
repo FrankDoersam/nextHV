@@ -1,6 +1,6 @@
 import { Collapsible } from "@base-ui/react/collapsible";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, FolderClosed } from "lucide-react";
+import { ChevronDown, FolderClosed } from "lucide-react";
 import { useEffect, useState, type ReactElement } from "react";
 import { Link, useLocation } from "react-router";
 import {
@@ -169,33 +169,43 @@ function SidebarNode({
     const open = controls.isOpen(item);
     const selected = navigationSelected(item, pathname, search);
     const branchActive = navigationBranchActive(item, pathname, search);
-    const Icon = item.icon;
+    const Icon = item.icon ?? (hasChildren && !item.to ? FolderClosed : undefined);
 
+    // REUI Base-Nova selection: one quiet full-row tint. No leading rounded
+    // border, half-circle, branch connector or separate selection dot.
+    const rowClasses = cn(
+        "group/nav flex min-h-9 min-w-0 flex-1 items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition-[background-color,color] duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        selected
+            ? "bg-primary/[0.09] font-semibold text-foreground"
+            : branchActive
+              ? "font-medium text-foreground hover:bg-muted/60"
+              : "font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+        item.disabledReason && "cursor-not-allowed opacity-50",
+    );
     const label = (
         <>
             {Icon && (
                 <Icon
-                    aria-hidden
-                    className="size-4 shrink-0 text-muted-foreground"
+                    aria-hidden="true"
+                    className={cn(
+                        "size-4 shrink-0 transition-colors",
+                        selected
+                            ? "text-primary"
+                            : "text-muted-foreground/75 group-hover/nav:text-foreground",
+                    )}
                 />
             )}
-            <span className="min-w-0 flex-1 truncate text-left">{item.label}</span>
+            <span className="min-w-0 flex-1 truncate text-left">
+                {item.label}
+            </span>
         </>
-    );
-    const rowClasses = cn(
-        "flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded-md border-l-2 border-transparent px-2.5 py-1.5 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        selected
-            ? "border-foreground bg-muted font-semibold text-foreground"
-            : branchActive
-              ? "font-medium text-foreground hover:bg-muted/60"
-              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-        item.disabledReason && "cursor-not-allowed opacity-50",
     );
     const link =
         item.to && !item.disabledReason ? (
             <Link
                 to={item.to}
                 data-slot="sidebar-link"
+                data-active={selected ? "true" : undefined}
                 aria-current={selected ? "page" : undefined}
                 className={rowClasses}
                 onClick={onNavigate}
@@ -212,24 +222,24 @@ function SidebarNode({
                 className={rowClasses}
             >
                 {label}
-                <NavBadge item={item} />
             </span>
         ) : null;
 
     if (!hasChildren) {
         return link ? (
-            <div data-slot="sidebar-item" data-level={level} key={item.id}>
+            <div data-slot="sidebar-item" data-level={level}>
                 <NavHint trigger={link} item={item} rail={false} />
             </div>
         ) : null;
     }
+
     return (
         <Collapsible.Root
             data-slot="sidebar-section"
             data-level={level}
             open={open}
             onOpenChange={(next) => controls.setOpen(item.id, next)}
-            className={cn("min-w-0", level === 0 && "pt-4 first:pt-0")}
+            className={cn("min-w-0", level === 0 && "mt-3")}
         >
             {link ? (
                 <div className="flex min-w-0 items-center gap-1">
@@ -238,34 +248,55 @@ function SidebarNode({
                     </div>
                     <Collapsible.Trigger
                         aria-label={`${item.label} Unterpunkte ${open ? "einklappen" : "ausklappen"}`}
-                        className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                        <ChevronRight
+                        <ChevronDown
+                            aria-hidden="true"
                             className={cn(
-                                "size-3.5 transition-transform",
-                                open && "rotate-90",
+                                "size-3.5 transition-transform duration-150 motion-reduce:transition-none",
+                                open && "rotate-180",
                             )}
                         />
                     </Collapsible.Trigger>
                 </div>
             ) : (
                 <Collapsible.Trigger
-                    className="flex w-full min-h-8 items-center justify-between gap-2 rounded-md px-3 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    data-slot="sidebar-group-trigger"
+                    data-branch-active={branchActive ? "true" : undefined}
+                    className={cn(
+                        "group/nav flex min-h-9 w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[13px] font-medium transition-[background-color,color] duration-150 motion-reduce:transition-none hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        branchActive
+                            ? "text-foreground"
+                            : "text-muted-foreground",
+                        item.disabledReason && "opacity-50",
+                    )}
                     title={item.tooltip ?? item.description}
                 >
-                    <span className="truncate">{item.label}</span>
-                    <ChevronRight
+                    {Icon && (
+                        <Icon
+                            aria-hidden="true"
+                            className={cn(
+                                "size-4 shrink-0",
+                                branchActive
+                                    ? "text-primary"
+                                    : "text-muted-foreground/75 group-hover/nav:text-foreground",
+                            )}
+                        />
+                    )}
+                    <span className="min-w-0 flex-1 truncate">
+                        {item.label}
+                    </span>
+                    <ChevronDown
+                        aria-hidden="true"
                         className={cn(
-                            "size-3 shrink-0 transition-transform",
-                            open && "rotate-90",
+                            "size-3.5 shrink-0 text-muted-foreground/60 transition-transform duration-150 motion-reduce:transition-none",
+                            open && "rotate-180",
                         )}
                     />
                 </Collapsible.Trigger>
             )}
-            <Collapsible.Panel
-                className={cn("min-w-0", level > 0 && "ml-3 border-l border-sidebar-border pl-2")}
-            >
-                <div className="space-y-0.5 pt-1">
+            <Collapsible.Panel className="min-w-0">
+                <div className="space-y-0.5 pt-0.5 pl-3">
                     {item.children.map((child) => (
                         <SidebarNode
                             key={child.id}
@@ -283,7 +314,7 @@ function SidebarNode({
     );
 }
 
-/** REUI-inspired sidebar: accessible disclosure levels, badges, compact rail and mobile reuse one model. */
+/** One REUI/Base-Nova navigation tree for desktop, icon rail and mobile. */
 export function SidebarNavigation({
     items,
     rail,
@@ -298,31 +329,31 @@ export function SidebarNavigation({
     onExpandRail: () => void;
 }) {
     const { pathname, search } = useLocation();
-    // One icon per navigation group, not one icon for every resource.
-    const railItems = items;
+
     return (
         <TooltipProvider delay={250}>
             <nav
                 aria-label="Hauptnavigation"
                 data-slot="sidebar-navigation"
                 className={cn(
-                    "min-h-0 flex-1 overflow-y-auto px-2.5 pt-3 pb-4",
-                    rail && "px-2",
+                    "min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pt-3 pb-4",
+                    rail && "px-2 py-4",
                 )}
             >
-                {!rail && (
-                    <p className="px-3 pb-2 pt-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-                        Arbeitsbereich
-                    </p>
-                )}
                 {rail ? (
                     <div className="space-y-1">
-                        {railItems.map((item, index) => {
+                        {items.map((item, index) => {
                             const Icon = item.icon ?? FolderClosed;
                             const selected = navigationBranchActive(
                                 item,
                                 pathname,
                                 search,
+                            );
+                            const tileClasses = cn(
+                                "flex size-10 items-center justify-center rounded-md transition-[background-color,color] duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                selected
+                                    ? "bg-primary/[0.09] text-primary"
+                                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                             );
                             const trigger = item.disabledReason ? (
                                 <span
@@ -330,39 +361,34 @@ export function SidebarNavigation({
                                     aria-disabled="true"
                                     tabIndex={0}
                                     aria-label={item.label}
-                                    className="flex size-10 items-center justify-center rounded-lg opacity-50"
+                                    className={cn(tileClasses, "opacity-50")}
                                 >
-                                    <Icon className="size-4" />
+                                    <Icon aria-hidden="true" className="size-4" />
                                 </span>
                             ) : item.children.length ? (
                                 <button
                                     type="button"
+                                    data-slot="sidebar-rail-group"
                                     aria-label={`${item.label} Untermenü öffnen`}
+                                    aria-pressed={selected}
                                     onClick={() => {
-                                        // Open the clicked group, even if a user previously collapsed it.
                                         controls.setOpen(item.id, true);
                                         onExpandRail();
                                     }}
-                                    className={cn(
-                                        "relative flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                                        selected && "bg-muted text-foreground",
-                                    )}
+                                    className={tileClasses}
                                 >
-                                    <Icon className="size-4" />
-                                    <ChevronRight className="absolute bottom-1 right-1 size-2.5" />
+                                    <Icon aria-hidden="true" className="size-4" />
                                 </button>
                             ) : (
                                 <Link
                                     to={item.to ?? "/"}
+                                    data-slot="sidebar-rail-link"
                                     onClick={onNavigate}
                                     aria-label={item.label}
                                     aria-current={selected ? "page" : undefined}
-                                    className={cn(
-                                        "flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                                        selected && "bg-muted text-foreground",
-                                    )}
+                                    className={tileClasses}
                                 >
-                                    <Icon className="size-4" />
+                                    <Icon aria-hidden="true" className="size-4" />
                                 </Link>
                             );
                             return (
@@ -370,9 +396,9 @@ export function SidebarNavigation({
                                     key={item.id}
                                     className={cn(
                                         "flex justify-center",
-                                        index > 0 &&
-                                            item.id !== "home" &&
-                                            "first:border-t",
+                                        index === 0 &&
+                                            item.id === "home" &&
+                                            "mb-3 border-b border-sidebar-border/70 pb-3",
                                     )}
                                 >
                                     <NavHint
@@ -385,19 +411,24 @@ export function SidebarNavigation({
                         })}
                     </div>
                 ) : (
-                    <div className="space-y-0.5">
-                        {items.map((item) => (
-                            <SidebarNode
-                                key={item.id}
-                                item={item}
-                                level={0}
-                                controls={controls}
-                                onNavigate={onNavigate}
-                                pathname={pathname}
-                                search={search}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        <p className="px-2.5 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
+                            Navigation
+                        </p>
+                        <div className="space-y-1">
+                            {items.map((item) => (
+                                <SidebarNode
+                                    key={item.id}
+                                    item={item}
+                                    level={0}
+                                    controls={controls}
+                                    onNavigate={onNavigate}
+                                    pathname={pathname}
+                                    search={search}
+                                />
+                            ))}
+                        </div>
+                    </>
                 )}
             </nav>
         </TooltipProvider>

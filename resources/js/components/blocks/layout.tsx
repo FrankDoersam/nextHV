@@ -27,7 +27,6 @@ import {
 } from "@/framework/navigation/sidebar";
 import { cn } from "@/lib/utils";
 import {
-    Building2,
     ChevronRight,
     House,
     LogOut,
@@ -156,7 +155,7 @@ export function AppShell({
             <div
                 data-slot="sidebar-account"
                 className={cn(
-                    "shrink-0 border-t border-sidebar-border px-3 py-3",
+                    "shrink-0 border-t border-sidebar-border/80 px-3 py-3",
                     rail && "px-2",
                 )}
             >
@@ -167,9 +166,9 @@ export function AppShell({
                     aria-label={rail ? "Komponenten" : undefined}
                     className={({ isActive }) =>
                         cn(
-                            "mb-2 flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                            "mb-2 flex min-h-9 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                             rail && "justify-center px-0",
-                            isActive && "bg-muted text-foreground",
+                            isActive && "bg-primary/[0.09] font-semibold text-foreground",
                         )
                     }
                 >
@@ -183,8 +182,8 @@ export function AppShell({
                 )}
                 <div
                     className={cn(
-                        "flex min-w-0 items-center gap-2 rounded-lg bg-muted/40 px-2 py-2",
-                        rail && "flex-col gap-1 bg-transparent px-0",
+                        "flex min-w-0 items-center gap-2 rounded-lg border border-sidebar-border/70 bg-card/70 px-2 py-2",
+                        rail && "flex-col gap-1 border-transparent bg-transparent px-0",
                     )}
                 >
                     <PersonAvatar person={{ id: "me", name: user.name }} />
@@ -222,24 +221,27 @@ export function AppShell({
                 data-collapsed={compact || undefined}
                 className={cn(
                     "hidden shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 motion-reduce:transition-none lg:flex",
-                    compact ? "w-[68px]" : "w-[256px]",
+                    compact ? "w-16" : "w-64",
                 )}
             >
                 <div
                     data-slot="sidebar-header"
                     className={cn(
-                        "flex h-14 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border px-4",
+                        "flex h-14 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/80 px-3",
                         compact && "justify-center px-2",
                     )}
                 >
                     {compact ? (
-                        <Link
-                            to="/"
-                            aria-label="nextHV Startseite"
-                            className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="Navigation ausklappen"
+                            title="Navigation ausklappen"
+                            onClick={() => setCompact(false)}
                         >
-                            <Building2 className="size-4" />
-                        </Link>
+                            <PanelLeftOpen className="size-4" />
+                        </Button>
                     ) : (
                         <>
                             <Brand />
@@ -256,20 +258,6 @@ export function AppShell({
                         </>
                     )}
                 </div>
-                {compact && (
-                    <div className="flex shrink-0 justify-center border-b border-sidebar-border py-2">
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label="Navigation ausklappen"
-                            title="Navigation ausklappen"
-                            onClick={() => setCompact(false)}
-                        >
-                            <PanelLeftOpen className="size-4" />
-                        </Button>
-                    </div>
-                )}
                 {sidebar(compact)}
             </aside>
 
@@ -278,7 +266,7 @@ export function AppShell({
                     side="left"
                     className="w-[min(19rem,90vw)] gap-0 bg-sidebar p-0"
                 >
-                    <div className="flex h-14 shrink-0 items-center border-b border-sidebar-border px-5">
+                    <div className="flex h-14 shrink-0 items-center border-b border-sidebar-border/80 px-4">
                         <Brand />
                     </div>
                     <SheetTitle className="sr-only">Navigation</SheetTitle>
