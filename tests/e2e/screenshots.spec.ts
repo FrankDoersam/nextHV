@@ -70,33 +70,11 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
                 '[data-slot="resource-collection"] [data-slot="scroll-area-viewport"]',
             )
             .all()) {
-            const horizontal = await viewport.evaluate((element) => {
-                const viewportBox = element.getBoundingClientRect();
-                const descendants = [...element.querySelectorAll<HTMLElement>("*")];
-                return {
-                    scrollWidth: element.scrollWidth,
-                    clientWidth: element.clientWidth,
-                    className: element.className,
-                    parentClassName: element.parentElement?.className,
-                    firstChildren: [...element.children].map((child) => ({
-                        slot: child.getAttribute("data-slot"),
-                        width: child.getBoundingClientRect().width,
-                        scrollWidth: child.scrollWidth,
-                    })),
-                    overflowElements: descendants
-                        .filter((child) => child.getBoundingClientRect().right > viewportBox.right + 1)
-                        .slice(0, 12)
-                        .map((child) => ({
-                            tag: child.tagName,
-                            slot: child.getAttribute("data-slot"),
-                            className: child.className?.toString().slice(0, 100),
-                            right: Math.round(child.getBoundingClientRect().right - viewportBox.right),
-                        })),
-                };
-            });
-            if (horizontal.scrollWidth - horizontal.clientWidth > 1)
-                console.log("VEGA_OVERFLOW_DEBUG", JSON.stringify(horizontal));
-            expect(horizontal.scrollWidth - horizontal.clientWidth).toBeLessThanOrEqual(1);
+            expect(
+                await viewport.evaluate(
+                    (element) => element.scrollWidth - element.clientWidth,
+                ),
+            ).toBeLessThanOrEqual(1);
         }
         await page.screenshot({
             path: `screenshots/${name}.png`,

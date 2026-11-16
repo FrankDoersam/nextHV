@@ -1303,7 +1303,9 @@ function DataGridTableViewport({
         <div
             data-slot="data-grid-table-viewport"
             ref={handleViewportRef}
-            className={cn("relative min-w-full align-top", className)}
+            // Clip only decorative resize-handle overhang at the table edge.
+            // The wrapper may still exceed the outer scroll viewport for real wide tables.
+            className={cn("relative min-w-full overflow-x-clip align-top", className)}
             style={{
                 ...(isColumnsResizable
                     ? {
