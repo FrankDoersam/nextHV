@@ -69,10 +69,10 @@ export default function DetailPage({
             label: "Übersicht",
             render: () =>
                 resource.name === "properties" ? (
-                    <>
+                    <div data-slot="property-overview" className="flex min-w-0 flex-col gap-5">
                         <OverviewMetrics propertyId={record.id} />
                         <PropertyOverview property={record} />
-                    </>
+                    </div>
                 ) : (
                     <GenericOverview resource={resource} record={record} />
                 ),

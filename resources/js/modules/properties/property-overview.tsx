@@ -79,7 +79,7 @@ export default function PropertyOverview({
         <Split
             main={
                 <Stack>
-                    <SectionCard
+                    <SectionCard appearance="single"
                         title="Einheiten im Blick"
                         description="Schneller Zugriff auf die Räume und Flächen dieses Objekts."
                         actions={
@@ -133,14 +133,14 @@ export default function PropertyOverview({
                             />
                         )}
                     </SectionCard>
-                    <SectionCard title="Gebäude & Verwaltung">
+                    <SectionCard appearance="single" title="Gebäude & Verwaltung">
                         <BuildingManagementKeyValues property={property} />
                     </SectionCard>
                 </Stack>
             }
             aside={
                 <Stack>
-                    <SectionCard title="Auslastung">
+                    <SectionCard appearance="single" title="Auslastung">
                         {m ? (
                             <Occupancy
                                 occupied={Number(m.rented)}
@@ -150,7 +150,7 @@ export default function PropertyOverview({
                             <Loading rows={1} />
                         )}
                     </SectionCard>
-                    <SectionCard
+                    <SectionCard appearance="single"
                         title="Nächste Objektprüfung"
                         actions={<CalendarCheck size={18} />}
                     >
@@ -174,7 +174,7 @@ export default function PropertyOverview({
                             ]}
                         />
                     </SectionCard>
-                    <SectionCard title="Verantwortlich">
+                    <SectionCard appearance="single" title="Verantwortlich">
                         <ListRow
                             title={String(
                                 property.manager_name ??
@@ -188,7 +188,7 @@ export default function PropertyOverview({
                         </p>
                     </SectionCard>
                     {!!property.notes && (
-                        <SectionCard title="Notizen">
+                        <SectionCard appearance="single" title="Notizen">
                             <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
                                 {String(property.notes)}
                             </p>

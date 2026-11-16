@@ -43,7 +43,7 @@ export function MetricCard({
             title={description}
             className={cn(
                 "@container/metric h-full min-w-0 bg-card",
-                appearance === "card" && "rounded-xl border shadow-xs",
+                appearance === "card" && "rounded-2xl ring-1 ring-foreground/10",
             )}
         >
             <div
@@ -114,7 +114,7 @@ export function MetricCardGrid({ children }: { children: ReactNode }) {
             data-slot="metric-grid"
             className="@container/metrics w-full min-w-0"
         >
-            <div className="grid grid-cols-2 gap-2.5 @min-[40rem]/metrics:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 @min-[40rem]/metrics:grid-cols-4 @min-[40rem]/metrics:gap-4">
                 {children}
             </div>
         </div>
