@@ -40,10 +40,12 @@
     --radius-lg: var(--radius);
     --radius-xl: calc(var(--radius) + 4px);
     --radius-2xl: calc(var(--radius) + 8px);
+    --radius-3xl: calc(var(--radius) + 12px);
+    --radius-4xl: calc(var(--radius) + 18px);
 }
 :root {
-    --radius: 0.625rem;
-    /* Vega visuals, with compact 32px resource form fields; main actions stay at Vega sizes. */
+    --radius: 1rem;
+    /* REUI Maia: soft radii and spacious surfaces; resource form fields remain compact. */
     --control-height: 2.25rem;
     --control-height-sm: 2rem;
     --control-height-lg: 2.5rem;
@@ -100,7 +102,7 @@
     }
 }
 @layer components {
-    /* Inputs, select/combobox groups, dates and numbers share compact 32px. */
+    /* Preserve 32px resource form fields for dense property/contract editing. */
     [data-slot="field-control"] {
         --control-height: var(--control-height-field);
     }
