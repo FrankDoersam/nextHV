@@ -119,7 +119,10 @@ export function FormLayer({
                 open
                 onClose={onClose}
                 title={resource?.singular ?? "Formular"}
-                presentation={panel.presentation}
+                presentation={
+                    panel.wizard || panel.flow ? "sheet" : panel.presentation
+                }
+                wizard={!!(panel.wizard || panel.flow)}
                 nested={nested}
             >
                 <>

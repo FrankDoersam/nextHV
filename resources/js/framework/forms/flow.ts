@@ -42,7 +42,7 @@ export function flowPanel(
     definition: FormFlowDefinition,
     state: FlowState,
     key: string,
-    presentation: Presentation,
+    _presentation: Presentation,
 ): PanelLink {
     if (
         definition.id !== state.id ||
@@ -116,7 +116,8 @@ export function flowPanel(
         resource: step.resource,
         mode: saved ? "edit" : "create",
         id: saved?.id,
-        presentation: step.presentation ?? presentation,
+        // Multi-record workflows use the same edge Sheet at every step.
+        presentation: "sheet",
         wizard: step.wizard,
         reduced: step.reduced,
         context,

@@ -60,7 +60,7 @@ export function Overlay({
     busy?: boolean;
     size?: "form" | "compact" | "wide";
     fill?: boolean;
-    /** Compact wizard header and content-sized dialog. */
+    /** Multi-step workspaces use the edge Sheet, never a center Dialog. */
     wizard?: boolean;
     titleBadge?: ReactNode;
     icon?: ReactNode;
@@ -87,6 +87,7 @@ export function Overlay({
     const close = () => {
         if (!busy) onClose();
     };
+    const effectivePresentation = wizard ? "sheet" : presentation;
     const headClass = cn(
         "relative shrink-0 gap-0 border-b bg-card px-5 py-5 sm:px-6",
         wizard && "py-4 sm:py-4",
@@ -198,9 +199,10 @@ export function Overlay({
         </div>
     );
     const caption = description ?? "";
-    const Title = presentation === "dialog" ? DialogTitle : SheetTitle;
+    const Title =
+        effectivePresentation === "dialog" ? DialogTitle : SheetTitle;
     const Description =
-        presentation === "dialog" ? DialogDescription : SheetDescription;
+        effectivePresentation === "dialog" ? DialogDescription : SheetDescription;
     const heading = (
         <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex min-w-0 flex-1 basis-48 items-start gap-3">
@@ -231,7 +233,7 @@ export function Overlay({
         </div>
     );
     const surface =
-        presentation === "dialog" ? (
+        effectivePresentation === "dialog" ? (
             <Dialog open={open} onOpenChange={(v) => !v && close()}>
                 <DialogContent
                     showCloseButton={false}
@@ -265,6 +267,7 @@ export function Overlay({
                         "crud-sheet flex flex-col gap-0 overflow-hidden p-0 shadow-2xl data-[side=right]:w-full data-[side=right]:sm:inset-y-3 data-[side=right]:sm:right-3 data-[side=right]:sm:h-[calc(100dvh-1.5rem)] data-[side=right]:sm:rounded-2xl data-[side=right]:sm:max-w-[min(48rem,calc(100vw-3rem))]",
                         size === "wide" &&
                             "data-[side=right]:sm:max-w-[min(64rem,calc(100vw-3rem))]",
+                        wizard && "data-[side=right]:sm:rounded-lg",
                     )}
                 >
                     <SheetHeader className={headClass}>{heading}</SheetHeader>

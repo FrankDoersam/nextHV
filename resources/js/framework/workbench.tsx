@@ -117,7 +117,9 @@ export function WorkbenchProvider({ children }: { children: ReactNode }) {
             resource: request.resource.name,
             mode: request.mode,
             id: request.row?.id,
-            presentation: request.presentation ?? presentation,
+            presentation: request.wizard
+                ? "sheet"
+                : (request.presentation ?? presentation),
             wizard: request.wizard,
             reduced: request.reduced,
             fields: request.fields,

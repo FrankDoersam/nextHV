@@ -74,13 +74,14 @@ export function readPanels(search: string): PanelLink[] {
                           getFlow(v.flow.id),
                           v.flow,
                           panelKey(index),
-                          v.presentation,
+                          "sheet",
                       )
                     : {
                           key: panelKey(index),
                           resource: v.resource,
                           mode: v.mode,
-                          presentation: v.presentation,
+                          presentation:
+                              v.wizard === true ? "sheet" : v.presentation,
                           ...(v.mode !== "create" ? { id: v.id } : {}),
                           ...(v.fields
                               ? { fields: [...new Set(v.fields)] }
@@ -146,7 +147,10 @@ function compactPanels(params: URLSearchParams): PanelLink[] {
             key: panelKey(index),
             resource: match[1],
             mode: match[2] === "new" ? "create" : (match[3] as "edit" | "view"),
-            presentation: (get("layout") ?? "sheet") as Presentation,
+            presentation:
+                get("wizard") === "1" || get("flow")
+                    ? "sheet"
+                    : ((get("layout") ?? "sheet") as Presentation),
             ...(match[2] !== "new"
                 ? { id: Number(match[2].split("/")[0]) }
                 : {}),
@@ -210,7 +214,12 @@ export function panelSearch(search: string, panels: PanelLink[]): string {
             "panel",
             `${panel.resource}/${panel.mode === "create" ? "new" : `${panel.id}/${panel.mode}`}`,
         );
-        if (panel.presentation !== "sheet") set("layout", panel.presentation);
+        if (
+            panel.presentation !== "sheet" &&
+            !panel.wizard &&
+            !panel.flow
+        )
+            set("layout", panel.presentation);
         if (panel.flow) {
             set("flow", panel.flow.id);
             set("step", String(panel.flow.step));

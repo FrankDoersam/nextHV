@@ -267,7 +267,8 @@ export function ResourceEditor({
             onClose={close}
             busy={busy}
             fill={!!flow}
-            wizard={!!request.wizard}
+            wizard={!!(request.wizard || flow)}
+            bodyResetKey={request.wizard ? step : flow?.index}
             size={(request.wizard || flow) && summary ? "wide" : "form"}
             stacked={stacked || discard}
             nested={
@@ -279,6 +280,8 @@ export function ResourceEditor({
             title={`${resource.singular} ${row ? "bearbeiten" : "anlegen"}`}
             icon={<resource.icon />}
             titleBadge={
+                !request.wizard &&
+                !flow &&
                 resource.editor?.titleBadge !== false && (
                     <Badge variant="secondary">
                         {version?.status
@@ -344,7 +347,9 @@ export function ResourceEditor({
                     )}
                 </>
             }
-            presentation={request.presentation}
+            presentation={
+                request.wizard || flow ? "sheet" : request.presentation
+            }
             header={
                 flow ? (
                     <WizardProgress
