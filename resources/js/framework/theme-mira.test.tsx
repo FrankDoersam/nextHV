@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { Button } from "@/components/ui/button";
@@ -13,9 +14,9 @@ afterEach(cleanup);
 
 it("uses the supported REUI base-mira registry style and centralized radius", () => {
     const config = JSON.parse(
-        readFileSync(new URL("../../../components.json", import.meta.url), "utf8"),
+        readFileSync(join(process.cwd(), "components.json"), "utf8"),
     ) as { style: string; registries: Record<string, string> };
-    const css = readFileSync(new URL("../../css/app.css", import.meta.url), "utf8");
+    const css = readFileSync(join(process.cwd(), "resources/css/app.css"), "utf8");
     expect(config.style).toBe("base-mira");
     expect(config.registries["@reui"]).toContain("{style}");
     expect(css).toContain("--radius: 0.5rem");
