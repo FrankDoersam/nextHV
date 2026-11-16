@@ -203,11 +203,11 @@ export function ResourceField({
                                 value={String(field.value ?? "")}
                                 onChange={field.onChange}
                                 onBlur={field.onBlur}
-                                rows={d.rows ?? 4}
+                                rows={d.rows ?? 3}
                                 minLength={d.minLength}
                                 maxLength={d.maxLength}
                                 placeholder={d.placeholder}
-                                className="min-h-28 bg-card"
+                                className="min-h-16 bg-card"
                             />
                         );
                         break;

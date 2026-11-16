@@ -25,8 +25,11 @@ it("uses the supported REUI base-vega registry style and centralized radius", ()
     expect(css).toContain("--radius: 0.625rem");
     expect(css).toContain("--control-height: 2.25rem");
     expect(css).toContain("--control-height-lg: 2.5rem");
-    expect(css).toContain("--control-height-field: 2.5rem");
+    expect(css).toContain("--control-height-field: 2rem");
     expect(css).toContain('[data-slot="field-control"]');
+    // Only the field-scoped height is compact; Vega action / toolbar sizes are unchanged.
+    expect(css).toContain("--control-height: 2.25rem");
+    expect(css).toContain("--control-height-lg: 2.5rem");
     expect(css).toContain('[data-slot="collection-toolbar"]');
 });
 

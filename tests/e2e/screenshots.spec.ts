@@ -420,8 +420,11 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     const numberBox = await editSheet
         .getByLabel("Nummer", { exact: false })
         .boundingBox();
+    // Vega keeps its styling but resource fields share a compact 32px height.
+    expect(unitBox!.height).toBe(32);
+    expect(numberBox!.height).toBe(32);
     expect(Math.abs(unitBox!.height - numberBox!.height)).toBeLessThanOrEqual(
-        2,
+        1,
     );
     const activeTabUnderline = await editSheet
         .getByRole("tab", { name: "Grunddaten" })

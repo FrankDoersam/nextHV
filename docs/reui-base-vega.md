@@ -7,11 +7,15 @@ Stack mit React 19 und Tailwind CSS 4.
 
 ## Designsystem
 
-- **Vega-Kontrollen:** Standard-Buttons/Textfelder/Selects 36 px,
-  kleine Varianten 32 px und große Varianten 40 px. Die
-  Ressourcen-Formulare erhalten einheitlich 40 px hohe Felder.
-  Dieselbe 40-px-Höhe wird für zusammenhängende Tabellen-Toolbars
-  genutzt, damit Suche, Dropdowns und Aktionen fluchten.
+- **Vega-Kontrollen:** Standard-Buttons, allgemeine Textfelder und Selects
+  bleiben 36 px; große Varianten sowie die Tabellen-Toolbars bleiben 40 px.
+  Ausschließlich die Eingabefelder innerhalb der Ressourcen-Formulare
+  (Text, Relation-Combobox, Select, Datum und Zahlen) sind auf **32 px**
+  reduziert. Das erfolgt über den einen Token
+  `--control-height-field: 2rem` und die schon vorhandene
+  `[data-slot="field-control"]`-Variable; Formular-Textareas erhalten
+  einen kompakten Mindestwert von 64 px. Die größere Vega-Typografie und
+  alle Karten-/Sheet-Stile bleiben unverändert.
 - **Radius:** zentraler `--radius: 0.625rem`. Dialoge, Sheets,
   Karten, Badge, Tabs, Popover, Dropdowns und Inputs verwenden
   Vega-Typografie, Fokuszustände und Abstände. Die

@@ -43,11 +43,11 @@
 }
 :root {
     --radius: 0.625rem;
-    /* Vega: 36px standard controls, 32px small and 40px large/form fields. */
+    /* Vega visuals, with compact 32px resource form fields; main actions stay at Vega sizes. */
     --control-height: 2.25rem;
     --control-height-sm: 2rem;
     --control-height-lg: 2.5rem;
-    --control-height-field: 2.5rem;
+    --control-height-field: 2rem;
     --background: #f7f7f8;
     --foreground: #18181b;
     --card: #fff;
@@ -100,7 +100,7 @@
     }
 }
 @layer components {
-    /* Consistent 40px-high Vega form controls. */
+    /* Inputs, select/combobox groups, dates and numbers share compact 32px. */
     [data-slot="field-control"] {
         --control-height: var(--control-height-field);
     }
