@@ -155,7 +155,7 @@ export function DatePicker({
     return (
         <div className="min-w-0">
             <Popover open={open} onOpenChange={setOpen}>
-                <InputGroup className="h-9 bg-card">
+                <InputGroup className="h-(--control-height) bg-card">
                     <InputGroupInput
                         id={id}
                         {...aria}
@@ -306,7 +306,7 @@ export function MonthPicker({
                         disabled={disabled}
                         type="button"
                         variant="outline"
-                        className="h-9 w-full justify-start bg-card font-normal"
+                        className="h-(--control-height) w-full justify-start bg-card font-normal"
                     />
                 }
             >

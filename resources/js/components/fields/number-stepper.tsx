@@ -53,7 +53,7 @@ export function NumberStepper({
         >
             <NumberFieldGroup
                 className={cn(
-                    "h-9 bg-card",
+                    "h-(--control-height) bg-card",
                     embedded &&
                         "h-full border-0 bg-transparent focus-within:ring-0 focus-within:border-transparent",
                 )}

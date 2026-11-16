@@ -47,7 +47,7 @@ export function CurrencyField({
                 maximumFractionDigits: 2,
             }}
         >
-            <NumberFieldGroup className="h-9 bg-card">
+            <NumberFieldGroup className="h-(--control-height) bg-card">
                 <NumberFieldInput
                     {...input}
                     aria-describedby={[input["aria-describedby"], currencyId]

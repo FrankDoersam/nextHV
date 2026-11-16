@@ -255,7 +255,7 @@ export function ResourceField({
                                 className={
                                     hasActions
                                         ? "h-full bg-transparent"
-                                        : "h-9 bg-card"
+                                        : "h-(--control-height) bg-card"
                                 }
                             />
                         );
@@ -285,7 +285,7 @@ export function ResourceField({
                         [undefined, "text", "email", "number"].includes(
                             d.kind,
                         ) ? (
-                            <InputGroup className="h-9 bg-card">
+                            <InputGroup className="h-(--control-height) bg-card">
                                 {d.prefixActions?.length ? (
                                     <InputGroupAddon align="inline-start">
                                         <FieldActions
