@@ -111,10 +111,23 @@ describe("sidebar navigation model", () => {
             .flatMap((item) => flattenNavigation(item.children).map((child) => child.id))).toEqual(["denied"]);
     });
 
+    it("exposes the new standalone chart menu with an accurate breadcrumb", () => {
+        const tree = resolveNavigation(defaultNavigation([properties]), [properties]);
+        const charts = tree.find((item) => item.id === "charts");
+        expect(charts).toMatchObject({
+            to: "/charts",
+            label: "Charts",
+            badge: "Demo",
+        });
+        expect(navigationSelected(charts!, "/charts", "")).toBe(true);
+        expect(navigationPath(tree, "/charts", "").map((item) => item.label))
+            .toEqual(["Charts"]);
+    });
+
     it("hides forbidden resources and empty groups in all navigation surfaces", () => {
         const tree = resolveNavigation(defaultNavigation([properties]), [properties], undefined,
             () => ({ allowed: false, reason: "Kein Zugriff" }));
-        expect(tree.map((item) => item.id)).toEqual(["home"]);
+        expect(tree.map((item) => item.id)).toEqual(["home", "charts"]);
     });
 
     it("does not expose a resource when list access is denied even if another action is allowed", () => {
