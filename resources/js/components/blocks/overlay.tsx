@@ -278,11 +278,11 @@ export function Overlay({
                         "crud-sheet flex flex-col gap-0 overflow-hidden p-0 shadow-2xl data-[side=right]:w-full",
                         wizard
                             ? // REUI sheets attach to the viewport edge; do not float like dialogs.
-                              "data-[side=right]:sm:inset-y-0 data-[side=right]:sm:right-0 data-[side=right]:sm:h-dvh data-[side=right]:sm:rounded-none data-[side=right]:sm:max-w-[min(60rem,100vw)]"
+                              "data-[side=right]:sm:inset-y-0 data-[side=right]:sm:right-0 data-[side=right]:sm:h-dvh data-[side=right]:sm:rounded-none data-[side=right]:sm:max-w-[min(56rem,100vw)]"
                             : "data-[side=right]:sm:inset-y-3 data-[side=right]:sm:right-3 data-[side=right]:sm:h-[calc(100dvh-1.5rem)] data-[side=right]:sm:rounded-2xl data-[side=right]:sm:max-w-[min(48rem,calc(100vw-3rem))]",
                         size === "wide" &&
                             (wizard
-                                ? "data-[side=right]:sm:max-w-[min(72rem,100vw)]"
+                                ? "data-[side=right]:sm:max-w-[min(64rem,100vw)]"
                                 : "data-[side=right]:sm:max-w-[min(64rem,calc(100vw-3rem))]"),
                     )}
                 >

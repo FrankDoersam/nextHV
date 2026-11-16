@@ -9,7 +9,10 @@ import { FormLayout, FormSection } from "@/components/blocks/form-section";
 import { FieldGrid, Stack } from "@/components/blocks/layout";
 import { Overlay } from "@/components/blocks/overlay";
 import { ResourceField } from "@/components/fields/field";
-import { WizardProgress } from "@/components/blocks/wizard-progress";
+import {
+    CStepper10,
+    CStepper10Content,
+} from "@/components/examples/c-stepper-10";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Save, RefreshCw } from "lucide-react";
 import {
@@ -51,7 +54,6 @@ export function ResourceEditor({
 }) {
     const { t } = useI18n();
     const formId = useId();
-    const wizardPanelId = useId();
     const { resource, row } = request;
     const createRelations =
         !row && !flow ? (resource.createRelations ?? []) : [];
@@ -352,30 +354,6 @@ export function ResourceEditor({
             presentation={
                 request.wizard || flow ? "sheet" : request.presentation
             }
-            sidebar={
-                flow ? (
-                    <WizardProgress
-                        label={flow.label}
-                        steps={flow.steps.map((label, index) => ({
-                            id: String(index),
-                            label,
-                        }))}
-                        active={flow.index}
-                    />
-                ) : request.wizard ? (
-                    <WizardProgress
-                        steps={groups.map((group) => ({
-                            ...group,
-                            label: group.stepLabel ?? group.label,
-                        }))}
-                        active={step}
-                        onSelect={setStep}
-                        busy={busy}
-                        panelId={wizardPanelId}
-                        navigationId={`${formId}-progress`}
-                    />
-                ) : undefined
-            }
             footer={
                 <>
                     <Button
@@ -480,6 +458,26 @@ export function ResourceEditor({
                             )}
                             noValidate
                         >
+                            <CStepper10
+                                enabled={!!(request.wizard || flow)}
+                                steps={
+                                    flow
+                                        ? flow.steps.map((label, index) => ({
+                                              id: String(index),
+                                              label,
+                                          }))
+                                        : groups.map((group) => ({
+                                              id: group.id,
+                                              label: group.stepLabel ?? group.label,
+                                              description: group.description,
+                                          }))
+                                }
+                                active={flow ? flow.index : step}
+                                onSelect={flow ? undefined : setStep}
+                                busy={busy || !!completion}
+                                singleContent={!!flow}
+                                idPrefix={formId + "-stepper"}
+                            >
                             <fieldset
                                 disabled={busy || !!completion}
                                 className="min-w-0"
@@ -506,13 +504,6 @@ export function ResourceEditor({
                                         )}
                                     </div>
                                 )}
-                                <div
-                                    data-slot={request.wizard || flow ? "wizard-step-panel" : undefined}
-                                    id={request.wizard ? wizardPanelId : undefined}
-                                    role={request.wizard ? "tabpanel" : undefined}
-                                    aria-labelledby={request.wizard ? `${formId}-progress-trigger-${step + 1}` : undefined}
-                                    className="min-w-0"
-                                >
                                 <FormLayout
                                     aside={!!request.wizard || !!flow}
                                     summary={
@@ -525,6 +516,13 @@ export function ResourceEditor({
                                     }
                                 >
                                     {groups.map((g, i) => (
+                                        <CStepper10Content
+                                            key={g.id}
+                                            enabled={!!request.wizard && !flow}
+                                            step={i + 1}
+                                            active={step}
+                                            idPrefix={formId + "-stepper"}
+                                        >
                                         <EditorSection
                                             key={g.id}
                                             hidden={
@@ -606,10 +604,11 @@ export function ResourceEditor({
                                                     />
                                                 ))}
                                         </EditorSection>
+                                        </CStepper10Content>
                                     ))}
                                 </FormLayout>
-                                </div>
                             </fieldset>
+                            </CStepper10>
                         </form>
                     </FormProvider>
                 </FormActionScope>

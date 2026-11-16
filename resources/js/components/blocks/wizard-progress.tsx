@@ -31,6 +31,7 @@ function useDesktopRail() {
  * Desktop has a vertical rail; narrow screens scroll the cards horizontally.
  * Progression and field validation remain in ResourceEditor.
  */
+/** Kept as the alternative vertical step-card wizard navigation. */
 export function WizardProgress({
     steps,
     active,
@@ -181,3 +182,5 @@ export function WizardProgress({
         </nav>
     );
 }
+
+export { WizardProgress as VerticalWizardProgress };
