@@ -40,7 +40,8 @@ it("uses the installed ReUI c-stepper-10 pattern with a separate panel per step"
     expect(screen.getByRole("tab", { name: "Adresse, Schritt 2" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "Verwaltung, Schritt 3" })).toBeDisabled();
     expect(screen.getByRole("tabpanel")).toHaveTextContent("Adresse erfassen");
-    expect(screen.getByRole("tabpanel", { hidden: true, name: "Objekt, Schritt 1" })).toHaveAttribute("hidden");
+    expect(container.querySelector("#test-stepper-panel-1")).toHaveAttribute("hidden");
+    expect(container.querySelector("#test-stepper-panel-1")).toHaveAttribute("aria-labelledby", "test-stepper-trigger-1");
     expect(screen.queryByRole("textbox", { name: "Objektname" })).not.toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole("tab", { name: "Objekt, Schritt 1" }));
     expect(onSelect).toHaveBeenCalledOnce();
