@@ -24,7 +24,7 @@ function Tabs({
 }
 
 const tabsListVariants = cva(
-    "group/tabs-list inline-flex w-fit shrink-0 items-center rounded-lg p-[3px] text-muted-foreground data-[orientation=horizontal]:h-8 data-[orientation=vertical]:flex-col data-[variant=line]:rounded-none",
+    "group/tabs-list inline-flex w-fit shrink-0 items-center rounded-lg p-[3px] text-muted-foreground data-[orientation=horizontal]:h-9 data-[orientation=vertical]:flex-col data-[variant=line]:rounded-none",
     {
         variants: {
             variant: {
@@ -71,7 +71,7 @@ function TabsTrigger({
         <TabsPrimitive.Tab
             data-slot="tabs-trigger"
             className={cn(
-                "relative inline-flex h-full shrink-0 items-center justify-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 data-[orientation=vertical]:w-full data-[orientation=vertical]:justify-start [&_svg]:size-3.5 [&_svg]:shrink-0",
+                "relative inline-flex h-full shrink-0 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 data-[orientation=vertical]:w-full data-[orientation=vertical]:justify-start [&_svg]:size-3.5 [&_svg]:shrink-0",
                 "group-data-[variant=default]/tabs-list:data-active:bg-card group-data-[variant=default]/tabs-list:data-active:text-foreground group-data-[variant=default]/tabs-list:data-active:shadow-xs",
                 "group-data-[variant=line]/tabs-list:rounded-none group-data-[variant=line]/tabs-list:data-active:text-primary",
                 "after:pointer-events-none after:absolute after:bg-primary after:opacity-0 data-[orientation=horizontal]:after:inset-x-3 data-[orientation=horizontal]:after:bottom-0 data-[orientation=horizontal]:after:h-0.5 data-[orientation=vertical]:after:inset-y-2 data-[orientation=vertical]:after:right-0 data-[orientation=vertical]:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100",
@@ -90,7 +90,7 @@ function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props) {
         <TabsPrimitive.Panel
             data-slot="tabs-content"
             className={cn(
-                "w-full min-w-0 flex-1 text-xs/relaxed outline-none",
+                "w-full min-w-0 flex-1 text-sm outline-none",
                 className,
             )}
             {...props}
