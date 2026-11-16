@@ -507,13 +507,16 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     const dialogUrl = new URL(page.url());
     dialogUrl.searchParams.set("layout", "dialog");
     await page.goto(dialogUrl.toString());
-    await expect(page.locator('[data-slot="dialog-content"]')).toBeVisible();
+    // Old deep links may request layout=dialog. Wizards must remain in the
+    // same REUI Sheet, while destructive confirmations still use Dialog.
+    await expect(page.locator('[data-slot="sheet-content"]')).toBeVisible();
+    await expect(page.locator('[data-slot="dialog-content"]')).toHaveCount(0);
     await expect(
         page.locator(
             '[data-slot="overlay-header-content"] [data-slot="stepper-item"]',
         ),
     ).toHaveCount(6);
-    await capture("12-wizard-dialog");
+    await capture("12-wizard-sheet-deeplink");
     let contractWrites = 0;
     page.on("request", (request) => {
         if (
@@ -598,6 +601,20 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         .getByRole("navigation", { name: "Hauptnavigation", exact: true })
         .getByRole("link", { name: /^Objekte(?:\s|$)/ })
         .click();
+    // Capture the actual property create wizard, not a generated mockup.
+    await page.getByRole("button", { name: "Objekt anlegen", exact: true }).click();
+    const objectWizard = page.getByRole("dialog", { name: "Objekt anlegen" });
+    await expect(objectWizard).toHaveAttribute("data-slot", "sheet-content");
+    await expect(objectWizard).toHaveAttribute("data-wizard", "true");
+    await expect(
+        objectWizard.getByRole("navigation", { name: "Erfassungsschritte" }),
+    ).toContainText("Schritt 1 von 4");
+    await expect(
+        objectWizard.getByRole("button", { name: "Weiter", exact: true }),
+    ).toBeVisible();
+    await capture("58-objekt-anlegen-reui-sheet");
+    await objectWizard.getByRole("button", { name: "Abbrechen", exact: true }).click();
+    await expect(objectWizard).toHaveCount(0);
     await page
         .getByRole("textbox", { name: "Objekte durchsuchen" })
         .fill("Linden");
