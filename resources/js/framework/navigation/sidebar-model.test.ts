@@ -156,7 +156,7 @@ describe("sidebar navigation model", () => {
         const hidden = defaultNavigation([properties], {
             Stammdaten: { visible: () => false },
         });
-        expect(resolveNavigation(hidden, [properties]).map((node) => node.id)).toEqual(["home"]);
+        expect(resolveNavigation(hidden, [properties]).map((node) => node.id)).toEqual(["home", "charts"]);
     });
 
     it("does not turn a stale view link into unrestricted navigation", () => {
