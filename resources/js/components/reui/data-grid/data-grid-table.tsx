@@ -2765,7 +2765,7 @@ function DataGridTableRowPin<TData extends object>({
                 }
             }}
             className={cn(
-                "text-muted-foreground hover:text-foreground rounded-lg inline-flex size-7 items-center justify-center transition-colors",
+                "text-muted-foreground hover:text-foreground rounded-md inline-flex size-7 items-center justify-center transition-colors",
                 isPinned && "text-primary hover:text-primary/80",
             )}
         >
@@ -2911,7 +2911,7 @@ function DataGridTableRowExpand<TData extends object>({
                         row.toggleExpanded();
                     }}
                     className={cn(
-                        "text-muted-foreground hover:text-foreground rounded-lg inline-flex items-center justify-center transition-colors",
+                        "text-muted-foreground hover:text-foreground rounded-md inline-flex items-center justify-center transition-colors",
                         controlSize,
                     )}
                 >

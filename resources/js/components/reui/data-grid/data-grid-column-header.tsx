@@ -190,7 +190,7 @@ function DataGridColumnHeaderInner<TData extends object, TValue>({
     );
 
     const headerButtonClassName = cn(
-        "text-secondary-foreground/80 hover:bg-secondary data-[state=open]:bg-secondary hover:text-foreground data-[state=open]:text-foreground px-2 font-normal h-6 rounded-lg",
+        "text-secondary-foreground/80 hover:bg-secondary data-[state=open]:bg-secondary hover:text-foreground data-[state=open]:text-foreground px-2 font-normal h-6 rounded-md",
         className,
     );
 
@@ -454,7 +454,7 @@ function DataGridColumnHeaderInner<TData extends object, TValue>({
                         <Button
                             size="icon-sm"
                             variant="ghost"
-                            className="rounded-lg size-7"
+                            className="rounded-md size-7"
                             onClick={(event) => {
                                 const scrollArea =
                                     event.currentTarget.closest<HTMLElement>(

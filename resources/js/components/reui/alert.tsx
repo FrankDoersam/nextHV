@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 const alertVariants = cva(
     [
-        "relative w-full text-sm border has-[>svg]:grid-cols-[calc(var(--spacing)*3)_1fr] grid-cols-[0_1fr] grid gap-y-0.5 items-center [&>svg:not([class*=size-])]:size-4",
+        "relative w-full text-xs/relaxed border has-[>svg]:grid-cols-[calc(var(--spacing)*3)_1fr] grid-cols-[0_1fr] grid gap-y-0.5 items-center [&>svg:not([class*=size-])]:size-4",
         "has-[>[data-slot=alert-title]+[data-slot=alert-description]]:[&_[data-slot=alert-action]]:sm:row-end-3",
         "has-[>[data-slot=alert-title]+[data-slot=alert-description]]:items-start",
         "has-[>[data-slot=alert-title]+[data-slot=alert-description]]:[&_svg]:translate-y-0.5",
@@ -67,7 +67,7 @@ function AlertDescription({
         <div
             data-slot="alert-description"
             className={cn(
-                "text-muted-foreground col-start-2 grid justify-items-start gap-1 text-sm [&_p]:leading-relaxed",
+                "text-muted-foreground col-start-2 grid justify-items-start gap-1 text-xs/relaxed [&_p]:leading-relaxed",
                 className,
             )}
             {...props}

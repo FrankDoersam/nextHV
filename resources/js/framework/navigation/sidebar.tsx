@@ -174,7 +174,7 @@ function SidebarNode({
     // REUI Base-Nova selection: one quiet full-row tint. No leading rounded
     // border, half-circle, branch connector or separate selection dot.
     const rowClasses = cn(
-        "group/nav flex min-h-9 min-w-0 flex-1 items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition-[background-color,color] duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "group/nav flex min-h-8 min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-[background-color,color] duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         selected
             ? "bg-primary/[0.09] font-semibold text-foreground"
             : branchActive
@@ -264,7 +264,7 @@ function SidebarNode({
                     data-slot="sidebar-group-trigger"
                     data-branch-active={branchActive ? "true" : undefined}
                     className={cn(
-                        "group/nav flex min-h-9 w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[13px] font-medium transition-[background-color,color] duration-150 motion-reduce:transition-none hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        "group/nav flex min-h-8 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium transition-[background-color,color] duration-150 motion-reduce:transition-none hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         branchActive
                             ? "text-foreground"
                             : "text-muted-foreground",
