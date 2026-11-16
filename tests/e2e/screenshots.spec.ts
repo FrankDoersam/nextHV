@@ -904,6 +904,27 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         .getByRole("textbox", { name: "Objekte durchsuchen" })
         .fill("Linden");
     await page.getByText("Lindenhöfe", { exact: true }).click();
+    const propertyOverview = page.locator('[data-slot="property-overview"]');
+    const propertyMetrics = propertyOverview.locator('[data-slot="metric-card"]');
+    const propertyCards = propertyOverview.locator('[data-slot="content-card"]');
+    await expect(propertyMetrics).toHaveCount(4);
+    await expect(propertyCards.first()).toBeVisible();
+    expect(await propertyCards.count()).toBeGreaterThanOrEqual(5);
+    // Maia: KPI and sections use one card surface, never nested frames.
+    await expect(propertyCards.locator('[data-slot="frame-panel"]')).toHaveCount(0);
+    expect(await propertyCards.locator('[data-slot="card-content"]').count())
+        .toBe(await propertyCards.count());
+    const sectionBox = await propertyCards.first().boundingBox();
+    const metricGridBox = await propertyOverview.locator('[data-slot="metric-grid"]').boundingBox();
+    expect(sectionBox!.y - (metricGridBox!.y + metricGridBox!.height)).toBeGreaterThanOrEqual(16);
+    const metricRadius = await propertyMetrics.first().evaluate(
+        (element) => getComputedStyle(element).borderRadius,
+    );
+    const cardRadius = await propertyCards.first().evaluate(
+        (element) => getComputedStyle(element).borderRadius,
+    );
+    expect(cardRadius).toBe(metricRadius);
+    await capture("60-objekt-maia-uebersicht");
     const buildingDetails = page.locator('[data-slot="property-building-management"]');
     await expect(buildingDetails.locator('[data-slot="key-value-list"] dt')).toHaveCount(7);
     await expect(buildingDetails.getByRole("button", { name: "Heizung bearbeiten" })).toBeVisible();

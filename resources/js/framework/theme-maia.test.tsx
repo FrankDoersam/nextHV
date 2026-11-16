@@ -15,25 +15,26 @@ import { Frame } from "@/components/reui/frame";
 
 afterEach(cleanup);
 
-it("uses the supported REUI base-vega registry style and centralized radius", () => {
+it("uses the supported REUI base-maia registry style and centralized radius", () => {
     const config = JSON.parse(
         readFileSync(join(process.cwd(), "components.json"), "utf8"),
     ) as { style: string; registries: Record<string, string> };
     const css = readFileSync(join(process.cwd(), "resources/css/app.css"), "utf8");
-    expect(config.style).toBe("base-vega");
+    expect(config.style).toBe("base-maia");
     expect(config.registries["@reui"]).toContain("{style}");
-    expect(css).toContain("--radius: 0.625rem");
+    expect(css).toContain("--radius: 1rem");
+    expect(css).toContain("--radius-4xl: calc(var(--radius) + 18px)");
     expect(css).toContain("--control-height: 2.25rem");
     expect(css).toContain("--control-height-lg: 2.5rem");
     expect(css).toContain("--control-height-field: 2rem");
     expect(css).toContain('[data-slot="field-control"]');
-    // Only the field-scoped height is compact; Vega action / toolbar sizes are unchanged.
+    // Only the field-scoped height is compact; Maia action / toolbar sizes are unchanged.
     expect(css).toContain("--control-height: 2.25rem");
     expect(css).toContain("--control-height-lg: 2.5rem");
     expect(css).toContain('[data-slot="collection-toolbar"]');
 });
 
-it("renders the compact Vega button, input, card and tab primitives", () => {
+it("renders the compact Maia button, input, card and tab primitives", () => {
     const view = render(
         <div>
             <Button>Standardaktion</Button>
@@ -49,19 +50,25 @@ it("renders the compact Vega button, input, card and tab primitives", () => {
     );
     expect(screen.getByRole("button", { name: "Standardaktion" }).className)
         .toContain("h-(--control-height)");
+    expect(screen.getByRole("button", { name: "Standardaktion" }).className)
+        .toContain("rounded-4xl");
     expect(screen.getByRole("button", { name: "Kompaktaktion" }).className)
         .toContain("h-8");
     expect(screen.getByRole("textbox", { name: "Name" }).className)
         .toContain("h-(--control-height)");
+    expect(screen.getByRole("textbox", { name: "Name" }).className)
+        .toContain("rounded-4xl");
     expect(screen.getByText("Übersicht", { selector: '[data-slot="card-title"]' }))
         .toHaveClass("text-base");
+    expect(view.container.querySelector('[data-slot="card"]')).toHaveClass("rounded-2xl");
     expect(view.container.querySelector('[data-slot="tabs-list"]'))
         .toHaveClass("data-[orientation=horizontal]:h-9");
+    expect(view.container.querySelector('[data-slot="tabs-list"]')).toHaveClass("rounded-4xl");
     expect(screen.getByTestId("reui-frame").className)
-        .toContain("[--frame-radius:var(--radius-xl)]");
+        .toContain("[--frame-radius:var(--radius-2xl)]");
 });
 
-it("shares Vega control-height tokens across input, select, combobox and action primitives", () => {
+it("shares Maia control-height tokens across input, select, combobox and action primitives", () => {
     const view = render(
         <div data-slot="collection-toolbar">
             <Input aria-label="Suche" />

@@ -1,45 +1,52 @@
-# nextHV · REUI Base Vega
+# nextHV · REUI Base Maia
 
-**Aktiver Designstil: `base-vega`**, konfiguriert in `components.json`.
+**Aktiver Designstil: `base-maia`**, konfiguriert in `components.json`.
 Die Registry nutzt `https://reui.io/r/{style}/{name}.json`;
-Vega ist ein offiziell unterstützter Stil für den vorhandenen Base-UI-
+Maia ist ein offiziell unterstützter Stil für den vorhandenen Base-UI-
 Stack mit React 19 und Tailwind CSS 4.
 
 ## Designsystem
 
-- **Vega-Kontrollen:** Standard-Buttons, allgemeine Textfelder und Selects
+- **Maia-Kontrollen:** Standard-Buttons, allgemeine Textfelder und Selects
   bleiben 36 px; große Varianten sowie die Tabellen-Toolbars bleiben 40 px.
   Ausschließlich die Eingabefelder innerhalb der Ressourcen-Formulare
   (Text, Relation-Combobox, Select, Datum und Zahlen) sind auf **32 px**
   reduziert. Das erfolgt über den einen Token
   `--control-height-field: 2rem` und die schon vorhandene
   `[data-slot="field-control"]`-Variable; Formular-Textareas erhalten
-  einen kompakten Mindestwert von 64 px. Die größere Vega-Typografie und
+  einen kompakten Mindestwert von 64 px. Die größere Maia-Typografie und
   alle Karten-/Sheet-Stile bleiben unverändert.
-- **Radius:** zentraler `--radius: 0.625rem`. Dialoge, Sheets,
-  Karten, Badge, Tabs, Popover, Dropdowns und Inputs verwenden
-  Vega-Typografie, Fokuszustände und Abstände. Die
-  blaue nextHV-Primärfarbe und Statusfarben bleiben erhalten.
-- **REUI Frame:** verwendet den offiziellen Vega-Radius
-  `[--frame-radius:var(--radius-xl)]`.
+- **Radius:** zentraler `--radius: 1rem` mit abgeleiteten
+  `rounded-2xl`-Karten und `rounded-4xl`-Buttons/Inputs.
+  Dialoge, Sheets, Badge, Tabs, Popover und Dropdowns verwenden
+  die großzügigeren Maia-Radien und Abstände. Die blaue
+  nextHV-Primärfarbe und Statusfarben bleiben erhalten.
+- **REUI Frame:** verwendet den offiziellen Maia-Radius
+  `[--frame-radius:var(--radius-2xl)]`.
 - **Data Grid:** Headless-Tabellenlogik, Pagination und eigene
   Editing-Erweiterungen bleiben erhalten. Sie übernehmen die
-  Vega-Dichte über die zentralen UI-Primitives und Tokens.
+  Maia-Dichte über die zentralen UI-Primitives und Tokens.
 - **Objekte:** In der Übersicht zeigt „Gebäude & Verwaltung“
   `EditableKeyValueList` statt einer Read-only-`DetailList`.
   Sieben freigegebene Eigenschaften können einzeln bearbeitet
   werden; Edit-Rechte, Validierung und 409-Konflikte laufen
   über den zentralen Framework-Provider.
+- **Objektübersicht:** Die KPI-Karten und die darunterliegenden
+  Bereiche verwenden dieselbe Maia-Card-Anatomie. Das neue
+  `ContentCard.appearance="single"` reduziert die
+  `Frame`/`FramePanel`-Doppelkontur für die Objektübersicht
+  auf **eine** Kartenfläche. Zwischen KPIs und Bereichen
+  steht ein definierter Abstand.
 - **Kompatibilität:** Navigation, Sidebar, Filter, Wizards und
   PDF-Preview behalten ihre bestehende Fachlogik.
 
 `docs/ui-sources.json` dokumentiert weiterhin die **ursprüngliche
 Quellprovenienz** installierter Komponenten und verwechselt
-projektinterne Vega-Anpassungen nicht mit unverändertem Registry-Code.
+projektinterne Maia-Anpassungen nicht mit unverändertem Registry-Code.
 
 ## Verifikation
 
-`resources/js/framework/theme-vega.test.tsx` sichert Registry,
+`resources/js/framework/theme-maia.test.tsx` sichert Registry,
 Radius, Control-Höhen und zentrale Primitives ab.
 `resources/js/modules/properties/building-management-key-values.test.tsx`
 prüft Inline-Editing, Feld-Subset und Versionscheck.
@@ -47,12 +54,12 @@ PHP-/REST-Tests, Vitest, TypeScript/Vite und Playwright-Screenshots
 prüfen die Integration.
 
 Quellen: https://reui.io/docs/registry und
-https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/styles/style-vega.css
+https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/styles/style-maia.css
 
 ## Erfassungs-Wizards: einheitliches REUI-Sheet
 
 Mehrstufige ResourceEditor-Wizards und verknüpfte Erfassungs-Flows öffnen
-immer ein rechtes, responsives Base-Vega-Sheet. Auch ältere Links mit
+immer ein rechtes, responsives Base-Maia-Sheet. Auch ältere Links mit
 `layout=dialog&wizard=1` werden beim Einlesen als Sheet behandelt.
 Normale Formular-Dialoge und die getrennte **Änderungen verwerfen?**-
 Bestätigung bleiben unverändert möglich.
