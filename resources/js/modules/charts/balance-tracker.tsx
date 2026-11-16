@@ -117,7 +117,7 @@ function BalanceLinePlot({
             }}
         >
             <ChartContainer
-                data-slot="balance-chart"
+                data-testid="balance-chart"
                 config={chartConfig}
                 className={large ? "h-[min(52vh,450px)] min-h-64" : "h-64 sm:h-[320px]"}
             >
