@@ -42,12 +42,12 @@
     --radius-2xl: calc(var(--radius) + 8px);
 }
 :root {
-    --radius: 0.5rem;
-    /* Mira defaults to 28px. Dense toolbars opt into 32px as one unit. */
-    --control-height: 1.75rem;
-    --control-height-sm: 1.5rem;
-    --control-height-lg: 2rem;
-    --control-height-field: 2.25rem;
+    --radius: 0.625rem;
+    /* Vega: 36px standard controls, 32px small and 40px large/form fields. */
+    --control-height: 2.25rem;
+    --control-height-sm: 2rem;
+    --control-height-lg: 2.5rem;
+    --control-height-field: 2.5rem;
     --background: #f7f7f8;
     --foreground: #18181b;
     --card: #fff;
@@ -100,8 +100,7 @@
     }
 }
 @layer components {
-    /* Form fields are a distinct, deliberately comfortable density: every
-       standard text, select and search control inherits the same 36px height. */
+    /* Consistent 40px-high Vega form controls. */
     [data-slot="field-control"] {
         --control-height: var(--control-height-field);
     }
