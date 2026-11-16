@@ -1,0 +1,26 @@
+name: Prepare Recharts lockfile for ReUI Chart 4
+on:
+  push:
+    paths:
+      - ".github/workflows/reui-chart4-dependency.yml"
+permissions:
+  contents: read
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Generate deterministic lockfile for the requested ReUI chart dependency
+        run: npm install recharts@^3.8.0 --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Archive lockfile and package manifest for app integration
+        uses: actions/upload-artifact@v4
+        with:
+          name: reui-chart4-lockfile
+          path: |
+            package.json
+            package-lock.json
+          retention-days: 2
