@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 export function FormSection({
     title,
     description,
+    hideHeading = false,
     hidden,
     variant = "card",
     collapsible,
@@ -19,6 +20,8 @@ export function FormSection({
 }: {
     title: string;
     description?: string;
+    /** Wizard steps already carry their own heading above the REUI Frame. */
+    hideHeading?: boolean;
     hidden?: boolean;
     variant?: "plain" | "card" | "collapsible";
     collapsible?: boolean;
@@ -95,8 +98,8 @@ export function FormSection({
             >
                 <legend className="sr-only">{title}</legend>
                 <DetailCard
-                    title={title}
-                    description={description}
+                    title={hideHeading ? undefined : title}
+                    description={hideHeading ? undefined : description}
                     actions={actions}
                 >
                     {children}
@@ -110,14 +113,18 @@ export function FormSection({
             className="min-w-0 space-y-4 border-0 p-0 not-first:border-t not-first:pt-6"
         >
             <legend className="sr-only">{title}</legend>
-            <div className="flex items-center justify-between gap-3">
-                <h3 className="text-sm leading-6 font-semibold">{title}</h3>
-                {actions}
-            </div>
-            {description && (
-                <p className="clear-both text-xs leading-5 text-muted-foreground">
-                    {description}
-                </p>
+            {!hideHeading && (
+                <>
+                    <div className="flex items-center justify-between gap-3">
+                        <h3 className="text-sm leading-6 font-semibold">{title}</h3>
+                        {actions}
+                    </div>
+                    {description && (
+                        <p className="clear-both text-xs leading-5 text-muted-foreground">
+                            {description}
+                        </p>
+                    )}
+                </>
             )}
             <div className="clear-both">{children}</div>
         </fieldset>

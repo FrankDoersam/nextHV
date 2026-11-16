@@ -107,9 +107,20 @@ export function Overlay({
     );
     const body = (
         <div className="@container/overlay flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div className="flex min-h-0 flex-1 flex-col @min-[40rem]/overlay:flex-row">
+            <div className={cn(
+                "flex min-h-0 flex-1 flex-col",
+                wizard ? "@min-[48rem]/overlay:flex-row" : "@min-[40rem]/overlay:flex-row",
+            )}>
                 {sidebar && (
-                    <aside className="shrink-0 border-b bg-muted/40 px-5 py-4 @min-[40rem]/overlay:w-52 @min-[40rem]/overlay:overflow-y-auto @min-[40rem]/overlay:border-r @min-[40rem]/overlay:border-b-0 @min-[40rem]/overlay:py-7">
+                    <aside
+                        data-slot={wizard ? "wizard-rail" : "overlay-sidebar"}
+                        className={cn(
+                            "min-w-0 shrink-0 border-b",
+                            wizard
+                                ? "w-full bg-muted/30 p-4 @min-[48rem]/overlay:w-60 @min-[48rem]/overlay:overflow-y-auto @min-[48rem]/overlay:border-r @min-[48rem]/overlay:border-b-0 @min-[48rem]/overlay:px-4 @min-[48rem]/overlay:py-6"
+                                : "bg-muted/40 px-5 py-4 @min-[40rem]/overlay:w-52 @min-[40rem]/overlay:overflow-y-auto @min-[40rem]/overlay:border-r @min-[40rem]/overlay:border-b-0 @min-[40rem]/overlay:py-7",
+                        )}
+                    >
                         {sidebar}
                     </aside>
                 )}
@@ -118,7 +129,7 @@ export function Overlay({
                     data-slot="overlay-body"
                     className={cn(
                         "@container/form min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain bg-card px-5 py-6 sm:px-6",
-                        wizard && "py-5 sm:py-5",
+                        wizard && "px-4 py-6 sm:px-7 sm:py-7",
                         !bodyInset && "p-0 sm:p-0",
                         bodyScroll === "managed" &&
                             "flex flex-col overflow-hidden",
@@ -267,11 +278,11 @@ export function Overlay({
                         "crud-sheet flex flex-col gap-0 overflow-hidden p-0 shadow-2xl data-[side=right]:w-full",
                         wizard
                             ? // REUI sheets attach to the viewport edge; do not float like dialogs.
-                              "data-[side=right]:sm:inset-y-0 data-[side=right]:sm:right-0 data-[side=right]:sm:h-dvh data-[side=right]:sm:rounded-none data-[side=right]:sm:max-w-[min(48rem,100vw)]"
+                              "data-[side=right]:sm:inset-y-0 data-[side=right]:sm:right-0 data-[side=right]:sm:h-dvh data-[side=right]:sm:rounded-none data-[side=right]:sm:max-w-[min(60rem,100vw)]"
                             : "data-[side=right]:sm:inset-y-3 data-[side=right]:sm:right-3 data-[side=right]:sm:h-[calc(100dvh-1.5rem)] data-[side=right]:sm:rounded-2xl data-[side=right]:sm:max-w-[min(48rem,calc(100vw-3rem))]",
                         size === "wide" &&
                             (wizard
-                                ? "data-[side=right]:sm:max-w-[min(64rem,100vw)]"
+                                ? "data-[side=right]:sm:max-w-[min(72rem,100vw)]"
                                 : "data-[side=right]:sm:max-w-[min(64rem,calc(100vw-3rem))]"),
                     )}
                 >

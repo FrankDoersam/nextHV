@@ -1,4 +1,5 @@
 import { useI18n } from "../i18n";
+import { cn } from "@/lib/utils";
 import { FormSummary } from "./form-summary";
 import { FormActionScope } from "./form-action-scope";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +51,7 @@ export function ResourceEditor({
 }) {
     const { t } = useI18n();
     const formId = useId();
+    const wizardPanelId = useId();
     const { resource, row } = request;
     const createRelations =
         !row && !flow ? (resource.createRelations ?? []) : [];
@@ -319,11 +321,11 @@ export function ResourceEditor({
             }
             footerStart={
                 <>
-                    {!completion && request.wizard && step > 0 && (
+                    {!completion && request.wizard && (
                         <Button
                             type="button"
                             variant="outline"
-                            disabled={busy}
+                            disabled={busy || step === 0}
                             onClick={() => setStep(step - 1)}
                         >
                             <ChevronLeft />
@@ -350,7 +352,7 @@ export function ResourceEditor({
             presentation={
                 request.wizard || flow ? "sheet" : request.presentation
             }
-            header={
+            sidebar={
                 flow ? (
                     <WizardProgress
                         label={flow.label}
@@ -369,6 +371,8 @@ export function ResourceEditor({
                         active={step}
                         onSelect={setStep}
                         busy={busy}
+                        panelId={wizardPanelId}
+                        navigationId={`${formId}-progress`}
                     />
                 ) : undefined
             }
@@ -467,13 +471,48 @@ export function ResourceEditor({
                                     void next();
                                 } else void save(event);
                             }}
-                            className="space-y-6"
+                            className={cn(
+                                "space-y-6",
+                                (request.wizard || flow) &&
+                                    (summary
+                                        ? "mx-auto w-full max-w-5xl"
+                                        : "mx-auto w-full max-w-3xl"),
+                            )}
                             noValidate
                         >
                             <fieldset
                                 disabled={busy || !!completion}
                                 className="min-w-0"
                             >
+                                {(request.wizard || flow) && (
+                                    <div
+                                        data-slot="wizard-step-heading"
+                                        className="mb-6 min-w-0 border-b pb-5"
+                                    >
+                                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-primary">
+                                            {flow?.label ?? resource.singular} · Schritt{" "}
+                                            {flow ? flow.index + 1 : step + 1} von{" "}
+                                            {flow ? flow.steps.length : groups.length}
+                                        </p>
+                                        <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                                            {flow
+                                                ? flow.steps[flow.index]
+                                                : groups[step]?.label}
+                                        </h2>
+                                        {request.wizard && groups[step]?.description && (
+                                            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                                                {groups[step].description}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                                <div
+                                    data-slot={request.wizard || flow ? "wizard-step-panel" : undefined}
+                                    id={request.wizard ? wizardPanelId : undefined}
+                                    role={request.wizard ? "tabpanel" : undefined}
+                                    aria-labelledby={request.wizard ? `${formId}-progress-trigger-${step + 1}` : undefined}
+                                    className="min-w-0"
+                                >
                                 <FormLayout
                                     aside={!!request.wizard || !!flow}
                                     summary={
@@ -498,8 +537,11 @@ export function ResourceEditor({
                                             }
                                             group={g}
                                             variant={
-                                                resource.editor?.sectionStyle
+                                                request.wizard
+                                                    ? "card"
+                                                    : resource.editor?.sectionStyle
                                             }
+                                            hideHeading={!!request.wizard}
                                             collapsible={
                                                 request.wizard || flow
                                                     ? false
@@ -566,6 +608,7 @@ export function ResourceEditor({
                                         </EditorSection>
                                     ))}
                                 </FormLayout>
+                                </div>
                             </fieldset>
                         </form>
                     </FormProvider>
