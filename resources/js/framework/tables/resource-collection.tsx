@@ -838,13 +838,13 @@ export function ResourceCollection({
                                     : "min-w-40 max-w-64 flex-1 basis-40",
                             )}
                         >
-                            <Search className="pointer-events-none absolute left-3 top-2 size-4 text-muted-foreground" />
+                            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 value={search}
                                 onChange={(e) => {
                                     update("search", e.target.value, true);
                                 }}
-                                className="h-8 bg-card pl-9 pr-9"
+                                className="bg-card pl-9 pr-9"
                                 aria-label={`${resource.label} durchsuchen`}
                                 placeholder={`${resource.label} durchsuchen …`}
                             />

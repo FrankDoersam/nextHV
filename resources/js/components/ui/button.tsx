@@ -20,16 +20,16 @@ const buttonVariants = cva(
             },
             size: {
                 default:
-                    "h-7 gap-1 px-2 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+                    "h-(--control-height) gap-1 px-2 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
                 xs: "h-5 gap-1 rounded-sm px-2 text-[0.625rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
                 sm: "h-6 gap-1 rounded-md px-2 text-xs/relaxed in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-                lg: "h-8 gap-1 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-                icon: "size-7",
+                lg: "h-(--control-height-lg) gap-1 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+                icon: "size-(--control-height)",
                 "icon-xs":
                     "size-5 rounded-sm in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
                 "icon-sm":
                     "size-6 rounded-md in-data-[slot=button-group]:rounded-lg",
-                "icon-lg": "size-8",
+                "icon-lg": "size-(--control-height-lg)",
             },
         },
         defaultVariants: {

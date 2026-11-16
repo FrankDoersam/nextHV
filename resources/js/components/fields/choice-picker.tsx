@@ -208,12 +208,12 @@ export function ChoicePicker({
                         }
                         title={caption || placeholder}
                         className={cn(
-                            "h-9 min-w-0 max-w-full flex-1 shrink gap-2 text-[13px]",
-                            iconOnly && "size-9 flex-none px-0",
+                            "h-(--control-height) min-w-0 max-w-full flex-1 shrink gap-2 text-xs/relaxed",
+                            iconOnly && "size-(--control-height) flex-none px-0",
                             size === "sm" &&
-                                "h-8 gap-1.5 px-2 text-xs [&_svg]:size-3.5",
+                                "h-(--control-height-sm) gap-1.5 px-2 text-xs [&_svg]:size-3.5",
                             presentation === "chip" &&
-                                "h-8 rounded-none border-0 px-2 shadow-none focus-visible:ring-2 focus-visible:ring-inset",
+                                "h-(--control-height) rounded-none border-0 px-2 shadow-none focus-visible:ring-2 focus-visible:ring-inset",
                         )}
                         onKeyDown={(event) => {
                             if (
@@ -277,7 +277,9 @@ export function ChoicePicker({
                         "relative min-w-0 bg-card",
                         selectedDisplay === "rich" && !multiple
                             ? "h-14"
-                            : "h-9",
+                            : size === "sm"
+                              ? "h-(--control-height-sm)"
+                              : "h-(--control-height)",
                     )}
                 >
                     {richSelection && !open && (

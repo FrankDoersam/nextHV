@@ -5,6 +5,9 @@ import { afterEach, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InputGroup } from "@/components/ui/input-group";
+import { Select, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChoicePicker } from "@/components/fields/choice-picker";
 import { Label } from "@/components/ui/label";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,6 +23,9 @@ it("uses the supported REUI base-mira registry style and centralized radius", ()
     expect(config.style).toBe("base-mira");
     expect(config.registries["@reui"]).toContain("{style}");
     expect(css).toContain("--radius: 0.5rem");
+    expect(css).toContain("--control-height: 1.75rem");
+    expect(css).toContain("--control-height-lg: 2rem");
+    expect(css).toContain('[data-slot="collection-toolbar"]');
 });
 
 it("renders the compact Mira button, input, card and tab primitives", () => {
@@ -37,15 +43,60 @@ it("renders the compact Mira button, input, card and tab primitives", () => {
         </div>,
     );
     expect(screen.getByRole("button", { name: "Standardaktion" }).className)
-        .toContain("h-7");
+        .toContain("h-(--control-height)");
     expect(screen.getByRole("button", { name: "Kompaktaktion" }).className)
         .toContain("h-6");
     expect(screen.getByRole("textbox", { name: "Name" }).className)
-        .toContain("h-7");
+        .toContain("h-(--control-height)");
     expect(screen.getByText("Übersicht", { selector: '[data-slot="card-title"]' }))
         .toHaveClass("text-sm");
     expect(view.container.querySelector('[data-slot="tabs-list"]'))
         .toHaveClass("data-[orientation=horizontal]:h-8");
     expect(screen.getByTestId("reui-frame").className)
         .toContain("[--frame-radius:var(--radius-lg)]");
+});
+
+it("shares Mira control-height tokens across input, select, combobox and action primitives", () => {
+    const view = render(
+        <div data-slot="collection-toolbar">
+            <Input aria-label="Suche" />
+            <InputGroup data-testid="combined-input" />
+            <Select defaultValue="a">
+                <SelectTrigger aria-label="Native Auswahl">
+                    <SelectValue />
+                </SelectTrigger>
+            </Select>
+            <ChoicePicker
+                value={null}
+                onChange={() => {}}
+                options={[{ value: "a", label: "A" }]}
+                aria-label="Filter"
+                presentation="menu"
+            />
+            <ChoicePicker
+                value={null}
+                onChange={() => {}}
+                options={[{ value: "a", label: "A" }]}
+                aria-label="Relation"
+                presentation="input"
+            />
+            <Button>Neu</Button>
+            <Button size="icon-lg" aria-label="Aktualisieren">+</Button>
+        </div>,
+    );
+    expect(view.container.querySelector('[data-slot="select-trigger"]')?.className)
+        .toContain("data-[size=default]:h-(--control-height)");
+    expect(screen.getByRole("combobox", { name: "Filter" }).className)
+        .toContain("h-(--control-height)");
+    expect(screen.getByRole("combobox", { name: "Relation" })
+        .closest('[data-slot="input-group"]')?.className)
+        .toContain("h-(--control-height)");
+    expect(screen.getByRole("button", { name: "Neu" }).className)
+        .toContain("h-(--control-height)");
+    expect(screen.getByRole("textbox", { name: "Suche" }).className)
+        .toContain("h-(--control-height)");
+    expect(screen.getByTestId("combined-input").className)
+        .toContain("h-(--control-height)");
+    expect(screen.getByRole("button", { name: "Aktualisieren" }).className)
+        .toContain("size-(--control-height-lg)");
 });

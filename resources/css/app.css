@@ -43,6 +43,10 @@
 }
 :root {
     --radius: 0.5rem;
+    /* Mira defaults to 28px. Dense toolbars opt into 32px as one unit. */
+    --control-height: 1.75rem;
+    --control-height-sm: 1.5rem;
+    --control-height-lg: 2rem;
     --background: #f7f7f8;
     --foreground: #18181b;
     --card: #fff;
@@ -95,6 +99,9 @@
     }
 }
 @layer components {
+    [data-slot="collection-toolbar"] {
+        --control-height: var(--control-height-lg);
+    }
     .nav-item {
         @apply flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground;
     }

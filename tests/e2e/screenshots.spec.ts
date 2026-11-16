@@ -196,15 +196,24 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         '[data-slot="collection-active-filters"]',
     );
     const activeFilterBox = await activeFilterRow.boundingBox();
-    // Base Mira deliberately mixes 28px defaults with a taller primary CTA.
-    // Align the visual centers rather than comparing unequal top edges.
-    expect(
-        Math.abs(
-            groupingBox!.y +
-                groupingBox!.height / 2 -
-                (createBox!.y + createBox!.height / 2),
-        ),
-    ).toBeLessThanOrEqual(1);
+    // Search, both combobox variants, and primary/secondary actions must
+    // actually be 32px high, not merely look centered despite unequal heights.
+    const toolbarControls = [
+        page.getByRole("textbox", { name: "Verträge durchsuchen" }),
+        page.getByRole("combobox", { name: "Filter hinzufügen", exact: true }),
+        page.getByRole("combobox", { name: "Gruppierung", exact: true }),
+        page.getByRole("button", { name: "Vertrag anlegen", exact: true }),
+        page.getByRole("button", { name: "Aktualisieren", exact: true }),
+        page.getByRole("button", {
+            name: "Aktuelle Seite als CSV exportieren",
+            exact: true,
+        }),
+    ];
+    const heights = await Promise.all(
+        toolbarControls.map(async (control) => (await control.boundingBox())!.height),
+    );
+    expect(heights).toEqual(heights.map(() => 32));
+    expect(Math.abs(groupingBox!.y - createBox!.y)).toBeLessThanOrEqual(1);
     expect(activeFilterBox!.y).toBeGreaterThanOrEqual(
         groupingBox!.y + groupingBox!.height,
     );

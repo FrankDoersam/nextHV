@@ -47,3 +47,15 @@ Quellen:
 Upstream-Herkunft. Bei angepassten Komponenten ist dies kein Anspruch
 auf Byte-identische Registry-Kopien; unveränderte Nova-Einträge dokumentieren
 ihre ursprüngliche Quelle.
+
+
+## Höhenvertrag für Controls
+
+`--control-height` (28 px im Mira-Standard), `--control-height-sm`
+(24 px) und `--control-height-lg` (32 px) werden zentral in `app.css`
+definiert. Die Tabellen-Toolbar setzt nur `--control-height` auf 32 px:
+Textfelder, Base-UI-Select, die durchsuchbare ChoicePicker-Combobox und
+Standard-Buttons verwenden denselben Token. Die Toolbar-Aktionen `lg`
+und `icon-lg` entsprechen ebenfalls 32 px. So sind die Steuerelemente
+tatsächlich gleich hoch – nicht nur mittig ausgerichtet. Ein bewusst
+mehrzeiliges, reichhaltiges Auswahlfeld bleibt als Ausnahme höher.
