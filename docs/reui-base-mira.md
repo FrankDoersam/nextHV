@@ -62,3 +62,25 @@ und `icon-lg` entsprechen ebenfalls 32 px. So sind die Steuerelemente
 tatsächlich gleich hoch – nicht nur mittig ausgerichtet. Im Formular sind
 dadurch beispielsweise Einheiten-Combobox und Vertragsnummer gleich hoch.
 Ein bewusst mehrzeiliges, reichhaltiges Auswahlfeld bleibt als Ausnahme höher.
+
+## Erfassungs-Wizards: einheitliches REUI-Sheet
+
+Mehrstufige ResourceEditor-Wizards und verknüpfte Erfassungs-Flows öffnen
+immer ein rechtes, responsives Base-Mira-Sheet. Auch ältere Links mit
+`layout=dialog&wizard=1` werden beim Einlesen als Sheet behandelt.
+Normale Formular-Dialoge und die getrennte **Änderungen verwerfen?**-
+Bestätigung bleiben unverändert möglich.
+
+Der feste Header zeigt genau einen REUI-Stepper (mit aktivem, erledigtem
+und zukünftigem Schritt). Eine zweite, rein dekorative Fortschrittsleiste
+wird nicht benötigt. Auf kleinen Bildschirmen bleiben die Schrittsymbole
+und der aktive Schrittname sichtbar; vollständige Labels erscheinen
+erst bei ausreichender Breite. Zurücknavigation auf erledigte Schritte
+erhält Eingaben; vorwärts prüft weiterhin die Felder des aktuellen
+Schritts. Nur der Formular-Body scrollt und springt bei Schrittwechsel
+an den Anfang. Der Footer bleibt mit Zurück, Abbrechen und Weiter bzw.
+Speichern erreichbar. Es entsteht kein Dialogwechsel zwischen Schritten.
+
+REUI-Orientierung: https://reui.io/components/sheet und
+https://reui.io/components/stepper. Die fachliche Validierung und
+Server-Persistenz bleiben in den bestehenden nextHV-Form-Hooks.
