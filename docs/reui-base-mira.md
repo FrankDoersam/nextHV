@@ -82,10 +82,15 @@ angepasst. Die angepasste Source liegt unter
 
 Die Navigation ist **horizontal** mit `StepperNav`, nummerierten
 `StepperIndicator`, `StepperTitle`, `StepperDescription` und
-`StepperSeparator`. Im `StepperPanel` hält je ein `StepperContent`
-die Felder eines Schritts (auch ausgeblendete Felder bleiben gemountet,
-damit Werte und Repeater beim Zurückgehen nicht verloren gehen).
-Mobil scrollen die Schritte horizontal ohne Seitenüberlauf.
+`StepperSeparator`. Der aktive Schritt wird mit dem gefüllten Indikator,
+nicht mit einer zusätzlichen Hintergrundkarte, hervorgehoben.
+Der Fortschrittszähler steht nur einmal beim Formular-Titel.
+Im `StepperPanel` hält je ein `StepperContent` die Felder eines Schritts
+(auch ausgeblendete Felder bleiben gemountet, damit Werte und Repeater beim
+Zurückgehen nicht verloren gehen). Wizard-Formulare stehen auf einer klaren
+Fläche ohne zusätzliche verschachtelte Frame-Karten. Auf Desktop passen auch
+sechs Schritte ohne rechts abgeschnittene Labels in das kompaktere Sheet;
+mobil scrollt die Navigation unabhängig horizontal.
 Die separate bisherige `VerticalWizardProgress`-Komponente
 (`components/blocks/wizard-progress.tsx`) bleibt zur alternativen Nutzung
 erhalten, wird aber **nicht** mehr im Objekt-/Vertrags-Sheet gerendert.

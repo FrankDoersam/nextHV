@@ -468,6 +468,14 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     expect(patternBox!.y).toBeGreaterThanOrEqual(bodyBox!.y);
     await expect(wizardPattern.locator('[data-slot="stepper-panel"]')).toBeVisible();
     await expect(wizardPattern.getByRole("tabpanel")).toHaveCount(1);
+    await expect(wizardPattern.locator('[data-slot="stepper-description"]').first()).toBeVisible();
+    const desktopStepperScroll = wizardPattern.locator('[data-slot="reui-stepper-10-scroll"]');
+    const desktopScrollBox = await desktopStepperScroll.boundingBox();
+    const lastStepBox = await wizardSteps.last().boundingBox();
+    // Six steps must fit the desktop sheet instead of clipping the final label.
+    expect(lastStepBox!.x + lastStepBox!.width).toBeLessThanOrEqual(
+        desktopScrollBox!.x + desktopScrollBox!.width + 2,
+    );
     await expect(page.locator('[data-slot="wizard-step-heading"]')).toContainText("Vertrag");
     await body.evaluate((element) => {
         element.scrollTop = element.scrollHeight;
@@ -621,7 +629,12 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     ).toBeDisabled();
     await expect(
         objectWizard.locator('[data-slot="wizard-step-heading"]'),
-    ).toContainText("Objekt");
+    ).toContainText("Grunddaten");
+    await expect(objectWizard.locator('[data-slot="wizard-step-heading"]'))
+        .toContainText("Schritt 1 von 4");
+    // Stepper navigation, heading, and controls share one clean Sheet surface.
+    await expect(objectWizard.locator('[data-slot="form-section"] [data-slot="content-card"]'))
+        .toHaveCount(0);
     await expect(
         objectWizard.locator('[data-slot="reui-c-stepper-10"]'),
     ).toBeVisible();

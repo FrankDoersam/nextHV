@@ -90,7 +90,7 @@ export function Overlay({
     const effectivePresentation = wizard ? "sheet" : presentation;
     const headClass = cn(
         "relative shrink-0 gap-0 border-b bg-card px-5 py-5 sm:px-6",
-        wizard && "py-4 sm:py-4",
+        wizard && "px-5 py-3 sm:px-6 sm:py-3",
     );
     const closeButton = (
         <Button
@@ -129,7 +129,7 @@ export function Overlay({
                     data-slot="overlay-body"
                     className={cn(
                         "@container/form min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain bg-card px-5 py-6 sm:px-6",
-                        wizard && "px-4 py-6 sm:px-7 sm:py-7",
+                        wizard && "px-5 py-4 sm:px-6 sm:py-5",
                         !bodyInset && "p-0 sm:p-0",
                         bodyScroll === "managed" &&
                             "flex flex-col overflow-hidden",
@@ -218,7 +218,10 @@ export function Overlay({
         <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex min-w-0 flex-1 basis-48 items-start gap-3">
                 {icon && (
-                    <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl border bg-muted/50 [&_svg]:size-5">
+                    <span className={cn(
+                        "mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl border bg-muted/50 [&_svg]:size-5",
+                        wizard && "size-8 rounded-lg border-border/60 [&_svg]:size-4",
+                    )}>
                         {icon}
                     </span>
                 )}
@@ -278,11 +281,11 @@ export function Overlay({
                         "crud-sheet flex flex-col gap-0 overflow-hidden p-0 shadow-2xl data-[side=right]:w-full",
                         wizard
                             ? // REUI sheets attach to the viewport edge; do not float like dialogs.
-                              "data-[side=right]:sm:inset-y-0 data-[side=right]:sm:right-0 data-[side=right]:sm:h-dvh data-[side=right]:sm:rounded-none data-[side=right]:sm:max-w-[min(56rem,100vw)]"
+                              "data-[side=right]:sm:inset-y-0 data-[side=right]:sm:right-0 data-[side=right]:sm:h-dvh data-[side=right]:sm:rounded-none data-[side=right]:sm:max-w-[min(52rem,100vw)]"
                             : "data-[side=right]:sm:inset-y-3 data-[side=right]:sm:right-3 data-[side=right]:sm:h-[calc(100dvh-1.5rem)] data-[side=right]:sm:rounded-2xl data-[side=right]:sm:max-w-[min(48rem,calc(100vw-3rem))]",
                         size === "wide" &&
                             (wizard
-                                ? "data-[side=right]:sm:max-w-[min(64rem,100vw)]"
+                                ? "data-[side=right]:sm:max-w-[min(60rem,100vw)]"
                                 : "data-[side=right]:sm:max-w-[min(64rem,calc(100vw-3rem))]"),
                     )}
                 >

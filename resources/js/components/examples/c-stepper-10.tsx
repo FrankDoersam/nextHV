@@ -73,35 +73,27 @@ export function CStepper10({
                     loading: <LoaderCircleIcon className="size-3.5 animate-spin" />,
                 }}
                 aria-label="Erfassungsschritte"
-                className="w-full min-w-0 space-y-6"
+                className="w-full min-w-0 space-y-3"
             >
-                <div className="flex items-center justify-between gap-3 text-xs">
-                    <span className="font-medium text-muted-foreground" aria-live="polite">
-                        Schritt {active + 1} von {steps.length}
-                    </span>
-                    <span className="min-w-0 truncate font-medium text-foreground">
-                        {steps[active]?.label}
-                    </span>
-                </div>
                 <div
                     data-slot="reui-stepper-10-scroll"
-                    className="min-w-0 overflow-x-auto overscroll-x-contain pb-2"
+                    className="min-w-0 overflow-x-auto overscroll-x-contain border-b border-border/60 pb-3"
                 >
-                    <StepperNav className="min-w-max items-center gap-1">
+                    <StepperNav className="w-full min-w-max items-center gap-0">
                         {steps.map((stage, index) => {
                             const completed = index < active;
                             const current = index === active;
                             const status = completed
-                                ? "Abgeschlossen"
+                                ? "Erledigt"
                                 : current
-                                  ? "Aktueller Schritt"
-                                  : "Noch offen";
+                                  ? "Aktuell"
+                                  : "Offen";
                             return (
                                 <StepperItem
                                     key={stage.id}
                                     step={index + 1}
                                     disabled={busy || !onSelect || index > active}
-                                    className="relative min-w-32 flex-1 justify-start"
+                                    className="relative min-w-25 !flex-1 justify-start"
                                 >
                                     <StepperTrigger
                                         type="button"
@@ -110,25 +102,24 @@ export function CStepper10({
                                         aria-label={stage.label + ", Schritt " + (index + 1)}
                                         disabled={busy || !onSelect || index > active}
                                         className={cn(
-                                            "min-w-0 flex-1 justify-start gap-2 rounded-md px-1.5 py-2 text-left focus-visible:ring-2 focus-visible:ring-ring/50",
-                                            completed && "hover:bg-muted/60",
-                                            current && "bg-primary/[0.05]",
+                                            "min-w-0 flex-1 justify-start gap-1.5 rounded-md px-1 py-1.5 text-left focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-100",
+                                            completed && "hover:bg-muted/50",
                                         )}
                                     >
-                                        <StepperIndicator className="size-7 shrink-0 rounded-full border border-border bg-card text-xs font-semibold text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=completed]:border-primary/20 data-[state=completed]:bg-primary/10 data-[state=completed]:text-primary">
+                                        <StepperIndicator className="size-6 shrink-0 rounded-full border border-border bg-background text-[11px] font-semibold text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=completed]:border-primary/20 data-[state=completed]:bg-primary/10 data-[state=completed]:text-primary">
                                             {index + 1}
                                         </StepperIndicator>
                                         <div className="flex min-w-0 flex-col items-start gap-0.5">
-                                            <StepperTitle className="max-w-44 break-words text-xs leading-4">
+                                            <StepperTitle className="break-words text-xs leading-4 data-[state=inactive]:text-muted-foreground">
                                                 {stage.label}
                                             </StepperTitle>
-                                            <StepperDescription className="max-w-44 text-[11px] leading-4">
-                                                {stage.description ?? status}
+                                            <StepperDescription className="hidden text-[10px] leading-4 text-muted-foreground @min-[38rem]/overlay:block">
+                                                {status}
                                             </StepperDescription>
                                         </div>
                                     </StepperTrigger>
                                     {index < steps.length - 1 && (
-                                        <StepperSeparator className="mx-1.5 h-px min-w-3 max-w-5 self-center @min-[42rem]/overlay:mx-2.5" />
+                                        <StepperSeparator className="mx-0.5 h-px w-3 flex-none self-center bg-border/70 @min-[44rem]/overlay:mx-1 @min-[44rem]/overlay:w-4" />
                                     )}
                                 </StepperItem>
                             );

@@ -485,20 +485,23 @@ export function ResourceEditor({
                                 {(request.wizard || flow) && (
                                     <div
                                         data-slot="wizard-step-heading"
-                                        className="mb-6 min-w-0 border-b pb-5"
+                                        className="mb-5 min-w-0"
                                     >
-                                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-primary">
-                                            {flow?.label ?? resource.singular} · Schritt{" "}
-                                            {flow ? flow.index + 1 : step + 1} von{" "}
-                                            {flow ? flow.steps.length : groups.length}
-                                        </p>
-                                        <h2 className="text-xl font-semibold tracking-tight text-foreground">
-                                            {flow
-                                                ? flow.steps[flow.index]
-                                                : groups[step]?.label}
-                                        </h2>
+                                        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                                            <h2 className="text-base font-semibold tracking-tight text-foreground">
+                                                {flow
+                                                    ? flow.steps[flow.index]
+                                                    : groups[step]?.label === resource.singular
+                                                      ? "Grunddaten"
+                                                      : groups[step]?.label}
+                                            </h2>
+                                            <p className="text-xs font-medium tabular-nums text-muted-foreground" aria-live="polite">
+                                                Schritt {flow ? flow.index + 1 : step + 1} von{" "}
+                                                {flow ? flow.steps.length : groups.length}
+                                            </p>
+                                        </div>
                                         {request.wizard && groups[step]?.description && (
-                                            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                                            <p className="mt-1 text-xs leading-5 text-muted-foreground">
                                                 {groups[step].description}
                                             </p>
                                         )}
@@ -536,7 +539,7 @@ export function ResourceEditor({
                                             group={g}
                                             variant={
                                                 request.wizard
-                                                    ? "card"
+                                                    ? "plain"
                                                     : resource.editor?.sectionStyle
                                             }
                                             hideHeading={!!request.wizard}
