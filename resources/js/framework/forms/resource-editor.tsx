@@ -1,4 +1,5 @@
 import { useI18n } from "../i18n";
+import { cn } from "@/lib/utils";
 import { FormSummary } from "./form-summary";
 import { FormActionScope } from "./form-action-scope";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +9,11 @@ import { FormLayout, FormSection } from "@/components/blocks/form-section";
 import { FieldGrid, Stack } from "@/components/blocks/layout";
 import { Overlay } from "@/components/blocks/overlay";
 import { ResourceField } from "@/components/fields/field";
-import { WizardProgress } from "@/components/blocks/wizard-progress";
+import {
+    CStepper10,
+    CStepper10Content,
+} from "@/components/examples/c-stepper-10";
+import { useCStepper10Navigation } from "@/components/examples/c-stepper-10-navigation";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Save, RefreshCw } from "lucide-react";
 import {
@@ -176,21 +181,30 @@ export function ResourceEditor({
                 Object.keys(errors)[0],
         );
     }
-    const next = async () => {
-        if (busy || completion) return;
-        const names = [
-            ...fields
-                .filter((f) => (f.group ?? "general") === groups[step].id)
-                .map((f) => f.name),
-            ...createRelations
-                .filter((relation) => relation.group === groups[step].id)
-                .flatMap((relation) =>
-                    creationNames(relation, form.getValues()),
-                ),
-        ];
-        if (await validate(names))
-            setStep((current) => Math.min(current + 1, groups.length - 1));
-    };
+    const wizardNavigation = useCStepper10Navigation({
+        active: step,
+        count: groups.length,
+        onChange: setStep,
+        canBack: !completion,
+        canNext: !completion,
+        canFinish: !completion,
+        busy: busy || !!completion,
+        validate: async (currentStep) => {
+            const group = groups[currentStep];
+            if (!group) return false;
+            const names = [
+                ...fields
+                    .filter((f) => (f.group ?? "general") === group.id)
+                    .map((f) => f.name),
+                ...createRelations
+                    .filter((relation) => relation.group === group.id)
+                    .flatMap((relation) =>
+                        creationNames(relation, form.getValues()),
+                    ),
+            ];
+            return validate(names);
+        },
+    });
     const headerActions = (
         <div className="flex gap-1">
             {row && (
@@ -319,12 +333,12 @@ export function ResourceEditor({
             }
             footerStart={
                 <>
-                    {!completion && request.wizard && step > 0 && (
+                    {!completion && request.wizard && (
                         <Button
                             type="button"
                             variant="outline"
-                            disabled={busy}
-                            onClick={() => setStep(step - 1)}
+                            disabled={!wizardNavigation.canBack}
+                            onClick={() => void wizardNavigation.back()}
                         >
                             <ChevronLeft />
                             {t("back")}
@@ -349,28 +363,6 @@ export function ResourceEditor({
             }
             presentation={
                 request.wizard || flow ? "sheet" : request.presentation
-            }
-            header={
-                flow ? (
-                    <WizardProgress
-                        label={flow.label}
-                        steps={flow.steps.map((label, index) => ({
-                            id: String(index),
-                            label,
-                        }))}
-                        active={flow.index}
-                    />
-                ) : request.wizard ? (
-                    <WizardProgress
-                        steps={groups.map((group) => ({
-                            ...group,
-                            label: group.stepLabel ?? group.label,
-                        }))}
-                        active={step}
-                        onSelect={setStep}
-                        busy={busy}
-                    />
-                ) : undefined
             }
             footer={
                 <>
@@ -397,13 +389,10 @@ export function ResourceEditor({
                         <Button
                             key="wizard-next"
                             type="button"
-                            disabled={busy}
-                            onClick={(event) => {
-                                event.preventDefault();
-                                void next();
-                            }}
+                            disabled={!wizardNavigation.canNext}
+                            onClick={() => void wizardNavigation.next()}
                         >
-                            {validating ? t("checking") : t("next")}
+                            {validating || wizardNavigation.validating ? t("checking") : t("next")}
                             <ChevronRight />
                         </Button>
                     ) : (
@@ -411,7 +400,10 @@ export function ResourceEditor({
                             key="save"
                             type="submit"
                             form={formId}
-                            disabled={busy}
+                            disabled={
+                                busy ||
+                                (request.wizard && !flow && !wizardNavigation.canFinish)
+                            }
                         >
                             <Save />
                             {busy
@@ -461,19 +453,72 @@ export function ResourceEditor({
                             onSubmit={(event) => {
                                 if (
                                     request.wizard &&
+                                    !flow &&
                                     step < groups.length - 1
                                 ) {
                                     event.preventDefault();
-                                    void next();
+                                    void wizardNavigation.next();
                                 } else void save(event);
                             }}
-                            className="space-y-6"
+                            className={cn(
+                                "space-y-6",
+                                (request.wizard || flow) &&
+                                    (summary
+                                        ? "mx-auto w-full max-w-5xl"
+                                        : "mx-auto w-full max-w-3xl"),
+                            )}
                             noValidate
                         >
+                            <CStepper10
+                                enabled={!!(request.wizard || flow)}
+                                steps={
+                                    flow
+                                        ? flow.steps.map((label, index) => ({
+                                              id: String(index),
+                                              label,
+                                          }))
+                                        : groups.map((group) => ({
+                                              id: group.id,
+                                              label: group.stepLabel ?? group.label,
+                                              shortLabel: group.stepShortLabel,
+                                              description: group.description,
+                                          }))
+                                }
+                                active={flow ? flow.index : step}
+                                navigation={flow ? undefined : wizardNavigation}
+                                busy={busy || !!completion}
+                                singleContent={!!flow}
+                                idPrefix={formId + "-stepper"}
+                            >
                             <fieldset
                                 disabled={busy || !!completion}
                                 className="min-w-0"
                             >
+                                {(request.wizard || flow) && (
+                                    <div
+                                        data-slot="wizard-step-heading"
+                                        className="mb-5 min-w-0"
+                                    >
+                                        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                                            <h2 className="text-base font-semibold tracking-tight text-foreground">
+                                                {flow
+                                                    ? flow.steps[flow.index]
+                                                    : groups[step]?.label === resource.singular
+                                                      ? "Grunddaten"
+                                                      : groups[step]?.label}
+                                            </h2>
+                                            <p className="text-xs font-medium tabular-nums text-muted-foreground" aria-live="polite">
+                                                Schritt {flow ? flow.index + 1 : step + 1} von{" "}
+                                                {flow ? flow.steps.length : groups.length}
+                                            </p>
+                                        </div>
+                                        {request.wizard && groups[step]?.description && (
+                                            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                                {groups[step].description}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
                                 <FormLayout
                                     aside={!!request.wizard || !!flow}
                                     summary={
@@ -486,6 +531,13 @@ export function ResourceEditor({
                                     }
                                 >
                                     {groups.map((g, i) => (
+                                        <CStepper10Content
+                                            key={g.id}
+                                            enabled={!!request.wizard && !flow}
+                                            step={i + 1}
+                                            active={step}
+                                            idPrefix={formId + "-stepper"}
+                                        >
                                         <EditorSection
                                             key={g.id}
                                             hidden={
@@ -498,8 +550,11 @@ export function ResourceEditor({
                                             }
                                             group={g}
                                             variant={
-                                                resource.editor?.sectionStyle
+                                                request.wizard
+                                                    ? "plain"
+                                                    : resource.editor?.sectionStyle
                                             }
+                                            hideHeading={!!request.wizard}
                                             collapsible={
                                                 request.wizard || flow
                                                     ? false
@@ -564,9 +619,11 @@ export function ResourceEditor({
                                                     />
                                                 ))}
                                         </EditorSection>
+                                        </CStepper10Content>
                                     ))}
                                 </FormLayout>
                             </fieldset>
+                            </CStepper10>
                         </form>
                     </FormProvider>
                 </FormActionScope>

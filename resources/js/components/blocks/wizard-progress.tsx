@@ -1,125 +1,186 @@
 import { Check } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
     Stepper,
     StepperIndicator,
     StepperItem,
     StepperNav,
-    StepperSeparator,
+    StepperTrigger,
 } from "@/components/reui/stepper";
 import { cn } from "@/lib/utils";
 
-/** Header navigation only: server-validated steps control progression; completed steps remain revisitable. */
+const railQuery = "(min-width: 768px)";
+
+function useDesktopRail() {
+    const [desktop, setDesktop] = useState(
+        () => (typeof window !== "undefined" && window.matchMedia?.(railQuery)?.matches) ?? false,
+    );
+    useEffect(() => {
+        const query = window.matchMedia?.(railQuery);
+        if (!query) return;
+        const update = () => setDesktop(query.matches);
+        update();
+        query.addEventListener("change", update);
+        return () => query.removeEventListener("change", update);
+    }, []);
+    return desktop;
+}
+
+/**
+ * REUI controlled Stepper with card-style stages, adapted to a right-hand Sheet.
+ * Desktop has a vertical rail; narrow screens scroll the cards horizontally.
+ * Progression and field validation remain in ResourceEditor.
+ */
+/** Kept as the alternative vertical step-card wizard navigation. */
 export function WizardProgress({
     steps,
     active,
     label,
     onSelect,
     busy = false,
+    panelId,
+    navigationId,
 }: {
     steps: { id: string; label: string; description?: string }[];
     active: number;
     label?: string;
     onSelect?: (index: number) => void;
     busy?: boolean;
+    panelId?: string;
+    navigationId?: string;
 }) {
+    const generatedId = useId();
+    const baseId = navigationId ?? generatedId;
+    const desktop = useDesktopRail();
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (desktop || !scrollRef.current) return;
+        const scroll = scrollRef.current;
+        const current = scroll.querySelector<HTMLElement>('[data-current-step="true"]');
+        if (!current || scroll.scrollWidth <= scroll.clientWidth) return;
+        scroll.scrollLeft = Math.max(
+            0,
+            current.offsetLeft - scroll.offsetLeft - (scroll.clientWidth - current.clientWidth) / 2,
+        );
+    }, [active, desktop]);
+
     return (
         <nav
             aria-label={label ?? "Erfassungsschritte"}
             data-slot="wizard-progress"
-            className="@container/wizard flex min-w-0 flex-col gap-3"
+            className="flex min-w-0 flex-col gap-3"
         >
-            <div
-                aria-live="polite"
-                aria-atomic="true"
-                className="flex min-w-0 items-center justify-between gap-3 text-xs"
-            >
-                <span className="font-medium tabular-nums text-muted-foreground">
+            <div className="flex min-w-0 items-center justify-between gap-2 @min-[48rem]/overlay:flex-col @min-[48rem]/overlay:items-start">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Erfassungsschritte
+                </span>
+                <span
+                    aria-live="polite"
+                    aria-atomic="true"
+                    className="text-xs font-medium tabular-nums text-muted-foreground"
+                >
                     Schritt {active + 1} von {steps.length}
                 </span>
-                <span className="truncate font-medium text-foreground">
-                    {steps[active]?.label}
-                </span>
             </div>
-            <Stepper
-                className="w-full"
-                role="group"
-                aria-orientation={undefined}
-                aria-label={`Schritt ${active + 1} von ${steps.length}`}
-                value={active + 1}
-                indicators={{ completed: <Check className="size-3.5" /> }}
+            <div
+                ref={scrollRef}
+                data-slot="wizard-step-scroll"
+                className="min-w-0 max-w-full overflow-x-auto overscroll-x-contain @min-[48rem]/overlay:overflow-visible"
             >
-                <StepperNav className="items-stretch gap-0">
-                    {steps.map((step, index) => {
-                        const current = index === active;
-                        const completed = index < active;
-                        const content = (
-                            <>
-                                <StepperIndicator className="size-6 border border-border bg-card font-semibold text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:shadow-xs data-[state=completed]:border-primary/20 data-[state=completed]:bg-primary/10 data-[state=completed]:text-primary">
-                                    {index + 1}
-                                </StepperIndicator>
-                                <span
-                                    className={cn(
-                                        "min-w-0 max-w-full truncate text-center text-xs font-medium @max-[38rem]/wizard:sr-only @min-[38rem]/wizard:text-left",
-                                        current
-                                            ? "text-foreground"
-                                            : completed
-                                              ? "text-foreground/80"
-                                              : "text-muted-foreground",
-                                    )}
+                <Stepper
+                    id={baseId}
+                    className="w-full"
+                    role={onSelect ? "tablist" : "group"}
+                    aria-label={label ?? "Erfassungsschritte"}
+                    value={active + 1}
+                    orientation={desktop ? "vertical" : "horizontal"}
+                    onValueChange={
+                        onSelect
+                            ? (value) => {
+                                  if (!busy && value >= 1 && value <= active)
+                                      onSelect(value - 1);
+                              }
+                            : undefined
+                    }
+                    indicators={{ completed: <Check className="size-4" /> }}
+                >
+                    <StepperNav
+                        role="presentation"
+                        className="min-w-max items-stretch gap-2 @min-[48rem]/overlay:w-full @min-[48rem]/overlay:min-w-0"
+                    >
+                        {steps.map((step, index) => {
+                            const current = index === active;
+                            const completed = index < active;
+                            const status = completed
+                                ? "Abgeschlossen"
+                                : current
+                                  ? "Aktueller Schritt"
+                                  : "Noch offen";
+                            const card = (
+                                <>
+                                    <StepperIndicator className="size-8 rounded-full border border-border bg-background text-xs font-semibold text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=completed]:border-emerald-200 data-[state=completed]:bg-emerald-50 data-[state=completed]:text-emerald-700 dark:data-[state=completed]:border-emerald-900 dark:data-[state=completed]:bg-emerald-950 dark:data-[state=completed]:text-emerald-300">
+                                        {index + 1}
+                                    </StepperIndicator>
+                                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                                        <span className={cn(
+                                            "break-words text-xs font-semibold leading-4",
+                                            current ? "text-foreground" : completed ? "text-foreground/90" : "text-muted-foreground",
+                                        )}>
+                                            {step.label}
+                                        </span>
+                                        <span className="hidden text-[11px] leading-4 text-muted-foreground @min-[48rem]/overlay:line-clamp-2">
+                                            {step.description || status}
+                                        </span>
+                                    </span>
+                                </>
+                            );
+                            const classes = cn(
+                                "flex min-h-14 w-full min-w-0 items-center gap-3 rounded-lg border bg-card px-3 py-2 text-left shadow-xs",
+                                current
+                                    ? "border-primary/50 bg-primary/[0.06] ring-1 ring-primary/10"
+                                    : completed
+                                      ? "border-border hover:border-primary/30"
+                                      : "border-border/70 bg-muted/30",
+                            );
+                            return (
+                                <StepperItem
+                                    key={step.id}
+                                    step={index + 1}
+                                    disabled={busy || index > active || !onSelect}
+                                    data-current-step={current ? "true" : undefined}
+                                    className="!flex-none w-40 min-w-0 @min-[48rem]/overlay:w-full"
                                 >
-                                    {step.label}
-                                </span>
-                            </>
-                        );
-                        const classes = cn(
-                            "relative z-10 flex min-h-10 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-md px-1 py-1 outline-offset-2 @min-[38rem]/wizard:flex-row @min-[38rem]/wizard:gap-2",
-                        );
-                        return (
-                            <StepperItem
-                                key={step.id}
-                                step={index + 1}
-                                aria-current={current ? "step" : undefined}
-                                className="relative min-w-0 flex-1 items-center"
-                            >
-                                {onSelect && completed ? (
-                                    <button
-                                        type="button"
-                                        disabled={busy}
-                                        aria-label={`${step.label}, Schritt ${index + 1}`}
-                                        onClick={() => onSelect(index)}
-                                        className={cn(
-                                            classes,
-                                            "hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50",
-                                        )}
-                                    >
-                                        {content}
-                                    </button>
-                                ) : (
-                                    <div
-                                        className={cn(
-                                            classes,
-                                            current && "bg-primary/[0.06]",
-                                        )}
-                                        aria-label={`${step.label}: ${current ? "aktueller Schritt" : completed ? "abgeschlossen" : "ausstehend"}`}
-                                    >
-                                        {content}
-                                    </div>
-                                )}
-                                {index < steps.length - 1 && (
-                                    <StepperSeparator
-                                        className={cn(
-                                            "absolute top-[0.9375rem] right-[calc(-50%+1.25rem)] left-[calc(50%+1.25rem)] m-0 rounded-none bg-border group-data-[orientation=horizontal]/stepper-nav:h-px group-data-[orientation=horizontal]/stepper-nav:flex-none",
-                                            "@min-[38rem]/wizard:static @min-[38rem]/wizard:mx-1 @min-[38rem]/wizard:w-4 @min-[38rem]/wizard:flex-none",
-                                            completed && "bg-primary/30",
-                                        )}
-                                    />
-                                )}
-                            </StepperItem>
-                        );
-                    })}
-                </StepperNav>
-            </Stepper>
-
+                                    {onSelect ? (
+                                        <StepperTrigger
+                                            type="button"
+                                            id={`${baseId}-trigger-${index + 1}`}
+                                            aria-controls={panelId ?? `${baseId}-panel`}
+                                            aria-label={`${step.label}, Schritt ${index + 1}`}
+                                            disabled={busy || index > active}
+                                            className={cn(
+                                                classes,
+                                                "rounded-lg outline-offset-2 focus-visible:ring-2 focus-visible:ring-ring/50",
+                                            )}
+                                        >
+                                            {card}
+                                        </StepperTrigger>
+                                    ) : (
+                                        <div
+                                            className={classes}
+                                            aria-label={`${step.label}: ${status}`}
+                                        >
+                                            {card}
+                                        </div>
+                                    )}
+                                </StepperItem>
+                            );
+                        })}
+                    </StepperNav>
+                </Stepper>
+            </div>
         </nav>
     );
 }
+
+export { WizardProgress as VerticalWizardProgress };

@@ -71,16 +71,85 @@ immer ein rechtes, responsives Base-Mira-Sheet. Auch ältere Links mit
 Normale Formular-Dialoge und die getrennte **Änderungen verwerfen?**-
 Bestätigung bleiben unverändert möglich.
 
-Der feste Header zeigt genau einen REUI-Stepper (mit aktivem, erledigtem
-und zukünftigem Schritt). Eine zweite, rein dekorative Fortschrittsleiste
-wird nicht benötigt. Auf kleinen Bildschirmen bleiben die Schrittsymbole
-und der aktive Schrittname sichtbar; vollständige Labels erscheinen
-erst bei ausreichender Breite. Zurücknavigation auf erledigte Schritte
-erhält Eingaben; vorwärts prüft weiterhin die Felder des aktuellen
-Schritts. Nur der Formular-Body scrollt und springt bei Schrittwechsel
-an den Anfang. Der Footer bleibt mit Zurück, Abbrechen und Weiter bzw.
-Speichern erreichbar. Es entsteht kein Dialogwechsel zwischen Schritten.
+Der Sheet-Wizard basiert **konkret auf `@reui/c-stepper-10`** (ReUI:
+[Stepper with content for each step](https://reui.io/components/stepper/c-stepper-10)).
+Das Beispiel wurde mit dem Originalbefehl
+`pnpm dlx shadcn@latest add @reui/c-stepper-10 --yes` in GitHub Actions
+installiert (Run `43838496953`) und an den bereits vorhandenen
+`@/components/reui/stepper` sowie die Laravel-/React-Projektstruktur
+angepasst. Die angepasste Source liegt unter
+`resources/js/components/examples/c-stepper-10.tsx`.
+
+Die Navigation ist **horizontal** mit `StepperNav`, nummerierten
+`StepperIndicator`, `StepperTitle`, `StepperDescription` und
+`StepperSeparator`. Der aktive Schritt wird mit dem gefüllten Indikator,
+nicht mit einer zusätzlichen Hintergrundkarte, hervorgehoben.
+Der Fortschrittszähler steht nur einmal beim Formular-Titel.
+Im `StepperPanel` hält je ein `StepperContent` die Felder eines Schritts
+(auch ausgeblendete Felder bleiben gemountet, damit Werte und Repeater beim
+Zurückgehen nicht verloren gehen). Wizard-Formulare stehen auf einer klaren
+Fläche ohne zusätzliche verschachtelte Frame-Karten. Auf Desktop passen auch
+sechs Schritte ohne rechts abgeschnittene Labels in das kompaktere Sheet;
+mobil scrollt die Navigation unabhängig horizontal.
+Die separate bisherige `VerticalWizardProgress`-Komponente
+(`components/blocks/wizard-progress.tsx`) bleibt zur alternativen Nutzung
+erhalten, wird aber **nicht** mehr im Objekt-/Vertrags-Sheet gerendert.
+
+Abgeschlossene Schritte sind direkt erreichbar, künftige gesperrt.
+Eine zweite rein dekorative Fortschrittsleiste entfällt.
+
+Nur der Formular-Body scrollt vertikal und springt bei Schrittwechsel an
+den Anfang. Der Footer bleibt mit Zurück (anfangs deaktiviert), Abbrechen
+und Weiter bzw. Speichern erreichbar. Der eigentliche Server-Validierungs-/
+Persistenzablauf wird nicht verändert. Es entsteht kein Dialogwechsel
+zwischen Schritten.
 
 REUI-Orientierung: https://reui.io/components/sheet und
 https://reui.io/components/stepper. Die fachliche Validierung und
 Server-Persistenz bleiben in den bestehenden nextHV-Form-Hooks.
+
+### Randbündige Wizard-Oberfläche
+
+Anders als gewöhnliche, bewusst schwebende Bearbeitungs-Sheets reichen Wizard-
+Sheets auf Desktop bis an den rechten Bildschirmrand und von oben bis unten.
+Sie haben dort keine Dialog-artigen Außenabstände oder Rundungen. Auf Mobil-
+geräten belegt das Sheet die volle verfügbare Breite. Der Formularinhalt scrollt
+weiterhin unabhängig von Stepper und Footer.
+
+Jeder `StepperTrigger` hat eine eindeutige ID und ist mit dem eigenen
+`StepperContent`-Tabpanel verbunden. Nur erreichte Schritte sind rückwärts
+anwählbar; zukünftige bleiben bis zur Validierung deaktiviert. Mehrteilige
+Erfassungs-Flows zeigen ihren Fortschritt nichtinteraktiv an. Längere Titel
+brechen innerhalb der horizontalen Schrittzeile um.
+
+### Dynamische Navigation und gemeinsame Footer-Controls
+
+`useCStepper10Navigation({ active, count, onChange, validate, canBack,
+canNext, canFinish, busy, onValidationError })` bildet die einzige
+Navigationslogik. Ein `validate(currentStep, targetStep)` gibt
+`boolean | Promise<boolean>` zurück: Ohne Erfolg bleibt der aktive
+Schritt unverändert. Rückwärts geht es ohne erneute Servervalidierung;
+vorwärts nur genau einen Schritt und nur nach erfolgreicher Prüfung.
+Eine synchrone Sperre verhindert Doppelwechsel bei schnellen Klicks.
+
+`CStepper10` akzeptiert denselben `navigation`-Controller wie die
+Footer-Buttons. `canBack`, `canNext`, `canFinish` steuern die
+Freigaben – auch während `busy`/`validating`; Enter im Formular,
+Stepper-Tab und Footer »Weiter« verwenden denselben Wechsel.
+Standalone bleibt `CStepper10` mit `onSelect`, `validate`,
+`canBack` und `canNext` nutzbar.
+
+Bei mehr als vier Schritten verwendet die Stepper-Navigation eine
+kompakte minimale Schrittlänge und wächst nur so weit wie möglich.
+Bei Überlauf erscheint eine tastaturbedienbare Scroll-Steuerung.
+Bei Schrittwechsel wird nur die *horizontale* Schrittnavigation
+nachgeführt, nicht das ganze Sheet. Auf schmalen Viewports kann
+`shortLabel` pro Schritt zusätzlich Platz sparen; der vollständige
+zugängliche Name bleibt immer erhalten.
+
+`canNavigate(currentStep, targetStep)` ist ein zusätzlicher optionaler
+Zugriffs-Callback für geschützte Einzelschritte und wirkt auf den direkten
+Stepper-Klick ebenso wie auf die Footer-Freigaben. `canFinish` steuert
+die finale Speichern-Aktion. `FormGroupDefinition.stepShortLabel` kann
+in den Resource-Definitionen ein kompaktes Mobil-Label vorgeben, ohne
+den vollständigen Screenreader-Namen oder das Desktop-Label zu ersetzen.

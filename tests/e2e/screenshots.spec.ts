@@ -450,58 +450,72 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByLabel("Nummer", { exact: false })).toBeVisible();
     await expect(page.getByText(/^Schritt \d+ von \d+$/)).toBeVisible();
-    const wizardSteps = page.locator('[data-slot="stepper-item"]');
+    const wizardPattern = page.locator('[data-slot="reui-c-stepper-10"]');
+    const wizardSteps = wizardPattern.locator('[data-slot="stepper-item"]');
+    await expect(wizardSteps).toHaveCount(6);
+    await expect(wizardPattern.locator('[data-slot="stepper"]')).toHaveAttribute(
+        "aria-orientation", "horizontal",
+    );
     const firstStep = await wizardSteps.nth(0).boundingBox();
     const secondStep = await wizardSteps.nth(1).boundingBox();
     expect(secondStep!.x).toBeGreaterThanOrEqual(
         firstStep!.x + firstStep!.width - 1,
     );
     expect(Math.abs(secondStep!.y - firstStep!.y)).toBeLessThanOrEqual(1);
-    const wizardHeader = page.locator('[data-slot="overlay-header-content"]');
-    await expect(
-        wizardHeader.locator('[data-slot="stepper-item"]'),
-    ).toHaveCount(6);
-    await expect(wizardHeader.locator('[data-slot="wizard-progress"]')).toBeVisible();
-    const progress = wizardHeader.locator('[data-slot="stepper"]');
-    const progressBox = await progress.boundingBox();
-    const headerBox = await wizardHeader.boundingBox();
-    expect(
-        Math.abs(
-            progressBox!.x +
-                progressBox!.width / 2 -
-                (headerBox!.x + headerBox!.width / 2),
-        ),
-    ).toBeLessThanOrEqual(2);
-    expect(progressBox!.y).toBeGreaterThanOrEqual(headerBox!.y);
-    expect(progressBox!.y + progressBox!.height).toBeLessThanOrEqual(
-        headerBox!.y + headerBox!.height + 2,
-    );
     const body = page.locator('[data-slot="overlay-body"]');
     const bodyBox = await body.boundingBox();
-    expect(bodyBox!.y).toBeGreaterThanOrEqual(
-        headerBox!.y + headerBox!.height - 1,
+    const patternBox = await wizardPattern.boundingBox();
+    expect(patternBox!.y).toBeGreaterThanOrEqual(bodyBox!.y);
+    await expect(wizardPattern.locator('[data-slot="stepper-panel"]')).toBeVisible();
+    await expect(wizardPattern.getByRole("tabpanel")).toHaveCount(1);
+    await expect(wizardPattern.locator('[data-slot="stepper-description"]').first()).toBeVisible();
+    const desktopStepperScroll = wizardPattern.locator('[data-slot="reui-stepper-10-scroll"]');
+    const desktopScrollBox = await desktopStepperScroll.boundingBox();
+    const lastStepBox = await wizardSteps.last().boundingBox();
+    // Six steps must fit the desktop sheet instead of clipping the final label.
+    expect(lastStepBox!.x + lastStepBox!.width).toBeLessThanOrEqual(
+        desktopScrollBox!.x + desktopScrollBox!.width + 2,
     );
-    expect(bodyBox!.width).toBeGreaterThanOrEqual(headerBox!.width - 1);
+    await expect(page.locator('[data-slot="wizard-step-heading"]')).toContainText("Vertrag");
     await body.evaluate((element) => {
         element.scrollTop = element.scrollHeight;
     });
-    expect((await wizardHeader.boundingBox())!.y).toEqual(headerBox!.y);
+    await expect(page.locator('[data-slot="overlay-footer"]')).toBeVisible();
     await body.evaluate((element) => {
         element.scrollTop = 0;
     });
     await capture("04-vertrag-anlegen");
     await page.setViewportSize({ width: 390, height: 844 });
+    await expect(wizardPattern.locator('[data-slot="stepper"]')).toHaveAttribute(
+        "aria-orientation", "horizontal",
+    );
     const mobileFirstStep = await wizardSteps.nth(0).boundingBox();
     const mobileSecondStep = await wizardSteps.nth(1).boundingBox();
     expect(mobileSecondStep!.x).toBeGreaterThanOrEqual(
         mobileFirstStep!.x + mobileFirstStep!.width - 1,
     );
+    const stepScroller = wizardPattern.locator('[data-slot="reui-stepper-10-scroll"]');
+    expect(await stepScroller.evaluate(
+        (element) => element.scrollWidth > element.clientWidth,
+    )).toBe(true);
+    await expect(
+        wizardPattern.getByRole("button", { name: "Weitere Schritte anzeigen" }),
+    ).toBeVisible();
+    await wizardPattern.getByRole("button", { name: "Weitere Schritte anzeigen" }).click();
+    await expect(
+        wizardPattern.getByRole("button", { name: "Frühere Schritte anzeigen" }),
+    ).toBeVisible();
+    await stepScroller.evaluate((element) => { element.scrollLeft = 0; });
     const wizardSheet = page.locator('[data-slot="sheet-content"]');
     expect(
         await wizardSheet.evaluate(
             (element) => element.scrollWidth - element.clientWidth,
         ),
     ).toBeLessThanOrEqual(1);
+    const mobileSheetBox = await wizardSheet.boundingBox();
+    expect(mobileSheetBox).not.toBeNull();
+    expect(Math.abs(mobileSheetBox!.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(mobileSheetBox!.x + mobileSheetBox!.width - 390)).toBeLessThanOrEqual(1);
     await capture("11-wizard-mobil");
     await page.setViewportSize({ width: 1440, height: 1000 });
     const dialogUrl = new URL(page.url());
@@ -513,7 +527,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(page.locator('[data-slot="dialog-content"]')).toHaveCount(0);
     await expect(
         page.locator(
-            '[data-slot="overlay-header-content"] [data-slot="stepper-item"]',
+            '[data-slot="reui-c-stepper-10"] [data-slot="stepper-item"]',
         ),
     ).toHaveCount(6);
     await capture("12-wizard-sheet-deeplink");
@@ -590,6 +604,15 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         .getByLabel("Grundmiete", { exact: false })
         .fill("1250");
     await capture("30-vertrag-konditionen");
+    await expect(
+        creator.getByRole("tab", { name: "Konditionen, Schritt 6" }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(
+        creator.getByRole("button", { name: "Zurück", exact: true }),
+    ).toBeEnabled();
+    await expect(
+        creator.getByRole("button", { name: "Speichern", exact: true }),
+    ).toBeEnabled();
     expect(contractWrites).toBe(0);
     await creator
         .getByRole("button", { name: "Speichern", exact: true })
@@ -606,9 +629,37 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     const objectWizard = page.getByRole("dialog", { name: "Objekt anlegen" });
     await expect(objectWizard).toHaveAttribute("data-slot", "sheet-content");
     await expect(objectWizard).toHaveAttribute("data-wizard", "true");
+    const objectSheetBox = await objectWizard.boundingBox();
+    const viewport = page.viewportSize()!;
+    expect(objectSheetBox).not.toBeNull();
+    expect(Math.abs(objectSheetBox!.x + objectSheetBox!.width - viewport.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(objectSheetBox!.y)).toBeLessThanOrEqual(1);
+    expect(Math.abs(objectSheetBox!.height - viewport.height)).toBeLessThanOrEqual(1);
     await expect(
-        objectWizard.getByRole("navigation", { name: "Erfassungsschritte" }),
+        objectWizard.getByRole("tablist", { name: "Erfassungsschritte" }),
     ).toContainText("Schritt 1 von 4");
+    await expect(
+        objectWizard.getByRole("tab", { name: "Objekt, Schritt 1" }),
+    ).toBeVisible();
+    await expect(
+        objectWizard.getByRole("tab", { name: "Adresse, Schritt 2" }),
+    ).toBeEnabled();
+    await expect(
+        objectWizard.getByRole("tab", { name: "Verwaltung, Schritt 3" }),
+    ).toBeDisabled();
+    await expect(
+        objectWizard.locator('[data-slot="wizard-step-heading"]'),
+    ).toContainText("Grunddaten");
+    await expect(objectWizard.locator('[data-slot="wizard-step-heading"]'))
+        .toContainText("Schritt 1 von 4");
+    // Stepper navigation, heading, and controls share one clean Sheet surface.
+    await expect(objectWizard.locator('[data-slot="form-section"] [data-slot="content-card"]'))
+        .toHaveCount(0);
+    await expect(
+        objectWizard.locator('[data-slot="reui-c-stepper-10"]'),
+    ).toBeVisible();
+    await expect(objectWizard.locator('[data-slot="wizard-rail"]')).toHaveCount(0);
+    await expect(objectWizard.locator('[data-slot="stepper-content"]')).toHaveCount(4);
     await expect(
         objectWizard.getByRole("button", { name: "Weiter", exact: true }),
     ).toBeVisible();

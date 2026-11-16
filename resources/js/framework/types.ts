@@ -176,6 +176,8 @@ export interface FormGroupDefinition {
     id: string;
     label: string;
     stepLabel?: string;
+    /** Optional shorter label in compact/mobile stepper navigation. */
+    stepShortLabel?: string;
     description?: string;
     collapsible?: boolean;
     defaultOpen?: boolean;
