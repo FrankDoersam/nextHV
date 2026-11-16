@@ -450,52 +450,47 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByLabel("Nummer", { exact: false })).toBeVisible();
     await expect(page.getByText(/^Schritt \d+ von \d+$/)).toBeVisible();
-    const wizardSteps = page.locator('[data-slot="stepper-item"]');
+    const wizardRail = page.locator('[data-slot="wizard-rail"]');
+    const wizardSteps = wizardRail.locator('[data-slot="stepper-item"]');
+    await expect(wizardSteps).toHaveCount(6);
+    await expect(wizardRail.locator('[data-slot="stepper"]')).toHaveAttribute(
+        "aria-orientation", "vertical",
+    );
     const firstStep = await wizardSteps.nth(0).boundingBox();
     const secondStep = await wizardSteps.nth(1).boundingBox();
-    expect(secondStep!.x).toBeGreaterThanOrEqual(
-        firstStep!.x + firstStep!.width - 1,
+    expect(Math.abs(secondStep!.x - firstStep!.x)).toBeLessThanOrEqual(1);
+    expect(secondStep!.y).toBeGreaterThanOrEqual(
+        firstStep!.y + firstStep!.height - 1,
     );
-    expect(Math.abs(secondStep!.y - firstStep!.y)).toBeLessThanOrEqual(1);
-    const wizardHeader = page.locator('[data-slot="overlay-header-content"]');
-    await expect(
-        wizardHeader.locator('[data-slot="stepper-item"]'),
-    ).toHaveCount(6);
-    await expect(wizardHeader.locator('[data-slot="wizard-progress"]')).toBeVisible();
-    const progress = wizardHeader.locator('[data-slot="stepper"]');
-    const progressBox = await progress.boundingBox();
-    const headerBox = await wizardHeader.boundingBox();
-    expect(
-        Math.abs(
-            progressBox!.x +
-                progressBox!.width / 2 -
-                (headerBox!.x + headerBox!.width / 2),
-        ),
-    ).toBeLessThanOrEqual(2);
-    expect(progressBox!.y).toBeGreaterThanOrEqual(headerBox!.y);
-    expect(progressBox!.y + progressBox!.height).toBeLessThanOrEqual(
-        headerBox!.y + headerBox!.height + 2,
-    );
+    const railBox = await wizardRail.boundingBox();
     const body = page.locator('[data-slot="overlay-body"]');
     const bodyBox = await body.boundingBox();
-    expect(bodyBox!.y).toBeGreaterThanOrEqual(
-        headerBox!.y + headerBox!.height - 1,
+    expect(bodyBox!.x).toBeGreaterThanOrEqual(
+        railBox!.x + railBox!.width - 1,
     );
-    expect(bodyBox!.width).toBeGreaterThanOrEqual(headerBox!.width - 1);
+    await expect(page.locator('[data-slot="wizard-step-heading"]')).toContainText("Vertrag");
+    await expect(page.getByRole("tabpanel")).toBeVisible();
     await body.evaluate((element) => {
         element.scrollTop = element.scrollHeight;
     });
-    expect((await wizardHeader.boundingBox())!.y).toEqual(headerBox!.y);
+    expect((await wizardRail.boundingBox())!.y).toEqual(railBox!.y);
     await body.evaluate((element) => {
         element.scrollTop = 0;
     });
     await capture("04-vertrag-anlegen");
     await page.setViewportSize({ width: 390, height: 844 });
+    await expect(wizardRail.locator('[data-slot="stepper"]')).toHaveAttribute(
+        "aria-orientation", "horizontal",
+    );
     const mobileFirstStep = await wizardSteps.nth(0).boundingBox();
     const mobileSecondStep = await wizardSteps.nth(1).boundingBox();
     expect(mobileSecondStep!.x).toBeGreaterThanOrEqual(
         mobileFirstStep!.x + mobileFirstStep!.width - 1,
     );
+    const stepScroller = wizardRail.locator('[data-slot="wizard-step-scroll"]');
+    expect(await stepScroller.evaluate(
+        (element) => element.scrollWidth > element.clientWidth,
+    )).toBe(true);
     const wizardSheet = page.locator('[data-slot="sheet-content"]');
     expect(
         await wizardSheet.evaluate(
@@ -517,7 +512,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(page.locator('[data-slot="dialog-content"]')).toHaveCount(0);
     await expect(
         page.locator(
-            '[data-slot="overlay-header-content"] [data-slot="stepper-item"]',
+            '[data-slot="wizard-rail"] [data-slot="stepper-item"]',
         ),
     ).toHaveCount(6);
     await capture("12-wizard-sheet-deeplink");
@@ -621,6 +616,15 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     ).toContainText("Schritt 1 von 4");
     await expect(
         objectWizard.getByRole("tab", { name: "Objekt, Schritt 1" }),
+    ).toBeVisible();
+    await expect(
+        objectWizard.getByRole("tab", { name: "Adresse, Schritt 2" }),
+    ).toBeDisabled();
+    await expect(
+        objectWizard.locator('[data-slot="wizard-step-heading"]'),
+    ).toContainText("Objekt");
+    await expect(
+        objectWizard.locator('[data-slot="wizard-rail"]'),
     ).toBeVisible();
     await expect(
         objectWizard.getByRole("button", { name: "Weiter", exact: true }),

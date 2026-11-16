@@ -154,7 +154,15 @@ describe("CRUD interactions", () => {
         expect(sheet).toHaveAttribute("data-wizard", "true");
         expect(sheet).toHaveAttribute("data-slot", "sheet-content");
         expect(document.querySelector('[data-slot="dialog-content"]')).toBeNull();
+        expect(sheet.querySelector('[data-slot="wizard-rail"]')).toBeInTheDocument();
+        expect(sheet.querySelector('[data-slot="wizard-step-heading"]')).toHaveTextContent("Grunddaten");
         expect(screen.getByRole("navigation", { name: "Erfassungsschritte" })).toHaveTextContent("Schritt 1 von 2");
+        expect(screen.getByRole("tabpanel")).toHaveAttribute(
+            "aria-labelledby",
+            expect.stringContaining("-progress-trigger-1"),
+        );
+        expect(screen.getByRole("tab", { name: "Adresse, Schritt 2" })).toBeDisabled();
+        expect(screen.getByRole("button", { name: "Zurück" })).toBeDisabled();
         await user.click(
             await screen.findByRole(
                 "button",

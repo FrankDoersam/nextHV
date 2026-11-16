@@ -71,15 +71,22 @@ immer ein rechtes, responsives Base-Mira-Sheet. Auch ältere Links mit
 Normale Formular-Dialoge und die getrennte **Änderungen verwerfen?**-
 Bestätigung bleiben unverändert möglich.
 
-Der feste Header zeigt genau einen REUI-Stepper (mit aktivem, erledigtem
-und zukünftigem Schritt). Eine zweite, rein dekorative Fortschrittsleiste
-wird nicht benötigt. Auf kleinen Bildschirmen bleiben die Schrittsymbole
-und der aktive Schrittname sichtbar; vollständige Labels erscheinen
-erst bei ausreichender Breite. Zurücknavigation auf erledigte Schritte
-erhält Eingaben; vorwärts prüft weiterhin die Felder des aktuellen
-Schritts. Nur der Formular-Body scrollt und springt bei Schrittwechsel
-an den Anfang. Der Footer bleibt mit Zurück, Abbrechen und Weiter bzw.
-Speichern erreichbar. Es entsteht kein Dialogwechsel zwischen Schritten.
+Der Wizard verwendet den echten REUI-`Stepper` mit `StepperItem`,
+`StepperIndicator` und kontrollierten `StepperTrigger`-Karten, nach
+dem Vorbild des freien [Vertical Step Cards](https://reui.io/components/stepper/c-stepper-39)
+Beispiels. Auf Desktop steht die Navigation als eigene, vertikale 240-px-
+Schrittleiste links neben dem Formular; der aktive Schritt wird rechts
+mit separatem Titel und einem REUI-`Frame` für die Felder gezeigt.
+Auf Mobilgeräten wird die Navigation zur horizontal scrollbaren Kartenleiste
+und der Formularinhalt folgt darunter. Die aktiven Karten werden sichtbar
+gescrollt. Frühere Schritte sind direkt erreichbar, künftige gesperrt.
+Eine zweite dekorative Fortschrittsleiste entfällt.
+
+Nur der Formular-Body scrollt vertikal und springt bei Schrittwechsel an
+den Anfang. Der Footer bleibt mit Zurück (anfangs deaktiviert), Abbrechen
+und Weiter bzw. Speichern erreichbar. Der eigentliche Server-Validierungs-/
+Persistenzablauf wird nicht verändert. Es entsteht kein Dialogwechsel
+zwischen Schritten.
 
 REUI-Orientierung: https://reui.io/components/sheet und
 https://reui.io/components/stepper. Die fachliche Validierung und
@@ -93,9 +100,8 @@ Sie haben dort keine Dialog-artigen Außenabstände oder Rundungen. Auf Mobil-
 geräten belegt das Sheet die volle verfügbare Breite. Der Formularinhalt scrollt
 weiterhin unabhängig von Stepper und Footer.
 
-Für anwählbare Wizard-Schritte verwendet die Navigation den echten, kontrollierten
-REUI-`StepperTrigger` mit Tab-/Tastatursemantik. Nur bereits erreichte Schritte
-sind rückwärts anwählbar; zukünftige Schritte bleiben bis zur Validierung
-deaktiviert. Reine mehrteilige Erfassungs-Flows zeigen ihren Fortschritt
-nichtinteraktiv an. Lange Schritttitel umbrechen bei ausreichender Sheet-Breite,
-statt im Header abgeschnitten zu werden.
+Jede `StepperTrigger`-Karte hat eigene IDs und ist mit dem jeweils sichtbaren
+Tabpanel verbunden. Nur bereits erreichte Schritte sind rückwärts anwählbar;
+zukünftige Schritte bleiben bis zur Validierung deaktiviert. Mehrteilige
+Erfassungs-Flows zeigen ihre Fortschritte nichtinteraktiv an. Titel mit vielen
+Wörtern umbrechen in der vertikalen Schrittleiste statt abgeschnitten zu werden.
