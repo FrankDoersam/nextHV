@@ -1,0 +1,30 @@
+name: Install ReUI c-stepper-10 (temporary verification)
+on:
+  push:
+    paths:
+      - .github/workflows/reui-stepper-10-install.yml
+permissions:
+  contents: read
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install pnpm
+        run: npm install -g pnpm@10
+      - name: Run the exact ReUI shadcn registry installation
+        env:
+          CI: "true"
+        run: pnpm dlx shadcn@latest add @reui/c-stepper-10 --yes
+      - name: Confirm installed sample
+        run: |
+          test -f resources/js/components/examples/c-stepper-10.tsx
+          grep -q StepperContent resources/js/components/examples/c-stepper-10.tsx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installed-reui-c-stepper-10
+          path: resources/js/components/examples/c-stepper-10.tsx
+          retention-days: 2
