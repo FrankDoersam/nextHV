@@ -197,7 +197,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     );
     const activeFilterBox = await activeFilterRow.boundingBox();
     // Search, both combobox variants, and primary/secondary actions must
-    // actually be 32px high, not merely look centered despite unequal heights.
+    // actually be 40px high under Vega, not merely look centered.
     const toolbarControls = [
         page.getByRole("textbox", { name: "Verträge durchsuchen" }),
         page.getByRole("combobox", { name: "Filter hinzufügen", exact: true }),
@@ -212,7 +212,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     const heights = await Promise.all(
         toolbarControls.map(async (control) => (await control.boundingBox())!.height),
     );
-    expect(heights).toEqual(heights.map(() => 32));
+    expect(heights).toEqual(heights.map(() => 40));
     expect(Math.abs(groupingBox!.y - createBox!.y)).toBeLessThanOrEqual(1);
     expect(activeFilterBox!.y).toBeGreaterThanOrEqual(
         groupingBox!.y + groupingBox!.height,
@@ -901,6 +901,13 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         .getByRole("textbox", { name: "Objekte durchsuchen" })
         .fill("Linden");
     await page.getByText("Lindenhöfe", { exact: true }).click();
+    const buildingDetails = page.locator('[data-slot="property-building-management"]');
+    await expect(buildingDetails.locator('[data-slot="key-value-list"] dt')).toHaveCount(7);
+    await expect(buildingDetails.getByRole("button", { name: "Heizung bearbeiten" })).toBeVisible();
+    await buildingDetails.getByRole("button", { name: "Heizung bearbeiten" }).click();
+    await expect(buildingDetails.getByRole("form", { name: "Heizung ändern" })).toBeVisible();
+    await capture("59-objekt-gebaeude-verwaltung-inline-edit");
+    await buildingDetails.getByRole("button", { name: "Abbrechen", exact: true }).click();
     await page.getByRole("tab", { name: /Einheiten/ }).click();
     await expect(
         page.getByText("Wohnung 01", { exact: true }),

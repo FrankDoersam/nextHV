@@ -15,22 +15,22 @@ import { Frame } from "@/components/reui/frame";
 
 afterEach(cleanup);
 
-it("uses the supported REUI base-mira registry style and centralized radius", () => {
+it("uses the supported REUI base-vega registry style and centralized radius", () => {
     const config = JSON.parse(
         readFileSync(join(process.cwd(), "components.json"), "utf8"),
     ) as { style: string; registries: Record<string, string> };
     const css = readFileSync(join(process.cwd(), "resources/css/app.css"), "utf8");
-    expect(config.style).toBe("base-mira");
+    expect(config.style).toBe("base-vega");
     expect(config.registries["@reui"]).toContain("{style}");
-    expect(css).toContain("--radius: 0.5rem");
-    expect(css).toContain("--control-height: 1.75rem");
-    expect(css).toContain("--control-height-lg: 2rem");
-    expect(css).toContain("--control-height-field: 2.25rem");
+    expect(css).toContain("--radius: 0.625rem");
+    expect(css).toContain("--control-height: 2.25rem");
+    expect(css).toContain("--control-height-lg: 2.5rem");
+    expect(css).toContain("--control-height-field: 2.5rem");
     expect(css).toContain('[data-slot="field-control"]');
     expect(css).toContain('[data-slot="collection-toolbar"]');
 });
 
-it("renders the compact Mira button, input, card and tab primitives", () => {
+it("renders the compact Vega button, input, card and tab primitives", () => {
     const view = render(
         <div>
             <Button>Standardaktion</Button>
@@ -47,18 +47,18 @@ it("renders the compact Mira button, input, card and tab primitives", () => {
     expect(screen.getByRole("button", { name: "Standardaktion" }).className)
         .toContain("h-(--control-height)");
     expect(screen.getByRole("button", { name: "Kompaktaktion" }).className)
-        .toContain("h-6");
+        .toContain("h-8");
     expect(screen.getByRole("textbox", { name: "Name" }).className)
         .toContain("h-(--control-height)");
     expect(screen.getByText("Übersicht", { selector: '[data-slot="card-title"]' }))
-        .toHaveClass("text-sm");
+        .toHaveClass("text-base");
     expect(view.container.querySelector('[data-slot="tabs-list"]'))
-        .toHaveClass("data-[orientation=horizontal]:h-8");
+        .toHaveClass("data-[orientation=horizontal]:h-9");
     expect(screen.getByTestId("reui-frame").className)
-        .toContain("[--frame-radius:var(--radius-lg)]");
+        .toContain("[--frame-radius:var(--radius-xl)]");
 });
 
-it("shares Mira control-height tokens across input, select, combobox and action primitives", () => {
+it("shares Vega control-height tokens across input, select, combobox and action primitives", () => {
     const view = render(
         <div data-slot="collection-toolbar">
             <Input aria-label="Suche" />

@@ -36,7 +36,7 @@ it("shows building and administration as seven editable key/value rows", () => {
     expect(container.querySelector('[data-slot="property-building-management"]')).toBeInTheDocument();
     expect(container.querySelectorAll('[data-slot="key-value-list"] dt')).toHaveLength(7);
     expect(screen.getByText("Gas")).toBeVisible();
-    expect(screen.getByText("800,00 m²")).toBeVisible();
+    expect(screen.getByText("800 m²")).toBeVisible();
     expect(screen.getByRole("button", { name: "Heizung bearbeiten" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Baujahr bearbeiten" })).toBeVisible();
 });
