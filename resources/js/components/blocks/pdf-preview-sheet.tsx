@@ -10,7 +10,7 @@ import type { Presentation } from "@/framework/types";
 const PdfCanvasPreview = lazy(() => import("./pdf-canvas-preview"));
 
 /**
- * REUI Base-Nova composition:
+ * REUI Base-Mira composition:
  * c-spinner-9 (inline spinner + status copy) for indeterminate work and
  * Base UI Progress (label/value/track/indicator) for measured transfers.
  * Unlike a skeleton, this does not pretend the document contents exist yet.

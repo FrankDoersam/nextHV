@@ -9,7 +9,7 @@
     },
     {
         "file": "resources/js/components/reui/data-grid/data-grid-column-header.tsx",
-        "source": "https://reui.io/r/base-nova/data-grid.json"
+        "source": "https://reui.io/r/base-mira/data-grid.json"
     },
     {
         "file": "resources/js/components/reui/data-grid/data-grid-column-visibility.tsx",
@@ -21,7 +21,7 @@
     },
     {
         "file": "resources/js/components/reui/data-grid/data-grid-pagination.tsx",
-        "source": "https://reui.io/r/base-nova/data-grid.json"
+        "source": "https://reui.io/r/base-mira/data-grid.json"
     },
     {
         "file": "resources/js/components/reui/data-grid/data-grid-scroll-area.tsx",
@@ -41,7 +41,7 @@
     },
     {
         "file": "resources/js/components/reui/data-grid/data-grid-table.tsx",
-        "source": "https://reui.io/r/base-nova/data-grid.json"
+        "source": "https://reui.io/r/base-mira/data-grid.json"
     },
     {
         "file": "resources/js/components/reui/data-grid/data-grid.tsx",
@@ -57,11 +57,11 @@
     },
     {
         "file": "resources/js/components/ui/badge.tsx",
-        "source": "https://ui.shadcn.com/r/styles/base-nova/badge.json"
+        "source": "https://ui.shadcn.com/r/styles/base-mira/badge.json"
     },
     {
         "file": "resources/js/components/ui/button.tsx",
-        "source": "https://ui.shadcn.com/r/styles/base-nova/button.json"
+        "source": "https://ui.shadcn.com/r/styles/base-mira/button.json"
     },
     {
         "file": "resources/js/components/ui/calendar.tsx",
@@ -69,11 +69,11 @@
     },
     {
         "file": "resources/js/components/ui/card.tsx",
-        "source": "https://ui.shadcn.com/r/styles/base-nova/card.json"
+        "source": "https://ui.shadcn.com/r/styles/base-mira/card.json"
     },
     {
         "file": "resources/js/components/ui/checkbox.tsx",
-        "source": "https://ui.shadcn.com/r/styles/base-nova/checkbox.json"
+        "source": "https://ui.shadcn.com/r/styles/base-mira/checkbox.json"
     },
     {
         "file": "resources/js/components/ui/command.tsx",
@@ -81,19 +81,19 @@
     },
     {
         "file": "resources/js/components/ui/dialog.tsx",
-        "source": "https://ui.shadcn.com/r/styles/base-nova/dialog.json"
+        "source": "https://ui.shadcn.com/r/styles/base-mira/dialog.json"
     },
     {
         "file": "resources/js/components/ui/dropdown-menu.tsx",
-        "source": "https://ui.shadcn.com/r/styles/base-nova/dropdown-menu.json"
+        "source": "https://ui.shadcn.com/r/styles/base-mira/dropdown-menu.json"
     },
     {
         "file": "resources/js/components/ui/input.tsx",
-        "source": "https://ui.shadcn.com/r/styles/base-nova/input.json"
+        "source": "https://ui.shadcn.com/r/styles/base-mira/input.json"
     },
     {
         "file": "resources/js/components/ui/label.tsx",
-        "source": "https://ui.shadcn.com/r/styles/base-nova/label.json"
+        "source": "https://ui.shadcn.com/r/styles/base-mira/label.json"
     },
     {
         "file": "resources/js/components/ui/popover.tsx",
@@ -105,7 +105,7 @@
     },
     {
         "file": "resources/js/components/ui/select.tsx",
-        "source": "https://ui.shadcn.com/r/styles/base-nova/select.json"
+        "source": "https://ui.shadcn.com/r/styles/base-mira/select.json"
     },
     {
         "file": "resources/js/components/ui/separator.tsx",
@@ -113,7 +113,7 @@
     },
     {
         "file": "resources/js/components/ui/sheet.tsx",
-        "source": "https://ui.shadcn.com/r/styles/base-nova/sheet.json"
+        "source": "https://ui.shadcn.com/r/styles/base-mira/sheet.json"
     },
     {
         "file": "resources/js/components/ui/skeleton.tsx",
@@ -125,11 +125,11 @@
     },
     {
         "file": "resources/js/components/ui/tabs.tsx",
-        "source": "https://ui.shadcn.com/r/styles/base-nova/tabs.json"
+        "source": "https://ui.shadcn.com/r/styles/base-mira/tabs.json"
     },
     {
         "file": "resources/js/components/ui/textarea.tsx",
-        "source": "https://ui.shadcn.com/r/styles/base-nova/textarea.json"
+        "source": "https://ui.shadcn.com/r/styles/base-mira/textarea.json"
     },
     {
         "file": "resources/js/components/ui/tooltip.tsx",
@@ -145,11 +145,11 @@
     },
     {
         "file": "resources/js/components/reui/data-grid/data-grid-table.tsx",
-        "source": "https://reui.io/r/base-nova/data-grid-table.json"
+        "source": "https://reui.io/r/base-mira/data-grid-table.json"
     },
     {
         "file": "resources/js/components/ui/input-group.tsx",
-        "source": "https://ui.shadcn.com/r/styles/base-nova/input-group.json"
+        "source": "https://ui.shadcn.com/r/styles/base-mira/input-group.json"
     },
     {
         "file": "resources/js/components/ui/spinner.tsx",
@@ -161,7 +161,7 @@
     },
     {
         "file": "resources/js/components/reui/alert.tsx",
-        "source": "https://reui.io/r/base-nova/alert.json"
+        "source": "https://reui.io/r/base-mira/alert.json"
     },
     {
         "file": "resources/js/components/ui/avatar.tsx",
@@ -169,7 +169,7 @@
     },
     {
         "file": "resources/js/components/reui/frame.tsx",
-        "source": "https://reui.io/r/base-nova/frame.json"
+        "source": "https://reui.io/r/base-mira/frame.json"
     },
     {
         "file": "resources/js/components/fields/choice-picker.tsx",

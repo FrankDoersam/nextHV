@@ -6,7 +6,7 @@ Dieses Dokument beschreibt den aktuellen Framework-Stand einschließlich nativer
 
 - Laravel 13 + `lomkit/laravel-rest-api` 3, Sanctum-Session, Scramble/OpenAPI.
 - React 19, React Router 7, TanStack Query, TanStack Table 9, React Hook Form; Geschäftsregeln der REST-Formulare werden ausschließlich auf dem Laravel-Server geprüft; Controls prüfen Eingabeformat und Bediengrenzen. Zod bleibt nur für die isolierte Komponenten-Demo und deren Tests.
-- REUI Base Nova, Base UI, Tailwind 4; gemeinsame Farben und Abstände in `resources/css/app.css` und zentralen Komponenten.
+- REUI Base Mira, Base UI, Tailwind 4; gemeinsame Farben und Abstände in `resources/css/app.css` und zentralen Komponenten.
 - PHP 8.3+, Composer 2, Node 22.12+; CI verwendet Node 24/PHP 8.5. SQLite für lokale Entwicklung und Tests.
 - `setasign/fpdf` (wie in s4v2) erstellt PDF-Berichte serverseitig. Die FPDF-Kernschriften unterstützen Windows-1252; UTF-8-Daten werden vor Messung und Ausgabe entsprechend konvertiert.
 
@@ -599,7 +599,7 @@ Fehler behalten ihre Zeilenadresse, etwa `mutate.0.relations.conditions.1.attrib
 
 Beteiligte, Konditionen, Kündigungen sowie aus- und eingehende Vertragsverknüpfungen besitzen eigene Tabs. `LazyTabs` synchronisiert den aktiven Tab mit der URL und mountet nur den aktiven Inhalt. Die Übersicht lädt eine begrenzte Kontaktzusammenfassung und die aktuelle Kondition; vollständige Relationslisten laden erst beim Tabwechsel. Tab-Counts stammen aus den API-Aggregaten. `openRelation` übernimmt den Vertragsbezug auch bei den Schnellaktionen der Übersicht.
 
-Die Gestaltung orientiert sich an der bereitgestellten Referenz: kühle neutrale Flächen, blaue Hauptaktionen, kompakte gruppierte Navigation, ruhige Typografie, dünne Trennlinien und weiße Inhalte in REUI-Frames. Zentrale Farbwerte liegen in `resources/css/app.css`. `WorkspaceCard`, `WorkspaceColumns`, `PersonAvatar`, `PeopleGroup`, `BarChart` und die Dashboard-Blöcke sind wiederverwendbare Komponenten. `Avatar`, `AvatarGroup` und `Frame` stammen aus den dokumentierten öffentlichen Base-Nova-Registries. Avatar-Gruppen unterstützen Bilder, Initialen, Größen und einen Überlaufzähler.
+Die Gestaltung orientiert sich an der bereitgestellten Referenz: kühle neutrale Flächen, blaue Hauptaktionen, kompakte gruppierte Navigation, ruhige Typografie, dünne Trennlinien und weiße Inhalte in REUI-Frames. Zentrale Farbwerte liegen in `resources/css/app.css`. `WorkspaceCard`, `WorkspaceColumns`, `PersonAvatar`, `PeopleGroup`, `BarChart` und die Dashboard-Blöcke sind wiederverwendbare Komponenten. `Avatar`, `AvatarGroup` und `Frame` stammen aus den dokumentierten öffentlichen Base-Mira-Registries. Avatar-Gruppen unterstützen Bilder, Initialen, Größen und einen Überlaufzähler.
 
 Das Dashboard enthält bewusst gekennzeichnete **Beispieldaten** für Finanzen, Termine, Aufgaben und Mini-Kennzahlen. Zeitraum, Miete/Eingänge, Widget-Auswahl und Aufgaben-Checkboxen bedienen die lokale Vorschau; es werden keine fiktiven Zahlungsvorgänge gespeichert. Der Tab „Bestand“ lädt echte Kennzahlen und Objekte. Die Command-Palette (`Ctrl/⌘ K`) sucht in den registrierten, sichtbaren Bereichen; eine globale Datensatzsuche ist weiterhin ein eigener zukünftiger Ausbau.
 
@@ -632,11 +632,11 @@ Der Abruf bleibt authentifiziert auf derselben Origin unter `/api/`, prüft den 
 
 Ergänzte Regressionstests prüfen gespeicherte Flow-Schritte und Zurückbearbeitung ohne Duplikate, URL-Bereinigung, abgeschaltete Relationsfunktionen, Mehrfachfilter, PDF-Bedienung und Aufräumen sowie die serverseitige Auswahl der gültigen Kondition. Die Playwright-Suite wartet auf gerenderte PDF-Canvas-Seiten und prüft Zoom, Mobilbreite und die zentrale Platzierung der Dokumentaktionen; siehe Abschnitt 45.
 
-Zusätzliche Primärquellen: [REUI Frame](https://reui.io/docs/components/base/frame), [REUI DataGrid-Beispiele](https://reui.io/components/data-grid), [Base-Nova Avatar](https://ui.shadcn.com/docs/components/base/avatar), [Base UI Combobox](https://base-ui.com/react/components/combobox), [REUI Checkbox](https://reui.io/components/checkbox).
+Zusätzliche Primärquellen: [REUI Frame](https://reui.io/docs/components/base/frame), [REUI DataGrid-Beispiele](https://reui.io/components/data-grid), [Base-Mira Avatar](https://ui.shadcn.com/docs/components/base/avatar), [Base UI Combobox](https://base-ui.com/react/components/combobox), [REUI Checkbox](https://reui.io/components/checkbox).
 
 ## 19. Suchbare Auswahlfelder und Datumsgrenzen
 
-`ChoicePicker` kapselt die bereits installierte Base-UI-Combobox und die Base-Nova-InputGroup. `RelationPicker` in `entity-picker.tsx` ergänzt nur den Datenprovider und die Neuanlage. Keine zweite Select-/Suchbibliothek wurde installiert. `MultiSelect` bleibt ein Kompatibilitätswrapper.
+`ChoicePicker` kapselt die bereits installierte Base-UI-Combobox und die Base-Mira-InputGroup. `RelationPicker` in `entity-picker.tsx` ergänzt nur den Datenprovider und die Neuanlage. Keine zweite Select-/Suchbibliothek wurde installiert. `MultiSelect` bleibt ein Kompatibilitätswrapper.
 
 | Prop                              | Vertrag                                                                                                         |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -678,7 +678,7 @@ Tab fokussiert das Suchfeld; Tippen startet direkt die Suche, ohne einen weitere
 
 ## 20. Key-Value-Liste und geschäftliche Checkbox-Komponenten
 
-`EditableKeyValueList` ist ein eigener Framework-Block auf den vorhandenen REUI/Base-Nova-Primitives. Layout, Feldrenderer und Mutation liegen zentral, nicht in Pages. Standardmäßig ist jede Property nur lesbar. Erst `editable` erlaubt die Bearbeitung, zusätzlich zu `disabled`, `readonlyOnEdit` und dem vorhandenen `edit`-Permission-Adapter.
+`EditableKeyValueList` ist ein eigener Framework-Block auf den vorhandenen REUI/Base-Mira-Primitives. Layout, Feldrenderer und Mutation liegen zentral, nicht in Pages. Standardmäßig ist jede Property nur lesbar. Erst `editable` erlaubt die Bearbeitung, zusätzlich zu `disabled`, `readonlyOnEdit` und dem vorhandenen `edit`-Permission-Adapter.
 
 ```tsx
 <EditableKeyValueList

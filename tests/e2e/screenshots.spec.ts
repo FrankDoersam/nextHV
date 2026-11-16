@@ -196,7 +196,15 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         '[data-slot="collection-active-filters"]',
     );
     const activeFilterBox = await activeFilterRow.boundingBox();
-    expect(Math.abs(groupingBox!.y - createBox!.y)).toBeLessThanOrEqual(1);
+    // Base Mira deliberately mixes 28px defaults with a taller primary CTA.
+    // Align the visual centers rather than comparing unequal top edges.
+    expect(
+        Math.abs(
+            groupingBox!.y +
+                groupingBox!.height / 2 -
+                (createBox!.y + createBox!.height / 2),
+        ),
+    ).toBeLessThanOrEqual(1);
     expect(activeFilterBox!.y).toBeGreaterThanOrEqual(
         groupingBox!.y + groupingBox!.height,
     );

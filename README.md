@@ -215,7 +215,7 @@ Der separate Workflow **Workspace screenshots** erzeugt bei Push auf `main` oder
 
 - [Laravel REST API 3 – Ausgangsartikel](https://laravel-news.com/laravel-rest-api-3), [Paket und Dokumentation](https://github.com/Lomkit/laravel-rest-api)
 - [Refine Data Provider](https://refine.dev/docs/data/data-provider/): Ressourcen, Provider, Query-Hooks und konsistente Mutationsabläufe
-- [REUI](https://reui.io/docs): Base-Nova-Komponenten, DataGrid, Stepper und TimePicker
-- [shadcn/ui](https://ui.shadcn.com/docs): Base-Nova-Primitives und Registry-Konvention
+- [REUI](https://reui.io/docs): Base-Mira-Komponenten, DataGrid, Stepper und TimePicker
+- [shadcn/ui](https://ui.shadcn.com/docs): Base-Mira-Primitives und Registry-Konvention
 
 Die Registry-URLs der übernommenen Komponenten stehen in `docs/ui-sources.json`. Kostenpflichtige SaaS-Blocks wurden nicht kopiert; die App-Blocks sind eigene Kompositionen auf den öffentlichen Komponenten.
