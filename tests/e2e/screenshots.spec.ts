@@ -498,6 +498,14 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     expect(await stepScroller.evaluate(
         (element) => element.scrollWidth > element.clientWidth,
     )).toBe(true);
+    await expect(
+        wizardPattern.getByRole("button", { name: "Weitere Schritte anzeigen" }),
+    ).toBeVisible();
+    await wizardPattern.getByRole("button", { name: "Weitere Schritte anzeigen" }).click();
+    await expect(
+        wizardPattern.getByRole("button", { name: "Frühere Schritte anzeigen" }),
+    ).toBeVisible();
+    await stepScroller.evaluate((element) => { element.scrollLeft = 0; });
     const wizardSheet = page.locator('[data-slot="sheet-content"]');
     expect(
         await wizardSheet.evaluate(
@@ -596,6 +604,15 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         .getByLabel("Grundmiete", { exact: false })
         .fill("1250");
     await capture("30-vertrag-konditionen");
+    await expect(
+        creator.getByRole("tab", { name: "Konditionen, Schritt 6" }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(
+        creator.getByRole("button", { name: "Zurück", exact: true }),
+    ).toBeEnabled();
+    await expect(
+        creator.getByRole("button", { name: "Speichern", exact: true }),
+    ).toBeEnabled();
     expect(contractWrites).toBe(0);
     await creator
         .getByRole("button", { name: "Speichern", exact: true })

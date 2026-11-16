@@ -121,3 +121,28 @@ Jeder `StepperTrigger` hat eine eindeutige ID und ist mit dem eigenen
 anwählbar; zukünftige bleiben bis zur Validierung deaktiviert. Mehrteilige
 Erfassungs-Flows zeigen ihren Fortschritt nichtinteraktiv an. Längere Titel
 brechen innerhalb der horizontalen Schrittzeile um.
+
+### Dynamische Navigation und gemeinsame Footer-Controls
+
+`useCStepper10Navigation({ active, count, onChange, validate, canBack,
+canNext, canFinish, busy, onValidationError })` bildet die einzige
+Navigationslogik. Ein `validate(currentStep, targetStep)` gibt
+`boolean | Promise<boolean>` zurück: Ohne Erfolg bleibt der aktive
+Schritt unverändert. Rückwärts geht es ohne erneute Servervalidierung;
+vorwärts nur genau einen Schritt und nur nach erfolgreicher Prüfung.
+Eine synchrone Sperre verhindert Doppelwechsel bei schnellen Klicks.
+
+`CStepper10` akzeptiert denselben `navigation`-Controller wie die
+Footer-Buttons. `canBack`, `canNext`, `canFinish` steuern die
+Freigaben – auch während `busy`/`validating`; Enter im Formular,
+Stepper-Tab und Footer »Weiter« verwenden denselben Wechsel.
+Standalone bleibt `CStepper10` mit `onSelect`, `validate`,
+`canBack` und `canNext` nutzbar.
+
+Bei mehr als vier Schritten verwendet die Stepper-Navigation eine
+kompakte minimale Schrittlänge und wächst nur so weit wie möglich.
+Bei Überlauf erscheint eine tastaturbedienbare Scroll-Steuerung.
+Bei Schrittwechsel wird nur die *horizontale* Schrittnavigation
+nachgeführt, nicht das ganze Sheet. Auf schmalen Viewports kann
+`shortLabel` pro Schritt zusätzlich Platz sparen; der vollständige
+zugängliche Name bleibt immer erhalten.
