@@ -13,7 +13,7 @@ const railQuery = "(min-width: 768px)";
 
 function useDesktopRail() {
     const [desktop, setDesktop] = useState(
-        () => typeof window !== "undefined" && window.matchMedia?.(railQuery).matches || false,
+        () => (typeof window !== "undefined" && window.matchMedia?.(railQuery)?.matches) ?? false,
     );
     useEffect(() => {
         const query = window.matchMedia?.(railQuery);
