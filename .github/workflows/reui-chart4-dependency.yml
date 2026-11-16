@@ -4,20 +4,28 @@ on:
     paths:
       - ".github/workflows/reui-chart4-dependency.yml"
 permissions:
-  contents: read
+  contents: write
 jobs:
   lockfile:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: npm
-      - name: Generate deterministic lockfile for the requested ReUI chart dependency
+      - name: Install Recharts and capture the exact npm lockfile
         run: npm install recharts@^3.8.0 --package-lock-only --ignore-scripts --no-audit --no-fund
-      - name: Archive lockfile and package manifest for app integration
-        uses: actions/upload-artifact@v4
+      - name: Commit generated manifest and lockfile to feature branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "Install Recharts for requested ReUI Balance Tracker" || exit 0
+          git push origin HEAD:codex/ui-shell-chart4-reui-20261116
+      - uses: actions/upload-artifact@v4
         with:
           name: reui-chart4-lockfile
           path: |
