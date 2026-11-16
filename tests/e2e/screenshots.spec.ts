@@ -643,6 +643,9 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     ).toBeVisible();
     await expect(
         objectWizard.getByRole("tab", { name: "Adresse, Schritt 2" }),
+    ).toBeEnabled();
+    await expect(
+        objectWizard.getByRole("tab", { name: "Verwaltung, Schritt 3" }),
     ).toBeDisabled();
     await expect(
         objectWizard.locator('[data-slot="wizard-step-heading"]'),

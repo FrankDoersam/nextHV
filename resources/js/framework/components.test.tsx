@@ -163,7 +163,8 @@ describe("CRUD interactions", () => {
             expect.stringContaining("-stepper-trigger-1"),
         );
         expect(sheet.querySelectorAll('[data-slot="stepper-content"]')).toHaveLength(2);
-        expect(screen.getByRole("tab", { name: "Adresse, Schritt 2" })).toBeDisabled();
+        // The immediately following step is clickable through the SAME validation gate.
+        expect(screen.getByRole("tab", { name: "Adresse, Schritt 2" })).toBeEnabled();
         expect(screen.getByRole("button", { name: "Zurück" })).toBeDisabled();
         await user.click(
             await screen.findByRole(

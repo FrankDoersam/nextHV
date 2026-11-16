@@ -42,7 +42,7 @@ it("uses the installed ReUI c-stepper-10 pattern with a separate panel per step"
     expect(screen.getByRole("tablist", { name: "Erfassungsschritte" })).toBeInTheDocument();
     // Progress counter lives next to the form heading, not twice inside the stepper.
     expect(screen.getByRole("tab", { name: "Adresse, Schritt 2" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("tab", { name: "Verwaltung, Schritt 3" })).toBeDisabled();
+    expect(screen.getByRole("tab", { name: "Verwaltung, Schritt 3" })).toBeEnabled();
     expect(screen.getByRole("tabpanel")).toHaveTextContent("Adresse erfassen");
     expect(container.querySelector("#test-stepper-panel-1")).toHaveAttribute("hidden");
     expect(container.querySelector("#test-stepper-panel-1")).toHaveAttribute("aria-labelledby", "test-stepper-trigger-1");
