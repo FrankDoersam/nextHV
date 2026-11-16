@@ -5,6 +5,7 @@ import {
     AvatarGroupCount,
     AvatarImage,
 } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 export interface AvatarPerson {
     id: string | number;
     name: string;
@@ -13,9 +14,13 @@ export interface AvatarPerson {
 export function PersonAvatar({
     person,
     size = "default",
+    className,
+    fallbackClassName,
 }: {
     person: AvatarPerson;
     size?: "sm" | "default" | "lg";
+    className?: string;
+    fallbackClassName?: string;
 }) {
     const initials = person.name
         .trim()
@@ -26,11 +31,18 @@ export function PersonAvatar({
         .join("")
         .toUpperCase();
     return (
-        <Avatar size={size} title={person.name} aria-label={person.name}>
+        <Avatar
+            size={size}
+            title={person.name}
+            aria-label={person.name}
+            className={cn(className)}
+        >
             {person.image && (
                 <AvatarImage src={person.image} alt={person.name} />
             )}
-            <AvatarFallback>{initials || "?"}</AvatarFallback>
+            <AvatarFallback className={fallbackClassName}>
+                {initials || "?"}
+            </AvatarFallback>
         </Avatar>
     );
 }

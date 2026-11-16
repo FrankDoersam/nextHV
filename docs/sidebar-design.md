@@ -16,7 +16,7 @@ für Desktop, Mobile-Sheet, eingeklappte Icon-Leiste und die globale Suche.
 - **Eingeklappte Navigation:** ein Icon pro Gruppe, ohne Eckpfeile oder
   Badge-Dots. Gruppen-Icons erweitern das Rail und öffnen die jeweilige Gruppe.
   Das Expand-Control sitzt direkt in der 56px-Headerzeile.
-- **Footer:** Komponenten, Sprache, Konto und Abmelden bleiben erreichbar.
+- **Footer:** Ausschließlich eine kompakte REUI-/Base-Nova-Kontozeile mit primärfarbenem Initialen-Avatar, Namen, E-Mail-Adresse und dezentem Abmelden-Button. Auch im eingeklappten Rail und auf Mobilgeräten bleiben Avatar und Abmelden erreichbar. Die Einstiegspunkte „Komponenten“ und „Sprache“ sind aus der Sidebar entfernt; die übrigen App-Funktionen werden nicht verändert.
 - **Performance:** Sidebar-Ressourcenanzahlen bleiben reine Count-Requests;
   das Navigieren zu einem Eintrag lädt dessen Seite, nicht alle Zielseiten.
 

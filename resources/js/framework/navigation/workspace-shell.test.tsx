@@ -39,7 +39,7 @@ afterEach(() => {
     vi.unstubAllGlobals();
 });
 
-function mount(path = "/properties/12") {
+function mount(path = "/properties/12", onLogout = vi.fn()) {
     return render(
         <MemoryRouter initialEntries={[path]}>
             <QueryClientProvider
@@ -56,7 +56,7 @@ function mount(path = "/properties/12") {
                         name: "Beispiel",
                         email: "team@example.test",
                     }}
-                    onLogout={vi.fn()}
+                    onLogout={onLogout}
                 >
                     <div>Arbeitsinhalt</div>
                 </AppShell>
@@ -165,4 +165,38 @@ it("searches server records and never filters matches again by their captions", 
     expect(await screen.findByText("Wohnung 01")).toBeVisible();
     expect(fetcher.mock.calls[0][0]).toBe("/api/v1/global-search");
     expect(fetcher.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
+});
+
+it("keeps a single REUI-aligned user footer without components or language controls", async () => {
+    const logout = vi.fn();
+    const { container } = mount("/", logout);
+    const sidebar = container.querySelector('[data-slot="desktop-sidebar"]')!;
+    const footer = sidebar.querySelector('[data-slot="sidebar-account"]')!;
+    const account = footer.querySelector('[data-slot="sidebar-user"]')!;
+    const avatar = account.querySelector('[data-slot="avatar"]')!;
+    const initials = avatar.querySelector('[data-slot="avatar-fallback"]')!;
+
+    expect(footer).toHaveTextContent("Beispiel");
+    expect(footer).toHaveTextContent("team@example.test");
+    expect(avatar).toHaveAttribute("aria-label", "Beispiel");
+    expect(initials.className).toContain("bg-primary/10");
+    expect(initials).toHaveTextContent("B");
+    expect(sidebar.querySelector('a[href="/components"]')).toBeNull();
+    expect(sidebar.querySelector('[aria-label="Sprache / Language"]')).toBeNull();
+    await userEvent.setup().click(
+        screen.getByRole("button", { name: "Abmelden" }),
+    );
+    expect(logout).toHaveBeenCalledOnce();
+});
+
+it("keeps the account avatar and logout accessible in the compact icon rail", async () => {
+    const { container } = mount("/");
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Navigation einklappen" }));
+    const sidebar = container.querySelector('[data-slot="desktop-sidebar"]')!;
+    const footer = sidebar.querySelector('[data-slot="sidebar-account"]')!;
+    expect(sidebar).toHaveAttribute("data-collapsed", "true");
+    expect(footer.querySelector('[data-slot="avatar"]')).not.toBeNull();
+    expect(footer).not.toHaveTextContent("team@example.test");
+    expect(footer.querySelector('button[aria-label="Abmelden"]')).not.toBeNull();
 });

@@ -1,6 +1,5 @@
 import { GlobalSearch } from "./global-search";
 import { useI18n } from "@/framework/i18n";
-import { LanguagePicker } from "./language-picker";
 import { usePermissionRevision } from "@/framework/permissions";
 import { Brand } from "./brand";
 export { Brand } from "./brand";
@@ -34,7 +33,6 @@ import {
     PanelLeftClose,
     PanelLeftOpen,
     Search,
-    Shapes,
 } from "lucide-react";
 import {
     Fragment,
@@ -44,7 +42,7 @@ import {
     useState,
     type ReactNode,
 } from "react";
-import { Link, NavLink, useLocation, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 
 /** A single navigation tree feeds desktop, mobile, the icon rail and the command palette. */
 export function AppShell({
@@ -152,47 +150,33 @@ export function AppShell({
                 onNavigate={() => setMobile(false)}
                 onExpandRail={() => setCompact(false)}
             />
-            <div
+            <footer
                 data-slot="sidebar-account"
                 className={cn(
                     "shrink-0 border-t border-sidebar-border/80 px-3 py-3",
                     rail && "px-2",
                 )}
             >
-                <NavLink
-                    to="/components"
-                    onClick={() => setMobile(false)}
-                    title={rail ? "Komponenten" : undefined}
-                    aria-label={rail ? "Komponenten" : undefined}
-                    className={({ isActive }) =>
-                        cn(
-                            "mb-2 flex min-h-9 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                            rail && "justify-center px-0",
-                            isActive && "bg-primary/[0.09] font-semibold text-foreground",
-                        )
-                    }
-                >
-                    <Shapes className="size-4" aria-hidden />
-                    {!rail && "Komponenten"}
-                </NavLink>
-                {!rail && (
-                    <div className="mb-2">
-                        <LanguagePicker />
-                    </div>
-                )}
                 <div
+                    data-slot="sidebar-user"
                     className={cn(
-                        "flex min-w-0 items-center gap-2 rounded-lg border border-sidebar-border/70 bg-card/70 px-2 py-2",
-                        rail && "flex-col gap-1 border-transparent bg-transparent px-0",
+                        "flex min-w-0 items-center gap-2.5 rounded-lg border border-sidebar-border/70 bg-card/70 px-2.5 py-2",
+                        rail &&
+                            "flex-col gap-2 border-transparent bg-transparent px-0 py-0",
                     )}
                 >
-                    <PersonAvatar person={{ id: "me", name: user.name }} />
+                    <PersonAvatar
+                        person={{ id: user.id ?? "me", name: user.name }}
+                        size="default"
+                        className="size-9 ring-2 ring-primary/10 ring-offset-1 ring-offset-sidebar"
+                        fallbackClassName="bg-primary/10 text-primary text-xs font-semibold"
+                    />
                     {!rail && (
                         <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-medium">
+                            <p className="truncate text-[13px] font-semibold text-foreground">
                                 {user.name}
                             </p>
-                            <p className="truncate text-[10px] text-muted-foreground">
+                            <p className="truncate text-[11px] text-muted-foreground">
                                 {user.email}
                             </p>
                         </div>
@@ -204,11 +188,15 @@ export function AppShell({
                         aria-label="Abmelden"
                         title="Abmelden"
                         onClick={onLogout}
+                        className={cn(
+                            "size-8 shrink-0 text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+                            rail && "size-9",
+                        )}
                     >
-                        <LogOut />
+                        <LogOut className="size-4" aria-hidden="true" />
                     </Button>
                 </div>
-            </div>
+            </footer>
         </>
     );
     return (

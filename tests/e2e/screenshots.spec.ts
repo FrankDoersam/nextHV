@@ -1100,6 +1100,12 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
             });
             await expect(active).toHaveAttribute("data-active", "true");
             await expect(active).toHaveCSS("border-left-width", "0px");
+            const footer = sidebar.locator('[data-slot="sidebar-account"]');
+            await expect(footer.locator('[data-slot="avatar-fallback"]')).toBeVisible();
+            await expect(footer).toContainText("Browser");
+            await expect(footer.getByRole("button", { name: "Abmelden" })).toBeVisible();
+            await expect(sidebar.locator('a[href="/components"]')).toHaveCount(0);
+            await expect(sidebar.locator('[aria-label="Sprache / Language"]')).toHaveCount(0);
             await capture("56-sidebar-desktop-expanded");
 
             await sidebar.getByRole("button", {
@@ -1110,6 +1116,9 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
                 name: "Stammdaten Untermenü öffnen",
             });
             await expect(railGroup.locator("svg")).toHaveCount(1);
+            await expect(footer.locator('[data-slot="avatar"]')).toBeVisible();
+            await expect(footer.getByRole("button", { name: "Abmelden" })).toBeVisible();
+            await expect(footer).not.toContainText("Browser");
             await capture("57-sidebar-desktop-rail");
 
             await railGroup.click();
@@ -1125,6 +1134,12 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(
         page.getByRole("navigation", { name: "Hauptnavigation" }).last(),
     ).toBeVisible();
+    const mobileFooter = page.locator('[data-slot="sidebar-account"]').last();
+    await expect(mobileFooter.locator('[data-slot="avatar-fallback"]')).toBeVisible();
+    await expect(mobileFooter.getByRole("button", { name: "Abmelden" })).toBeVisible();
+    await expect(mobileFooter).toContainText("Browser");
+    await expect(mobileFooter.locator('a[href="/components"]')).toHaveCount(0);
+    await expect(mobileFooter.locator('[aria-label="Sprache / Language"]')).toHaveCount(0);
     await capture("52-sidebar-mobil");
     await page.keyboard.press("Escape");
     for (const width of [1440, 390]) {
