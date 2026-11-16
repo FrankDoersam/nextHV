@@ -143,6 +143,32 @@ describe("shared ReUI Stepper 10 navigation", () => {
         expect(onChange).toHaveBeenCalledExactlyOnceWith(1);
     });
 
+    it("shares per-step canNavigate restrictions with both buttons and tabs", async () => {
+        const onChange = vi.fn();
+        const { result, rerender } = renderHook(
+            ({ active }) =>
+                useCStepper10Navigation({
+                    active,
+                    count: 6,
+                    onChange,
+                    canNavigate: (_current, target) => target !== 3,
+                }),
+            { initialProps: { active: 2 } },
+        );
+        expect(result.current.canBack).toBe(true);
+        expect(result.current.canNext).toBe(false);
+        expect(result.current.canSelectStep(0)).toBe(true);
+        expect(result.current.canSelectStep(3)).toBe(false);
+        await act(async () => {
+            expect(await result.current.next()).toBe(false);
+        });
+        expect(onChange).not.toHaveBeenCalled();
+        rerender({ active: 4 });
+        expect(result.current.canBack).toBe(false);
+        expect(result.current.canNext).toBe(true);
+        expect(result.current.canFinish).toBe(false);
+    });
+
     it("reports a validation rejection and keeps the current step", async () => {
         const onChange = vi.fn();
         const onValidationError = vi.fn();

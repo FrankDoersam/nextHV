@@ -18,6 +18,8 @@ export interface Stepper10NavigationOptions {
     canBack?: boolean;
     canNext?: boolean;
     canFinish?: boolean;
+    /** Optional per-step access policy, shared by tabs and footer controls. */
+    canNavigate?: (currentStep: number, targetStep: number) => boolean;
     busy?: boolean;
     onValidationError?: (error: unknown) => void;
 }
@@ -49,14 +51,23 @@ export function useCStepper10Navigation({
     canBack = true,
     canNext = true,
     canFinish = true,
+    canNavigate,
     busy = false,
     onValidationError,
 }: Stepper10NavigationOptions): Stepper10Navigation {
     const lock = useRef(false);
     const [validating, setValidating] = useState(false);
     const blocked = busy || validating;
-    const backEnabled = count > 0 && active > 0 && canBack && !blocked;
-    const nextEnabled = active >= 0 && active < count - 1 && canNext && !blocked;
+    const canVisit = (target: number) =>
+        !canNavigate || canNavigate(active, target);
+    const backAllowed = count > 0 && active > 0 && canBack && !blocked;
+    const backEnabled = backAllowed && canVisit(active - 1);
+    const nextEnabled =
+        active >= 0 &&
+        active < count - 1 &&
+        canNext &&
+        !blocked &&
+        canVisit(active + 1);
     const finishEnabled = count > 0 && active === count - 1 && canFinish && !blocked;
 
     const canSelectStep = useCallback(
@@ -64,11 +75,12 @@ export function useCStepper10Navigation({
             if (!Number.isInteger(target) || target < 0 || target >= count || blocked)
                 return false;
             if (target === active) return true;
-            if (target < active) return backEnabled;
+            if (target < active)
+                return backAllowed && (!canNavigate || canNavigate(active, target));
             // No skipping unvalidated intermediate stages.
             return target === active + 1 && nextEnabled;
         },
-        [active, count, blocked, backEnabled, nextEnabled],
+        [active, count, blocked, backAllowed, nextEnabled, canNavigate],
     );
 
     const selectStep = useCallback(

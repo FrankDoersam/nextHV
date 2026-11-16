@@ -146,3 +146,10 @@ Bei Schrittwechsel wird nur die *horizontale* Schrittnavigation
 nachgeführt, nicht das ganze Sheet. Auf schmalen Viewports kann
 `shortLabel` pro Schritt zusätzlich Platz sparen; der vollständige
 zugängliche Name bleibt immer erhalten.
+
+`canNavigate(currentStep, targetStep)` ist ein zusätzlicher optionaler
+Zugriffs-Callback für geschützte Einzelschritte und wirkt auf den direkten
+Stepper-Klick ebenso wie auf die Footer-Freigaben. `canFinish` steuert
+die finale Speichern-Aktion. `FormGroupDefinition.stepShortLabel` kann
+in den Resource-Definitionen ein kompaktes Mobil-Label vorgeben, ohne
+den vollständigen Screenreader-Namen oder das Desktop-Label zu ersetzen.

@@ -480,6 +480,7 @@ export function ResourceEditor({
                                         : groups.map((group) => ({
                                               id: group.id,
                                               label: group.stepLabel ?? group.label,
+                                              shortLabel: group.stepShortLabel,
                                               description: group.description,
                                           }))
                                 }

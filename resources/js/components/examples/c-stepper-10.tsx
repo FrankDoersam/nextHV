@@ -44,6 +44,9 @@ export interface CStepper10Props {
     validate?: Stepper10Validator;
     canBack?: boolean;
     canNext?: boolean;
+    canFinish?: boolean;
+    canNavigate?: (currentStep: number, targetStep: number) => boolean;
+    onValidationError?: (error: unknown) => void;
     busy?: boolean;
     singleContent?: boolean;
     idPrefix?: string;
@@ -59,6 +62,9 @@ export function CStepper10({
     validate,
     canBack = true,
     canNext = true,
+    canFinish = true,
+    canNavigate,
+    onValidationError,
     busy = false,
     singleContent = false,
     idPrefix,
@@ -73,6 +79,9 @@ export function CStepper10({
         validate,
         canBack: Boolean(onSelect) && canBack,
         canNext: Boolean(onSelect) && canNext,
+        canFinish,
+        canNavigate,
+        onValidationError,
         busy,
     });
     const controls = navigation ?? fallback;
