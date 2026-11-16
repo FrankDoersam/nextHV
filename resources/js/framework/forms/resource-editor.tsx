@@ -13,6 +13,7 @@ import {
     CStepper10,
     CStepper10Content,
 } from "@/components/examples/c-stepper-10";
+import { useCStepper10Navigation } from "@/components/examples/c-stepper-10-navigation";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Save, RefreshCw } from "lucide-react";
 import {
@@ -180,21 +181,30 @@ export function ResourceEditor({
                 Object.keys(errors)[0],
         );
     }
-    const next = async () => {
-        if (busy || completion) return;
-        const names = [
-            ...fields
-                .filter((f) => (f.group ?? "general") === groups[step].id)
-                .map((f) => f.name),
-            ...createRelations
-                .filter((relation) => relation.group === groups[step].id)
-                .flatMap((relation) =>
-                    creationNames(relation, form.getValues()),
-                ),
-        ];
-        if (await validate(names))
-            setStep((current) => Math.min(current + 1, groups.length - 1));
-    };
+    const wizardNavigation = useCStepper10Navigation({
+        active: step,
+        count: groups.length,
+        onChange: setStep,
+        canBack: !completion,
+        canNext: !completion,
+        canFinish: !completion,
+        busy: busy || !!completion,
+        validate: async (currentStep) => {
+            const group = groups[currentStep];
+            if (!group) return false;
+            const names = [
+                ...fields
+                    .filter((f) => (f.group ?? "general") === group.id)
+                    .map((f) => f.name),
+                ...createRelations
+                    .filter((relation) => relation.group === group.id)
+                    .flatMap((relation) =>
+                        creationNames(relation, form.getValues()),
+                    ),
+            ];
+            return validate(names);
+        },
+    });
     const headerActions = (
         <div className="flex gap-1">
             {row && (
@@ -327,8 +337,8 @@ export function ResourceEditor({
                         <Button
                             type="button"
                             variant="outline"
-                            disabled={busy || step === 0}
-                            onClick={() => setStep(step - 1)}
+                            disabled={!wizardNavigation.canBack}
+                            onClick={() => void wizardNavigation.back()}
                         >
                             <ChevronLeft />
                             {t("back")}
@@ -379,13 +389,10 @@ export function ResourceEditor({
                         <Button
                             key="wizard-next"
                             type="button"
-                            disabled={busy}
-                            onClick={(event) => {
-                                event.preventDefault();
-                                void next();
-                            }}
+                            disabled={!wizardNavigation.canNext}
+                            onClick={() => void wizardNavigation.next()}
                         >
-                            {validating ? t("checking") : t("next")}
+                            {validating || wizardNavigation.validating ? t("checking") : t("next")}
                             <ChevronRight />
                         </Button>
                     ) : (
@@ -393,7 +400,10 @@ export function ResourceEditor({
                             key="save"
                             type="submit"
                             form={formId}
-                            disabled={busy}
+                            disabled={
+                                busy ||
+                                (request.wizard && !flow && !wizardNavigation.canFinish)
+                            }
                         >
                             <Save />
                             {busy
@@ -443,10 +453,11 @@ export function ResourceEditor({
                             onSubmit={(event) => {
                                 if (
                                     request.wizard &&
+                                    !flow &&
                                     step < groups.length - 1
                                 ) {
                                     event.preventDefault();
-                                    void next();
+                                    void wizardNavigation.next();
                                 } else void save(event);
                             }}
                             className={cn(
@@ -473,7 +484,7 @@ export function ResourceEditor({
                                           }))
                                 }
                                 active={flow ? flow.index : step}
-                                onSelect={flow ? undefined : setStep}
+                                navigation={flow ? undefined : wizardNavigation}
                                 busy={busy || !!completion}
                                 singleContent={!!flow}
                                 idPrefix={formId + "-stepper"}
