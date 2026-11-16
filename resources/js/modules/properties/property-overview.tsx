@@ -10,6 +10,7 @@ import {
     StatusBadge,
 } from "@/components/blocks/content";
 import { Split, Stack } from "@/components/blocks/layout";
+import { BuildingManagementKeyValues } from "./building-management-key-values";
 import { Button } from "@/components/ui/button";
 import { useOverview, useResourceList } from "@/framework/data/hooks";
 import type { RecordData } from "@/framework/types";
@@ -133,40 +134,7 @@ export default function PropertyOverview({
                         )}
                     </SectionCard>
                     <SectionCard title="Gebäude & Verwaltung">
-                        <DetailList
-                            items={[
-                                {
-                                    label: "Verwaltungsart",
-                                    value: label(property.management_type),
-                                },
-                                {
-                                    label: "Nutzung",
-                                    value: label(property.type),
-                                },
-                                {
-                                    label: "Baujahr",
-                                    value: String(
-                                        property.construction_year ?? "—",
-                                    ),
-                                },
-                                {
-                                    label: "Grundstück",
-                                    value: `${number(property.land_area, 2)} m²`,
-                                },
-                                {
-                                    label: "Heizung",
-                                    value: String(property.heating_type ?? "—"),
-                                },
-                                {
-                                    label: "Energieklasse",
-                                    value: String(property.energy_class ?? "—"),
-                                },
-                                {
-                                    label: "Verwaltungsbeginn",
-                                    value: date(property.management_started_on),
-                                },
-                            ]}
-                        />
+                        <BuildingManagementKeyValues property={property} />
                     </SectionCard>
                 </Stack>
             }
