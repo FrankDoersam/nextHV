@@ -420,6 +420,22 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     const numberBox = await editSheet
         .getByLabel("Nummer", { exact: false })
         .boundingBox();
+    console.log("VEGA_CONTROL_HEIGHT", JSON.stringify({
+        unitBox,
+        numberBox,
+        unitGroup: await unitPicker.locator('xpath=ancestor::*[@data-slot="input-group"][1]').evaluate((el) => ({
+            classes: el.className,
+            cssHeight: getComputedStyle(el).height,
+            vars: getComputedStyle(el).getPropertyValue("--control-height"),
+            ancestors: [el.parentElement?.getAttribute("data-slot"), el.parentElement?.parentElement?.getAttribute("data-slot")],
+        })),
+        numberField: await editSheet.getByLabel("Nummer", { exact: false }).evaluate((el) => ({
+            classes: el.className,
+            cssHeight: getComputedStyle(el).height,
+            vars: getComputedStyle(el).getPropertyValue("--control-height"),
+            ancestors: [el.parentElement?.getAttribute("data-slot"), el.parentElement?.parentElement?.getAttribute("data-slot")],
+        })),
+    }));
     expect(Math.abs(unitBox!.height - numberBox!.height)).toBeLessThanOrEqual(
         2,
     );
