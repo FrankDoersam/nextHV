@@ -84,3 +84,18 @@ Speichern erreichbar. Es entsteht kein Dialogwechsel zwischen Schritten.
 REUI-Orientierung: https://reui.io/components/sheet und
 https://reui.io/components/stepper. Die fachliche Validierung und
 Server-Persistenz bleiben in den bestehenden nextHV-Form-Hooks.
+
+### Randbündige Wizard-Oberfläche
+
+Anders als gewöhnliche, bewusst schwebende Bearbeitungs-Sheets reichen Wizard-
+Sheets auf Desktop bis an den rechten Bildschirmrand und von oben bis unten.
+Sie haben dort keine Dialog-artigen Außenabstände oder Rundungen. Auf Mobil-
+geräten belegt das Sheet die volle verfügbare Breite. Der Formularinhalt scrollt
+weiterhin unabhängig von Stepper und Footer.
+
+Für anwählbare Wizard-Schritte verwendet die Navigation den echten, kontrollierten
+REUI-`StepperTrigger` mit Tab-/Tastatursemantik. Nur bereits erreichte Schritte
+sind rückwärts anwählbar; zukünftige Schritte bleiben bis zur Validierung
+deaktiviert. Reine mehrteilige Erfassungs-Flows zeigen ihren Fortschritt
+nichtinteraktiv an. Lange Schritttitel umbrechen bei ausreichender Sheet-Breite,
+statt im Header abgeschnitten zu werden.

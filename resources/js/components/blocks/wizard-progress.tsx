@@ -5,10 +5,14 @@ import {
     StepperItem,
     StepperNav,
     StepperSeparator,
+    StepperTrigger,
 } from "@/components/reui/stepper";
 import { cn } from "@/lib/utils";
 
-/** Header navigation only: server-validated steps control progression; completed steps remain revisitable. */
+/**
+ * REUI controlled Stepper: earlier steps remain accessible, but the current
+ * form must validate before moving forward. The form itself stays mounted.
+ */
 export function WizardProgress({
     steps,
     active,
@@ -42,13 +46,21 @@ export function WizardProgress({
             </div>
             <Stepper
                 className="w-full"
-                role="group"
-                aria-orientation={undefined}
+                role={onSelect ? "tablist" : "group"}
                 aria-label={`Schritt ${active + 1} von ${steps.length}`}
                 value={active + 1}
+                onValueChange={
+                    onSelect
+                        ? (value) => {
+                              // Clicking an unvalidated future step never skips validation.
+                              if (!busy && value >= 1 && value <= active)
+                                  onSelect(value - 1);
+                          }
+                        : undefined
+                }
                 indicators={{ completed: <Check className="size-3.5" /> }}
             >
-                <StepperNav className="items-stretch gap-0">
+                <StepperNav role="presentation" className="items-stretch gap-0">
                     {steps.map((step, index) => {
                         const current = index === active;
                         const completed = index < active;
@@ -59,7 +71,7 @@ export function WizardProgress({
                                 </StepperIndicator>
                                 <span
                                     className={cn(
-                                        "min-w-0 max-w-full truncate text-center text-xs font-medium @max-[38rem]/wizard:sr-only @min-[38rem]/wizard:text-left",
+                                        "min-w-0 max-w-full text-center text-xs leading-4 font-medium @max-[38rem]/wizard:sr-only @min-[38rem]/wizard:break-words @min-[38rem]/wizard:text-left",
                                         current
                                             ? "text-foreground"
                                             : completed
@@ -72,34 +84,33 @@ export function WizardProgress({
                             </>
                         );
                         const classes = cn(
-                            "relative z-10 flex min-h-10 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-md px-1 py-1 outline-offset-2 @min-[38rem]/wizard:flex-row @min-[38rem]/wizard:gap-2",
+                            "relative z-10 flex min-h-10 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-md px-1 py-1 @min-[38rem]/wizard:flex-row @min-[38rem]/wizard:gap-2",
+                            current && "bg-primary/[0.06]",
                         );
                         return (
                             <StepperItem
                                 key={step.id}
                                 step={index + 1}
+                                disabled={busy || index > active || !onSelect}
                                 aria-current={current ? "step" : undefined}
                                 className="relative min-w-0 flex-1 items-center"
                             >
-                                {onSelect && completed ? (
-                                    <button
+                                {onSelect ? (
+                                    <StepperTrigger
                                         type="button"
-                                        disabled={busy}
+                                        disabled={busy || index > active}
                                         aria-label={`${step.label}, Schritt ${index + 1}`}
-                                        onClick={() => onSelect(index)}
                                         className={cn(
                                             classes,
-                                            "hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50",
+                                            "outline-offset-2 focus-visible:ring-2 focus-visible:ring-ring/50",
+                                            completed && "hover:bg-muted/60",
                                         )}
                                     >
                                         {content}
-                                    </button>
+                                    </StepperTrigger>
                                 ) : (
                                     <div
-                                        className={cn(
-                                            classes,
-                                            current && "bg-primary/[0.06]",
-                                        )}
+                                        className={classes}
                                         aria-label={`${step.label}: ${current ? "aktueller Schritt" : completed ? "abgeschlossen" : "ausstehend"}`}
                                     >
                                         {content}
@@ -119,7 +130,6 @@ export function WizardProgress({
                     })}
                 </StepperNav>
             </Stepper>
-
         </nav>
     );
 }

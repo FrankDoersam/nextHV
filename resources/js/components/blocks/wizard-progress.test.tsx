@@ -28,6 +28,11 @@ it("keeps a compact, labelled REUI stepper and lets users revisit completed step
         .toHaveTextContent("Schritt 2 von 4");
     // The REUI indicators communicate progress without a second fake bar.
     expect(container.querySelector('[data-slot="wizard-progress"] > .h-1')).toBeNull();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Objekt, Schritt 1" }));
+    expect(screen.getByRole("tab", { name: "Adresse, Schritt 2" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+    );
+    expect(screen.getByRole("tab", { name: "Verwaltung, Schritt 3" })).toBeDisabled();
+    await userEvent.setup().click(screen.getByRole("tab", { name: "Objekt, Schritt 1" }));
     expect(select).toHaveBeenCalledExactlyOnceWith(0);
 });

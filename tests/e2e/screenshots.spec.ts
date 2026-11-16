@@ -502,6 +502,10 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
             (element) => element.scrollWidth - element.clientWidth,
         ),
     ).toBeLessThanOrEqual(1);
+    const mobileSheetBox = await wizardSheet.boundingBox();
+    expect(mobileSheetBox).not.toBeNull();
+    expect(Math.abs(mobileSheetBox!.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(mobileSheetBox!.x + mobileSheetBox!.width - 390)).toBeLessThanOrEqual(1);
     await capture("11-wizard-mobil");
     await page.setViewportSize({ width: 1440, height: 1000 });
     const dialogUrl = new URL(page.url());
@@ -606,9 +610,18 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     const objectWizard = page.getByRole("dialog", { name: "Objekt anlegen" });
     await expect(objectWizard).toHaveAttribute("data-slot", "sheet-content");
     await expect(objectWizard).toHaveAttribute("data-wizard", "true");
+    const objectSheetBox = await objectWizard.boundingBox();
+    const viewport = page.viewportSize()!;
+    expect(objectSheetBox).not.toBeNull();
+    expect(Math.abs(objectSheetBox!.x + objectSheetBox!.width - viewport.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(objectSheetBox!.y)).toBeLessThanOrEqual(1);
+    expect(Math.abs(objectSheetBox!.height - viewport.height)).toBeLessThanOrEqual(1);
     await expect(
         objectWizard.getByRole("navigation", { name: "Erfassungsschritte" }),
     ).toContainText("Schritt 1 von 4");
+    await expect(
+        objectWizard.getByRole("tab", { name: "Objekt, Schritt 1" }),
+    ).toBeVisible();
     await expect(
         objectWizard.getByRole("button", { name: "Weiter", exact: true }),
     ).toBeVisible();
