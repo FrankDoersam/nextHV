@@ -115,7 +115,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     // ReUI Chart 4: navigation, all controls, demo notice and responsive plot.
     await page
         .getByRole("navigation", { name: "Hauptnavigation" })
-        .getByRole("link", { name: "Charts", exact: true })
+        .getByRole("link", { name: /^Charts(?:\s|$)/ })
         .click();
     await expect(page).toHaveURL(/\/charts$/);
     const balanceChart = page.locator('[data-slot="reui-chart-4"]');
