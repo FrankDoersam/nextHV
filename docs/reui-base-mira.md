@@ -52,10 +52,13 @@ ihre ursprüngliche Quelle.
 ## Höhenvertrag für Controls
 
 `--control-height` (28 px im Mira-Standard), `--control-height-sm`
-(24 px) und `--control-height-lg` (32 px) werden zentral in `app.css`
-definiert. Die Tabellen-Toolbar setzt nur `--control-height` auf 32 px:
+(24 px), `--control-height-lg` (32 px) und `--control-height-field`
+(36 px) werden zentral in `app.css` definiert. Die Tabellen-Toolbar
+setzt `--control-height` auf 32 px, das gemeinsame
+`BaseField`-Kontrollfeld auf 36 px:
 Textfelder, Base-UI-Select, die durchsuchbare ChoicePicker-Combobox und
 Standard-Buttons verwenden denselben Token. Die Toolbar-Aktionen `lg`
 und `icon-lg` entsprechen ebenfalls 32 px. So sind die Steuerelemente
-tatsächlich gleich hoch – nicht nur mittig ausgerichtet. Ein bewusst
-mehrzeiliges, reichhaltiges Auswahlfeld bleibt als Ausnahme höher.
+tatsächlich gleich hoch – nicht nur mittig ausgerichtet. Im Formular sind
+dadurch beispielsweise Einheiten-Combobox und Vertragsnummer gleich hoch.
+Ein bewusst mehrzeiliges, reichhaltiges Auswahlfeld bleibt als Ausnahme höher.

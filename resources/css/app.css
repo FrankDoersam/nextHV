@@ -47,6 +47,7 @@
     --control-height: 1.75rem;
     --control-height-sm: 1.5rem;
     --control-height-lg: 2rem;
+    --control-height-field: 2.25rem;
     --background: #f7f7f8;
     --foreground: #18181b;
     --card: #fff;
@@ -99,6 +100,11 @@
     }
 }
 @layer components {
+    /* Form fields are a distinct, deliberately comfortable density: every
+       standard text, select and search control inherits the same 36px height. */
+    [data-slot="field-control"] {
+        --control-height: var(--control-height-field);
+    }
     [data-slot="collection-toolbar"] {
         --control-height: var(--control-height-lg);
     }

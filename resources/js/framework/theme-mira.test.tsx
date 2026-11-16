@@ -25,6 +25,8 @@ it("uses the supported REUI base-mira registry style and centralized radius", ()
     expect(css).toContain("--radius: 0.5rem");
     expect(css).toContain("--control-height: 1.75rem");
     expect(css).toContain("--control-height-lg: 2rem");
+    expect(css).toContain("--control-height-field: 2.25rem");
+    expect(css).toContain('[data-slot="field-control"]');
     expect(css).toContain('[data-slot="collection-toolbar"]');
 });
 
