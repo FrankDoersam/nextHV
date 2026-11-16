@@ -1123,7 +1123,8 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
             (await page
                 .locator('[data-slot="collection-toolbar"]')
                 .boundingBox())!.height,
-        ).toBeLessThanOrEqual(85);
+        // Vega's 40px controls form two compact mobile toolbar rows.
+        ).toBeLessThanOrEqual(96);
         await capture(
             resource === "properties"
                 ? "46-objekte-mobil"
