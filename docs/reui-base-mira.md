@@ -71,16 +71,27 @@ immer ein rechtes, responsives Base-Mira-Sheet. Auch ältere Links mit
 Normale Formular-Dialoge und die getrennte **Änderungen verwerfen?**-
 Bestätigung bleiben unverändert möglich.
 
-Der Wizard verwendet den echten REUI-`Stepper` mit `StepperItem`,
-`StepperIndicator` und kontrollierten `StepperTrigger`-Karten, nach
-dem Vorbild des freien [Vertical Step Cards](https://reui.io/components/stepper/c-stepper-39)
-Beispiels. Auf Desktop steht die Navigation als eigene, vertikale 240-px-
-Schrittleiste links neben dem Formular; der aktive Schritt wird rechts
-mit separatem Titel und einem REUI-`Frame` für die Felder gezeigt.
-Auf Mobilgeräten wird die Navigation zur horizontal scrollbaren Kartenleiste
-und der Formularinhalt folgt darunter. Die aktiven Karten werden sichtbar
-gescrollt. Frühere Schritte sind direkt erreichbar, künftige gesperrt.
-Eine zweite dekorative Fortschrittsleiste entfällt.
+Der Sheet-Wizard basiert **konkret auf `@reui/c-stepper-10`** (ReUI:
+[Stepper with content for each step](https://reui.io/components/stepper/c-stepper-10)).
+Das Beispiel wurde mit dem Originalbefehl
+`pnpm dlx shadcn@latest add @reui/c-stepper-10 --yes` in GitHub Actions
+installiert (Run `43838496953`) und an den bereits vorhandenen
+`@/components/reui/stepper` sowie die Laravel-/React-Projektstruktur
+angepasst. Die angepasste Source liegt unter
+`resources/js/components/examples/c-stepper-10.tsx`.
+
+Die Navigation ist **horizontal** mit `StepperNav`, nummerierten
+`StepperIndicator`, `StepperTitle`, `StepperDescription` und
+`StepperSeparator`. Im `StepperPanel` hält je ein `StepperContent`
+die Felder eines Schritts (auch ausgeblendete Felder bleiben gemountet,
+damit Werte und Repeater beim Zurückgehen nicht verloren gehen).
+Mobil scrollen die Schritte horizontal ohne Seitenüberlauf.
+Die separate bisherige `VerticalWizardProgress`-Komponente
+(`components/blocks/wizard-progress.tsx`) bleibt zur alternativen Nutzung
+erhalten, wird aber **nicht** mehr im Objekt-/Vertrags-Sheet gerendert.
+
+Abgeschlossene Schritte sind direkt erreichbar, künftige gesperrt.
+Eine zweite rein dekorative Fortschrittsleiste entfällt.
 
 Nur der Formular-Body scrollt vertikal und springt bei Schrittwechsel an
 den Anfang. Der Footer bleibt mit Zurück (anfangs deaktiviert), Abbrechen
@@ -100,8 +111,8 @@ Sie haben dort keine Dialog-artigen Außenabstände oder Rundungen. Auf Mobil-
 geräten belegt das Sheet die volle verfügbare Breite. Der Formularinhalt scrollt
 weiterhin unabhängig von Stepper und Footer.
 
-Jede `StepperTrigger`-Karte hat eigene IDs und ist mit dem jeweils sichtbaren
-Tabpanel verbunden. Nur bereits erreichte Schritte sind rückwärts anwählbar;
-zukünftige Schritte bleiben bis zur Validierung deaktiviert. Mehrteilige
-Erfassungs-Flows zeigen ihre Fortschritte nichtinteraktiv an. Titel mit vielen
-Wörtern umbrechen in der vertikalen Schrittleiste statt abgeschnitten zu werden.
+Jeder `StepperTrigger` hat eine eindeutige ID und ist mit dem eigenen
+`StepperContent`-Tabpanel verbunden. Nur erreichte Schritte sind rückwärts
+anwählbar; zukünftige bleiben bis zur Validierung deaktiviert. Mehrteilige
+Erfassungs-Flows zeigen ihren Fortschritt nichtinteraktiv an. Längere Titel
+brechen innerhalb der horizontalen Schrittzeile um.
