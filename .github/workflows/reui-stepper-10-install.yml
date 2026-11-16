@@ -21,10 +21,14 @@ jobs:
         run: pnpm dlx shadcn@latest add @reui/c-stepper-10 --yes
       - name: Confirm installed sample
         run: |
-          test -f resources/js/components/examples/c-stepper-10.tsx
-          grep -q StepperContent resources/js/components/examples/c-stepper-10.tsx
+          test -f components/examples/c-stepper-10.tsx
+          grep -q StepperContent components/examples/c-stepper-10.tsx
+          mkdir -p resources/js/components/examples
+          cp components/examples/c-stepper-10.tsx resources/js/components/examples/c-stepper-10.tsx
       - uses: actions/upload-artifact@v4
         with:
           name: installed-reui-c-stepper-10
-          path: resources/js/components/examples/c-stepper-10.tsx
+          path: |
+            components/examples/c-stepper-10.tsx
+            components/reui/stepper.tsx
           retention-days: 2
