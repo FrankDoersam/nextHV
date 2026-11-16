@@ -47,7 +47,10 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     await page
         .getByRole("button", { name: "Objekt anlegen", exact: true })
         .click();
-    const dialog = page.getByRole("dialog");
+    const dialog = page.getByRole("dialog", { name: "Objekt anlegen" });
+    await expect(dialog).toHaveAttribute("data-slot", "sheet-content");
+    await expect(dialog).toHaveAttribute("data-wizard", "true");
+    await expect(page.locator('[data-slot="dialog-content"]')).toHaveCount(0);
     await dialog.getByRole("button", { name: "Weiter", exact: true }).click();
     await expect(
         dialog.getByRole("textbox", { name: "Nummer", exact: true }),

@@ -56,6 +56,22 @@ describe("portable panel links", () => {
             "q=Linden&panel=units/new&parent=properties/16&bind=property_id&reduced=1",
         );
     });
+    it("normalizes older wizard dialog URLs to the same right-side sheet", () => {
+        const old = "panel=properties/new&layout=dialog&wizard=1";
+        const [wizard] = readPanels(old);
+        expect(wizard).toEqual({
+            key: "p1",
+            resource: "properties",
+            mode: "create",
+            presentation: "sheet",
+            wizard: true,
+        });
+        expect(panelSearch(old, [wizard])).toBe("panel=properties/new&wizard=1");
+        const legacy = new URLSearchParams({
+            panels: JSON.stringify([{ ...wizard, presentation: "dialog" }]),
+        }).toString();
+        expect(readPanels(legacy)).toEqual([wizard]);
+    });
     it.each([
         "panel=units/0/edit",
         "panel=units/new&parent=properties/16",

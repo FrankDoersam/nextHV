@@ -150,7 +150,10 @@ describe("CRUD interactions", () => {
         );
         wrap(<OpenForm wizard />);
         await user.click(screen.getByRole("button", { name: "Öffnen" }));
-        expect(await screen.findByRole("dialog", { name: "Objekt anlegen" })).toHaveAttribute("data-wizard", "true");
+        const sheet = await screen.findByRole("dialog", { name: "Objekt anlegen" });
+        expect(sheet).toHaveAttribute("data-wizard", "true");
+        expect(sheet).toHaveAttribute("data-slot", "sheet-content");
+        expect(document.querySelector('[data-slot="dialog-content"]')).toBeNull();
         expect(screen.getByRole("navigation", { name: "Erfassungsschritte" })).toHaveTextContent("Schritt 1 von 2");
         await user.click(
             await screen.findByRole(
