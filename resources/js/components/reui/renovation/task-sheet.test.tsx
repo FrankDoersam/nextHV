@@ -14,7 +14,7 @@ describe("renovation timeline entry edit Sheet", () => {
         const dialog=screen.getByRole("dialog",{name:"Tapeten entfernen"});
         expect(dialog.querySelector('[data-slot="reui-sheet-18-header"]')).toBeTruthy();
         expect(dialog.querySelector('[data-slot="reui-sheet-18-footer"]')).toBeTruthy();
-        expect(screen.getByRole("combobox",{name:"Gewerk",exact:true})).toBeTruthy();
+        expect(screen.getByRole("combobox",{name:/^Gewerk$/})).toBeTruthy();
         expect(screen.getByRole("tab",{name:"Vorgang"})).toBeTruthy();
         fireEvent.click(screen.getByRole("tab",{name:/Abhängigkeiten/}));
         expect(screen.getByRole("checkbox",{name:"Baustelle einrichten & schützen als Vorgänger"})).toBeTruthy();
