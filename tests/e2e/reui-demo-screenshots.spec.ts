@@ -4,6 +4,7 @@ import { mkdir } from "node:fs/promises";
 /** Two browser screenshots from the isolated seeded nextHV app. */
 test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ page }) => {
     test.setTimeout(180_000);
+    await page.setViewportSize({ width: 1600, height: 1200 });
     const runtimeErrors: string[] = [];
     page.on("pageerror", (error) => runtimeErrors.push(error.message));
 
