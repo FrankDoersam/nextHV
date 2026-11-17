@@ -20,14 +20,14 @@ describe("ReUI horizontal Stepper reference", () => {
         expect(screen.getByText("northstar-contacts.csv")).toBeTruthy();
         expect(screen.getByRole("combobox", { name: "Import into" })).toBeTruthy();
         fireEvent.click(screen.getByRole("button", { name: /Next Step/ }));
-        expect(screen.getByRole("heading", { name: "Map Columns" })).toBeTruthy();
+        expect(screen.getByRole("heading", { name: "Map Columns", level: 2 })).toBeTruthy();
         expect(screen.getByText("Required field not mapped")).toBeTruthy();
         expect(screen.getByText(/Owner needs a target field before validation/)).toBeTruthy();
         expect(screen.getByRole("table", { name: "Column mapping" }).querySelectorAll("tbody tr")).toHaveLength(8);
         // Unlike a restrictive validation gate, the source HTML shows the
         // following Preview even with Owner still unmapped.
         fireEvent.click(screen.getByRole("button", { name: /Next Step/ }));
-        expect(screen.getByRole("heading", { name: "Preview Rows" })).toBeTruthy();
+        expect(screen.getByRole("heading", { name: "Preview Rows", level: 2 })).toBeTruthy();
         expect(screen.getByRole("table", { name: "Row preview" }).querySelectorAll("tbody tr")).toHaveLength(5);
         expect(screen.getByText("1.212 valid")).toBeTruthy();
         expect(screen.getByText("24 warnings")).toBeTruthy();
