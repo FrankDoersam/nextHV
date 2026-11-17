@@ -17,9 +17,9 @@ describe("ReUI import wizard demo", () => {
         expect(screen.getByRole("tablist")).toHaveAttribute("data-variant", "line");
         expect(screen.getByRole("switch", { name: "First row is a header" })).toBeTruthy();
         const field = screen.getByRole("switch", { name: "First row is a header" });
-        expect(field).toHaveAttribute("id", "reui-header-switch");
+        expect(field).toHaveAttribute("aria-labelledby", "reui-header-label");
         expect(screen.getByText("First row is a header", { selector: "label" })).toHaveAttribute("for", "reui-header-switch");
-        expect(screen.getByRole("tab", { name: /Map Columns/ })).toBeDisabled();
+        expect(screen.getByRole("tab", { name: /Map Columns/ })).toHaveAttribute("aria-disabled", "true");
     });
 
     it("advances to column mapping and prevents continuing without a CSV source", () => {

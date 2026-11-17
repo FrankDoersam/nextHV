@@ -27,8 +27,8 @@ describe("Nova line wizard tabs", () => {
         expect(screen.getByRole("tablist")).toHaveAttribute("data-variant", "line");
         expect(screen.getByRole("tab", { name: /Inbox.*12/ })).toHaveAttribute("aria-selected", "true");
         expect(screen.getByText("12", { selector: '[data-slot="badge"]' })).toHaveAttribute("data-slot", "badge");
-        expect(screen.getByRole("tab", { name: /Drafts.*3/ })).toBeDisabled();
-        expect(screen.getByRole("tab", { name: "Sent" })).toBeDisabled();
+        expect(screen.getByRole("tab", { name: /Drafts.*3/ })).toHaveAttribute("aria-disabled", "true");
+        expect(screen.getByRole("tab", { name: "Sent" })).toHaveAttribute("aria-disabled", "true");
         expect(screen.getByText("First page")).toBeVisible();
     });
 });
