@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Flag } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Flag } from "lucide-react";
 import {
     Frame,
     FrameDescription,
@@ -19,7 +19,7 @@ import {
     StepperTitle,
     StepperTrigger,
 } from "@/components/reui/stepper";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
 import { ImportUploadStep } from "./upload-step";
 import {
@@ -28,6 +28,7 @@ import {
     mappedField,
     PreviewStep,
     SummaryStep,
+    type DuplicateMode,
 } from "./steps";
 import {
     exampleFiles,
@@ -42,15 +43,14 @@ import {
 const steps = ["Upload", "Map Columns", "Preview", "Duplicates", "Summary"];
 const footerHints = [
     "Pick files and target object.",
-    "Match the source columns to target fields.",
-    "Check a small local data preview.",
-    "Review possible duplicates in the preview.",
-    "Finish the local demonstration.",
+    "Match 8 columns to CRM fields.",
+    "Validate the first rows.",
+    "Choose how matches merge.",
+    "Run the import.",
 ];
 
-/** Self-contained ReUI / Base UI reconstruction of the provided HTML snapshot.
- * Only the Upload screen was present in the source; following panels are demo
- * implementations based on the five visible step names.
+/** ReUI Nova visual reconstruction from all five provided HTML snapshots.
+ * Local-only demo: no real CRM import or database mutation.
  */
 export function ImportWizardDemo() {
     const [step, setStep] = useState(1);
@@ -59,12 +59,14 @@ export function ImportWizardDemo() {
     const [target, setTarget] = useState<ImportTarget>("contacts");
     const [firstRowIsHeader, setFirstRowIsHeader] = useState(true);
     const [mapping, setMapping] = useState<Record<string, string>>({});
-    const [skipDuplicates, setSkipDuplicates] = useState(true);
+    const [duplicateMode, setDuplicateMode] = useState<DuplicateMode>("skip");
+    const [uniqueKey, setUniqueKey] = useState("email");
     const [reading, setReading] = useState(false);
     const [completed, setCompleted] = useState(false);
     const [message, setMessage] = useState<string>();
 
     const source = files.find((file) => file.kind === "csv" && file.data);
+    const isExample = !!source?.example;
     const view = useMemo(
         () => viewForFile(source, firstRowIsHeader),
         [source, firstRowIsHeader],
@@ -81,6 +83,8 @@ export function ImportWizardDemo() {
         setStep(1);
         setUnlockedStep(1);
         setMapping({});
+        setDuplicateMode("skip");
+        setUniqueKey("email");
         setCompleted(false);
         setMessage(undefined);
     };
@@ -116,8 +120,10 @@ export function ImportWizardDemo() {
             setMessage("Select a CSV file to preview. Excel files need a separate import parser.");
             return;
         }
-        if (step === 2 && !mappingsCount) {
-            setMessage("Map at least one column before continuing.");
+        if (step === 2 && (!mappingsCount || (target === "contacts" &&
+            ["fullName", "email", "owner"].some((required) =>
+                !view?.columns.some((column) => mappedField(column, mapping, target) === required))))) {
+            setMessage("Map the required Full name, Email and Owner fields before continuing.");
             return;
         }
         if (step === 5) {
@@ -168,10 +174,7 @@ export function ImportWizardDemo() {
                                     )}
                                 </FrameDescription>
                             </div>
-                            <Badge
-                                variant="secondary"
-                                className="shrink-0 border border-primary/15 bg-primary/10"
-                            >
+                            <Badge variant="info-light" className="shrink-0">
                                 {targetOptions.find((option) => option.value === target)?.label}
                             </Badge>
                         </div>
@@ -189,8 +192,8 @@ export function ImportWizardDemo() {
                                         className="relative min-w-0"
                                     >
                                         <StepperTrigger className="min-w-0 justify-start gap-2 disabled:opacity-100">
-                                            <StepperIndicator className="size-6 border border-border bg-background text-foreground data-[state=active]:border-primary/20 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=completed]:border-primary data-[state=completed]:bg-primary data-[state=completed]:text-primary-foreground">
-                                                {number}
+                                            <StepperIndicator className="relative isolate size-6 overflow-visible rounded-full border border-background bg-accent text-foreground data-[state=inactive]:border-border data-[state=active]:border-0 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:before:absolute data-[state=active]:before:inset-0 data-[state=active]:before:rounded-full data-[state=active]:before:border data-[state=active]:before:border-dashed data-[state=active]:before:border-primary data-[state=active]:before:animate-[spin_8s_linear_infinite] motion-reduce:data-[state=active]:before:animate-none data-[state=completed]:border-primary data-[state=completed]:bg-primary data-[state=completed]:text-primary-foreground">
+                                                {number < step ? <Check className="size-3.5" aria-hidden="true" /> : number}
                                             </StepperIndicator>
                                             <StepperTitle className="hidden truncate text-sm capitalize sm:block">
                                                 {label}
@@ -235,28 +238,32 @@ export function ImportWizardDemo() {
                                             view={view}
                                             target={target}
                                             mapping={mapping}
+                                            isExample={isExample}
                                             onMap={(column, field) =>
                                                 setMapping((current) => ({ ...current, [column]: field }))
                                             }
                                         />
                                     </StepperContent>
                                     <StepperContent value={3}>
-                                        <PreviewStep view={view} mapping={mapping} target={target} />
+                                        <PreviewStep view={view} mapping={mapping} target={target} isExample={isExample} uniqueKey={uniqueKey} onUniqueKey={setUniqueKey} />
                                     </StepperContent>
                                     <StepperContent value={4}>
                                         <DuplicatesStep
                                             count={duplicates}
-                                            skip={skipDuplicates}
-                                            onSkipChange={setSkipDuplicates}
+                                            mode={duplicateMode}
+                                            onModeChange={setDuplicateMode}
+                                            isExample={isExample}
                                         />
                                     </StepperContent>
                                     <StepperContent value={5}>
                                         <SummaryStep
                                             view={view}
                                             target={target}
-                                            mappedCount={mappingsCount}
+                                            files={fileSummary}
+                                            duplicateMode={duplicateMode}
+                                            uniqueKey={uniqueKey}
                                             duplicates={duplicates}
-                                            skipDuplicates={skipDuplicates}
+                                            isExample={isExample}
                                             completed={completed}
                                         />
                                     </StepperContent>
@@ -283,7 +290,7 @@ export function ImportWizardDemo() {
                                 </Button>
                             )}
                             <Button type="submit" disabled={reading || completed}>
-                                {step === 5 ? (completed ? "Demo Finished" : "Finish Demo") : "Next Step"}
+                                {step === 5 ? (completed ? "Done" : "Import") : "Next Step"}
                                 {step < 5 && <ArrowRight data-icon="inline-end" aria-hidden="true" />}
                             </Button>
                         </div>

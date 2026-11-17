@@ -127,7 +127,7 @@ describe("sidebar navigation model", () => {
     it("hides forbidden resources and empty groups in all navigation surfaces", () => {
         const tree = resolveNavigation(defaultNavigation([properties]), [properties], undefined,
             () => ({ allowed: false, reason: "Kein Zugriff" }));
-        expect(tree.map((item) => item.id)).toEqual(["home", "charts"]);
+        expect(tree.map((item) => item.id)).toEqual(["home", "charts", "import-wizard-demo", "reui-grid-demo"]);
     });
 
     it("does not expose a resource when list access is denied even if another action is allowed", () => {
@@ -156,7 +156,7 @@ describe("sidebar navigation model", () => {
         const hidden = defaultNavigation([properties], {
             Stammdaten: { visible: () => false },
         });
-        expect(resolveNavigation(hidden, [properties]).map((node) => node.id)).toEqual(["home", "charts"]);
+        expect(resolveNavigation(hidden, [properties]).map((node) => node.id)).toEqual(["home", "charts", "import-wizard-demo", "reui-grid-demo"]);
     });
 
     it("does not turn a stale view link into unrestricted navigation", () => {

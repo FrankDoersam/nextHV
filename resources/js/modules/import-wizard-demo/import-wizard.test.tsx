@@ -1,6 +1,10 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import { ImportWizardDemo } from "./import-wizard";
+
+afterEach(cleanup);
+
+afterEach(cleanup);
 
 describe("ReUI import wizard demo", () => {
     it("reconstructs the uploaded HTML first step using project primitives", () => {
@@ -9,6 +13,7 @@ describe("ReUI import wizard demo", () => {
         expect(screen.getByText("northstar-contacts.csv")).toBeTruthy();
         expect(screen.getByRole("heading", { name: "Upload Files" })).toBeTruthy();
         expect(screen.getByRole("button", { name: /Drop Files/ })).toBeTruthy();
+        expect(screen.getByText("1,248 rows")).toBeTruthy();
         expect(screen.getByRole("switch", { name: "First row is a header" })).toBeTruthy();
     });
 
@@ -16,6 +21,8 @@ describe("ReUI import wizard demo", () => {
         render(<ImportWizardDemo />);
         fireEvent.click(screen.getByRole("button", { name: /Next Step/i }));
         expect(screen.getByRole("heading", { name: "Map Columns", level: 2 })).toBeTruthy();
+        expect(screen.getByText("Required field not mapped")).toBeTruthy();
+        expect(screen.getByRole("table", { name: "Column mapping" })).toBeTruthy();
         fireEvent.click(screen.getByRole("button", { name: "Back" }));
         fireEvent.click(screen.getByRole("button", { name: "Remove northstar-contacts.csv" }));
         fireEvent.click(screen.getByRole("button", { name: /Next Step/i }));
