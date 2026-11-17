@@ -67,7 +67,6 @@ export function ReuiOriginalImportWizard() {
 
     const source = files.find((file) => file.kind === "csv" && file.data);
     const isExample = !!source?.example;
-    const isExample = !!source?.example;
     const view = useMemo(
         () => viewForFile(source, firstRowIsHeader),
         [source, firstRowIsHeader],
