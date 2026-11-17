@@ -108,5 +108,37 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
         animations: "disabled",
     });
 
+    await wizard.getByRole("button", { name: /Next Step/ }).click();
+    await expect(wizard.getByRole("heading", { name: "Duplicate Handling", level: 2 })).toBeVisible();
+    await expect(wizard.getByText("36 rows match an existing contact by email.")).toBeVisible();
+    const duplicates = wizard.getByRole("radiogroup", { name: "Duplicate handling" });
+    await expect(duplicates.locator('[data-slot="item"]')).toHaveCount(3);
+    await expect(duplicates.getByRole("radio", { name: "Skip existing" })).toHaveAttribute("aria-checked", "true");
+    await expect(duplicates.getByText("Safest")).toBeVisible();
+    await expect(duplicates.getByText("Recommended")).toBeVisible();
+    await expect(duplicates.getByText("Risky")).toBeVisible();
+    await wizard.screenshot({
+        path: "screenshots/csv-import-tab-4-duplicates.png",
+        animations: "disabled",
+    });
+
+    // The choice is interactive; restore the exact checked option in the reference HTML.
+    await duplicates.getByRole("radio", { name: "Update existing" }).click();
+    await expect(duplicates.getByRole("radio", { name: "Update existing" })).toHaveAttribute("aria-checked", "true");
+    await duplicates.getByRole("radio", { name: "Skip existing" }).click();
+    await expect(duplicates.getByRole("radio", { name: "Skip existing" })).toHaveAttribute("aria-checked", "true");
+
+    await wizard.getByRole("button", { name: /Next Step/ }).click();
+    await expect(wizard.getByRole("heading", { name: "Run Import", level: 2 })).toBeVisible();
+    await expect(wizard.getByText("Ready to import")).toBeVisible();
+    await expect(wizard.getByText("1.176 contacts import into the CRM, 36 skipped, 12 errors held back.")).toBeVisible();
+    const importPlan = wizard.getByRole("heading", { name: "Import plan" }).locator("..");
+    await expect(importPlan.locator("dl > div")).toHaveCount(4);
+    await expect(wizard.getByRole("button", { name: "Import", exact: true })).toBeVisible();
+    await wizard.screenshot({
+        path: "screenshots/csv-import-tab-5-summary.png",
+        animations: "disabled",
+    });
+
     expect(runtimeErrors, "No uncaught browser runtime errors").toEqual([]);
 });

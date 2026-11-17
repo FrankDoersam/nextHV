@@ -1,7 +1,7 @@
 import { CircleAlert, CircleCheck } from "lucide-react";
 import { Badge } from "@/components/reui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Item, ItemContent, ItemTitle } from "@/components/ui/item";
+import { Item, ItemContent, ItemGroup, ItemTitle } from "@/components/ui/item";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -84,6 +84,7 @@ export function PreviewStep({
         </div>
         <FieldGroup className="gap-6">
         <Field className="gap-3">
+            <div className="overflow-x-auto rounded-md border">
             <Table className="min-w-[640px] table-auto" aria-label="Row preview">
                 <TableHeader><TableRow>
                     <TableHead className="w-[26%]">Full name</TableHead><TableHead className="w-[30%]">Email</TableHead>
@@ -98,6 +99,7 @@ export function PreviewStep({
                     </Badge></TableCell>
                 </TableRow>)}</TableBody>
             </Table>
+            </div>
         </Field>
         <div className="grid gap-2 sm:grid-cols-3">{[
             [totals[0], "valid", "bg-emerald-500"], [totals[1], "warnings", "bg-amber-500"],
@@ -142,17 +144,41 @@ export function DuplicatesStep({
                 {matches} rows match {isExample ? "an existing contact by email." : "another row in the local preview."}
             </p>
         </div>
-        <RadioGroup value={mode} onValueChange={(value) => onModeChange(value as DuplicateMode)} aria-label="Duplicate handling">
-            {duplicateChoices.map((choice) => <label key={choice.value} className={
-                "flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50 " +
-                (mode === choice.value ? "border-primary bg-primary/5" : "")
-            }>
-                <RadioGroupItem value={choice.value} aria-label={choice.title} className="mt-0.5" />
-                <span className="flex min-w-0 flex-1 flex-col gap-1">
-                    <span className="flex flex-wrap items-center gap-2"><span className="font-medium">{choice.title}</span><Badge variant={choice.variant}>{choice.badge}</Badge></span>
-                    <span className="text-sm font-normal text-muted-foreground">{descriptions[choice.value]}</span>
-                </span>
-            </label>)}
+        <RadioGroup value={mode} onValueChange={(value) => onModeChange(value as DuplicateMode)} className="w-full" aria-label="Duplicate handling">
+            <ItemGroup role="list">
+                {duplicateChoices.map((choice) => (
+                    <Item
+                        key={choice.value}
+                        role="listitem"
+                        size="sm"
+                        className={"gap-3 transition-colors hover:bg-muted/50 " +
+                            (mode === choice.value ? "border-primary bg-primary/5" : "")}
+                    >
+                        <Field orientation="horizontal" role="group" className="w-full flex-wrap items-center gap-3 sm:flex-nowrap">
+                            <RadioGroupItem
+                                id={"reui-duplicate-" + choice.value}
+                                value={choice.value}
+                                aria-label={choice.title}
+                                className="mt-px"
+                            />
+                            <FieldLabel
+                                htmlFor={"reui-duplicate-" + choice.value}
+                                className="flex min-w-0 flex-1 cursor-pointer items-start"
+                            >
+                                <span className="flex min-w-0 flex-col gap-0.5">
+                                    <span className="flex min-w-0 flex-wrap items-center gap-2">
+                                        <span className="font-medium">{choice.title}</span>
+                                        <Badge variant={choice.variant}>{choice.badge}</Badge>
+                                    </span>
+                                    <span className="text-sm font-normal text-muted-foreground">
+                                        {descriptions[choice.value]}
+                                    </span>
+                                </span>
+                            </FieldLabel>
+                        </Field>
+                    </Item>
+                ))}
+            </ItemGroup>
         </RadioGroup>
     </section>;
 }
@@ -167,13 +193,15 @@ export function SummaryStep({
     const duplicateCount = isExample ? 36 : duplicates;
     const validRows = isExample ? 1212 : view.totalRows - bad;
     const importing = Math.max(0, validRows - (duplicateMode === "skip" ? duplicateCount : 0));
-    const detail = importing.toLocaleString("en-US") + " contacts planned, " +
+    const detail = importing.toLocaleString(isExample ? "de-DE" : "en-US") +
+        (isExample ? " contacts import into the CRM, " : " contacts planned, ") +
         (duplicateMode === "skip" ? duplicateCount : 0) + " skipped, " + bad + " errors held back.";
     return <section className="flex flex-col gap-6" aria-labelledby="reui-summary-title">
         <div className="flex flex-col gap-1">
             <h2 id="reui-summary-title" className="text-base font-semibold">Run Import</h2>
             <p className="text-sm text-muted-foreground">Review the plan before it writes to the CRM.</p>
         </div>
+        <FieldGroup className="gap-6">
         <Alert className="border-success/30 bg-success/4">
             <CircleCheck className="text-success" aria-hidden="true" />
             <AlertTitle>{completed ? "Demo completed" : "Ready to import"}</AlertTitle>
@@ -188,9 +216,10 @@ export function SummaryStep({
                 ["Duplicates", duplicateChoices.find((item) => item.value === duplicateMode)?.title ?? duplicateMode],
             ].map(([label, value]) => <div key={label} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 text-sm">
                 <dt className="text-muted-foreground">{label}</dt>
-                <dd className="min-w-0 break-words text-right font-medium">{value}</dd>
+                <dd className="min-w-0 break-words text-right font-medium text-foreground">{value}</dd>
             </div>)}</dl>
         </section>
         {!isExample && <p className="text-xs text-muted-foreground">Local sample only; no CRM database has been checked.</p>}
+        </FieldGroup>
     </section>;
 }
