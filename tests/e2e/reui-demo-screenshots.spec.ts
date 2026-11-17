@@ -60,9 +60,13 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
     await expect(addSheet).not.toBeVisible();
 
     // Edit an existing timeline entry using the shared ReUI sheet-18 shell.
-    await page.getByText("Tapeten entfernen", { exact: true }).first().dblclick();
-    const editSheet = page.getByRole("dialog", { name: "Tapeten entfernen" });
+    await page.getByRole("button", { name: /^Tapeten entfernen, März/ }).click();
+    const taskFinanceSheet = page.getByRole("dialog", { name: "Tapeten entfernen" });
+    await expect(taskFinanceSheet.getByRole("tab", { name: "Position" })).toBeVisible();
+    await taskFinanceSheet.getByRole("button", { name: "Vorgang bearbeiten" }).click();
+    const editSheet = page.locator('[data-slot="reui-sheet-18"]');
     await expect(editSheet).toBeVisible();
+    await expect(editSheet.getByRole("heading", { name: "Tapeten entfernen" })).toBeVisible();
     await expect(editSheet.locator('[data-slot="reui-sheet-18-header"]')).toBeVisible();
     await expect(editSheet.getByRole("tab", { name: "Vorgang" })).toBeVisible();
     await expect(editSheet.getByRole("tab", { name: /Abhängigkeiten/ })).toBeVisible();
