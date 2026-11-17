@@ -130,7 +130,7 @@ export function ImportUploadStep(props: UploadProps) {
                     if (value) props.onTargetChange(value as ImportTarget);
                 }}>
                     <SelectTrigger id="reui-import-target" className="w-full">
-                        <SelectValue />
+                        <SelectValue>{targetOptions.find((option)=>option.value===props.target)?.label ?? props.target}</SelectValue>
                     </SelectTrigger>
                     <SelectContent
                         alignItemWithTrigger={false}

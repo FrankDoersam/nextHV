@@ -37,6 +37,13 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
         fullPage: false,
         animations: "disabled",
     });
+    await financeSheet.getByRole("tab", {name:/Rechnungen/}).click();
+    await expect(financeSheet.getByText("Eingangsrechnungen", {exact:true})).toBeVisible();
+    await page.screenshot({
+        path: "screenshots/kernsanierung-rechnungen-sheet.png",
+        fullPage: false,
+        animations: "disabled",
+    });
 
     await page.goto("/csv-import-nova");
     await expect(page.getByRole("heading", { name: "Upload Files" })).toBeVisible();
@@ -46,6 +53,7 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
     await targetSelect.scrollIntoViewIfNeeded();
     await targetSelect.click();
     await expect(page.getByRole("option", { name: "Companies" })).toBeVisible();
+    await expect(targetSelect).toContainText("Contacts");
     const triggerBox = await targetSelect.boundingBox();
     const dropdownBox = await page.locator('[data-slot="select-content"]').boundingBox();
     expect(triggerBox).not.toBeNull();

@@ -121,7 +121,7 @@ export function FinanceSheet({
     };
     return <>
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="right" className="h-full w-full gap-0 overflow-hidden p-0 sm:max-w-[840px]">
+            <SheetContent side="right" style={{width:"min(880px, 100vw)",maxWidth:"880px"}} className="h-full gap-0 overflow-hidden p-0 data-[side=right]:w-full data-[side=right]:sm:max-w-[880px]">
                 <SheetHeader className="shrink-0 border-b px-6 py-5">
                     <div className="flex flex-wrap items-center justify-between gap-3 pe-8">
                         <div>
@@ -137,7 +137,7 @@ export function FinanceSheet({
                     <div className="space-y-1.5">
                         <label className="text-xs font-medium text-muted-foreground" htmlFor="finance-position">Position</label>
                         <Select value={scope} onValueChange={(value)=>{if(value){setScope(value);setTab(value==="all"?"budget":"position");setAddMode(null);}}}>
-                            <SelectTrigger id="finance-position" className="w-full"><SelectValue /></SelectTrigger>
+                            <SelectTrigger id="finance-position" className="w-full"><SelectValue>{scope==="all"?"Gesamtes Projekt":current?.title ?? scope}</SelectValue></SelectTrigger>
                             <SelectContent alignItemWithTrigger={false} align="start" className="max-h-72">
                                 <SelectItem value="all">Gesamtes Projekt</SelectItem>
                                 {tasks.map(task=><SelectItem value={task.id} key={task.id}>{task.title}</SelectItem>)}
@@ -238,7 +238,7 @@ export function FinanceSheet({
                                 <div className="sm:col-span-2 text-sm font-semibold">Bestellung erfassen</div>
                                 <FormRow label="Position">
                                     <Select value={orderDraft.taskId} onValueChange={v=>v&&setOrderDraft({...orderDraft,taskId:v})}>
-                                        <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="w-full"><SelectValue>{tasks.find(task=>task.id===orderDraft.taskId)?.title ?? orderDraft.taskId}</SelectValue></SelectTrigger>
                                         <SelectContent alignItemWithTrigger={false}>
                                             {tasks.map(t=><SelectItem value={t.id} key={t.id}>{t.title}</SelectItem>)}
                                         </SelectContent>
@@ -277,7 +277,7 @@ export function FinanceSheet({
                             {addMode==="invoice" && <form onSubmit={saveInvoice} className="grid gap-3 rounded-xl border bg-muted/20 p-4 sm:grid-cols-2">
                                 <div className="sm:col-span-2 text-sm font-semibold">Eingangsrechnung erfassen</div>
                                 <FormRow label="Position"><Select value={invoiceDraft.taskId} onValueChange={v=>v&&setInvoiceDraft({...invoiceDraft,taskId:v})}>
-                                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="w-full"><SelectValue>{tasks.find(task=>task.id===invoiceDraft.taskId)?.title ?? invoiceDraft.taskId}</SelectValue></SelectTrigger>
                                     <SelectContent alignItemWithTrigger={false}>{tasks.map(t=><SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>)}</SelectContent>
                                 </Select></FormRow>
                                 <FormRow label="Lieferant"><Input required value={invoiceDraft.supplier} onChange={e=>setInvoiceDraft({...invoiceDraft,supplier:e.target.value})}/></FormRow>
