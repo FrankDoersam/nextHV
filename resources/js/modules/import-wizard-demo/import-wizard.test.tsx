@@ -1,6 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import { ImportWizardDemo } from "./import-wizard";
+
+afterEach(cleanup);
 
 describe("ReUI import wizard demo", () => {
     it("reconstructs the uploaded HTML first step using project primitives", () => {
