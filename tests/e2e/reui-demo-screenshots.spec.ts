@@ -44,7 +44,7 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
     const addSheet = page.getByRole("dialog", { name: "Vorgang anlegen" });
     await expect(addSheet).toBeVisible();
     await expect(addSheet.getByLabel("Bezeichnung")).toBeVisible();
-    await expect(addSheet.getByLabel("Gewerk")).toBeVisible();
+    await expect(addSheet.getByRole("combobox", { name: "Gewerk", exact: true })).toBeVisible();
     await expect(addSheet.getByLabel("Frühester Start")).toBeVisible();
     await expect(addSheet.getByText("Vorgänger / Abhängigkeiten")).toBeVisible();
     await page.screenshot({
