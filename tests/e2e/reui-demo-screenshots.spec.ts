@@ -57,6 +57,34 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
     await addSheet.getByRole("button", { name: "Abbrechen" }).click();
     await expect(addSheet).not.toBeVisible();
 
+    // Edit an existing timeline entry using the shared ReUI sheet-18 shell.
+    await page.getByText("Tapeten entfernen", { exact: true }).first().dblclick();
+    const editSheet = page.getByRole("dialog", { name: "Tapeten entfernen" });
+    await expect(editSheet).toBeVisible();
+    await expect(editSheet.locator('[data-slot="reui-sheet-18-header"]')).toBeVisible();
+    await expect(editSheet.getByRole("tab", { name: "Vorgang" })).toBeVisible();
+    await expect(editSheet.getByRole("tab", { name: /Abhängigkeiten/ })).toBeVisible();
+    await expect(editSheet.locator('[data-slot="reui-sheet-18-scroll"]')).toBeVisible();
+    await expect(editSheet.locator('[data-slot="reui-sheet-18-footer"]')).toBeVisible();
+    await expect(editSheet.getByRole("button", { name: "Löschen" })).toBeVisible();
+    await expect(editSheet.getByRole("button", { name: "Abbrechen" })).toBeVisible();
+    await expect(editSheet.getByRole("button", { name: "Speichern" })).toBeVisible();
+    await page.screenshot({
+        path: "screenshots/kernsanierung-reui-sheet18-edit-timeline-entry.png",
+        fullPage: false,
+        animations: "disabled",
+    });
+    await editSheet.getByRole("tab", { name: /Abhängigkeiten/ }).click();
+    await expect(editSheet.getByText("Baustelle einrichten & schützen")).toBeVisible();
+    await expect(editSheet.getByRole("button", { name: "Speichern" })).toBeVisible();
+    await page.screenshot({
+        path: "screenshots/kernsanierung-reui-sheet18-dependencies-tab.png",
+        fullPage: false,
+        animations: "disabled",
+    });
+    await editSheet.getByRole("button", { name: "Abbrechen" }).click();
+    await expect(editSheet).not.toBeVisible();
+
     await page.getByRole("button", { name: "Budget, Bestellungen und Eingangsrechnungen öffnen" }).click();
     const financeSheet = page.getByRole("dialog", { name: "Projektfinanzen" });
     await expect(financeSheet).toBeVisible();

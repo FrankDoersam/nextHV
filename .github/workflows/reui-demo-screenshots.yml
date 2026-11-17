@@ -47,13 +47,15 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: reui-nova-renovation-gantt-1-and-crm
+          name: reui-nova-sheet18-renovation
           path: |
             screenshots/kernsanierung-2027.png
             screenshots/kernsanierung-finanz-sheet.png
             screenshots/kernsanierung-rechnungen-sheet.png
             screenshots/kernsanierung-gantt-1-settings.png
             screenshots/kernsanierung-gantt-1-add-task-sheet.png
+            screenshots/kernsanierung-reui-sheet18-edit-timeline-entry.png
+            screenshots/kernsanierung-reui-sheet18-dependencies-tab.png
             screenshots/csv-import-nova-select-geoeffnet.png
             screenshots/csv-import-tab-1-upload.png
             screenshots/csv-import-tab-2-map-columns.png
@@ -79,6 +81,8 @@ jobs:
           echo "- kernsanierung-rechnungen-sheet.png – offene Eingangsrechnungen" >> "$GITHUB_STEP_SUMMARY"
           echo "- kernsanierung-gantt-1-settings.png – ReUI c-gantt-1 Einstellungen" >> "$GITHUB_STEP_SUMMARY"
           echo "- kernsanierung-gantt-1-add-task-sheet.png – ReUI Add Task Sheet" >> "$GITHUB_STEP_SUMMARY"
+          echo "- kernsanierung-reui-sheet18-edit-timeline-entry.png – ReUI Sheet 18: Timeline-Eintrag bearbeiten" >> "$GITHUB_STEP_SUMMARY"
+          echo "- kernsanierung-reui-sheet18-dependencies-tab.png – ReUI Sheet 18: Abhängigkeiten" >> "$GITHUB_STEP_SUMMARY"
           echo "- csv-import-nova-select-geoeffnet.png – Schritt 1, unteres Select geöffnet" >> "$GITHUB_STEP_SUMMARY"
           echo "- csv-import-tab-1-upload.png – Upload" >> "$GITHUB_STEP_SUMMARY"
           echo "- csv-import-tab-2-map-columns.png – Map Columns + Owner warning" >> "$GITHUB_STEP_SUMMARY"
