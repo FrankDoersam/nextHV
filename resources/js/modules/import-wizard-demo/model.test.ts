@@ -27,8 +27,8 @@ describe("ReUI import wizard demo model", () => {
     it("uses the supplied example only as a local preview", () => {
         const view = viewForFile(exampleFiles[0], true);
         expect(view?.totalRows).toBe(1248);
-        expect(view?.rows).toHaveLength(4);
-        expect(previewDuplicateCount(view, {})).toBe(1);
+        expect(view?.rows).toHaveLength(5);
+        expect(previewDuplicateCount(view, {})).toBe(0);
         expect(viewForFile(exampleFiles[0], false)?.columns[0]).toBe("Column 1");
     });
 

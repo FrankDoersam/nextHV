@@ -12,6 +12,8 @@ import {
 import { shouldReloadAfterChunkError } from "@/framework/chunk-recovery";
 import "@/../css/app.css";
 const Application = lazy(() => import("@/framework/application"));
+// Global Nova visual variant from the ReUI HTML reference.
+document.documentElement.classList.add("style-nova");
 
 // A browser tab can keep an old entry point after a new Vite build replaces its chunks.
 window.addEventListener("vite:preloadError", (event) => {

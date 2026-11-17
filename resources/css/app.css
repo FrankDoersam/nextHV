@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 @source "../js";
 @custom-variant dark (&:is(.dark *));
+@custom-variant style-nova (&:is(.style-nova *));
 @theme inline {
     --font-sans:
         "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
@@ -44,41 +45,84 @@
     --radius-4xl: calc(var(--radius) + 18px);
 }
 :root {
-    --radius: 1rem;
-    /* REUI Maia: soft radii and spacious surfaces; resource form fields remain compact. */
+    /* ReUI Nova Default / Base UI / Neutral / Inter */
+    --radius: 0.625rem;
     --control-height: 2.25rem;
     --control-height-sm: 2rem;
     --control-height-lg: 2.5rem;
     --control-height-field: 2rem;
-    --background: #f7f7f8;
-    --foreground: #18181b;
-    --card: #fff;
-    --card-foreground: #18181b;
-    --popover: #fff;
-    --popover-foreground: #18181b;
-    --primary: #2563eb;
-    --sidebar: #fafafa;
-    --sidebar-border: #e4e4e7;
-    --primary-foreground: #fff;
-    --secondary: #f4f4f5;
-    --secondary-foreground: #3f3f46;
-    --muted: #f4f4f5;
-    --muted-foreground: #71717a;
-    --accent: #eff6ff;
-    --accent-foreground: #18181b;
-    --destructive: #c43d3d;
-    --destructive-foreground: #fff;
-    --border: #e4e4e7;
-    --input: #d4d4d8;
-    --ring: #60a5fa;
-    --success: #2e69a3;
-    --success-foreground: #fff;
-    --warning: #a66a17;
-    --warning-foreground: #fff;
-    --info: #346fb5;
-    --info-foreground: #fff;
-    --invert: #18181b;
-    --invert-foreground: #fff;
+    --background: oklch(1 0 0);
+    --foreground: oklch(.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(.145 0 0);
+    --primary: oklch(.205 0 0);
+    --primary-foreground: oklch(.985 0 0);
+    --secondary: oklch(.97 0 0);
+    --secondary-foreground: oklch(.205 0 0);
+    --muted: oklch(.97 0 0);
+    --muted-foreground: oklch(.556 0 0);
+    --accent: oklch(.97 0 0);
+    --accent-foreground: oklch(.205 0 0);
+    --destructive: oklch(.577 .245 27.325);
+    --destructive-foreground: oklch(.985 0 0);
+    --border: oklch(.922 0 0);
+    --input: oklch(.922 0 0);
+    --ring: oklch(.708 0 0);
+    --sidebar: oklch(.985 0 0);
+    --sidebar-foreground: oklch(.145 0 0);
+    --sidebar-primary: oklch(.205 0 0);
+    --sidebar-primary-foreground: oklch(.985 0 0);
+    --sidebar-accent: oklch(.97 0 0);
+    --sidebar-accent-foreground: oklch(.205 0 0);
+    --sidebar-border: oklch(.922 0 0);
+    --sidebar-ring: oklch(.708 0 0);
+    --success: oklch(.53 .14 153);
+    --success-foreground: oklch(.31 .10 153);
+    --warning: oklch(.65 .16 72);
+    --warning-foreground: oklch(.43 .12 72);
+    --info: oklch(.56 .16 250);
+    --info-foreground: oklch(.37 .14 250);
+    --invert: oklch(.145 0 0);
+    --invert-foreground: oklch(1 0 0);
+}
+.dark {
+    --background: oklch(.145 0 0);
+    --foreground: oklch(.985 0 0);
+    --card: oklch(.205 0 0);
+    --card-foreground: oklch(.985 0 0);
+    --popover: oklch(.205 0 0);
+    --popover-foreground: oklch(.985 0 0);
+    --primary: oklch(.922 0 0);
+    --primary-foreground: oklch(.205 0 0);
+    --secondary: oklch(.269 0 0);
+    --secondary-foreground: oklch(.985 0 0);
+    --muted: oklch(.269 0 0);
+    --muted-foreground: oklch(.708 0 0);
+    --accent: oklch(.269 0 0);
+    --accent-foreground: oklch(.985 0 0);
+    --destructive: oklch(.704 .191 22.216);
+    --destructive-foreground: oklch(.985 0 0);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(.556 0 0);
+    --sidebar: oklch(.205 0 0);
+    --sidebar-foreground: oklch(.985 0 0);
+    --sidebar-primary: oklch(.922 0 0);
+    --sidebar-primary-foreground: oklch(.205 0 0);
+    --sidebar-accent: oklch(.269 0 0);
+    --sidebar-accent-foreground: oklch(.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(.556 0 0);
+    --success: oklch(.75 .15 153);
+    --success-foreground: oklch(.80 .11 153);
+    --warning: oklch(.78 .14 72);
+    --warning-foreground: oklch(.82 .11 72);
+    --info: oklch(.74 .12 250);
+    --info-foreground: oklch(.82 .09 250);
+    --invert: oklch(.985 0 0);
+    --invert-foreground: oklch(.145 0 0);
 }
 @layer base {
     * {
@@ -97,7 +141,7 @@
         font: inherit;
     }
     ::selection {
-        background: #dbeafe;
+        background: oklch(0.92 0 0);
         color: #18181b;
     }
 }

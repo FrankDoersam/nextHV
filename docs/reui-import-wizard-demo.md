@@ -1,49 +1,40 @@
-# ReUI Import Wizard HTML reconstruction
+# ReUI Nova Default / Import Wizard
 
-The uploaded ReUI preview HTML displays the **first** screen of a five-step CRM
-import wizard. This is a standalone **UI demonstration**, not a replacement for
-the production CSV import in nextHV.
+This branch moves nextHV from base-maia to base-nova, matching the five
+provided ReUI HTML exports for solution-crm-6. Global CSS color tokens use
+the supplied Neutral light/dark theme; controls, cards, menus and dialogs are
+changed to Nova's denser radii. The registered ReUI namespace continues
+to use the project's selected style in components.json.
 
-## Source analysis and component boundaries
+## Five source-based screens
 
-| HTML marker/content | nextHV component | Existing primitive |
-| --- | --- | --- |
-| frame, header, metadata, Contacts badge | ImportWizardDemo | REUI Frame / Badge |
-| five step labels and state | ImportWizardDemo | REUI Stepper |
-| dashed button/dropzone | ImportFileDropzone | Base UI Button |
-| selected file list, Ready badge, delete action | SelectedImportFiles | Badge / Button |
-| target combobox | ImportUploadStep | Base UI Select |
-| header switch | ImportUploadStep | Base UI Switch |
-| Map Columns / Preview / Duplicates / Summary | steps.tsx | Select, Switch, Badge, native table |
-| frame footer / Previous / Next | ImportWizardDemo | FrameFooter / Button |
+1. Upload Files: source dropzone, selected Items, Ready badges, target Select,
+   and first-row Switch.
+2. Map Columns: 8-row Table, required-field Alert, and per-field Base UI Select.
+3. Preview Rows: five-row Table with Valid/Warning/Error Badges, statistics,
+   and unique-key Select.
+4. Duplicate Handling: Base UI RadioGroup with Skip/Update/Create policies.
+5. Run Import: Ready Alert and Import plan summary.
 
-The captured HTML only contains real markup for **Upload**. The other
-four screens are independently implemented demo panels based solely on the
-visible step titles; they are not represented as recovered proprietary source.
+The component tree uses existing ReUI Frame, Stepper, Badge and Base UI
+Button/Select/Input/Switch, plus reusable Alert, Item, Table, RadioGroup
+primitives. It does not transplant Next.js scripts or DOM markup from ReUI.
 
-## Usage
+The initial northstar-contacts.csv and account-logos.png are visual fixtures.
+Displayed 1,248-row and quality/duplicate numbers come from the uploaded
+HTML and are not measured server results. User-selected CSV files are only
+read into a local sample. No files are uploaded, and the final Import button
+never changes Laravel data.
 
-Authenticated route: **/import-wizard-demo**, also linked in the sidebar as Demo.
+Route: /import-wizard-demo, in the authenticated demo navigation.
 
-The page starts with screenshot-like sample files
-(northstar-contacts.csv, account-logos.png). You can remove them or pick
-real local files. CSV is parsed in the browser for a limited preview.
-XLS/XLSX, PDF and images may be attached, but the demo does not parse them.
-No selected file is transmitted to the server.
-
-Next / Back, column mapping, header toggle, duplicate-preview option and
-local completion status are interactive. There is **no server validation,
-persistent import, full-file duplicate detection, or production XLSX parser**.
-The existing CSV import workflow remains the supported way to import real
-nextHV resource records; this demo deliberately does not call its API.
-
-## Testing
-
-Run:
+## Verification
 
 - npm test
 - npm run build
 - npm run test:e2e
+- Compare screenshots at desktop/tablet/mobile widths against the five HTML
+  exports and check keyboard operation of Select, RadioGroup and Stepper.
 
-In particular, manual QA should cover drag-and-drop, different CSV separators,
-screen widths and keyboard access to the Stepper / Select / Switch controls.
+Global Nova changes intentionally affect every page. Run full UI regression
+before merging to production; this is not merely a wizard-scoped theme.

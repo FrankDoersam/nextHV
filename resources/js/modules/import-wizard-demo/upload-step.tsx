@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { FileText, Upload, X } from "lucide-react";
-import { FrameDescription } from "@/components/reui/frame";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/reui/badge";
+import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -61,7 +61,7 @@ export function ImportFileDropzone({
                 disabled={reading}
                 aria-describedby="reui-upload-help"
                 className={
-                    "min-h-40 w-full flex-col gap-3 rounded-xl border-dashed px-6 py-8 text-center transition-colors " +
+                    "min-h-40 w-full flex-col gap-3 rounded-lg border-dashed px-6 py-8 text-center transition-colors " +
                     (dragging ? "border-primary bg-muted/50" : "hover:border-primary/60 hover:bg-muted/40")
                 }
                 onClick={() => input.current?.click()}
@@ -97,13 +97,13 @@ export function SelectedImportFiles({
     onRemove,
 }: Pick<UploadProps, "files" | "onRemove">) {
     return (
-        <ul aria-label="Selected files" className="flex flex-col gap-2">
+        <div role="list" aria-label="Selected files" className="flex flex-col gap-2">
             {files.map((file) => (
-                <li key={file.id} className="flex min-w-0 items-center gap-3 rounded-xl border p-3">
-                    <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                    <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{file.name}</p>
-                        <FrameDescription className="flex flex-wrap items-center gap-1.5 text-xs">
+                <Item key={file.id} role="listitem" className="min-w-0 gap-3 p-2.5">
+                    <ItemMedia><FileText className="size-4" aria-hidden="true" /></ItemMedia>
+                    <ItemContent>
+                        <ItemTitle>{file.name}</ItemTitle>
+                        <ItemDescription className="flex flex-wrap items-center gap-1.5 text-xs">
                             <span>{file.kind === "csv" ? "CSV" : file.kind === "excel" ? "Excel" : file.kind === "image" ? "Image" : "PDF"}</span>
                             <span aria-hidden="true">·</span>
                             <span>{displayFileSize(file.bytes)}</span>
@@ -113,11 +113,10 @@ export function SelectedImportFiles({
                                     <span>{file.data.totalRows.toLocaleString("en-US")} rows</span>
                                 </>
                             )}
-                        </FrameDescription>
-                    </div>
-                    <Badge variant="secondary" className="border border-primary/10 bg-primary/10 text-foreground">
-                        Ready
-                    </Badge>
+                        </ItemDescription>
+                    </ItemContent>
+                    <ItemActions>
+                    <Badge variant="success-light">Ready</Badge>
                     <Button
                         type="button"
                         size="icon-sm"
@@ -127,14 +126,15 @@ export function SelectedImportFiles({
                     >
                         <X className="size-4" />
                     </Button>
-                </li>
+                    </ItemActions>
+                </Item>
             ))}
             {files.length === 0 && (
-                <li className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
+                <Item role="listitem" className="justify-center border-dashed p-4 text-center text-sm text-muted-foreground">
                     No files selected.
-                </li>
+                </Item>
             )}
-        </ul>
+        </div>
     );
 }
 

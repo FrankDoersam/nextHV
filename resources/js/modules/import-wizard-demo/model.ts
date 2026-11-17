@@ -29,26 +29,31 @@ export const targetOptions: { value: ImportTarget; label: string }[] = [
     { value: "deals", label: "Deals" },
 ];
 
+/** Display names follow the original ReUI Nova CRM example. */
 export const targetFields: Record<ImportTarget, { value: string; label: string }[]> = {
     contacts: [
-        { value: "name", label: "Name" },
+        { value: "fullName", label: "Full name" },
         { value: "email", label: "Email" },
-        { value: "company", label: "Company" },
+        { value: "account", label: "Account" },
         { value: "phone", label: "Phone" },
+        { value: "owner", label: "Owner" },
+        { value: "lifecycle", label: "Lifecycle stage" },
+        { value: "leadSource", label: "Lead source" },
+        { value: "dealValue", label: "Deal value" },
     ],
     companies: [
-        { value: "name", label: "Company name" },
+        { value: "fullName", label: "Company name" },
         { value: "email", label: "Email" },
         { value: "phone", label: "Phone" },
     ],
     deals: [
-        { value: "name", label: "Deal name" },
-        { value: "company", label: "Company" },
-        { value: "amount", label: "Amount" },
+        { value: "fullName", label: "Deal name" },
+        { value: "account", label: "Account" },
+        { value: "dealValue", label: "Deal value" },
     ],
 };
 
-/** Example data mirrors the screenshot's file names and count, not real CRM data. */
+/** These are visual fixtures from the submitted ReUI HTML, not API records. */
 export const exampleFiles: WizardFile[] = [
     {
         id: "example-csv",
@@ -57,13 +62,14 @@ export const exampleFiles: WizardFile[] = [
         kind: "csv",
         example: true,
         data: {
-            headerRow: ["Name", "Email", "Company", "Phone"],
+            headerRow: ["Name", "Email", "Company", "Phone", "Owner", "Lifecycle", "Source", "Deal value"],
             totalRows: 1248,
             rows: [
-                ["Alex Morgan", "alex@example.test", "Northstar", "+49 123 100"],
-                ["Taylor Smith", "taylor@example.test", "Northstar", "+49 123 200"],
-                ["Jordan Lee", "jordan@example.test", "Atlas", "+49 123 300"],
-                ["Alex Morgan", "alex@example.test", "Northstar", "+49 123 100"],
+                ["Mira Stone", "mira.stone@brightwave.io", "Brightwave Media", "+1 415 555 0142", "Leo Grant", "Opportunity", "Referral", "$48,000"],
+                ["Sana Qureshi", "sana.q@apexmfg.com", "Apex Manufacturing", "+1 415 555 0128", "Mira Stone", "Lead", "Website", "$12,000"],
+                ["Alex Johnson", "alex.j@cobaltlog", "Cobalt Logistics", "+1 415 555 0163", "David Kim", "Opportunity", "Event", "$35,000"],
+                ["Michael Rodriguez", "", "Vertex Health", "+1 415 555 0190", "Leo Grant", "Lead", "Referral", "$5,000"],
+                ["Emma Wilson", "emma.wilson@meridian.co", "Meridian Retail", "+1 415 555 0107", "Mira Stone", "Customer", "Website", "$22,000"],
             ],
         },
     },
@@ -198,13 +204,19 @@ export function viewForFile(
     };
 }
 
-export function automaticField(
-    column: string,
-    target: ImportTarget,
-): string | undefined {
+export function automaticField(column: string, target: ImportTarget): string | undefined {
     const normalized = column.toLowerCase().replace(/[^a-z0-9]/g, "");
+    // The original block intentionally leaves Owner unmapped to demonstrate validation.
+    if (normalized === "owner") return undefined;
+    const aliases: Record<string, string> = {
+        name: "fullName",
+        company: "account",
+        source: "leadSource",
+        dealvalue: "dealValue",
+    };
+    const field = aliases[normalized] ?? normalized;
     return targetFields[target].find(
-        (field) => field.value.replace(/[^a-z0-9]/g, "") === normalized,
+        (option) => option.value.toLowerCase() === field.toLowerCase(),
     )?.value;
 }
 
