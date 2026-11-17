@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect } from "react";
 import { FileText, Upload, X } from "lucide-react";
+import { useFileUpload } from "@/hooks/use-file-upload";
 import { Badge } from "@/components/reui/badge";
 import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item";
 import { Button } from "@/components/ui/button";
@@ -36,24 +37,31 @@ export function ImportFileDropzone({
     onAdd,
     reading,
 }: Pick<UploadProps, "onAdd" | "reading">) {
-    const input = useRef<HTMLInputElement>(null);
-    const [dragging, setDragging] = useState(false);
+    const [upload, actions] = useFileUpload({
+        multiple:true,
+        accept:acceptedFileTypes,
+        maxSize:10 * 1024 * 1024,
+        onFilesAdded:(added) => onAdd(
+            added.map((entry) => entry.file).filter((file): file is File => file instanceof File),
+        ),
+    });
+    // This is a local preview, not a transfer queue. The parent owns the
+    // parsed CSV files; reset this hook's temporary file queue after handoff.
+    useEffect(() => {
+        if (upload.files.length) actions.clearFiles();
+    }, [upload.files.length, actions.clearFiles]);
     return (
         <div className="flex flex-col gap-3">
             <label htmlFor="reui-import-files" className="text-sm font-medium">
                 Source Files <span className="text-destructive">*</span>
             </label>
             <input
-                id="reui-import-files"
-                ref={input}
-                type="file"
-                accept={acceptedFileTypes}
-                className="sr-only"
-                multiple
-                onChange={(event) => {
-                    onAdd(Array.from(event.target.files ?? []));
-                    event.target.value = "";
-                }}
+                {...actions.getInputProps({
+                    id:"reui-import-files",
+                    className:"sr-only",
+                    disabled:reading,
+                    "aria-label":"Choose source files",
+                })}
             />
             <Button
                 id="reui-import-dropzone"
@@ -63,22 +71,13 @@ export function ImportFileDropzone({
                 aria-describedby="reui-upload-help"
                 className={
                     "min-h-40 w-full flex-col gap-3 rounded-lg border-dashed px-6 py-8 text-center transition-colors " +
-                    (dragging ? "border-primary bg-muted/50" : "hover:border-primary/60 hover:bg-muted/40")
+                    (upload.isDragging ? "border-primary bg-muted/50" : "hover:border-primary/60 hover:bg-muted/40")
                 }
-                onClick={() => input.current?.click()}
-                onDragOver={(event) => {
-                    event.preventDefault();
-                    setDragging(true);
-                }}
-                onDragLeave={(event) => {
-                    event.preventDefault();
-                    setDragging(false);
-                }}
-                onDrop={(event) => {
-                    event.preventDefault();
-                    setDragging(false);
-                    onAdd(Array.from(event.dataTransfer.files));
-                }}
+                onClick={actions.openFileDialog}
+                onDragEnter={actions.handleDragEnter}
+                onDragOver={actions.handleDragOver}
+                onDragLeave={actions.handleDragLeave}
+                onDrop={actions.handleDrop}
             >
                 <Upload className="size-4 text-muted-foreground" aria-hidden="true" />
                 <span className="font-medium">{reading ? "Reading files…" : "Drop Files"}</span>
@@ -89,6 +88,11 @@ export function ImportFileDropzone({
                     CSV, Excel, PDF, PNG, or JPG. Max 10MB each.
                 </span>
             </Button>
+            {upload.errors.length > 0 && (
+                <div role="alert" className="text-sm text-destructive">
+                    {upload.errors.join(" ")}
+                </div>
+            )}
         </div>
     );
 }
