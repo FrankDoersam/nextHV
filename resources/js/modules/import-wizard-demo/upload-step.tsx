@@ -4,6 +4,7 @@ import { Badge } from "@/components/reui/badge";
 import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Field, FieldLabel, FieldDescription } from "@/components/ui/field";
 import {
     Select,
     SelectContent,
@@ -167,20 +168,21 @@ export function ImportUploadStep(props: UploadProps) {
                     </SelectContent>
                 </Select>
             </div>
-            <div className="flex items-start gap-3">
-                <Switch
-                    checked={props.firstRowIsHeader}
-                    onCheckedChange={props.onHeaderChange}
-                    aria-labelledby="reui-header-label"
-                />
-                <div className="flex min-w-0 flex-col gap-1">
-                    <p id="reui-header-label" className="text-sm font-medium">
+            <div className="space-y-1">
+                <Field orientation="horizontal">
+                    <Switch
+                        id="reui-header-switch"
+                        checked={props.firstRowIsHeader}
+                        onCheckedChange={props.onHeaderChange}
+                        aria-labelledby="reui-header-label"
+                    />
+                    <FieldLabel id="reui-header-label" htmlFor="reui-header-switch">
                         First row is a header
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                        Row 1 holds column names like Name, Email, Company.
-                    </p>
-                </div>
+                    </FieldLabel>
+                </Field>
+                <FieldDescription className="pl-12">
+                    Row 1 holds column names like Name, Email, Company.
+                </FieldDescription>
             </div>
         </section>
     );

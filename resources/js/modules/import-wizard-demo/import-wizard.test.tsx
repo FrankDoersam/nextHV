@@ -4,8 +4,6 @@ import { ImportWizardDemo } from "./import-wizard";
 
 afterEach(cleanup);
 
-afterEach(cleanup);
-
 describe("ReUI import wizard demo", () => {
     it("reconstructs the uploaded HTML first step using project primitives", () => {
         render(<ImportWizardDemo />);
@@ -13,7 +11,9 @@ describe("ReUI import wizard demo", () => {
         expect(screen.getByText("northstar-contacts.csv")).toBeTruthy();
         expect(screen.getByRole("heading", { name: "Upload Files" })).toBeTruthy();
         expect(screen.getByRole("button", { name: /Drop Files/ })).toBeTruthy();
-        expect(screen.getByText("1,248 rows")).toBeTruthy();
+        expect(screen.getAllByText("1,248 rows").length).toBeGreaterThan(0);
+        expect(screen.getByRole("tab", { name: "Upload" })).toBeTruthy();
+        expect(screen.getByRole("tablist")).toHaveAttribute("data-variant", "line");
         expect(screen.getByRole("switch", { name: "First row is a header" })).toBeTruthy();
     });
 

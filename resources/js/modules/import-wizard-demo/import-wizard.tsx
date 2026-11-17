@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Flag } from "lucide-react";
+import { ArrowLeft, ArrowRight, Flag } from "lucide-react";
 import {
     Frame,
     FrameDescription,
@@ -8,17 +8,8 @@ import {
     FramePanel,
     FrameTitle,
 } from "@/components/reui/frame";
-import {
-    Stepper,
-    StepperContent,
-    StepperIndicator,
-    StepperItem,
-    StepperNav,
-    StepperPanel,
-    StepperSeparator,
-    StepperTitle,
-    StepperTrigger,
-} from "@/components/reui/stepper";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { WizardTabsNavigation, type WizardTab } from "./wizard-tabs";
 import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
 import { ImportUploadStep } from "./upload-step";
@@ -148,11 +139,12 @@ export function ImportWizardDemo() {
                 next();
             }}
         >
-            <Stepper
-                value={step}
+            <Tabs
+                value={String(step)}
                 onValueChange={(value) => {
-                    if (value <= unlockedStep && value >= 1) {
-                        setStep(value);
+                    const selected = Number(value);
+                    if (Number.isInteger(selected) && selected <= unlockedStep && selected >= 1) {
+                        setStep(selected);
                         setMessage(undefined);
                     }
                 }}
@@ -180,37 +172,28 @@ export function ImportWizardDemo() {
                         </div>
                     </FrameHeader>
 
-                    <FramePanel className="flex items-center overflow-x-auto">
-                        <StepperNav className="min-w-max items-center sm:min-w-full">
-                            {steps.map((label, index) => {
-                                const number = index + 1;
-                                return (
-                                    <StepperItem
-                                        key={label}
-                                        step={number}
-                                        disabled={number > unlockedStep}
-                                        className="relative min-w-0"
-                                    >
-                                        <StepperTrigger className="min-w-0 justify-start gap-2 disabled:opacity-100">
-                                            <StepperIndicator className="relative isolate size-6 overflow-visible rounded-full border border-background bg-accent text-foreground data-[state=inactive]:border-border data-[state=active]:border-0 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:before:absolute data-[state=active]:before:inset-0 data-[state=active]:before:rounded-full data-[state=active]:before:border data-[state=active]:before:border-dashed data-[state=active]:before:border-primary data-[state=active]:before:animate-[spin_8s_linear_infinite] motion-reduce:data-[state=active]:before:animate-none data-[state=completed]:border-primary data-[state=completed]:bg-primary data-[state=completed]:text-primary-foreground">
-                                                {number < step ? <Check className="size-3.5" aria-hidden="true" /> : number}
-                                            </StepperIndicator>
-                                            <StepperTitle className="hidden truncate text-sm capitalize sm:block">
-                                                {label}
-                                            </StepperTitle>
-                                        </StepperTrigger>
-                                        {number < steps.length && (
-                                            <StepperSeparator className="mx-2 bg-border group-data-[state=completed]/step:bg-primary" />
-                                        )}
-                                    </StepperItem>
-                                );
-                            })}
-                        </StepperNav>
+                    <FramePanel className="pb-0">
+                        <WizardTabsNavigation
+                            unlockedStep={unlockedStep}
+                            steps={steps.map((label, index): WizardTab => ({
+                                value: String(index + 1),
+                                label,
+                                ...(index === 1 && view ? {
+                                    badge: { value: mappingsCount + "/" + view.columns.length, variant: "primary-light" },
+                                } : {}),
+                                ...(index === 2 && view ? {
+                                    badge: { value: Math.min(view.rows.length, 5), variant: "info-light" },
+                                } : {}),
+                                ...(index === 3 && view ? {
+                                    badge: { value: isExample ? 36 : duplicates, variant: "warning-light" },
+                                } : {}),
+                            }))}
+                        />
                     </FramePanel>
 
                     <FramePanel className="min-h-72">
-                        <StepperPanel className="text-sm">
-                            <StepperContent value={1}>
+                        <div className="text-sm">
+                            <TabsContent value="1">
                                 <ImportUploadStep
                                     files={files}
                                     onAdd={(selection) => void addFiles(selection)}
@@ -230,10 +213,10 @@ export function ImportWizardDemo() {
                                     }}
                                     reading={reading}
                                 />
-                            </StepperContent>
+                            </TabsContent>
                             {view && (
                                 <>
-                                    <StepperContent value={2}>
+                                    <TabsContent value="2">
                                         <MapColumnsStep
                                             view={view}
                                             target={target}
@@ -243,19 +226,19 @@ export function ImportWizardDemo() {
                                                 setMapping((current) => ({ ...current, [column]: field }))
                                             }
                                         />
-                                    </StepperContent>
-                                    <StepperContent value={3}>
+                                    </TabsContent>
+                                    <TabsContent value="3">
                                         <PreviewStep view={view} mapping={mapping} target={target} isExample={isExample} uniqueKey={uniqueKey} onUniqueKey={setUniqueKey} />
-                                    </StepperContent>
-                                    <StepperContent value={4}>
+                                    </TabsContent>
+                                    <TabsContent value="4">
                                         <DuplicatesStep
                                             count={duplicates}
                                             mode={duplicateMode}
                                             onModeChange={setDuplicateMode}
                                             isExample={isExample}
                                         />
-                                    </StepperContent>
-                                    <StepperContent value={5}>
+                                    </TabsContent>
+                                    <TabsContent value="5">
                                         <SummaryStep
                                             view={view}
                                             target={target}
@@ -266,10 +249,10 @@ export function ImportWizardDemo() {
                                             isExample={isExample}
                                             completed={completed}
                                         />
-                                    </StepperContent>
+                                    </TabsContent>
                                 </>
                             )}
-                        </StepperPanel>
+                        </div>
                         {message && (
                             <p role="alert" className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
                                 {message}
@@ -296,7 +279,7 @@ export function ImportWizardDemo() {
                         </div>
                     </FrameFooter>
                 </Frame>
-            </Stepper>
+            </Tabs>
         </form>
     );
 }

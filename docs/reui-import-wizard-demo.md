@@ -38,3 +38,12 @@ Route: /import-wizard-demo, in the authenticated demo navigation.
 
 Global Nova changes intentionally affect every page. Run full UI regression
 before merging to production; this is not merely a wizard-scoped theme.
+
+## Wizard controls update
+
+The horizontal Stepper navigation is now replaced by ReUI Base UI Tabs with
+`variant="line"`. `WizardTabsNavigation` accepts an optional badge for each
+step; forward tabs remain disabled until the wizard has reached them. Next and
+Back still drive the same validation and do not bypass required field mapping.
+The first-row header switch now uses `Field orientation="horizontal"`, a
+`FieldLabel` tied to the Base UI Switch id and an optional description.
