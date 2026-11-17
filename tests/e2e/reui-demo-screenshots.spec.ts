@@ -47,6 +47,8 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
     await expect(addSheet.getByRole("combobox", { name: "Gewerk", exact: true })).toBeVisible();
     await expect(addSheet.getByLabel("Frühester Start")).toBeVisible();
     await expect(addSheet.getByText("Vorgänger / Abhängigkeiten")).toBeVisible();
+    const addBounds = await addSheet.boundingBox();
+    expect(addBounds?.width).toBeGreaterThan(550);
     await page.screenshot({
         path: "screenshots/kernsanierung-gantt-1-add-task-sheet.png",
         fullPage: false,
@@ -60,6 +62,8 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
     await expect(financeSheet).toBeVisible();
     await expect(financeSheet.getByRole("tab", { name: /Bestellungen/ })).toBeVisible();
     await expect(financeSheet.getByRole("tab", { name: /Rechnungen/ })).toBeVisible();
+    const financeBounds = await financeSheet.boundingBox();
+    expect(financeBounds?.width).toBeGreaterThan(700);
     await page.screenshot({
         path: "screenshots/kernsanierung-finanz-sheet.png",
         fullPage: false,

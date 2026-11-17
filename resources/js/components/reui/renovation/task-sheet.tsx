@@ -41,7 +41,7 @@ export function TaskEditor({
 
     return <>
         <Sheet open onOpenChange={(opened) => { if (!opened) onCancel(); }}>
-            <SheetContent side="right" className="h-full w-full gap-0 overflow-hidden p-0 sm:max-w-[640px]">
+            <SheetContent side="right" style={{width:"min(680px, 100vw)", maxWidth:"680px"}} className="h-full gap-0 overflow-hidden p-0 data-[side=right]:w-full">
                 <form onSubmit={(event) => { event.preventDefault(); save(); }} className="flex min-h-0 flex-1 flex-col">
                     <SheetHeader className="shrink-0 border-b px-6 py-5">
                         <SheetTitle className="text-lg font-semibold">{newTask ? "Vorgang anlegen" : "Vorgang bearbeiten"}</SheetTitle>
