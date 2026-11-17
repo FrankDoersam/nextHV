@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { ChartLine, House } from "lucide-react";
+import { ChartLine, House, FileUp } from "lucide-react";
 import type { ResourceDefinition } from "../types";
 import { access, type PermissionDecision } from "../permissions";
 
@@ -94,6 +94,7 @@ export function defaultNavigation(
     return [
         { id: "home", label: "Übersicht", icon: House, to: "/" },
         { id: "charts", label: "Charts", icon: ChartLine, to: "/charts", badge: "Demo" },
+        { id: "import-wizard-demo", label: "Import Wizard", icon: FileUp, to: "/import-wizard-demo", badge: "Demo" },
         ...[...groups].map(([group, children]) => ({
             ...groupSettings[group],
             id: `group:${group}`,

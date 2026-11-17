@@ -16,6 +16,7 @@ const ContractDetailPage = lazy(() => import("@/pages/contract-detail-page"));
 const DetailPage = lazy(() => import("@/pages/detail-page"));
 const ComponentsPage = lazy(() => import("@/pages/components-page"));
 const ChartsPage = lazy(() => import("@/pages/charts-page"));
+const ImportWizardDemoPage = lazy(() => import("@/pages/import-wizard-demo-page"));
 export default function Application() {
     const { user } = useAuth();
     return (
@@ -61,6 +62,7 @@ function ApplicationWorkspace() {
                         <Routes>
                             <Route path="/" element={<Dashboard />} />
                             <Route path="/charts" element={<ChartsPage />} />
+                            <Route path="/import-wizard-demo" element={<ImportWizardDemoPage />} />
                             {resources.map((r) => (
                                 <React.Fragment key={r.name}>
                                     <Route
