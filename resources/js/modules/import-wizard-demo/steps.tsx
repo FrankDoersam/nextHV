@@ -47,7 +47,7 @@ export function MapColumnsStep({
                     <TableCell className="max-w-52 truncate text-muted-foreground">{view.rows[0]?.[index] || "—"}</TableCell>
                     <TableCell>
                         <Select value={mappedField(column, mapping, target)} onValueChange={(value) => onMap(column, value ?? "skip")}>
-                            <SelectTrigger aria-label={"Map " + column} className="w-full [&_small]:hidden"><SelectValue /></SelectTrigger>
+                            <SelectTrigger aria-label={"Map " + column} className="w-full [&_small]:hidden"><SelectValue>{mappedField(column, mapping, target) === "skip" ? "Do not import" : targetFields[target].find((option) => option.value === mappedField(column, mapping, target))?.label ?? mappedField(column, mapping, target)}</SelectValue></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="skip">Do not import</SelectItem>
                                 {targetFields[target].map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
@@ -109,7 +109,7 @@ export function PreviewStep({
         <Field>
             <FieldLabel htmlFor="reui-unique-key">Unique key</FieldLabel>
             <Select value={uniqueKey} onValueChange={(value) => value && onUniqueKey(value)}>
-                <SelectTrigger id="reui-unique-key" className="w-full [&_small]:hidden"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="reui-unique-key" className="w-full [&_small]:hidden"><SelectValue>{uniqueKey === "fullName" ? "Full name" : uniqueKey === "phone" ? "Phone" : "Email"}</SelectValue></SelectTrigger>
                 <SelectContent><SelectItem value="email">Email</SelectItem><SelectItem value="fullName">Full name</SelectItem><SelectItem value="phone">Phone</SelectItem></SelectContent>
             </Select>
             <FieldDescription>Rows match existing contacts on this column.</FieldDescription>

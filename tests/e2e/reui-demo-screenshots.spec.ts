@@ -88,6 +88,8 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
     await expect(wizard.getByRole("heading", { name: "Map Columns", level: 2 })).toBeVisible();
     await expect(wizard.getByText("Required field not mapped")).toBeVisible();
     await expect(wizard.getByText(/Owner needs a target field before validation/)).toBeVisible();
+    await expect(wizard.getByRole("combobox", { name: "Map Name" })).toHaveText("Full name");
+    await expect(wizard.getByRole("combobox", { name: "Map Owner" })).toHaveText("Do not import");
     await expect(wizard.getByRole("table", { name: "Column mapping" }).locator("tbody tr")).toHaveCount(8);
     await wizard.screenshot({
         path: "screenshots/csv-import-tab-2-map-columns.png",
@@ -98,6 +100,7 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
     await expect(wizard.getByRole("heading", { name: "Preview Rows", level: 2 })).toBeVisible();
     await expect(wizard.getByRole("table", { name: "Row preview" }).locator("tbody tr")).toHaveCount(5);
     await expect(wizard.getByText("1.212 valid")).toBeVisible();
+    await expect(wizard.getByRole("combobox", { name: "Unique key" })).toHaveText("Email");
     await expect(wizard.getByText("24 warnings")).toBeVisible();
     await expect(wizard.getByText("12 errors")).toBeVisible();
     await wizard.screenshot({
