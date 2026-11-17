@@ -19,7 +19,7 @@ describe("ReUI Renovation architecture", () => {
         expect(controller("./task-editor.tsx")).toContain("@/components/reui/renovation/task-sheet");
         expect(controller("./finance-sheet.tsx")).toContain("@/components/reui/renovation/finance-sheet");
         expect(ui("task-sheet.tsx")).toContain("Sheet18Layout");
-        const shell=readFileSync(new URL("../../components/reui/" + "sheet-18-layout.tsx", import.meta.url),"utf8");
+        const shell=readFileSync("resources/js/components/reui/sheet-18-layout.tsx","utf8");
         expect(shell).toContain("tabs.map");
         expect(shell).toContain("reui-sheet-18-header");
         expect(shell).toContain("reui-sheet-18-footer");

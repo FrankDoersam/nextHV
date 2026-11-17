@@ -46,7 +46,7 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
     await expect(addSheet.getByLabel("Bezeichnung")).toBeVisible();
     await expect(addSheet.getByRole("combobox", { name: "Gewerk", exact: true })).toBeVisible();
     await expect(addSheet.getByLabel("Frühester Start")).toBeVisible();
-    await expect(addSheet.getByText("Vorgänger / Abhängigkeiten")).toBeVisible();
+    await expect(addSheet.getByRole("tab", { name: /Abhängigkeiten/ })).toBeVisible();
     const addBounds = await addSheet.boundingBox();
     expect(addBounds?.width).toBeGreaterThan(550);
     await page.screenshot({
@@ -54,6 +54,8 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
         fullPage: false,
         animations: "disabled",
     });
+    await addSheet.getByRole("tab", { name: /Abhängigkeiten/ }).click();
+    await expect(addSheet.getByText("Vorgänger / Abhängigkeiten")).toBeVisible();
     await addSheet.getByRole("button", { name: "Abbrechen" }).click();
     await expect(addSheet).not.toBeVisible();
 
