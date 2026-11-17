@@ -23,7 +23,18 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
     await page.evaluate(async () => { await document.fonts.ready; });
     await page.screenshot({
         path: "screenshots/kernsanierung-2027.png",
-        fullPage: true,
+        fullPage: false,
+        animations: "disabled",
+    });
+
+    await page.getByRole("button", { name: "Budget, Bestellungen und Eingangsrechnungen öffnen" }).click();
+    const financeSheet = page.getByRole("dialog", { name: "Projektfinanzen" });
+    await expect(financeSheet).toBeVisible();
+    await expect(financeSheet.getByRole("tab", { name: /Bestellungen/ })).toBeVisible();
+    await expect(financeSheet.getByRole("tab", { name: /Rechnungen/ })).toBeVisible();
+    await page.screenshot({
+        path: "screenshots/kernsanierung-finanz-sheet.png",
+        fullPage: false,
         animations: "disabled",
     });
 
@@ -35,6 +46,11 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
     await targetSelect.scrollIntoViewIfNeeded();
     await targetSelect.click();
     await expect(page.getByRole("option", { name: "Companies" })).toBeVisible();
+    const triggerBox = await targetSelect.boundingBox();
+    const dropdownBox = await page.locator('[data-slot="select-content"]').boundingBox();
+    expect(triggerBox).not.toBeNull();
+    expect(dropdownBox).not.toBeNull();
+    expect(dropdownBox!.y).toBeGreaterThanOrEqual(triggerBox!.y + triggerBox!.height - 2);
     await page.evaluate(async () => { await document.fonts.ready; });
     await page.screenshot({
         path: "screenshots/csv-import-nova-select-geoeffnet.png",

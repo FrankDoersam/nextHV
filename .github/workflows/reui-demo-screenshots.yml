@@ -43,13 +43,14 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Capture two ReUI pages
         run: npx playwright test --config=playwright.reui-screenshots.config.ts
-      - name: Upload two PNGs
+      - name: Upload three PNGs
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: reui-nova-two-screenshots
+          name: reui-nova-three-screenshots
           path: |
             screenshots/kernsanierung-2027.png
+            screenshots/kernsanierung-finanz-sheet.png
             screenshots/csv-import-nova-select-geoeffnet.png
           if-no-files-found: warn
           retention-days: 14
@@ -66,5 +67,6 @@ jobs:
         run: |
           echo "## ReUI Screenshots" >> "$GITHUB_STEP_SUMMARY"
           echo "- kernsanierung-2027.png – Gantt (März 2027)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- kernsanierung-finanz-sheet.png – Budget & Rechnungen" >> "$GITHUB_STEP_SUMMARY"
           echo "- csv-import-nova-select-geoeffnet.png – Schritt 1, unteres Select geöffnet" >> "$GITHUB_STEP_SUMMARY"
           echo "1600×1200 Chromium (full-page), isolierte Demo-Daten" >> "$GITHUB_STEP_SUMMARY"
