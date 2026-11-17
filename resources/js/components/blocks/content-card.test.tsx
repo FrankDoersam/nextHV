@@ -5,7 +5,7 @@ import { ContentCard } from "./content-card";
 
 afterEach(cleanup);
 
-it("renders a Maia property section with one card layer and a direct body", () => {
+it("renders a Nova property section with one card layer and a direct body", () => {
     const { container } = render(
         <ContentCard appearance="single" title="Gebäude & Verwaltung" description="Daten auf einen Blick">
             <dl><dt>Baujahr</dt><dd>2001</dd></dl>
@@ -13,7 +13,7 @@ it("renders a Maia property section with one card layer and a direct body", () =
     );
     const card = container.querySelector('[data-slot="content-card"]');
     expect(card).toBeInTheDocument();
-    expect(card).toHaveClass("rounded-2xl");
+    expect(card).toHaveClass("rounded-xl");
     expect(card!.querySelectorAll('[data-slot="card-content"]')).toHaveLength(1);
     expect(card!.querySelector('[data-slot="frame-panel"]')).toBeNull();
     expect(screen.getByText("Baujahr")).toBeVisible();
