@@ -120,10 +120,11 @@ export function ReuiOriginalImportWizard() {
             setMessage("Select a CSV file to preview. Excel files need a separate import parser.");
             return;
         }
-        if (step === 2 && (!mappingsCount || (target === "contacts" &&
-            ["fullName", "email", "owner"].some((required) =>
-                !view?.columns.some((column) => mappedField(column, mapping, target) === required))))) {
-            setMessage("Map the required Full name, Email and Owner fields before continuing.");
+        // The original ReUI CRM-6 HTML explicitly shows the Owner warning
+        // on Step 2 and nevertheless navigates to the Step 3 preview.
+        // This is an advisory mapping alert, not a navigation lock.
+        if (step === 2 && !mappingsCount) {
+            setMessage("Map at least one CSV column before previewing.");
             return;
         }
         if (step === 5) {

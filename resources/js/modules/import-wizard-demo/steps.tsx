@@ -2,6 +2,7 @@ import { CircleAlert, CircleCheck } from "lucide-react";
 import { Badge } from "@/components/reui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Item, ItemContent, ItemTitle } from "@/components/ui/item";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -32,7 +33,7 @@ export function MapColumnsStep({
             <AlertTitle>Required field not mapped</AlertTitle>
             <AlertDescription><p>{requiredMissing.map((name) => targetFields[target].find((f) => f.value === name)?.label ?? name).join(", ")} needs a target field before validation.</p></AlertDescription>
         </Alert>}
-        <div className="overflow-x-auto rounded-md border">
+        <Field className="gap-3">
             <Table className="min-w-[640px] table-auto" aria-label="Column mapping">
                 <TableHeader><TableRow>
                     <TableHead className="w-[34%]">CSV column</TableHead>
@@ -46,7 +47,7 @@ export function MapColumnsStep({
                     <TableCell className="max-w-52 truncate text-muted-foreground">{view.rows[0]?.[index] || "—"}</TableCell>
                     <TableCell>
                         <Select value={mappedField(column, mapping, target)} onValueChange={(value) => onMap(column, value ?? "skip")}>
-                            <SelectTrigger aria-label={"Map " + column} className="w-full"><SelectValue /></SelectTrigger>
+                            <SelectTrigger aria-label={"Map " + column} className="w-full [&_small]:hidden"><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="skip">Do not import</SelectItem>
                                 {targetFields[target].map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
@@ -55,7 +56,7 @@ export function MapColumnsStep({
                     </TableCell>
                 </TableRow>)}</TableBody>
             </Table>
-        </div>
+        </Field>
     </section>;
 }
 
@@ -81,7 +82,8 @@ export function PreviewStep({
             <h2 id="reui-preview-title" className="text-base font-semibold">Preview Rows</h2>
             <p className="text-sm text-muted-foreground">First {rows.length} of {view.totalRows.toLocaleString("en-US")} rows after mapping.</p>
         </div>
-        <div className="overflow-x-auto rounded-md border">
+        <FieldGroup className="gap-6">
+        <Field className="gap-3">
             <Table className="min-w-[640px] table-auto" aria-label="Row preview">
                 <TableHeader><TableRow>
                     <TableHead className="w-[26%]">Full name</TableHead><TableHead className="w-[30%]">Email</TableHead>
@@ -96,22 +98,23 @@ export function PreviewStep({
                     </Badge></TableCell>
                 </TableRow>)}</TableBody>
             </Table>
-        </div>
+        </Field>
         <div className="grid gap-2 sm:grid-cols-3">{[
             [totals[0], "valid", "bg-emerald-500"], [totals[1], "warnings", "bg-amber-500"],
             [totals[2], "errors", "bg-rose-500"],
-        ].map(([count, label, dot]) => <Item key={String(label)} className="gap-2 p-2.5">
+        ].map(([count, label, dot]) => <Item key={String(label)} size="sm" className="gap-2">
             <span aria-hidden="true" className={"size-1.5 shrink-0 rounded-full " + dot} />
             <ItemContent><ItemTitle className="tabular-nums">{Number(count).toLocaleString("de-DE")} {label}</ItemTitle></ItemContent>
         </Item>)}</div>
-        <div className="flex flex-col gap-2">
-            <label htmlFor="reui-unique-key" className="text-sm font-medium">Unique key</label>
+        <Field>
+            <FieldLabel htmlFor="reui-unique-key">Unique key</FieldLabel>
             <Select value={uniqueKey} onValueChange={(value) => value && onUniqueKey(value)}>
-                <SelectTrigger id="reui-unique-key" className="w-full"><SelectValue /></SelectTrigger>
+                <SelectTrigger id="reui-unique-key" className="w-full [&_small]:hidden"><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value="email">Email</SelectItem><SelectItem value="fullName">Full name</SelectItem><SelectItem value="phone">Phone</SelectItem></SelectContent>
             </Select>
-            <p className="text-sm text-muted-foreground">Rows match existing contacts on this column.</p>
-        </div>
+            <FieldDescription>Rows match existing contacts on this column.</FieldDescription>
+        </Field>
+        </FieldGroup>
     </section>;
 }
 

@@ -82,13 +82,13 @@ export function ImportFileDropzone({
 export function SelectedImportFiles({ files, onRemove }: Pick<UploadProps, "files" | "onRemove">) {
     return <ItemGroup role="list" aria-label="Selected files">
         {files.map((file) => (
-            <Item key={file.id} role="listitem" className="min-w-0 gap-3 p-2.5">
+            <Item key={file.id} role="listitem" size="sm" className="min-w-0 gap-3">
                 <ItemMedia><FileText className="size-4" aria-hidden="true" /></ItemMedia>
                 <ItemContent>
                     <ItemTitle>{file.name}</ItemTitle>
                     <ItemDescription className="flex flex-wrap items-center gap-1.5 text-xs">
                         <span>{file.kind === "csv" ? "CSV" : file.kind === "excel" ? "Excel" : file.kind === "image" ? "Image" : "PDF"}</span>
-                        <span aria-hidden="true">·</span>
+                        <span aria-hidden="true" className="size-1 shrink-0 rounded-full bg-muted-foreground/40" />
                         <span>{displayFileSize(file.bytes)}</span>
                         {file.data && <>
                             <span aria-hidden="true">·</span>

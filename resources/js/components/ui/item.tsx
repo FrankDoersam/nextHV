@@ -2,12 +2,13 @@ import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
 
 /** Base UI / ReUI Nova item anatomy, shared by upload and file lists. */
-const itemClass = "group/item flex w-full flex-wrap items-center gap-3 rounded-lg border border-border bg-background p-3 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50";
-export function Item({ className, ...props }: ComponentProps<"div">) {
-    return <div data-slot="item" data-variant="outline" className={cn(itemClass, className)} {...props} />;
+const itemClass = "group/item flex w-full flex-wrap items-center gap-3 rounded-lg border border-border bg-background p-3 text-sm transition-colors duration-100 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 data-[size=sm]:p-2.5 data-[size=xs]:p-1.5";
+type ItemSize = { size?: "default" | "sm" | "xs" };
+export function Item({ className, size = "default", ...props }: ComponentProps<"div"> & ItemSize) {
+    return <div data-slot="item" data-variant="outline" data-size={size} className={cn(itemClass, className)} {...props} />;
 }
-export function ItemButton({ className, ...props }: ComponentProps<"button">) {
-    return <button data-slot="item" data-variant="outline" className={cn(itemClass, "cursor-pointer disabled:cursor-not-allowed disabled:opacity-50", className)} {...props} />;
+export function ItemButton({ className, size = "default", ...props }: ComponentProps<"button"> & ItemSize) {
+    return <button data-slot="item" data-variant="outline" data-size={size} className={cn(itemClass, "cursor-pointer disabled:cursor-not-allowed disabled:opacity-50", className)} {...props} />;
 }
 export function ItemGroup({ className, ...props }: ComponentProps<"div">) {
     return <div data-slot="item-group" className={cn("flex w-full flex-col gap-2", className)} {...props} />;

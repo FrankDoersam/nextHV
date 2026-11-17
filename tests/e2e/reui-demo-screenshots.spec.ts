@@ -73,5 +73,37 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
         animations: "disabled",
     });
 
+    // Three independent snapshots corresponding exactly to the submitted
+    // ReUI HTML: Upload, Map Columns (with Owner warning), Preview Rows.
+    await page.keyboard.press("Escape");
+    const wizard = page.getByRole("form", { name: "CSV import wizard" });
+    await expect(page.getByRole("option", { name: /^Companies/ })).toHaveCount(0);
+    await expect(wizard.locator('[data-slot="field-group"]')).toBeVisible();
+    await wizard.screenshot({
+        path: "screenshots/csv-import-tab-1-upload.png",
+        animations: "disabled",
+    });
+
+    await wizard.getByRole("button", { name: /Next Step/ }).click();
+    await expect(wizard.getByRole("heading", { name: "Map Columns" })).toBeVisible();
+    await expect(wizard.getByText("Required field not mapped")).toBeVisible();
+    await expect(wizard.getByText(/Owner needs a target field before validation/)).toBeVisible();
+    await expect(wizard.getByRole("table", { name: "Column mapping" }).locator("tbody tr")).toHaveCount(8);
+    await wizard.screenshot({
+        path: "screenshots/csv-import-tab-2-map-columns.png",
+        animations: "disabled",
+    });
+
+    await wizard.getByRole("button", { name: /Next Step/ }).click();
+    await expect(wizard.getByRole("heading", { name: "Preview Rows" })).toBeVisible();
+    await expect(wizard.getByRole("table", { name: "Row preview" }).locator("tbody tr")).toHaveCount(5);
+    await expect(wizard.getByText("1.212 valid")).toBeVisible();
+    await expect(wizard.getByText("24 warnings")).toBeVisible();
+    await expect(wizard.getByText("12 errors")).toBeVisible();
+    await wizard.screenshot({
+        path: "screenshots/csv-import-tab-3-preview.png",
+        animations: "disabled",
+    });
+
     expect(runtimeErrors, "No uncaught browser runtime errors").toEqual([]);
 });

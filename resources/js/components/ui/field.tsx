@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 /** ReUI Nova field grouping/spacing for forms, including horizontal switches. */
 export function FieldGroup({ className, ...props }: ComponentProps<"div">) {
-    return <div data-slot="field-group" className={cn("grid w-full gap-5", className)} {...props} />;
+    return <div data-slot="field-group" className={cn("group/field-group @container/field-group grid w-full gap-5", className)} {...props} />;
 }
 export function Field({
     className,
@@ -11,7 +11,7 @@ export function Field({
     ...props
 }: ComponentProps<"div"> & { orientation?: "horizontal" | "vertical" }) {
     return <div data-slot="field" data-orientation={orientation}
-        className={cn("group/field flex w-full", orientation === "horizontal" ? "flex-row items-start gap-3" : "flex-col gap-2", className)} {...props} />;
+        className={cn("group/field flex w-full [&>.sr-only]:w-auto", orientation === "horizontal" ? "flex-row items-start gap-3" : "flex-col gap-2", className)} {...props} />;
 }
 export function FieldContent({ className, ...props }: ComponentProps<"div">) {
     return <div data-slot="field-content" className={cn("flex min-w-0 flex-1 flex-col gap-0.5 leading-snug", className)} {...props} />;
