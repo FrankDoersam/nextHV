@@ -17,6 +17,7 @@ const DetailPage = lazy(() => import("@/pages/detail-page"));
 const ComponentsPage = lazy(() => import("@/pages/components-page"));
 const ChartsPage = lazy(() => import("@/pages/charts-page"));
 const ImportWizardDemoPage = lazy(() => import("@/pages/import-wizard-demo-page"));
+const ReuiGridDemoPage = lazy(() => import("@/pages/reui-grid-demo-page"));
 export default function Application() {
     const { user } = useAuth();
     return (
@@ -63,6 +64,7 @@ function ApplicationWorkspace() {
                             <Route path="/" element={<Dashboard />} />
                             <Route path="/charts" element={<ChartsPage />} />
                             <Route path="/import-wizard-demo" element={<ImportWizardDemoPage />} />
+                            <Route path="/reui-grid-demo" element={<ReuiGridDemoPage />} />
                             {resources.map((r) => (
                                 <React.Fragment key={r.name}>
                                     <Route
