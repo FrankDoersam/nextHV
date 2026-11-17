@@ -47,11 +47,13 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: reui-nova-wizard-tabs-1-2-3-4-5
+          name: reui-nova-renovation-gantt-1-and-crm
           path: |
             screenshots/kernsanierung-2027.png
             screenshots/kernsanierung-finanz-sheet.png
             screenshots/kernsanierung-rechnungen-sheet.png
+            screenshots/kernsanierung-gantt-1-settings.png
+            screenshots/kernsanierung-gantt-1-add-task-sheet.png
             screenshots/csv-import-nova-select-geoeffnet.png
             screenshots/csv-import-tab-1-upload.png
             screenshots/csv-import-tab-2-map-columns.png
@@ -75,6 +77,8 @@ jobs:
           echo "- kernsanierung-2027.png – Gantt (März 2027)" >> "$GITHUB_STEP_SUMMARY"
           echo "- kernsanierung-finanz-sheet.png – Budget & Rechnungen" >> "$GITHUB_STEP_SUMMARY"
           echo "- kernsanierung-rechnungen-sheet.png – offene Eingangsrechnungen" >> "$GITHUB_STEP_SUMMARY"
+          echo "- kernsanierung-gantt-1-settings.png – ReUI c-gantt-1 Einstellungen" >> "$GITHUB_STEP_SUMMARY"
+          echo "- kernsanierung-gantt-1-add-task-sheet.png – ReUI Add Task Sheet" >> "$GITHUB_STEP_SUMMARY"
           echo "- csv-import-nova-select-geoeffnet.png – Schritt 1, unteres Select geöffnet" >> "$GITHUB_STEP_SUMMARY"
           echo "- csv-import-tab-1-upload.png – Upload" >> "$GITHUB_STEP_SUMMARY"
           echo "- csv-import-tab-2-map-columns.png – Map Columns + Owner warning" >> "$GITHUB_STEP_SUMMARY"

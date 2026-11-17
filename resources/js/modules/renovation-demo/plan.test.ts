@@ -46,7 +46,8 @@ describe("March 2027 apartment renovation schedule", () => {
         const floor = result.events.find((e) => e.id==="task-boden-neu")!;
         expect(floor.dependencies).toEqual(["task-belegreife"]);
         expect(floor.color).toBe(TRADES.Ausbau.color);
-        expect(floor.readOnly).toBe(true);
+        expect(floor.readOnly).toBe(false);
+        expect(result.events.find(e=>e.id==="task-belegreife")?.readOnly).toBe(true);
         expect(result.resources.some((group) => group.id==="trade-Estrich")).toBe(true);
     });
     it("rejects unknown predecessors, duplicate ids and cycles", () => {
@@ -55,7 +56,14 @@ describe("March 2027 apartment renovation schedule", () => {
         expect(() => scheduleRenovation(DEFAULT_TASKS.map((task) => task.id==="einrichten"
             ? { ...task, dependsOn:["abnahme"] }:task))).toThrow(/Zyklische/);
     });
-    it("can move the whole plan by changing the start date", () => {
+    it("respects a manual earliest start without breaking finish-to-start dependencies", () => {
+        const changed=DEFAULT_TASKS.map(task=>task.id==="tapeten"
+            ? {...task,notBefore:"2027-03-08"}:task);
+        const planned=scheduleRenovation(changed);
+        expect(format(planned.find(t=>t.id==="tapeten")!.start,"yyyy-MM-dd")).toBe("2027-03-08");
+        expect(format(planned.find(t=>t.id==="boden-alt")!.start,"yyyy-MM-dd")).toBe("2027-03-10");
+    });
+        it("can move the whole plan by changing the start date", () => {
         const moved = scheduleRenovation(DEFAULT_TASKS,"2027-04-01");
         expect(format(moved[0].start,"yyyy-MM-dd")).toBe("2027-04-01");
     });

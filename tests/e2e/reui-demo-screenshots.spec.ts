@@ -28,6 +28,33 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
         animations: "disabled",
     });
 
+    // ReUI c-gantt-1 tabbed settings popover; screenshot of the source-pattern.
+    await page.getByRole("button", { name: "Gantt Einstellungen" }).click();
+    await expect(page.getByRole("tab", { name: "Anzeige" })).toBeVisible();
+    await expect(page.getByText("Abhängigkeitspfeile")).toBeVisible();
+    await page.screenshot({
+        path: "screenshots/kernsanierung-gantt-1-settings.png",
+        fullPage: false,
+        animations: "disabled",
+    });
+    await page.keyboard.press("Escape");
+
+    // The Add Task action uses a reusable ReUI/Base UI Sheet, not inline form markup.
+    await page.getByRole("button", { name: "Vorgang anlegen" }).first().click();
+    const addSheet = page.getByRole("dialog", { name: "Vorgang anlegen" });
+    await expect(addSheet).toBeVisible();
+    await expect(addSheet.getByLabel("Bezeichnung")).toBeVisible();
+    await expect(addSheet.getByLabel("Gewerk")).toBeVisible();
+    await expect(addSheet.getByLabel("Frühester Start")).toBeVisible();
+    await expect(addSheet.getByText("Vorgänger / Abhängigkeiten")).toBeVisible();
+    await page.screenshot({
+        path: "screenshots/kernsanierung-gantt-1-add-task-sheet.png",
+        fullPage: false,
+        animations: "disabled",
+    });
+    await addSheet.getByRole("button", { name: "Abbrechen" }).click();
+    await expect(addSheet).not.toBeVisible();
+
     await page.getByRole("button", { name: "Budget, Bestellungen und Eingangsrechnungen öffnen" }).click();
     const financeSheet = page.getByRole("dialog", { name: "Projektfinanzen" });
     await expect(financeSheet).toBeVisible();
