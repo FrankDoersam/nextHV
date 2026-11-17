@@ -9,9 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
-import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { ImportTargetSelect } from "./import-target-select";
 import {
     acceptedFileTypes, displayFileSize, targetOptions,
     type ImportTarget, type WizardFile,
@@ -126,26 +124,7 @@ export function ImportUploadStep(props: UploadProps) {
             <SelectedImportFiles files={props.files} onRemove={props.onRemove} />
             <Field>
                 <FieldLabel htmlFor="reui-import-target">Import into</FieldLabel>
-                <Select value={props.target} onValueChange={(value) => {
-                    if (value) props.onTargetChange(value as ImportTarget);
-                }}>
-                    <SelectTrigger id="reui-import-target" className="w-full">
-                        <SelectValue>{targetOptions.find((option)=>option.value===props.target)?.label ?? props.target}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent
-                        alignItemWithTrigger={false}
-                        side="bottom"
-                        align="start"
-                        sideOffset={6}
-                        className="rounded-lg border border-border p-1 shadow-lg"
-                    >
-                        {targetOptions.map((option) => (
-                            <SelectItem className="rounded-md py-2" key={option.value} value={option.value}>
-                                {option.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                <ImportTargetSelect value={props.target} onValueChange={props.onTargetChange} />
             </Field>
             <Field orientation="horizontal" className="items-start gap-3">
                 <Switch id="reui-header-switch"

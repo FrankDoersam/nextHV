@@ -53,7 +53,13 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
     await expect(targetSelect).toBeVisible();
     await targetSelect.scrollIntoViewIfNeeded();
     await targetSelect.click();
-    await expect(page.getByRole("option", { name: "Companies" })).toBeVisible();
+    await expect(page.getByRole("option", { name: /^Companies/ })).toBeVisible();
+    await expect(page.getByRole("option", { name: /^Companies/ }))
+        .toContainText("Organizations and account details");
+    await expect(page.getByRole("option", { name: /^Contacts/ }))
+        .toContainText("People, emails and phone numbers");
+    await expect(targetSelect).toHaveText("Contacts");
+    await expect(targetSelect).not.toContainText("People, emails and phone numbers");
     await expect(targetSelect).toContainText("Contacts");
     const triggerBox = await targetSelect.boundingBox();
     const dropdownBox = await page.locator('[data-slot="select-content"]').boundingBox();

@@ -23,10 +23,15 @@ export interface CsvView {
     totalRows: number;
 }
 
-export const targetOptions: { value: ImportTarget; label: string }[] = [
-    { value: "contacts", label: "Contacts" },
-    { value: "companies", label: "Companies" },
-    { value: "deals", label: "Deals" },
+/** ReUI Nova c-select-16: one-line selected value, two-line dropdown options. */
+export const targetOptions: {
+    value: ImportTarget;
+    label: string;
+    description: string;
+}[] = [
+    { value: "contacts", label: "Contacts", description: "People, emails and phone numbers" },
+    { value: "companies", label: "Companies", description: "Organizations and account details" },
+    { value: "deals", label: "Deals", description: "Opportunities, values and stages" },
 ];
 
 /** Display names follow the original ReUI Nova CRM example. */
