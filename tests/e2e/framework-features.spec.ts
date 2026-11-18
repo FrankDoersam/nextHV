@@ -39,7 +39,7 @@ test("global records, audit, mapped relation import and protected PDF sheet work
         .first()
         .click();
     await expect(page).toHaveURL(/\/properties\/\d+/);
-    await page.getByRole("tab", { name: "Änderungsverlauf" }).click();
+    await page.getByRole("tab", { name: "Aktivität", exact: true }).click();
     await expect(
         page.getByRole("list", { name: "Änderungsverlauf" }),
     ).toBeVisible();

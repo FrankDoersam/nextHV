@@ -530,8 +530,29 @@ test("properties share server filters and totals across pages, retain columns an
         await expect(
             page.getByRole("heading", { name: savedName, exact: true }),
         ).toBeVisible();
+        const propertyOverview = page.locator(
+            '[data-slot="property-overview"]',
+        );
+        await expect(
+            propertyOverview.locator('[data-slot="property-general-values"]'),
+        ).toBeVisible();
+        await capture(page, "detail-desktop");
+        const building = propertyOverview.locator(
+            '[data-slot="property-building-values"]',
+        );
+        await building
+            .getByRole("button", { name: "Heizung bearbeiten", exact: true })
+            .click();
+        await expect(
+            building.getByRole("form", { name: "Heizung ändern", exact: true }),
+        ).toBeVisible();
+        await capture(page, "detail-inline-edit");
+        await building
+            .getByRole("button", { name: "Abbrechen", exact: true })
+            .click();
 
         await page.setViewportSize({ width: 390, height: 844 });
+        await capture(page, "detail-mobile");
         await page.goto(`/properties?q=${encodeURIComponent(prefix)}`);
         await expect(rows).toHaveCount(10);
         await expectSummary(page, workspace, {

@@ -8,6 +8,7 @@ import {
     EnterpriseStatusCell,
 } from "@/components/blocks/enterprise-cells";
 import { Badge } from "@/components/reui/badge";
+import { Alert, AlertDescription } from "@/components/reui/alert";
 import {
     Timeline,
     TimelineContent,
@@ -93,7 +94,7 @@ export function PaymentDetail({ row }: { row: DemoPayment }) {
                 </dl>
             </DemoDetailSection>
             <DemoDetailSection title="Zahlungsstand">
-                <dl className="grid grid-cols-2 gap-4 rounded-lg border bg-muted/20 p-4">
+                <dl className="grid grid-cols-2 gap-4">
                     <DemoDetailField label="Soll">
                         <EnterpriseAmountCell value={row.amountCents / 100} />
                     </DemoDetailField>
@@ -124,10 +125,12 @@ export function PaymentDetail({ row }: { row: DemoPayment }) {
                     </DemoDetailField>
                 </dl>
                 {days > 0 && (
-                    <p className="rounded-md border border-destructive/20 bg-destructive/5 p-3 text-xs text-destructive">
-                        {days} Tage überfällig zum {demoAsOfLabel}. Ausstehend:{" "}
-                        {euro(remaining / 100)}.
-                    </p>
+                    <Alert variant="destructive">
+                        <AlertDescription>
+                            {days} Tage überfällig zum {demoAsOfLabel}.
+                            Ausstehend: {euro(remaining / 100)}.
+                        </AlertDescription>
+                    </Alert>
                 )}
             </DemoDetailSection>
             <DemoDetailSection title="Zahlungshistorie">

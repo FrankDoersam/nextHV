@@ -81,11 +81,14 @@ import {
 } from "@/components/ui/dialog";
 import {
     Sheet,
+    SheetActions,
+    SheetBody,
     SheetClose,
     SheetContent,
     SheetDescription,
     SheetFooter,
     SheetHeader,
+    SheetHeading,
     SheetTitle,
 } from "@/components/ui/sheet";
 import { useGridI18n } from "@/framework/i18n";
@@ -1214,39 +1217,46 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                     if (!open) setDetailId(null);
                 }}
             >
-                <SheetContent
-                    showCloseButton={false}
-                    className="w-full overflow-y-auto sm:max-w-xl"
-                >
-                    <SheetHeader className="border-b">
-                        <div className="flex items-center justify-between gap-3">
-                            <Badge variant="info-light">Demo-Detail</Badge>
-                            <SheetClose
-                                render={
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon-sm"
-                                        aria-label="Details schließen"
-                                    />
-                                }
-                            >
-                                <X />
-                            </SheetClose>
-                        </div>
-                        <SheetTitle className="pr-5 text-lg">
-                            {detail ? config.detailTitle(detail) : "Details"}
-                        </SheetTitle>
-                        <SheetDescription>
-                            Beispieldatensatz · Stand 18. November 2026
-                        </SheetDescription>
+                <SheetContent showCloseButton={false} size="details">
+                    <SheetHeader>
+                        <SheetHeading
+                            title={
+                                <SheetTitle>
+                                    {detail
+                                        ? config.detailTitle(detail)
+                                        : "Details"}
+                                </SheetTitle>
+                            }
+                            badge={
+                                <Badge variant="info-light">Demo-Detail</Badge>
+                            }
+                            description={
+                                <SheetDescription>
+                                    Beispieldatensatz · Stand 18. November 2026
+                                </SheetDescription>
+                            }
+                            actions={
+                                <SheetActions>
+                                    <SheetClose
+                                        render={
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-sm"
+                                                aria-label="Details schließen"
+                                            />
+                                        }
+                                    >
+                                        <X />
+                                    </SheetClose>
+                                </SheetActions>
+                            }
+                        />
                     </SheetHeader>
-                    {detail && (
-                        <div className="px-6">
-                            {config.renderDetail(detail)}
-                        </div>
-                    )}
-                    <SheetFooter className="border-t">
+                    <SheetBody>
+                        {detail && config.renderDetail(detail)}
+                    </SheetBody>
+                    <SheetFooter>
                         {detail &&
                             config.actions?.map((action) => (
                                 <Button

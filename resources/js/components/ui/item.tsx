@@ -20,10 +20,10 @@ export function ItemContent({ className, ...props }: ComponentProps<"div">) {
     return <div data-slot="item-content" className={cn("flex min-w-0 flex-1 flex-col gap-1", className)} {...props} />;
 }
 export function ItemTitle({ className, ...props }: ComponentProps<"div">) {
-    return <div data-slot="item-title" className={cn("min-w-0 truncate font-medium", className)} {...props} />;
+    return <div data-slot="item-title" className={cn("cn-item-title line-clamp-1 flex w-fit min-w-0 items-center", className)} {...props} />;
 }
 export function ItemDescription({ className, ...props }: ComponentProps<"p">) {
-    return <p data-slot="item-description" className={cn("text-sm font-normal text-muted-foreground", className)} {...props} />;
+    return <p data-slot="item-description" className={cn("cn-item-description line-clamp-2 font-normal [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary", className)} {...props} />;
 }
 export function ItemActions({ className, ...props }: ComponentProps<"div">) {
     return <div data-slot="item-actions" className={cn("flex shrink-0 items-center gap-2", className)} {...props} />;
