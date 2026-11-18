@@ -1,8 +1,15 @@
 name: ReUI demo screenshots
 
 on:
+  pull_request:
+    paths:
+      - "resources/js/**"
+      - ".github/workflows/reui-demo-screenshots.yml"
+      - "playwright.reui-screenshots.config.ts"
+      - "tests/e2e/reui-demo-screenshots.spec.ts"
   push:
     branches:
+      - main
       - feature/reui-nova-renovation-gantt-2027
   workflow_dispatch:
 
