@@ -1,4 +1,4 @@
-import { ArrowDownLeft, Check, FileText } from "lucide-react";
+import { Check, FileText } from "lucide-react";
 import {
     EnterpriseAmountCell,
     EnterpriseDateCell,
@@ -8,6 +8,18 @@ import {
     EnterpriseStatusCell,
 } from "@/components/blocks/enterprise-cells";
 import { Badge } from "@/components/reui/badge";
+import {
+    Timeline,
+    TimelineContent,
+    TimelineDate,
+    TimelineDescription,
+    TimelineHeader,
+    TimelineIndicator,
+    TimelineItem,
+    TimelineMeta,
+    TimelineSeparator,
+    TimelineTitle,
+} from "@/components/reui/timeline";
 import type {
     EnterpriseModuleConfig,
     EnterpriseTone,
@@ -43,6 +55,8 @@ export function PaymentDetail({ row }: { row: DemoPayment }) {
     const days = overdueDays(row);
     const remaining = outstandingCents(row);
     const status = paymentStatus(row);
+    const createdDate =
+        row.dueDate > demoAsOf ? demoAsOf : `${row.dueDate.slice(0, 7)}-01`;
     return (
         <div className="flex flex-col gap-7">
             <div className="flex flex-wrap items-center gap-2">
@@ -117,72 +131,74 @@ export function PaymentDetail({ row }: { row: DemoPayment }) {
                 )}
             </DemoDetailSection>
             <DemoDetailSection title="Zahlungshistorie">
-                <ol className="flex flex-col gap-4">
-                    <li className="flex items-start gap-3">
-                        <span className="flex size-7 shrink-0 items-center justify-center rounded-full border bg-muted">
-                            <FileText className="size-3.5" aria-hidden="true" />
-                        </span>
-                        <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium">
-                                    Forderung angelegt
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    {row.period} · {row.category}
-                                </p>
-                            </div>
-                            <EnterpriseAmountCell
-                                value={row.amountCents / 100}
-                                secondary={(row.dueDate > demoAsOf
-                                    ? demoAsOf
-                                    : `${row.dueDate.slice(0, 7)}-01`
-                                )
-                                    .split("-")
-                                    .reverse()
-                                    .join(".")}
-                            />
-                        </div>
-                    </li>
-                    {row.payments.map((entry) => (
-                        <li key={entry.id} className="flex items-start gap-3">
-                            <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
-                                <ArrowDownLeft
-                                    className="size-3.5"
-                                    aria-hidden="true"
-                                />
-                            </span>
-                            <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
-                                <div className="space-y-1">
-                                    <p className="text-sm font-medium">
-                                        {entry.label}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {entry.id} · {row.method}
-                                    </p>
-                                </div>
+                <Timeline
+                    variant="activity"
+                    render={<ol />}
+                    aria-label="Zahlungshistorie"
+                >
+                    <TimelineItem step={1} render={<li />}>
+                        <TimelineHeader>
+                            <TimelineSeparator />
+                            <TimelineIndicator className="bg-muted-foreground" />
+                            <TimelineDate dateTime={createdDate}>
+                                {createdDate.split("-").reverse().join(".")}
+                            </TimelineDate>
+                        </TimelineHeader>
+                        <TimelineContent>
+                            <TimelineTitle render={<p />}>
+                                Forderung angelegt
+                            </TimelineTitle>
+                            <TimelineDescription>
+                                {row.period} · {row.category}
+                            </TimelineDescription>
+                            <TimelineMeta>
                                 <EnterpriseAmountCell
-                                    value={entry.amountCents / 100}
-                                    secondary={entry.date
-                                        .split("-")
-                                        .reverse()
-                                        .join(".")}
-                                    tone="success"
+                                    value={row.amountCents / 100}
                                 />
-                            </div>
-                        </li>
+                            </TimelineMeta>
+                        </TimelineContent>
+                    </TimelineItem>
+                    {row.payments.map((entry, index) => (
+                        <TimelineItem
+                            key={entry.id}
+                            step={index + 2}
+                            render={<li />}
+                        >
+                            <TimelineHeader>
+                                <TimelineSeparator />
+                                <TimelineIndicator className="bg-success" />
+                                <TimelineDate dateTime={entry.date}>
+                                    {entry.date.split("-").reverse().join(".")}
+                                </TimelineDate>
+                            </TimelineHeader>
+                            <TimelineContent>
+                                <TimelineTitle render={<p />}>
+                                    {entry.label}
+                                </TimelineTitle>
+                                <TimelineDescription>
+                                    {entry.id} · {row.method}
+                                </TimelineDescription>
+                                <TimelineMeta>
+                                    <EnterpriseAmountCell
+                                        value={entry.amountCents / 100}
+                                        tone="success"
+                                    />
+                                </TimelineMeta>
+                            </TimelineContent>
+                        </TimelineItem>
                     ))}
-                    {!row.payments.length && (
-                        <li className="pl-10 text-xs text-muted-foreground">
-                            Bisher kein Zahlungseingang zugeordnet.
-                        </li>
-                    )}
-                    {remaining === 0 && (
-                        <li className="flex items-center gap-2 pl-10 text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                            <Check className="size-3.5" aria-hidden="true" />
-                            Posten vollständig ausgeglichen
-                        </li>
-                    )}
-                </ol>
+                </Timeline>
+                {!row.payments.length && (
+                    <p className="text-xs text-muted-foreground">
+                        Bisher kein Zahlungseingang zugeordnet.
+                    </p>
+                )}
+                {remaining === 0 && (
+                    <p className="flex items-center gap-2 text-xs font-medium text-success-foreground">
+                        <Check className="size-3.5" aria-hidden="true" />
+                        Posten vollständig ausgeglichen
+                    </p>
+                )}
             </DemoDetailSection>
             <DemoDetailSection title="Verantwortlich">
                 <EnterprisePersonCell

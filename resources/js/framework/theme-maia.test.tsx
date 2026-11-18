@@ -24,14 +24,12 @@ it("uses the supported REUI base-nova registry style and centralized radius", ()
     expect(config.registries["@reui"]).toContain("{style}");
     expect(css).toContain("--radius: 0.625rem");
     expect(css).toContain("--radius-4xl: calc(var(--radius) + 18px)");
-    expect(css).toContain("--control-height: 2.25rem");
-    expect(css).toContain("--control-height-lg: 2.5rem");
+    expect(css).toContain("--control-height: 2rem");
+    expect(css).toContain("--control-height-lg: 2.25rem");
     expect(css).toContain("--control-height-field: 2rem");
     expect(css).toContain('[data-slot="field-control"]');
-    // Only the field-scoped height is compact; Nova action / toolbar sizes are unchanged.
-    expect(css).toContain("--control-height: 2.25rem");
-    expect(css).toContain("--control-height-lg: 2.5rem");
-    expect(css).toContain('[data-slot="collection-toolbar"]');
+    // Nova action sizes follow the reference; collection toolbars retain their 40px scope.
+    expect(css).toMatch(/\[data-slot="collection-toolbar"\]\s*\{\s*--control-height: 2\.5rem;/);
 });
 
 it("renders the compact Nova button, input, card and tab primitives", () => {
@@ -53,7 +51,7 @@ it("renders the compact Nova button, input, card and tab primitives", () => {
     expect(screen.getByRole("button", { name: "Standardaktion" }).className)
         .toContain("rounded-lg");
     expect(screen.getByRole("button", { name: "Kompaktaktion" }).className)
-        .toContain("h-8");
+        .toContain("h-7");
     expect(screen.getByRole("textbox", { name: "Name" }).className)
         .toContain("h-(--control-height)");
     expect(screen.getByRole("textbox", { name: "Name" }).className)
