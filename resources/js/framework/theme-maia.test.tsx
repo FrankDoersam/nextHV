@@ -68,7 +68,7 @@ it("renders the compact Nova button, input, card and tab primitives", () => {
         .toContain("[--frame-radius:var(--radius-xl)]");
 });
 
-it("shares Nova control-height tokens across input, select, combobox and action primitives", () => {
+it("uses registry sizing for Nova Select and control-height tokens for other action primitives", () => {
     const view = render(
         <div data-slot="collection-toolbar">
             <Input aria-label="Suche" />
@@ -96,8 +96,13 @@ it("shares Nova control-height tokens across input, select, combobox and action 
             <Button size="icon-lg" aria-label="Aktualisieren">+</Button>
         </div>,
     );
-    expect(view.container.querySelector('[data-slot="select-trigger"]')?.className)
-        .toContain("data-[size=default]:h-(--control-height)");
+    // The upstream ReUI Base Nova select uses registry-defined 32px/28px sizes.
+    // Other form controls use NextHV's configurable control-height tokens.
+    const selectTrigger = view.container.querySelector('[data-slot="select-trigger"]');
+    expect(selectTrigger).toHaveAttribute("data-size", "default");
+    expect(selectTrigger?.className).toContain("cn-select-trigger");
+    const novaStyles = readFileSync(join(process.cwd(), "resources/css/reui-base-nova.css"), "utf8");
+    expect(novaStyles).toContain("data-[size=default]:h-8");
     expect(screen.getByRole("combobox", { name: "Filter" }).className)
         .toContain("h-(--control-height)");
     expect(screen.getByRole("combobox", { name: "Relation" })
