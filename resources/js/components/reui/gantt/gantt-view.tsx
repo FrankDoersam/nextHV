@@ -94,7 +94,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { IconPlaceholder } from "@/components/reui/icon-placeholder"
+import { IconPlaceholder } from "@/components/reui/base-icon-placeholder"
 
 /** Current time, refreshed on an interval and on tab focus. */
 function useNow(intervalMs = 30_000): Date {

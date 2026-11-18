@@ -6,7 +6,7 @@ function Empty({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="empty"
       className={cn(
-        "cn-empty gap-4 rounded-lg border border-dashed p-8 flex w-full min-w-0 flex-1 flex-col items-center justify-center text-center text-balance",
+        "cn-empty flex w-full min-w-0 flex-1 flex-col items-center justify-center text-center text-balance",
         className
       )}
       {...props}
@@ -19,7 +19,7 @@ function EmptyHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="empty-header"
       className={cn(
-        "cn-empty-header gap-2 flex max-w-sm flex-col items-center",
+        "cn-empty-header flex max-w-sm flex-col items-center",
         className
       )}
       {...props}
@@ -61,7 +61,7 @@ function EmptyTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="empty-title"
-      className={cn("cn-empty-title cn-font-heading text-base font-semibold", className)}
+      className={cn("cn-empty-title cn-font-heading", className)}
       {...props}
     />
   )

@@ -45,7 +45,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { IconPlaceholder } from "@/components/reui/icon-placeholder"
+import { IconPlaceholder } from "@/components/reui/base-icon-placeholder"
 
 /**
  * Effective Tailwind palette presets for bar colors; every entry works on
