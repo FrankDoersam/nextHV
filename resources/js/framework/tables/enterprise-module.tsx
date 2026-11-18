@@ -891,7 +891,13 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                                 }
                                 onConvertToAdvanced={() => setAdvanced(true)}
                                 size="default"
-                                className="min-w-0"
+                                className={
+                                    referenceToolbar &&
+                                    !advanced &&
+                                    !needsAdvanced(query)
+                                        ? "contents"
+                                        : "min-w-0"
+                                }
                                 trigger={
                                     referenceToolbar ? (
                                         <Button
@@ -1174,7 +1180,7 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                             className="shrink-0 flex-row flex-wrap items-center justify-between gap-x-4 gap-y-2"
                         >
                             <span
-                                className="text-xs text-muted-foreground"
+                                className="sr-only text-xs text-muted-foreground sm:not-sr-only"
                                 aria-live="polite"
                             >
                                 {filtered.length} von {scopedRows.length}{" "}
@@ -1182,6 +1188,7 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                             </span>
                             <DataGridPagination
                                 compact
+                                className="min-w-0 flex-1 sm:w-auto"
                                 sizes={group ? [1, 3, 6, 12] : [10, 20, 50]}
                                 rowsPerPageLabel={
                                     group
@@ -1198,14 +1205,21 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                     </DataGrid>
                 </FramePanel>
             </Frame>
-            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
-                <p className="text-xs text-muted-foreground">
+            <div className="flex shrink-0 items-center justify-between gap-2">
+                <p className="min-w-0 flex-1 text-xs text-muted-foreground">
                     Fiktive Demo-Daten · Änderungen gelten bis zum Neuladen der
                     Seite.
                 </p>
-                <Button size="sm" variant="ghost" onClick={resetDemo}>
+                <Button
+                    size="sm"
+                    variant="ghost"
+                    className="shrink-0"
+                    onClick={resetDemo}
+                >
                     <RotateCcw className="size-3.5" />
-                    Demo zurücksetzen
+                    <span className="sr-only sm:not-sr-only">
+                        Demo zurücksetzen
+                    </span>
                 </Button>
             </div>
             <div

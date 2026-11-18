@@ -625,7 +625,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
 
     await page
         .getByRole("navigation", { name: "Hauptnavigation", exact: true })
-        .getByRole("link", { name: /^Objekte(?:\s|$)/ })
+        .locator('a[href="/properties"]')
         .click();
     // Capture the actual property create wizard, not a generated mockup.
     await page.getByRole("button", { name: "Objekt anlegen", exact: true }).click();

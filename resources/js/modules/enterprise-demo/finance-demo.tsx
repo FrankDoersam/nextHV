@@ -431,6 +431,7 @@ export const financeDemoConfig: EnterpriseModuleConfig<DemoPayment> = {
             id: "partner",
             label: "Mietpartei",
             type: "text",
+            placeholder: "Suchen...",
             getValue: (row) => row.partner,
         },
         {

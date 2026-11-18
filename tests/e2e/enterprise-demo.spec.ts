@@ -144,7 +144,7 @@ async function expectGridLayout(
     expect(scrollBox).not.toBeNull();
     expect(footerBox).not.toBeNull();
     expect(frameBox).not.toBeNull();
-    expect(scrollBox!.height).toBeGreaterThan(80);
+    expect(scrollBox!.height).toBeGreaterThan(180);
     expect(scrollBox!.y).toBeGreaterThanOrEqual(
         toolbarBox!.y + toolbarBox!.height - 1,
     );
