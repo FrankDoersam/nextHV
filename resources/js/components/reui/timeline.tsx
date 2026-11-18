@@ -7,14 +7,17 @@ import { useRender } from "@base-ui/react/use-render"
 import { cn } from "@/lib/utils"
 
 // Types
+type TimelineVariant = "default" | "activity"
+
 type TimelineContextValue = {
   activeStep: number
   setActiveStep: (step: number) => void
+  variant: TimelineVariant
 }
 
 // Context
 const TimelineContext = createContext<TimelineContextValue | undefined>(
-  undefined
+  undefined,
 )
 
 const useTimeline = () => {
@@ -31,6 +34,7 @@ interface TimelineProps extends useRender.ComponentProps<"div"> {
   value?: number
   onValueChange?: (value: number) => void
   orientation?: "horizontal" | "vertical"
+  variant?: TimelineVariant
 }
 
 function Timeline({
@@ -38,6 +42,7 @@ function Timeline({
   value,
   onValueChange,
   orientation = "vertical",
+  variant = "default",
   className,
   render,
   children,
@@ -52,7 +57,7 @@ function Timeline({
       }
       onValueChange?.(step)
     },
-    [value, onValueChange]
+    [value, onValueChange],
   )
 
   const currentStep = value ?? activeStep
@@ -60,16 +65,18 @@ function Timeline({
   const defaultProps = {
     className: cn(
       "group/timeline flex data-[orientation=horizontal]:w-full data-[orientation=horizontal]:flex-row data-[orientation=vertical]:flex-col",
-      className
+      className,
     ),
     "data-orientation": orientation,
+    "data-variant": variant,
     "data-slot": "timeline",
+    role: variant === "activity" ? "list" : undefined,
     children,
   }
 
   return (
     <TimelineContext.Provider
-      value={{ activeStep: currentStep, setActiveStep }}
+      value={{ activeStep: currentStep, setActiveStep, variant }}
     >
       {useRender({
         defaultTagName: "div",
@@ -87,8 +94,14 @@ function TimelineContent({
   children,
   ...props
 }: useRender.ComponentProps<"div">) {
+  const variant = useContext(TimelineContext)?.variant ?? "default"
   const defaultProps = {
-    className: cn("text-muted-foreground text-sm", className),
+    className: cn(
+      variant === "activity"
+        ? "min-w-0 space-y-1 pt-1 text-sm font-medium text-foreground"
+        : "text-muted-foreground text-sm",
+      className,
+    ),
     "data-slot": "timeline-content",
     children,
   }
@@ -109,10 +122,14 @@ function TimelineDate({
   children,
   ...props
 }: TimelineDateProps) {
+  const variant = useContext(TimelineContext)?.variant ?? "default"
   const defaultProps = {
     className: cn(
-      "mb-1 block font-medium text-muted-foreground text-xs group-data-[orientation=vertical]/timeline:max-sm:h-4",
-      className
+      "block group-data-[orientation=vertical]/timeline:max-sm:h-4",
+      variant === "activity"
+        ? "mb-0 text-[11px] font-semibold text-muted-foreground/60 uppercase"
+        : "mb-1 font-medium text-muted-foreground text-xs",
+      className,
     ),
     "data-slot": "timeline-date",
     children,
@@ -154,11 +171,15 @@ function TimelineIndicator({
   render,
   ...props
 }: TimelineIndicatorProps) {
+  const variant = useContext(TimelineContext)?.variant ?? "default"
   const defaultProps = {
     "aria-hidden": true,
     className: cn(
-      "group-data-[orientation=horizontal]/timeline:-top-6 group-data-[orientation=horizontal]/timeline:-translate-y-1/2 group-data-[orientation=vertical]/timeline:-left-6 group-data-[orientation=vertical]/timeline:-translate-x-1/2 absolute size-4 rounded-full border-2 border-primary/20 group-data-[orientation=vertical]/timeline:top-0 group-data-[orientation=horizontal]/timeline:left-0 group-data-completed/timeline-item:border-primary",
-      className
+      "group-data-[orientation=horizontal]/timeline:-top-6 group-data-[orientation=horizontal]/timeline:-translate-y-1/2 group-data-[orientation=vertical]/timeline:-left-6 group-data-[orientation=vertical]/timeline:-translate-x-1/2 absolute rounded-full group-data-[orientation=horizontal]/timeline:left-0",
+      variant === "activity"
+        ? "size-2 border-0 bg-primary group-data-[orientation=vertical]/timeline:top-1"
+        : "size-4 border-2 border-primary/20 group-data-[orientation=vertical]/timeline:top-0 group-data-completed/timeline-item:border-primary",
+      className,
     ),
     "data-slot": "timeline-indicator",
     children,
@@ -183,15 +204,19 @@ function TimelineItem({
   children,
   ...props
 }: TimelineItemProps) {
-  const { activeStep } = useTimeline()
+  const { activeStep, variant } = useTimeline()
 
   const defaultProps = {
     className: cn(
-      "group/timeline-item relative flex flex-1 flex-col gap-0.5 group-data-[orientation=vertical]/timeline:ms-8 group-data-[orientation=horizontal]/timeline:mt-8 group-data-[orientation=horizontal]/timeline:not-last:pe-8 group-data-[orientation=vertical]/timeline:not-last:pb-6 has-[+[data-completed]]:**:data-[slot=timeline-separator]:bg-primary",
-      className
+      "group/timeline-item relative flex min-w-0 flex-1 flex-col gap-0.5 group-data-[orientation=vertical]/timeline:ms-8 group-data-[orientation=horizontal]/timeline:mt-8 group-data-[orientation=horizontal]/timeline:not-last:pe-8 group-data-[orientation=vertical]/timeline:not-last:pb-6",
+      variant === "default" &&
+        "has-[+[data-completed]]:**:data-[slot=timeline-separator]:bg-primary",
+      className,
     ),
-    "data-completed": step <= activeStep || undefined,
+    "data-completed":
+      (variant === "default" && step <= activeStep) || undefined,
     "data-slot": "timeline-item",
+    role: variant === "activity" ? "listitem" : undefined,
     children,
   }
 
@@ -209,11 +234,13 @@ function TimelineSeparator({
   children,
   ...props
 }: useRender.ComponentProps<"div">) {
+  const variant = useContext(TimelineContext)?.variant ?? "default"
   const defaultProps = {
     "aria-hidden": true,
     className: cn(
-      "group-data-[orientation=horizontal]/timeline:-top-6 group-data-[orientation=horizontal]/timeline:-translate-y-1/2 group-data-[orientation=vertical]/timeline:-left-6 group-data-[orientation=vertical]/timeline:-translate-x-1/2 absolute self-start bg-primary/10 group-last/timeline-item:hidden group-data-[orientation=horizontal]/timeline:h-0.5 group-data-[orientation=vertical]/timeline:h-[calc(100%-1rem-0.25rem)] group-data-[orientation=horizontal]/timeline:w-[calc(100%-1rem-0.25rem)] group-data-[orientation=vertical]/timeline:w-0.5 group-data-[orientation=horizontal]/timeline:translate-x-4.5 group-data-[orientation=vertical]/timeline:translate-y-4.5",
-      className
+      "group-data-[orientation=horizontal]/timeline:-top-6 group-data-[orientation=horizontal]/timeline:-translate-y-1/2 group-data-[orientation=vertical]/timeline:-left-6 group-data-[orientation=vertical]/timeline:-translate-x-1/2 absolute self-start group-last/timeline-item:hidden group-data-[orientation=horizontal]/timeline:h-0.5 group-data-[orientation=vertical]/timeline:h-[calc(100%-1.25rem)] group-data-[orientation=horizontal]/timeline:w-[calc(100%-1.25rem)] group-data-[orientation=vertical]/timeline:w-0.5 group-data-[orientation=horizontal]/timeline:translate-x-4.5 group-data-[orientation=vertical]/timeline:translate-y-4.5",
+      variant === "activity" ? "bg-border" : "bg-primary/10",
+      className,
     ),
     "data-slot": "timeline-separator",
     children,
@@ -233,8 +260,13 @@ function TimelineTitle({
   children,
   ...props
 }: useRender.ComponentProps<"h3">) {
+  const variant = useContext(TimelineContext)?.variant ?? "default"
   const defaultProps = {
-    className: cn("font-medium text-sm", className),
+    className: cn(
+      "font-medium text-sm",
+      variant === "activity" && "leading-snug",
+      className,
+    ),
     "data-slot": "timeline-title",
     children,
   }
@@ -246,13 +278,72 @@ function TimelineTitle({
   })
 }
 
+function TimelineDescription({
+  className,
+  render,
+  ...props
+}: useRender.ComponentProps<"p">) {
+  const defaultProps = {
+    "data-slot": "timeline-description",
+    className: cn(
+      "line-clamp-2 text-xs leading-snug font-normal text-muted-foreground",
+      className,
+    ),
+  }
+  return useRender({
+    defaultTagName: "p",
+    render,
+    props: mergeProps<"p">(defaultProps, props),
+  })
+}
+
+function TimelineActions({
+  className,
+  render,
+  ...props
+}: useRender.ComponentProps<"div">) {
+  const defaultProps = {
+    "data-slot": "timeline-actions",
+    className: cn("flex flex-wrap items-center gap-2 pt-0.5", className),
+  }
+  return useRender({
+    defaultTagName: "div",
+    render,
+    props: mergeProps<"div">(defaultProps, props),
+  })
+}
+
+function TimelineMeta({
+  className,
+  render,
+  ...props
+}: useRender.ComponentProps<"div">) {
+  const defaultProps = {
+    "data-slot": "timeline-meta",
+    className: cn("flex flex-wrap items-center gap-1.5 pt-0.5", className),
+  }
+  return useRender({
+    defaultTagName: "div",
+    render,
+    props: mergeProps<"div">(defaultProps, props),
+  })
+}
+
 export {
   Timeline,
+  TimelineActions,
   TimelineContent,
   TimelineDate,
+  TimelineDescription,
   TimelineHeader,
   TimelineIndicator,
   TimelineItem,
+  TimelineMeta,
   TimelineSeparator,
   TimelineTitle,
+  type TimelineProps,
+  type TimelineItemProps,
+  type TimelineDateProps,
+  type TimelineIndicatorProps,
+  type TimelineVariant,
 }

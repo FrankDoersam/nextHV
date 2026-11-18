@@ -4,6 +4,16 @@ import { request } from "@/framework/data/http";
 import { resourceKey } from "@/framework/data/resource-key";
 import { useI18n } from "@/framework/i18n";
 import type { ResourceDefinition } from "@/framework/types";
+import {
+    Timeline,
+    TimelineContent,
+    TimelineDate,
+    TimelineHeader,
+    TimelineIndicator,
+    TimelineItem,
+    TimelineSeparator,
+    TimelineTitle,
+} from "@/components/reui/timeline";
 import { Button } from "@/components/ui/button";
 import { ErrorState, Loading, EmptyState, SectionCard } from "./content";
 import type { LazyTab } from "./lazy-tabs";
@@ -17,6 +27,14 @@ interface AuditPage {
     }[];
     next_cursor: number | null;
 }
+
+const eventIndicator: Record<string, string> = {
+    created: "bg-success",
+    updated: "bg-info",
+    deleted: "bg-destructive",
+    restored: "bg-warning",
+};
+
 export function AuditTimeline({
     resource,
     id,
@@ -77,30 +95,38 @@ export function AuditTimeline({
                     )}
                 />
             )}
-            <ol className="divide-y" aria-label={t("audit")}>
-                {events.map((event) => (
-                    <li key={event.id} className="flex gap-3 py-4 first:pt-0">
-                        <History
-                            className="mt-1 size-4 shrink-0 text-muted-foreground"
-                            aria-hidden
-                        />
-                        <div className="min-w-0 flex-1 space-y-2">
-                            <div className="flex flex-wrap items-baseline justify-between gap-2">
-                                <p className="text-sm font-medium">
-                                    {titles[event.event] ?? event.event} ·{" "}
-                                    {event.actor}
-                                </p>
-                                <time
-                                    dateTime={event.created_at}
-                                    className="text-xs text-muted-foreground"
-                                >
-                                    {new Intl.DateTimeFormat(locale, {
-                                        dateStyle: "medium",
-                                        timeStyle: "short",
-                                    }).format(new Date(event.created_at))}
-                                </time>
-                            </div>
-                            <dl className="space-y-2">
+            <Timeline
+                variant="activity"
+                render={<ol />}
+                aria-label={t("audit")}
+            >
+                {events.map((event, eventIndex) => (
+                    <TimelineItem
+                        key={event.id}
+                        step={eventIndex + 1}
+                        render={<li />}
+                    >
+                        <TimelineHeader>
+                            <TimelineSeparator />
+                            <TimelineIndicator
+                                className={
+                                    eventIndicator[event.event] ??
+                                    "bg-muted-foreground"
+                                }
+                            />
+                            <TimelineDate dateTime={event.created_at}>
+                                {new Intl.DateTimeFormat(locale, {
+                                    dateStyle: "medium",
+                                    timeStyle: "short",
+                                }).format(new Date(event.created_at))}
+                            </TimelineDate>
+                        </TimelineHeader>
+                        <TimelineContent>
+                            <TimelineTitle render={<p />}>
+                                {titles[event.event] ?? event.event} ·{" "}
+                                {event.actor}
+                            </TimelineTitle>
+                            <dl className="space-y-2 font-normal">
                                 {event.changes.map((change, index) => (
                                     <div
                                         key={index}
@@ -119,10 +145,10 @@ export function AuditTimeline({
                                     </div>
                                 ))}
                             </dl>
-                        </div>
-                    </li>
+                        </TimelineContent>
+                    </TimelineItem>
                 ))}
-            </ol>
+            </Timeline>
             {query.hasNextPage && (
                 <Button
                     variant="outline"

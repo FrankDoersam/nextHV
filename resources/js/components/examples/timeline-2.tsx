@@ -3,12 +3,16 @@ import { Badge, type BadgeProps } from "@/components/reui/badge";
 import { Rating } from "@/components/reui/rating";
 import {
     Timeline,
+    TimelineActions,
     TimelineContent,
     TimelineDate,
+    TimelineDescription,
     TimelineHeader,
     TimelineIndicator,
     TimelineItem,
+    TimelineMeta,
     TimelineSeparator,
+    TimelineTitle,
 } from "@/components/reui/timeline";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
@@ -63,13 +67,7 @@ function TimelineAttachment({
                 <ButtonGroup aria-label={attachment.name}>
                     <DialogTrigger
                         data-slot="button"
-                        render={
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-7 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg"
-                            />
-                        }
+                        render={<Button variant="outline" size="sm" />}
                     >
                         <PaperclipIcon aria-hidden className="size-3.5" />
                         {attachment.name}
@@ -79,7 +77,6 @@ function TimelineAttachment({
                         type="button"
                         variant="outline"
                         size="icon-sm"
-                        className="size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg"
                         aria-label={`Download ${attachment.name}`}
                         onClick={() => downloadAttachment(attachment)}
                     >
@@ -143,87 +140,71 @@ export function Timeline2({
             className={cn("w-full max-w-sm", className)}
         >
             <Timeline
-                defaultValue={0}
+                variant="activity"
                 orientation="vertical"
-                role="list"
                 aria-label="Activity timeline"
             >
                 {entries.map((entry, index) => (
-                    <TimelineItem
-                        key={entry.id}
-                        step={index + 1}
-                        role="listitem"
-                    >
+                    <TimelineItem key={entry.id} step={index + 1}>
                         <TimelineHeader>
-                            <TimelineSeparator className="bg-border! group-data-[orientation=vertical]/timeline:h-[calc(100%-1.25rem)]" />
+                            <TimelineSeparator />
                             <TimelineIndicator
-                                className={cn(
-                                    "size-2 border-none group-data-[orientation=vertical]/timeline:top-1",
-                                    entry.indicatorClassName,
-                                )}
+                                className={entry.indicatorClassName}
                             />
-                            <TimelineDate
-                                dateTime={entry.dateTime}
-                                className="mb-0 text-[11px] font-semibold text-muted-foreground/60 uppercase"
-                            >
+                            <TimelineDate dateTime={entry.dateTime}>
                                 {entry.date}
                             </TimelineDate>
                         </TimelineHeader>
-                        <TimelineContent className="font-medium text-foreground">
-                            <div className="min-w-0 space-y-1 pt-1">
-                                <p className="leading-snug">
-                                    <span className="text-muted-foreground">
-                                        {entry.action}
-                                    </span>{" "}
-                                    <span className="font-medium">
-                                        {entry.title}
-                                    </span>
-                                </p>
-                                <p className="line-clamp-2 text-xs leading-snug font-normal text-muted-foreground">
-                                    {entry.description}
-                                </p>
-                                {(entry.attachment ||
-                                    entry.rating !== undefined) && (
-                                    <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                                        {entry.attachment && (
-                                            <TimelineAttachment
-                                                attachment={entry.attachment}
-                                            />
-                                        )}
-                                        {entry.rating !== undefined && (
-                                            <Rating
-                                                rating={entry.rating}
-                                                size="sm"
-                                                showValue
-                                                className="py-1"
-                                                role="img"
-                                                aria-label={`${entry.rating} out of 5 stars`}
-                                            />
-                                        )}
-                                    </div>
-                                )}
-                                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                    <span className="truncate text-sm text-muted-foreground">
-                                        {entry.person}
-                                    </span>
-                                    <Badge variant={entry.badge.variant}>
-                                        {entry.badge.label}
-                                    </Badge>
-                                    <Badge
-                                        variant="outline"
-                                        className="gap-1.5"
-                                    >
-                                        <span
-                                            aria-hidden
-                                            className={cn(
-                                                "size-1.5 rounded-full",
-                                                entry.status.dotClassName,
-                                            )}
+                        <TimelineContent>
+                            <TimelineTitle render={<p />}>
+                                <span className="text-muted-foreground">
+                                    {entry.action}
+                                </span>{" "}
+                                <span className="font-medium">
+                                    {entry.title}
+                                </span>
+                            </TimelineTitle>
+                            <TimelineDescription>
+                                {entry.description}
+                            </TimelineDescription>
+                            {(entry.attachment ||
+                                entry.rating !== undefined) && (
+                                <TimelineActions>
+                                    {entry.attachment && (
+                                        <TimelineAttachment
+                                            attachment={entry.attachment}
                                         />
-                                        {entry.status.label}
-                                    </Badge>
-                                </div>
-                            </div>
+                                    )}
+                                    {entry.rating !== undefined && (
+                                        <Rating
+                                            rating={entry.rating}
+                                            size="sm"
+                                            showValue
+                                            className="py-1"
+                                            role="img"
+                                            aria-label={`${entry.rating} out of 5 stars`}
+                                        />
+                                    )}
+                                </TimelineActions>
+                            )}
+                            <TimelineMeta>
+                                <span className="truncate text-sm text-muted-foreground">
+                                    {entry.person}
+                                </span>
+                                <Badge variant={entry.badge.variant}>
+                                    {entry.badge.label}
+                                </Badge>
+                                <Badge variant="outline" className="gap-1.5">
+                                    <span
+                                        aria-hidden
+                                        className={cn(
+                                            "size-1.5 rounded-full",
+                                            entry.status.dotClassName,
+                                        )}
+                                    />
+                                    {entry.status.label}
+                                </Badge>
+                            </TimelineMeta>
                         </TimelineContent>
                     </TimelineItem>
                 ))}

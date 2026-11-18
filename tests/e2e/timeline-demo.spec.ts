@@ -61,7 +61,40 @@ test("Timeline demo opens from the app menu, previews and downloads its files, a
     await expect(timelineLink).toHaveAttribute("aria-current", "page");
     const timeline = page.getByRole("list", { name: "Activity timeline" });
     await expect(timeline.getByRole("listitem")).toHaveCount(4);
+    await page.evaluate(() => document.fonts.ready);
+    expect(
+        await page.evaluate(async () => {
+            const faces = await document.fonts.load('500 14px "Inter"');
+            return faces.some((face) => face.status === "loaded");
+        }),
+        "The shared Inter font loads instead of relying on a local fallback",
+    ).toBe(true);
+    await expect(
+        timeline
+            .getByRole("listitem")
+            .last()
+            .locator('[data-slot="timeline-separator"]'),
+    ).toBeHidden();
     await capture(page, "desktop");
+    const firstActions = timeline
+        .getByRole("listitem")
+        .first()
+        .locator('[data-slot="timeline-actions"]');
+    const [attachmentBounds, ratingBounds] = await Promise.all([
+        firstActions
+            .getByRole("group", { name: "Handoff.pdf", exact: true })
+            .boundingBox(),
+        firstActions.locator('[data-slot="rating"]').boundingBox(),
+    ]);
+    expect(attachmentBounds).not.toBeNull();
+    expect(ratingBounds).not.toBeNull();
+    expect(
+        Math.abs(
+            attachmentBounds!.y +
+                attachmentBounds!.height / 2 -
+                (ratingBounds!.y + ratingBounds!.height / 2),
+        ),
+    ).toBeLessThan(1);
     await timeline.screenshot({
         path: "screenshots/features-timeline-reference.png",
         animations: "disabled",
@@ -118,6 +151,10 @@ test("Timeline demo opens from the app menu, previews and downloads its files, a
     await mobileLink.click();
     await expect(navigation).toHaveCount(0);
     await capture(page, "mobile");
+    await timeline.screenshot({
+        path: "screenshots/features-timeline-reference-mobile.png",
+        animations: "disabled",
+    });
 
     const actionBounds = await timeline
         .getByRole("button")
@@ -136,6 +173,10 @@ test("Timeline demo opens from the app menu, previews and downloads its files, a
         document.documentElement.style.colorScheme = "dark";
     });
     await capture(page, "mobile-dark");
+    await timeline.screenshot({
+        path: "screenshots/features-timeline-reference-mobile-dark.png",
+        animations: "disabled",
+    });
     expect(writes).toEqual([]);
     expect(errors).toEqual([]);
 });

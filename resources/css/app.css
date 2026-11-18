@@ -4,6 +4,14 @@
 @source "../js";
 @custom-variant dark (&:is(.dark *));
 @custom-variant style-nova (&:is(.style-nova *));
+/* Inter Project, SIL OFL 1.1; source and license are bundled in public/fonts. */
+@font-face {
+    font-family: "Inter";
+    src: url("/fonts/InterVariable.woff2") format("woff2");
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+}
 @theme inline {
     --font-sans:
         "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
@@ -54,9 +62,9 @@
 :root {
     /* ReUI Nova Default / Base UI / Neutral / Inter */
     --radius: 0.625rem;
-    --control-height: 2.25rem;
+    --control-height: 2rem;
     --control-height-sm: 2rem;
-    --control-height-lg: 2.5rem;
+    --control-height-lg: 2.25rem;
     --control-height-field: 2rem;
     --background: oklch(1 0 0);
     --foreground: oklch(.145 0 0);
@@ -85,14 +93,14 @@
     --sidebar-accent-foreground: oklch(.205 0 0);
     --sidebar-border: oklch(.922 0 0);
     --sidebar-ring: oklch(.708 0 0);
-    --success: oklch(.53 .14 153);
-    --success-foreground: oklch(.31 .10 153);
-    --warning: oklch(.65 .16 72);
-    --warning-foreground: oklch(.43 .12 72);
-    --info: oklch(.56 .16 250);
-    --info-foreground: oklch(.37 .14 250);
-    --invert: oklch(.145 0 0);
-    --invert-foreground: oklch(1 0 0);
+    --success: var(--color-emerald-500);
+    --success-foreground: var(--color-emerald-900);
+    --warning: var(--color-yellow-500);
+    --warning-foreground: var(--color-yellow-900);
+    --info: var(--color-violet-500);
+    --info-foreground: var(--color-violet-900);
+    --invert: var(--color-zinc-900);
+    --invert-foreground: var(--color-zinc-50);
 }
 .dark {
     --background: oklch(.145 0 0);
@@ -122,14 +130,14 @@
     --sidebar-accent-foreground: oklch(.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(.556 0 0);
-    --success: oklch(.75 .15 153);
-    --success-foreground: oklch(.80 .11 153);
-    --warning: oklch(.78 .14 72);
-    --warning-foreground: oklch(.82 .11 72);
-    --info: oklch(.74 .12 250);
-    --info-foreground: oklch(.82 .09 250);
-    --invert: oklch(.985 0 0);
-    --invert-foreground: oklch(.145 0 0);
+    --success: var(--color-emerald-500);
+    --success-foreground: var(--color-emerald-600);
+    --warning: var(--color-yellow-500);
+    --warning-foreground: var(--color-yellow-600);
+    --info: var(--color-violet-500);
+    --info-foreground: var(--color-violet-600);
+    --invert: var(--color-zinc-700);
+    --invert-foreground: var(--color-zinc-50);
 }
 @layer base {
     * {
@@ -158,7 +166,7 @@
         --control-height: var(--control-height-field);
     }
     [data-slot="collection-toolbar"] {
-        --control-height: var(--control-height-lg);
+        --control-height: 2.5rem;
     }
     .nav-item {
         @apply flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground;

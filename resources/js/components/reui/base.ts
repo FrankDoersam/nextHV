@@ -12,6 +12,24 @@ export { Cascader } from "@/components/reui/cascader/cascader";
 export { DataGrid } from "@/components/reui/data-grid/data-grid";
 export { Filters } from "@/components/reui/filters/filters";
 export { Frame } from "@/components/reui/frame";
+export {
+    Timeline,
+    TimelineActions,
+    TimelineContent,
+    TimelineDate,
+    TimelineDescription,
+    TimelineHeader,
+    TimelineIndicator,
+    TimelineItem,
+    TimelineMeta,
+    TimelineSeparator,
+    TimelineTitle,
+    type TimelineProps,
+    type TimelineItemProps,
+    type TimelineDateProps,
+    type TimelineIndicatorProps,
+    type TimelineVariant,
+} from "@/components/reui/timeline";
 export { AlertDialog } from "@/components/ui/alert-dialog";
 export { Avatar } from "@/components/ui/avatar";
 export { Button } from "@/components/ui/button";
