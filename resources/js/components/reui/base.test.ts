@@ -11,6 +11,8 @@ const baseComponents = [
     { name: "AlertDialog", importPath: "@/components/ui/alert-dialog", file: "../ui/alert-dialog.tsx" },
     { name: "Avatar", importPath: "@/components/ui/avatar", file: "../ui/avatar.tsx" },
     { name: "Button", importPath: "@/components/ui/button", file: "../ui/button.tsx" },
+    { name: "ButtonGroup", importPath: "@/components/ui/button-group", file: "../ui/button-group.tsx" },
+    { name: "ChartContainer", importPath: "@/components/ui/chart", file: "../ui/chart.tsx" },
     { name: "Checkbox", importPath: "@/components/ui/checkbox", file: "../ui/checkbox.tsx" },
     { name: "Dialog", importPath: "@/components/ui/dialog", file: "../ui/dialog.tsx" },
     { name: "DropdownMenu", importPath: "@/components/ui/dropdown-menu", file: "../ui/dropdown-menu.tsx" },
@@ -33,7 +35,7 @@ const baseComponents = [
 
 describe("NextHV ReUI Base API", () => {
     it("keeps all 26 canonical Base components installed", () => {
-        expect(baseComponents).toHaveLength(26);
+        expect(baseComponents).toHaveLength(28);
         for (const component of baseComponents) {
             const source = readFileSync(new URL(component.file, import.meta.url), "utf8");
             expect(source.length, component.name + " is empty").toBeGreaterThan(0);
@@ -46,4 +48,11 @@ describe("NextHV ReUI Base API", () => {
             expect(source).toContain("export { " + component.name + ' } from "' + component.importPath + '";');
         }
     });
+});
+
+it("also exports shared ButtonGroup and Chart composition parts", () => {
+    const source = readFileSync("resources/js/components/reui/base.ts", "utf8");
+    for (const symbol of ["ButtonGroupText", "ButtonGroupSeparator", "ChartTooltip", "ChartTooltipContent", "useChart"]) {
+        expect(source).toContain(symbol);
+    }
 });
