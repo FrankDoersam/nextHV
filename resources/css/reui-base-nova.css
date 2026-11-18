@@ -1,3 +1,16 @@
+/* Tailwind v4 utilities used by the upstream ReUI Nova source. */
+@utility no-scrollbar {
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+}
+@theme {
+    --animate-accordion-down: accordion-down 200ms ease-out;
+    --animate-accordion-up: accordion-up 200ms ease-out;
+    --animate-caret-blink: caret-blink 1.25s ease-in-out infinite;
+    @keyframes accordion-down { from { height: 0; } to { height: var(--accordion-panel-height); } }
+    @keyframes accordion-up { from { height: var(--accordion-panel-height); } to { height: 0; } }
+    @keyframes caret-blink { 0%, 70%, 100% { opacity: 1; } 20%, 50% { opacity: 0; } }
+}
 /* ReUI MIT © 2025 Keenthemes Inc – Base Nova style tokens. */
 .style-nova {
   /* MARK: Accordion */
