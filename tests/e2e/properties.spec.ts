@@ -18,6 +18,16 @@ type PropertyPage = {
     current_page: number;
 };
 
+type RentConditionFixture = {
+    id: number;
+    updated_at: string;
+    effective_from: string;
+    base_rent: number | string;
+    service_charge: number | string;
+    heating_cost: number | string;
+    vat_rate: number | string;
+};
+
 test.use({
     viewport: { width: 1440, height: 1000 },
     locale: "de-DE",
@@ -99,24 +109,18 @@ async function expectSummary(
     }
 }
 
-async function capture(page: Page, name: string) {
+async function capture(page: Page, name: string, feature = "properties") {
     await page.evaluate(() => document.fonts.ready);
     expect(
         await page.evaluate(() => document.documentElement.scrollWidth),
     ).toBeLessThanOrEqual(page.viewportSize()!.width);
     await page.screenshot({
-        path: `screenshots/features-properties-${name}.png`,
+        path: `screenshots/features-${feature}-${name}.png`,
         animations: "disabled",
     });
 }
 
-test("properties share server filters and totals across pages, retain columns and save through the edit Sheet", async ({
-    page,
-}) => {
-    test.setTimeout(120_000);
-    await mkdir("screenshots", { recursive: true });
-    const errors: string[] = [];
-    page.on("pageerror", (error) => errors.push(error.message));
+async function loginWorkspace(page: Page) {
     await page.goto("/");
     await page.getByLabel("E-Mail-Adresse").fill("workspace-e2e@example.test");
     await page
@@ -129,6 +133,32 @@ test("properties share server filters and totals across pages, retain columns an
             exact: true,
         }),
     ).toBeVisible();
+}
+
+async function gridCell(workspace: Locator, row: Locator, field: string) {
+    const index = await workspace
+        .locator("thead tr")
+        .last()
+        .locator("th")
+        .evaluateAll(
+            (headers, field) =>
+                headers.findIndex(
+                    (header) => header.getAttribute("data-col-id") === field,
+                ),
+            field,
+        );
+    expect(index, `Die Spalte ${field} ist sichtbar`).toBeGreaterThanOrEqual(0);
+    return row.locator("td").nth(index);
+}
+
+test("properties share server filters and totals across pages, retain columns and save through the edit Sheet", async ({
+    page,
+}) => {
+    test.setTimeout(120_000);
+    await mkdir("screenshots", { recursive: true });
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await loginWorkspace(page);
 
     const prefix = `E2E-PROP-${randomUUID().slice(0, 8)}`;
     let created: PropertyFixture[] = [];
@@ -137,6 +167,7 @@ test("properties share server filters and totals across pages, retain columns an
             page,
             "/api/v1/properties/mutate",
             {
+                response: {},
                 mutate: Array.from({ length: 12 }, (_, index) => ({
                     operation: "create",
                     attributes: {
@@ -157,16 +188,19 @@ test("properties share server filters and totals across pages, retain columns an
                 })),
             },
         );
+        expect(Array.isArray(setup.records)).toBe(true);
         created = setup.records;
         expect(created).toHaveLength(12);
         const record = created[0];
         await page.goto("/properties");
-        const workspace = page.locator('[data-slot="properties-page"]');
+        const workspace = page.locator('[data-slot="resource-grid-page"]');
         const search = workspace.getByRole("textbox", {
             name: "Objekte durchsuchen",
             exact: true,
         });
-        const rows = workspace.locator("tbody tr[data-row-id]");
+        const rows = workspace.locator(
+            'tbody tr[data-row-id]:not([data-row-id^="group:"])',
+        );
         const pagination = workspace.locator(
             '[data-slot="data-grid-pagination"]',
         );
@@ -221,6 +255,69 @@ test("properties share server filters and totals across pages, retain columns an
             workspaceBox.x + workspaceBox.width / 2,
         );
         await capture(page, "desktop");
+
+        const grouped = page.waitForResponse(
+            (response) =>
+                new URL(response.url()).pathname ===
+                    "/api/v1/properties/metrics/groups" &&
+                response.request().postDataJSON()?.group === "city" &&
+                response.request().postDataJSON()?.search?.text?.value ===
+                    prefix,
+        );
+        await workspace
+            .getByRole("columnheader", { name: "Ort", exact: true })
+            .getByRole("button", { name: "Ort", exact: true })
+            .click();
+        await page
+            .getByRole("menuitem", {
+                name: "Nach dieser Spalte gruppieren",
+                exact: true,
+            })
+            .click();
+        const groupedResponse = await grouped;
+        expect(groupedResponse.ok()).toBe(true);
+        expect(await groupedResponse.json()).toMatchObject({
+            data: {
+                field: "city",
+                total: 12,
+                groups: [{ value: "Berlin", count: 12 }],
+            },
+        });
+        const group = workspace.getByRole("button", {
+            name: "Berlin: zuklappen",
+            exact: true,
+        });
+        await expect(group).toHaveAttribute("aria-expanded", "true");
+        await expect(group).toContainText(/10\s+auf Seite\s+·\s+12 gesamt/);
+        await expect(rows).toHaveCount(10);
+        await group.click();
+        const collapsed = workspace.getByRole("button", {
+            name: "Berlin: aufklappen",
+            exact: true,
+        });
+        await expect(collapsed).toHaveAttribute("aria-expanded", "false");
+        await expect(rows).toHaveCount(0);
+        await expect(pagination).toContainText("1–10 von 12");
+        await collapsed.click();
+        await expect(rows).toHaveCount(10);
+        await expectSummary(page, workspace, {
+            total: 12,
+            active: 11,
+            units: 0,
+            area: 1200,
+        });
+        await capture(page, "desktop-grouped");
+        await workspace
+            .getByRole("button", { name: "Gruppierung aufheben", exact: true })
+            .click();
+        await expect(
+            workspace.locator('tr[data-row-id^="group:"]'),
+        ).toHaveCount(0);
+        await expect(rows).toHaveCount(10);
+        await expect(page).not.toHaveURL(/[?&]group=/);
+        await expect(
+            workspace.locator('[data-slot="resource-grid"]'),
+        ).toHaveAttribute("aria-busy", "false");
 
         await pagination
             .getByRole("button", { name: "Nächste Seite", exact: true })
@@ -284,11 +381,10 @@ test("properties share server filters and totals across pages, retain columns an
         });
 
         await workspace
-            .getByRole("button", { name: "Spalten", exact: true })
+            .getByRole("combobox", { name: "Spalten", exact: true })
             .click();
-        await page
-            .getByRole("menuitemcheckbox", { name: "PLZ", exact: true })
-            .click();
+        await page.getByPlaceholder("Spalten suchen …").fill("PLZ");
+        await page.getByRole("option", { name: /PLZ/ }).click();
         await page.keyboard.press("Escape");
         await expect(
             workspace.getByRole("columnheader", { name: /PLZ/ }),
@@ -299,11 +395,10 @@ test("properties share server filters and totals across pages, retain columns an
             workspace.getByRole("columnheader", { name: /PLZ/ }),
         ).toHaveCount(0);
         await workspace
-            .getByRole("button", { name: "Spalten", exact: true })
+            .getByRole("combobox", { name: "Spalten", exact: true })
             .click();
-        await page
-            .getByRole("menuitemcheckbox", { name: "PLZ", exact: true })
-            .click();
+        await page.getByPlaceholder("Spalten suchen …").fill("PLZ");
+        await page.getByRole("option", { name: /PLZ/ }).click();
         await page.keyboard.press("Escape");
         await expect(
             workspace.getByRole("columnheader", { name: /PLZ/ }),
@@ -527,4 +622,181 @@ test("properties share server filters and totals across pages, retain columns an
             }
         }
     }
+});
+
+test("rent conditions calculate local previews in the infinite grid without mutating seeded records", async ({
+    page,
+}) => {
+    test.setTimeout(90_000);
+    await mkdir("screenshots", { recursive: true });
+    const errors: string[] = [];
+    const mutations: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    page.on("request", (request) => {
+        const path = new URL(request.url()).pathname;
+        if (path.startsWith("/api/v1/") && path.endsWith("/mutate")) {
+            mutations.push(`${request.method()} ${path}`);
+        }
+    });
+    await loginWorkspace(page);
+
+    const loaded = page.waitForResponse(
+        (response) =>
+            new URL(response.url()).pathname ===
+            "/api/v1/rent-conditions/search",
+    );
+    await page.goto("/rent-conditions");
+    const response = await loaded;
+    expect(response.ok()).toBe(true);
+    expect(response.request().postDataJSON().search.limit).toBe(25);
+    const firstPage = (await response.json()) as {
+        data: RentConditionFixture[];
+        total: number;
+    };
+    expect(
+        firstPage.data.length,
+        "PropertySeeder stellt bestehende Konditionen bereit",
+    ).toBeGreaterThan(0);
+    expect(firstPage.total).toBeGreaterThan(25);
+    const original = firstPage.data[0];
+    const baseCents = Math.round(Number(original.base_rent) * 100);
+    expect(baseCents).toBeGreaterThan(0);
+    const money = (cents: number) =>
+        new Intl.NumberFormat("de-DE", {
+            style: "currency",
+            currency: "EUR",
+        }).format(cents / 100);
+    const defaultRentCents = Math.round((baseCents * 105) / 100);
+    const proposedRentCents = Math.round((baseCents * 110) / 100);
+    const monthlyDeltaCents = proposedRentCents - baseCents;
+
+    const workspace = page.locator(
+        '[data-slot="resource-grid-page"][data-resource="rent-conditions"]',
+    );
+    const row = workspace.locator(`tbody tr[data-row-id="${original.id}"]`);
+    await expect(row).toBeVisible();
+    await expect(
+        workspace.locator('[data-slot="data-grid-pagination"]'),
+    ).toHaveCount(0);
+    await expect(
+        workspace.locator('[data-slot="resource-grid-load-more"]'),
+    ).toContainText(new RegExp(`von ${firstPage.total} geladen`));
+
+    const percent = row.getByRole("textbox", { name: /^Mietanpassung · % – / });
+    const date = row.getByRole("textbox", { name: /^Anpassung ab – / });
+    await expect(percent).toHaveValue("5");
+    const initialDate = await date.inputValue();
+    const year = Number(initialDate.slice(-4));
+    expect(year).toBeGreaterThan(2000);
+    const forecastYear = row.getByRole("textbox", { name: /^Vorschaujahr – / });
+    expect(Number((await forecastYear.inputValue()).replaceAll(".", ""))).toBe(
+        year,
+    );
+    await expect(
+        await gridCell(workspace, row, "scenario_new_rent"),
+    ).toContainText(money(defaultRentCents));
+
+    await percent.fill("10");
+    await percent.press("Tab");
+    await expect(
+        await gridCell(workspace, row, "scenario_new_rent"),
+    ).toContainText(money(proposedRentCents));
+    await expect(
+        await gridCell(workspace, row, "scenario_year_delta"),
+    ).toContainText(money(monthlyDeltaCents * 12));
+    await date.fill(`01.07.${year}`);
+    await date.press("Tab");
+    await expect(date).toHaveValue(`01.07.${year}`);
+    await expect(
+        await gridCell(workspace, row, "scenario_year_delta"),
+    ).toContainText(money(monthlyDeltaCents * 6));
+    await expect(page).toHaveURL(/\/rent-conditions(?:\?|$)/);
+
+    await workspace
+        .getByRole("combobox", { name: "Spalten", exact: true })
+        .click();
+    const chooser = page.getByRole("dialog", {
+        name: "Spalten auswählen",
+        exact: true,
+    });
+    await chooser.getByRole("option", { name: /^Mietvorschau/ }).click();
+    const previewColumns = chooser.getByRole("listbox", {
+        name: "Mietvorschau",
+        exact: true,
+    });
+    await expect(previewColumns).toBeVisible();
+    await previewColumns
+        .getByRole("option", { name: /^Bewertungsbasis · Vorschau/ })
+        .click();
+    await previewColumns
+        .getByRole("option", { name: /^Bruttorendite · Vorschau/ })
+        .click();
+    await capture(page, "columns-desktop", "rent-conditions");
+    await page.keyboard.press("Escape");
+
+    const valuation = row.getByRole("textbox", {
+        name: /^Bewertungsbasis · Vorschau – /,
+    });
+    await valuation.fill("100000");
+    await valuation.press("Tab");
+    const annualRentCents = baseCents * 12 + monthlyDeltaCents * 6;
+    const yieldPercent =
+        Math.round((annualRentCents / 100 / 100000) * 10000) / 100;
+    const yieldCaption = `${new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 }).format(yieldPercent)} %`;
+    await expect(
+        await gridCell(workspace, row, "scenario_gross_yield"),
+    ).toContainText(yieldCaption);
+    await percent.scrollIntoViewIfNeeded();
+    await capture(page, "desktop", "rent-conditions");
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(percent).toHaveValue("10");
+    await expect(date).toHaveValue(`01.07.${year}`);
+    const forecast = await gridCell(workspace, row, "scenario_new_rent");
+    await forecast.scrollIntoViewIfNeeded();
+    await expect(forecast).toContainText(money(proposedRentCents));
+    await expect(
+        workspace.locator('[data-slot="resource-grid-load-more"]'),
+    ).toBeVisible();
+    await capture(page, "mobile", "rent-conditions");
+    await workspace
+        .getByRole("combobox", { name: "Spalten", exact: true })
+        .click();
+    await chooser.getByPlaceholder("Spalten suchen …").fill("Bruttorendite");
+    await expect(
+        chooser.getByRole("option", { name: /^Bruttorendite · Vorschau/ }),
+    ).toHaveAttribute("aria-selected", "true");
+    await capture(page, "columns-mobile", "rent-conditions");
+    await page.keyboard.press("Escape");
+
+    await workspace
+        .getByRole("button", { name: "Vorschau zurücksetzen", exact: true })
+        .click();
+    await expect(percent).toHaveValue("5");
+    await expect(date).toHaveValue(initialDate);
+    await expect(
+        await gridCell(workspace, row, "scenario_new_rent"),
+    ).toContainText(money(defaultRentCents));
+    const persisted = await api<{ data: RentConditionFixture[] }>(
+        page,
+        "/api/v1/rent-conditions/search",
+        {
+            search: {
+                filters: [{ field: "id", value: original.id }],
+                limit: 10,
+            },
+        },
+    );
+    expect(persisted.data).toHaveLength(1);
+    expect(persisted.data[0]).toMatchObject({
+        id: original.id,
+        updated_at: original.updated_at,
+        effective_from: original.effective_from,
+        base_rent: original.base_rent,
+        service_charge: original.service_charge,
+        heating_cost: original.heating_cost,
+        vat_rate: original.vat_rate,
+    });
+    expect(mutations).toEqual([]);
+    expect(errors).toEqual([]);
 });

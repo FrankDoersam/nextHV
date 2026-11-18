@@ -1127,7 +1127,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
         await page.goto(`/${resource}`);
         if (resource === "properties") {
             const propertiesPage = page.locator(
-                '[data-slot="properties-page"]',
+                '[data-slot="resource-grid-page"]',
             );
             const records = propertiesPage.locator("tbody tr[data-row-id]");
             const scroll = propertiesPage.locator(
@@ -1256,7 +1256,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     for (const width of [768, 1440]) {
         await page.setViewportSize({ width, height: 1000 });
         await page.goto("/properties");
-        const propertiesPage = page.locator('[data-slot="properties-page"]');
+        const propertiesPage = page.locator('[data-slot="resource-grid-page"]');
         await expect(propertiesPage.locator("tbody tr[data-row-id]").first()).toBeVisible();
         await expect(propertiesPage.locator('[data-slot="collection-kpis"]'))
             .not.toHaveAttribute("aria-busy", "true");
@@ -1283,7 +1283,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
             await expect(sidebar.locator('[aria-label="Sprache / Language"]')).toHaveCount(0);
             await capture("56-sidebar-desktop-expanded");
 
-            await sidebar.getByRole("button", {
+            await page.getByRole("button", {
                 name: "Navigation einklappen",
             }).click();
             await expect(sidebar).toHaveAttribute("data-collapsed", "true");

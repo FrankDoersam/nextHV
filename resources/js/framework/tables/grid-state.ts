@@ -54,8 +54,12 @@ export function readGridState(
     const rawSort = json(value("sort"), defaults.sorting ?? []);
     const rawFilters = json(value("filters"), defaults.filters ?? {});
     const rawColumns = json(value("columns"), defaults.columnVisibility ?? {});
-    const page = Number(value("page") ?? (defaults.pagination?.pageIndex ?? 0) + 1);
-    const size = Number(value("perPage") ?? defaults.pagination?.pageSize ?? pageSize);
+    const page = Number(
+        value("page") ?? (defaults.pagination?.pageIndex ?? 0) + 1,
+    );
+    const size = Number(
+        value("perPage") ?? defaults.pagination?.pageSize ?? pageSize,
+    );
     return {
         view: resource.views?.some((view) => view.id === value("view"))
             ? value("view")!
@@ -75,7 +79,15 @@ export function readGridState(
                           s &&
                           typeof s.id === "string" &&
                           resource.columns.some(
-                              (c) => c.field === s.id && c.sortable !== false,
+                              (c) =>
+                                  c.field === s.id &&
+                                  c.sortable !== false &&
+                                  !c.computed &&
+                                  (!c.input ||
+                                      (c.input.mode === "record" &&
+                                          resource.fields.some(
+                                              (field) => field.name === c.field,
+                                          ))),
                           ),
                   )
                   .map((s) => ({ id: s.id, desc: !!s.desc }))
@@ -96,10 +108,14 @@ export function readGridState(
                     : [],
             ),
         } as ColumnVisibilityState,
-        group: resource.groupBy?.some((g) => g.value === (value("group") ?? defaults.group))
+        group: resource.groupBy?.some(
+            (g) => g.value === (value("group") ?? defaults.group),
+        )
             ? (value("group") ?? defaults.group)!
             : "none",
-        dense: value("dense") === "1" || (value("dense") === null && defaults.dense === true),
+        dense:
+            value("dense") === "1" ||
+            (value("dense") === null && defaults.dense === true),
     };
 }
 export function writeGridState(
@@ -138,14 +154,22 @@ export function useGridState(
         prefix = "",
         pageSize = 25,
         defaults = {},
-    }: { sync?: boolean; prefix?: string; pageSize?: number; defaults?: Partial<GridState> } = {},
+    }: {
+        sync?: boolean;
+        prefix?: string;
+        pageSize?: number;
+        defaults?: Partial<GridState>;
+    } = {},
 ) {
     const [url, setUrl] = useSearchParams();
     const [local, setLocal] = useState(() =>
         readGridState(new URLSearchParams(), resource, "", pageSize, defaults),
     );
     const state = useMemo(
-        () => (sync ? readGridState(url, resource, prefix, pageSize, defaults) : local),
+        () =>
+            sync
+                ? readGridState(url, resource, prefix, pageSize, defaults)
+                : local,
         [sync, url, resource, prefix, pageSize, defaults, local],
     );
     function commit(
@@ -157,7 +181,15 @@ export function useGridState(
                 (prev) =>
                     writeGridState(
                         prev,
-                        change(readGridState(prev, resource, prefix, pageSize, defaults)),
+                        change(
+                            readGridState(
+                                prev,
+                                resource,
+                                prefix,
+                                pageSize,
+                                defaults,
+                            ),
+                        ),
                         prefix,
                     ),
                 { replace },

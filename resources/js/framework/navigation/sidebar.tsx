@@ -74,7 +74,8 @@ export function useSidebarExpansion(items: NavigationItem[], userId?: number) {
     return {
         isOpen: (item: NavigationItem) =>
             overrides[item.id] ??
-            (navigationBranchActive(item, pathname, search) || item.defaultOpen === true),
+            (navigationBranchActive(item, pathname, search) ||
+                item.defaultOpen === true),
         setOpen: (id: string, open: boolean) =>
             setOverrides((current) => ({ ...current, [id]: open })),
     };
@@ -169,17 +170,17 @@ function SidebarNode({
     const open = controls.isOpen(item);
     const selected = navigationSelected(item, pathname, search);
     const branchActive = navigationBranchActive(item, pathname, search);
-    const Icon = item.icon ?? (hasChildren && !item.to ? FolderClosed : undefined);
+    const Icon =
+        item.icon ?? (hasChildren && !item.to ? FolderClosed : undefined);
 
-    // REUI Base-Nova selection: one quiet full-row tint. No leading rounded
-    // border, half-circle, branch connector or separate selection dot.
+    // REUI uses one full-row tint for the active navigation item.
     const rowClasses = cn(
-        "group/nav flex min-h-8 min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-[background-color,color] duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "group/nav flex h-8 min-w-0 flex-1 items-center gap-2 rounded-md px-2 text-sm transition-[background-color,color] duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         selected
-            ? "bg-primary/[0.09] font-semibold text-foreground"
+            ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
             : branchActive
-              ? "font-medium text-foreground hover:bg-muted/60"
-              : "font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+              ? "font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         item.disabledReason && "cursor-not-allowed opacity-50",
     );
     const label = (
@@ -190,8 +191,8 @@ function SidebarNode({
                     className={cn(
                         "size-4 shrink-0 transition-colors",
                         selected
-                            ? "text-primary"
-                            : "text-muted-foreground/75 group-hover/nav:text-foreground",
+                            ? "text-sidebar-accent-foreground"
+                            : "text-muted-foreground group-hover/nav:text-sidebar-accent-foreground",
                     )}
                 />
             )}
@@ -239,7 +240,7 @@ function SidebarNode({
             data-level={level}
             open={open}
             onOpenChange={(next) => controls.setOpen(item.id, next)}
-            className={cn("min-w-0", level === 0 && "mt-3")}
+            className={cn("min-w-0", level === 0 && "mt-4")}
         >
             {link ? (
                 <div className="flex min-w-0 items-center gap-1">
@@ -264,15 +265,13 @@ function SidebarNode({
                     data-slot="sidebar-group-trigger"
                     data-branch-active={branchActive ? "true" : undefined}
                     className={cn(
-                        "group/nav flex min-h-8 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium transition-[background-color,color] duration-150 motion-reduce:transition-none hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                        branchActive
-                            ? "text-foreground"
-                            : "text-muted-foreground",
+                        "group/nav flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs font-medium text-muted-foreground transition-[background-color,color] duration-150 motion-reduce:transition-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        level > 0 && "text-sm",
                         item.disabledReason && "opacity-50",
                     )}
                     title={item.tooltip ?? item.description}
                 >
-                    {Icon && (
+                    {Icon && level > 0 && (
                         <Icon
                             aria-hidden="true"
                             className={cn(
@@ -296,7 +295,13 @@ function SidebarNode({
                 </Collapsible.Trigger>
             )}
             <Collapsible.Panel className="min-w-0">
-                <div className="space-y-0.5 pt-0.5 pl-3">
+                <div
+                    className={cn(
+                        "flex min-w-0 flex-col gap-px",
+                        (level > 0 || link) &&
+                            "mx-3.5 translate-x-px gap-1 border-l border-sidebar-border px-2.5 py-0.5",
+                    )}
+                >
                     {item.children.map((child) => (
                         <SidebarNode
                             key={child.id}
@@ -336,8 +341,8 @@ export function SidebarNavigation({
                 aria-label="Hauptnavigation"
                 data-slot="sidebar-navigation"
                 className={cn(
-                    "min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pt-3 pb-4",
-                    rail && "px-2 py-4",
+                    "min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-2 pb-2",
+                    rail && "px-0",
                 )}
             >
                 {rail ? (
@@ -350,10 +355,10 @@ export function SidebarNavigation({
                                 search,
                             );
                             const tileClasses = cn(
-                                "flex size-10 items-center justify-center rounded-md transition-[background-color,color] duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                "flex size-8 items-center justify-center rounded-md transition-[background-color,color] duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                                 selected
-                                    ? "bg-primary/[0.09] text-primary"
-                                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                                    : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                             );
                             const trigger = item.disabledReason ? (
                                 <span
@@ -363,7 +368,10 @@ export function SidebarNavigation({
                                     aria-label={item.label}
                                     className={cn(tileClasses, "opacity-50")}
                                 >
-                                    <Icon aria-hidden="true" className="size-4" />
+                                    <Icon
+                                        aria-hidden="true"
+                                        className="size-4"
+                                    />
                                 </span>
                             ) : item.children.length ? (
                                 <button
@@ -377,7 +385,10 @@ export function SidebarNavigation({
                                     }}
                                     className={tileClasses}
                                 >
-                                    <Icon aria-hidden="true" className="size-4" />
+                                    <Icon
+                                        aria-hidden="true"
+                                        className="size-4"
+                                    />
                                 </button>
                             ) : (
                                 <Link
@@ -388,7 +399,10 @@ export function SidebarNavigation({
                                     aria-current={selected ? "page" : undefined}
                                     className={tileClasses}
                                 >
-                                    <Icon aria-hidden="true" className="size-4" />
+                                    <Icon
+                                        aria-hidden="true"
+                                        className="size-4"
+                                    />
                                 </Link>
                             );
                             return (
@@ -398,7 +412,7 @@ export function SidebarNavigation({
                                         "flex justify-center",
                                         index === 0 &&
                                             item.id === "home" &&
-                                            "mb-3 border-b border-sidebar-border/70 pb-3",
+                                            "mb-3",
                                     )}
                                 >
                                     <NavHint
@@ -411,24 +425,19 @@ export function SidebarNavigation({
                         })}
                     </div>
                 ) : (
-                    <>
-                        <p className="px-2.5 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
-                            Navigation
-                        </p>
-                        <div className="space-y-1">
-                            {items.map((item) => (
-                                <SidebarNode
-                                    key={item.id}
-                                    item={item}
-                                    level={0}
-                                    controls={controls}
-                                    onNavigate={onNavigate}
-                                    pathname={pathname}
-                                    search={search}
-                                />
-                            ))}
-                        </div>
-                    </>
+                    <div className="space-y-px">
+                        {items.map((item) => (
+                            <SidebarNode
+                                key={item.id}
+                                item={item}
+                                level={0}
+                                controls={controls}
+                                onNavigate={onNavigate}
+                                pathname={pathname}
+                                search={search}
+                            />
+                        ))}
+                    </div>
                 )}
             </nav>
         </TooltipProvider>

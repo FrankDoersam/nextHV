@@ -48,6 +48,8 @@ export interface ResourceTableOptions<TRecord extends RecordData = RecordData> {
     groupable?: boolean;
     toolbarFilters?: string[];
     enabled?: boolean;
+    /** Keep URL/filter/group state active when an infinite reader owns the rows. */
+    listEnabled?: boolean;
 }
 
 export type ResourceGroupCount = {
@@ -75,6 +77,7 @@ export function useResourceTable<TRecord extends RecordData = RecordData>({
     groupable = !compact,
     toolbarFilters = resource.toolbarFilters ?? [],
     enabled = true,
+    listEnabled = true,
 }: ResourceTableOptions<TRecord>) {
     const provider = resolveDataProvider(resource);
     const providerName = resource.dataProvider ?? "default";
@@ -159,6 +162,12 @@ export function useResourceTable<TRecord extends RecordData = RecordData>({
             resource.columns.some(
                 (column) =>
                     column.sortable !== false &&
+                    !column.computed &&
+                    (!column.input ||
+                        (column.input.mode === "record" &&
+                            resource.fields.some(
+                                (field) => field.name === column.field,
+                            ))) &&
                     (column.sortField ?? column.field) === entry.field,
             ),
         );
@@ -166,12 +175,26 @@ export function useResourceTable<TRecord extends RecordData = RecordData>({
             effectiveGroup !== "none"
                 ? [{ field: effectiveGroup, direction: "asc" }]
                 : [];
-        const userSort: TableSort[] = sorting.map((entry) => ({
-            field:
-                resource.columns.find((column) => column.field === entry.id)
-                    ?.sortField ?? entry.id,
-            direction: entry.desc ? "desc" : "asc",
-        }));
+        const userSort: TableSort[] = sorting
+            .filter((entry) =>
+                resource.columns.some(
+                    (column) =>
+                        column.field === entry.id &&
+                        column.sortable !== false &&
+                        !column.computed &&
+                        (!column.input ||
+                            (column.input.mode === "record" &&
+                                resource.fields.some(
+                                    (field) => field.name === column.field,
+                                ))),
+                ),
+            )
+            .map((entry) => ({
+                field:
+                    resource.columns.find((column) => column.field === entry.id)
+                        ?.sortField ?? entry.id,
+                direction: entry.desc ? "desc" : "asc",
+            }));
         const seen = new Set<string>();
         return [...groupSort, ...allowed, ...userSort].filter((entry) => {
             if (seen.has(entry.field)) return false;
@@ -217,7 +240,7 @@ export function useResourceTable<TRecord extends RecordData = RecordData>({
             }
             return response;
         },
-        enabled: enabled && (queryOptions?.enabled ?? true),
+        enabled: enabled && listEnabled && (queryOptions?.enabled ?? true),
         staleTime: queryOptions?.staleTime,
         retry: queryOptions?.retry,
         refetchOnWindowFocus: queryOptions?.refetchOnWindowFocus,
@@ -283,7 +306,7 @@ export function useResourceTable<TRecord extends RecordData = RecordData>({
             (queryOptions?.enabled ?? true) &&
             groupable &&
             effectiveGroup !== "none" &&
-            !raw.isPlaceholderData,
+            (!listEnabled || !raw.isPlaceholderData),
         staleTime: 30_000,
     });
 

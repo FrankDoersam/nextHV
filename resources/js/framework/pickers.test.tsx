@@ -62,6 +62,84 @@ function SelectDemo(props: Partial<ChoicePickerProps>) {
     );
 }
 describe("searchable choice controls", () => {
+    it("searches labeled groups and keeps keyboard selection with custom option content", async () => {
+        const user = userEvent.setup();
+        render(
+            <SelectDemo
+                options={options.map((option) => ({
+                    ...option,
+                    group: option.value === "active" ? "Bestand" : "Planung",
+                }))}
+                renderOption={(option) => (
+                    <span>{option.label} · Vorschau</span>
+                )}
+            />,
+        );
+        const input = screen.getByRole("combobox", { name: "Status" });
+        await user.click(input);
+        expect(
+            await screen.findByRole("group", { name: "Bestand" }),
+        ).toBeVisible();
+        expect(screen.getByRole("group", { name: "Planung" })).toBeVisible();
+
+        await user.clear(input);
+        await user.type(input, "Planung");
+        expect(
+            screen.queryByRole("group", { name: "Bestand" }),
+        ).not.toBeInTheDocument();
+        expect(
+            screen.getByRole("option", { name: "Entwurf · Vorschau" }),
+        ).toBeVisible();
+        expect(
+            screen.getByRole("option", { name: "Beendet · Vorschau" }),
+        ).toHaveAttribute("aria-disabled", "true");
+        await user.keyboard("{Enter}");
+
+        await waitFor(() => expect(input).toHaveValue("Entwurf"));
+        expect(screen.getByText('"draft"', { exact: true })).toBeVisible();
+    });
+
+    it("renders custom loading and empty states and exposes an explicit retry action", async () => {
+        const user = userEvent.setup();
+        const retry = vi.fn();
+        const props: ChoicePickerProps = {
+            "aria-label": "Partner",
+            value: null,
+            onChange: vi.fn(),
+            loadingContent: <span>Partner werden geladen</span>,
+            emptyContent: <span>Keine passenden Partner</span>,
+        };
+        const view = render(<ChoicePicker {...props} loading />);
+        await user.click(screen.getByRole("combobox", { name: "Partner" }));
+        expect(await screen.findByRole("status")).toHaveTextContent(
+            "Partner werden geladen",
+        );
+        expect(
+            screen.queryByText("Keine passenden Partner"),
+        ).not.toBeInTheDocument();
+
+        view.rerender(
+            <ChoicePicker
+                {...props}
+                error="Suche fehlgeschlagen"
+                onRetry={retry}
+            />,
+        );
+        await user.click(
+            screen.getByRole("button", { name: "Erneut versuchen" }),
+        );
+        expect(retry).toHaveBeenCalledTimes(1);
+        view.rerender(<ChoicePicker {...props} />);
+
+        expect(
+            await screen.findByText("Keine passenden Partner"),
+        ).toBeVisible();
+        expect(
+            screen.queryByText("Partner werden geladen"),
+        ).not.toBeInTheDocument();
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
     it("keeps the committed value visible on focus and never clears it while typing a search", async () => {
         const user = userEvent.setup();
         render(<SelectDemo />);
@@ -70,14 +148,18 @@ describe("searchable choice controls", () => {
         await user.click(input);
         expect(input).toHaveValue("Aktiv");
         expect(screen.getByText('"active"', { exact: true })).toBeVisible();
-        expect(await screen.findByRole("option", { name: /Entwurf/ })).toBeVisible();
+        expect(
+            await screen.findByRole("option", { name: /Entwurf/ }),
+        ).toBeVisible();
         await user.clear(input);
         expect(input).toHaveValue("");
         expect(screen.getByText('"active"', { exact: true })).toBeVisible();
         await user.type(input, "Entw");
         expect(input).toHaveValue("Entw");
         expect(screen.getByText('"active"', { exact: true })).toBeVisible();
-        await user.click(await screen.findByRole("option", { name: /Entwurf/ }));
+        await user.click(
+            await screen.findByRole("option", { name: /Entwurf/ }),
+        );
         expect(input).toHaveValue("Entwurf");
         expect(screen.getByText('"draft"', { exact: true })).toBeVisible();
     });

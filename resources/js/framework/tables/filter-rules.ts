@@ -15,8 +15,13 @@ export function columnFilters(
 ): GridFilterDefinition[] {
     const definitions = new Map<string, GridFilterDefinition>();
     for (const column of resource.columns) {
-        if (column.filter === false) continue;
         const field = resource.fields.find((f) => f.name === column.field);
+        if (
+            column.filter === false ||
+            column.computed ||
+            (column.input && (column.input.mode !== "record" || !field))
+        )
+            continue;
         if (field?.writeOnly) continue;
         const options = field?.options?.map((o) => ({
             value: String(o.value),
@@ -26,7 +31,7 @@ export function columnFilters(
             ? "choice"
             : column.kind === "date" || field?.kind === "date"
               ? "date"
-              : ["number", "currency"].includes(
+              : ["number", "currency", "percent"].includes(
                       column.kind ?? field?.kind ?? "",
                   )
                 ? "number"

@@ -489,7 +489,9 @@ export function ResourceCollection({
                     headerTitle: c.label,
                     fillWidth: singleDataColumn,
                     skeleton: <GridCellSkeleton dense={dense} kind={c.kind} />,
-                    cellClassName: ["currency", "number"].includes(c.kind ?? "")
+                    cellClassName: ["currency", "number", "percent"].includes(
+                        c.kind ?? "",
+                    )
                         ? "text-right tabular-nums"
                         : undefined,
                 },
@@ -506,10 +508,31 @@ export function ResourceCollection({
                         column={column}
                         title={c.label}
                         visibility={columnChooser}
+                        grouping={
+                            groupable &&
+                            resource.groupBy?.some(
+                                (group) => group.value === c.field,
+                            )
+                                ? {
+                                      active: effectiveGroup === c.field,
+                                      onToggle: () =>
+                                          update(
+                                              "group",
+                                              effectiveGroup === c.field
+                                                  ? "none"
+                                                  : c.field,
+                                              true,
+                                          ),
+                                  }
+                                : undefined
+                        }
                     />
                 ),
                 enablePinning: pinnable,
-                enableSorting: c.sortable !== false,
+                enableSorting:
+                    c.sortable !== false &&
+                    !c.computed &&
+                    (!c.input || c.input.mode === "record"),
                 enableHiding: c.hideable !== false,
                 cell: ({
                     row,
@@ -526,7 +549,7 @@ export function ResourceCollection({
                                 "font-medium text-foreground",
                         )}
                     >
-                        {formatCell(c, row.original)}
+                        {formatCell(c, row.original, resource.columns)}
                     </div>
                 ),
             })),
@@ -579,6 +602,8 @@ export function ResourceCollection({
             selectAll,
             actions,
             columnChooser,
+            groupable,
+            effectiveGroup,
             sizing,
             dense,
             filterDefinitions,
@@ -934,7 +959,6 @@ export function ResourceCollection({
                             size="icon-lg"
                             onClick={() => {
                                 void result.refetch();
-
                             }}
                             aria-label="Aktualisieren"
                         >
@@ -963,7 +987,6 @@ export function ResourceCollection({
                                     <DropdownMenuItem
                                         onClick={() => {
                                             void result.refetch();
-
                                         }}
                                     >
                                         <RefreshCw />
@@ -1097,9 +1120,7 @@ export function ResourceCollection({
                         </span>
                     )}
                     <CollectionSurface compact={compact}>
-                        <div
-                            className="relative flex min-w-0 flex-col md:min-h-0 md:flex-1"
-                        >
+                        <div className="relative flex min-w-0 flex-col md:min-h-0 md:flex-1">
                             {toolbar && (
                                 <div
                                     className={cn(
@@ -1447,8 +1468,9 @@ export function ResourceCollection({
 export function formatCell(
     column: import("../types").ColumnDefinition,
     row: RecordData,
+    columns?: import("../types").ColumnDefinition[],
 ) {
-    return <CellRenderer column={column} row={row} />;
+    return <CellRenderer column={column} row={row} columns={columns} />;
 }
 function GroupedGrid({
     columns,

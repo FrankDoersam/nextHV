@@ -10,16 +10,27 @@ import {
     text,
 } from "@/modules/fields";
 import { WalletCards } from "lucide-react";
+import { rentScenarioColumns } from "./rent-scenario-columns";
 export const conditions: ResourceDefinition = {
     name: "rent-conditions",
     label: "Konditionen",
     singular: "Kondition",
     description:
-        "Zeitliche Fortschreibung: ältere Konditionen bleiben erhalten, der neueste gültige Stichtag wird verwendet.",
+        "Konditionshistorie mit Mietvorschau pro Zeile. Die Vorschau verändert keine Vertragskonditionen; Mehrertrag zählt volle Monate ab dem Anpassungsdatum.",
     icon: WalletCards,
     navigationGroup: "Vermietung",
     titleField: "effective_from",
     navigation: false,
+    collection: {
+        renderer: "grid",
+        infiniteScroll: true,
+        pagination: { mode: "server", pageSize: 25 },
+        previewColumns: rentScenarioColumns,
+        groupable: false,
+        sorters: { initial: [{ id: "effective_from", desc: true }] },
+        rowSelection: false,
+    },
+    includes: [{ relation: "contract" }],
     editor: {
         summary: {
             title: "Monatliche Kondition",
@@ -72,6 +83,14 @@ export const conditions: ResourceDefinition = {
         text("reason", "Anlass"),
     ],
     columns: [
+        {
+            field: "contract.code",
+            label: "Vertrag",
+            entity: { id: "contracts", label: "Verträge" },
+            reference: { resource: "contracts", idField: "contract_id" },
+            size: 160,
+            hideable: false,
+        },
         {
             field: "monthly_total",
             label: "Monatlich brutto",
