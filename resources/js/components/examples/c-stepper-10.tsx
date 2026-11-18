@@ -125,31 +125,8 @@ export function CStepper10({
         );
     }, []);
 
-    useEffect(() => {
-        if (!enabled) return;
-        const element = scrollRef.current;
-        if (!element) return;
-        const handler = () => updateScrollability();
-        element.addEventListener("scroll", handler, { passive: true });
-        window.addEventListener("resize", handler);
-        const observer =
-            typeof ResizeObserver === "function"
-                ? new ResizeObserver(handler)
-                : null;
-        observer?.observe(element);
-        const rail = element.querySelector('[data-slot="stepper-nav"]');
-        if (rail) observer?.observe(rail);
-        handler();
-        return () => {
-            element.removeEventListener("scroll", handler);
-            window.removeEventListener("resize", handler);
-            observer?.disconnect();
-        };
-    }, [enabled, steps.length, updateScrollability]);
-
-    // The active tab follows Next/Back even when the rail contains 6+ tabs.
     // Move only the horizontal rail, never the Sheet's vertical form scroll.
-    useLayoutEffect(() => {
+    const revealActiveStep = useCallback(() => {
         if (!enabled) return;
         const element = scrollRef.current;
         const current = element?.querySelector<HTMLElement>(
@@ -164,7 +141,33 @@ export function CStepper10({
         else if (tabRect.left < railRect.left + inset)
             element.scrollLeft -= railRect.left + inset - tabRect.left;
         updateScrollability();
-    }, [enabled, active, steps.length, updateScrollability]);
+    }, [enabled, updateScrollability]);
+
+    useEffect(() => {
+        if (!enabled) return;
+        const element = scrollRef.current;
+        if (!element) return;
+        element.addEventListener("scroll", updateScrollability, {
+            passive: true,
+        });
+        window.addEventListener("resize", revealActiveStep);
+        const observer =
+            typeof ResizeObserver === "function"
+                ? new ResizeObserver(revealActiveStep)
+                : null;
+        observer?.observe(element);
+        const rail = element.querySelector('[data-slot="stepper-nav"]');
+        if (rail) observer?.observe(rail);
+        updateScrollability();
+        return () => {
+            element.removeEventListener("scroll", updateScrollability);
+            window.removeEventListener("resize", revealActiveStep);
+            observer?.disconnect();
+        };
+    }, [enabled, steps.length, updateScrollability, revealActiveStep]);
+
+    // The active tab follows Next/Back even when the rail contains 6+ tabs.
+    useLayoutEffect(revealActiveStep, [active, steps.length, revealActiveStep]);
 
     const scrollTabs = (direction: -1 | 1) => {
         const element = scrollRef.current;

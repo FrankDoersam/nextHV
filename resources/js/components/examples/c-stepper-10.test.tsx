@@ -7,7 +7,11 @@ import {
     CStepper10Content,
 } from "./c-stepper-10";
 
-afterEach(cleanup);
+afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+});
 
 it("uses the installed ReUI c-stepper-10 pattern with a separate panel per step", async () => {
     const onSelect = vi.fn();
@@ -98,5 +102,77 @@ it("renders eight steps with independent rail scrolling and visible navigation a
     expect(screen.getByRole("tab", { name: "Schritt 8, Schritt 8" })).toHaveAttribute(
         "aria-selected",
         "true",
+    );
+});
+
+it("reveals the active step after container and viewport resizing while preserving manual scrolling", () => {
+    let resizeContainer = () => {};
+    vi.stubGlobal(
+        "ResizeObserver",
+        class {
+            constructor(callback: ResizeObserverCallback) {
+                resizeContainer = () =>
+                    callback([], this as unknown as ResizeObserver);
+            }
+            observe() {}
+            disconnect() {}
+        },
+    );
+    const { container } = render(
+        <CStepper10
+            active={3}
+            steps={[
+                { id: "general", label: "Objekt" },
+                { id: "address", label: "Adresse" },
+                { id: "management", label: "Verwaltung" },
+                { id: "details", label: "Gebäude & Hinweise" },
+            ]}
+            onSelect={vi.fn()}
+        >
+            <p>Gebäudedaten</p>
+        </CStepper10>,
+    );
+    const scroll = container.querySelector<HTMLElement>(
+        '[data-slot="reui-stepper-10-scroll"]',
+    )!;
+    const current = screen
+        .getByRole("tab", { name: "Gebäude & Hinweise, Schritt 4" })
+        .closest<HTMLElement>('[data-slot="stepper-item"]')!;
+    let viewportWidth = 800;
+    Object.defineProperties(scroll, {
+        clientWidth: { configurable: true, get: () => viewportWidth },
+        scrollWidth: { configurable: true, value: 800 },
+    });
+    vi.spyOn(scroll, "getBoundingClientRect").mockImplementation(
+        () => new DOMRect(0, 0, viewportWidth, 40),
+    );
+    vi.spyOn(current, "getBoundingClientRect").mockImplementation(
+        () => new DOMRect(600 - scroll.scrollLeft, 0, 160, 40),
+    );
+    scroll.scrollLeft = 0;
+
+    viewportWidth = 390;
+    act(resizeContainer);
+
+    expect(current.getBoundingClientRect().left).toBeGreaterThanOrEqual(0);
+    expect(current.getBoundingClientRect().right).toBeLessThanOrEqual(
+        viewportWidth,
+    );
+
+    act(() => {
+        scroll.scrollLeft = 20;
+        scroll.dispatchEvent(new Event("scroll"));
+    });
+
+    expect(scroll.scrollLeft).toBe(20);
+
+    viewportWidth = 320;
+    act(() => {
+        window.dispatchEvent(new Event("resize"));
+    });
+
+    expect(current.getBoundingClientRect().left).toBeGreaterThanOrEqual(0);
+    expect(current.getBoundingClientRect().right).toBeLessThanOrEqual(
+        viewportWidth,
     );
 });

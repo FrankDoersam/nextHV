@@ -101,6 +101,12 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     await expect(dialog.getByLabel("Baujahr", { exact: true })).toBeVisible();
     await capture("new-04-building");
     await page.setViewportSize({ width: 390, height: 844 });
+    await expect(
+        dialog.getByRole("tab", {
+            name: "Gebäude & Hinweise, Schritt 4",
+            exact: true,
+        }),
+    ).toBeInViewport({ ratio: 0.95 });
     await capture("new-mobile");
     await page.setViewportSize({ width: 1440, height: 1000 });
     expect(propertyWrites).toBe(0);
