@@ -13,7 +13,7 @@ describe("ReUI import wizard demo", () => {
         expect(screen.getByRole("button", { name: /Drop Files/ })).toBeTruthy();
         expect(screen.getAllByText("1,248 rows").length).toBeGreaterThan(0);
         expect(screen.getByRole("tab", { name: "Upload" })).toBeTruthy();
-        expect(screen.getByRole("tablist")).toHaveAttribute("data-variant", "line");
+        expect(screen.getByRole("tablist").getAttribute("data-variant")).toBe("line");
         expect(screen.getByRole("switch", { name: "First row is a header" })).toBeTruthy();
     });
 
