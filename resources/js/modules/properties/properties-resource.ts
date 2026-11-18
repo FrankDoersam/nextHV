@@ -1,5 +1,3 @@
-import { PropertyNameActions } from "./name-actions";
-import { InspectPropertyAction, PropertyReportAction } from "./inspect-action";
 import { DeleteAction, EditAction } from "@/framework/actions";
 import type { ResourceDefinition } from "@/framework/types";
 import {
@@ -11,7 +9,12 @@ import {
     select,
     text,
 } from "@/modules/fields";
-import { Archive, Building2, CircleCheck, DoorOpen, Ruler } from "lucide-react";
+import { Building2, CircleCheck, DoorOpen, Ruler } from "lucide-react";
+import { ArchiveAction } from "./archive-action";
+import { CloneAction } from "./clone-action";
+import { InspectPropertyAction, PropertyReportAction } from "./inspect-action";
+import { PropertyNameActions } from "./name-actions";
+
 export const properties: ResourceDefinition = {
     name: "properties",
     label: "Objekte",
@@ -19,33 +22,35 @@ export const properties: ResourceDefinition = {
     description: "Stammdaten, Verwaltung und Einheiten eines Objekts.",
     icon: Building2,
     navigationGroup: "Stammdaten",
-    /*views: [
-        { id: "all", label: "Alle", count: true },
-        {
-            id: "active",
-            label: "Aktiv",
-            count: true,
-            filters: [{ field: "status", value: "active" }],
-        },
-        {
-            id: "archived",
-            label: "Inaktiv",
-            count: true,
-            filters: [{ field: "status", value: "archived" }],
-        },
-    ],*/
     titleField: "name",
     collection: {
         rowSelection: false,
-        filterable: false,
+        searchable: true,
+        filterable: true,
         groupable: false,
         toolbarFilters: [],
+        exportable: false,
+        importable: false,
+        refreshable: false,
     },
-    //supportsClone: true,
     editor: {
-        sectionStyle: "collapsible",
+        sectionStyle: "plain",
+        tabs: [
+            {
+                id: "general",
+                label: "Stammdaten",
+                groups: ["general", "address"],
+            },
+            {
+                id: "management",
+                label: "Verwaltung",
+                groups: ["management"],
+            },
+            { id: "building", label: "Gebäude", groups: ["details"] },
+            { id: "units", label: "Einheiten", relations: true },
+        ],
     },
-   /* summary: {
+    summary: {
         metric: "summary",
         items: [
             {
@@ -63,8 +68,7 @@ export const properties: ResourceDefinition = {
                 icon: Ruler,
             },
         ],
-    },*/
-   //bulkActions: ["delete"],
+    },
     groups: [
         { id: "general", label: "Objekt" },
         { id: "address", label: "Adresse" },
@@ -118,22 +122,95 @@ export const properties: ResourceDefinition = {
         notes,
     ],
     columns: [
-        col("code", "Nr."),
+        { ...col("code", "Objekt-Nr."), size: 128, minSize: 112 },
         {
             ...col("name", "Objekt"),
-            cell: { type: "icon-text", icon: Building2 },
+            size: 220,
+            minSize: 180,
+            grow: 1,
+            hideable: false,
         },
-        { field: "full_address", label: "Adresse", sortable: false },
-        col("type", "Nutzung", "badge"),
+        {
+            ...col("management_type", "Verwaltungsart"),
+            size: 160,
+            minSize: 144,
+        },
+        { ...col("type", "Nutzung"), size: 116, minSize: 104 },
+        { ...col("street", "Straße"), size: 180, minSize: 144 },
+        { ...col("house_number", "Hausnr."), size: 96, minSize: 88 },
+        { ...col("postal_code", "PLZ"), size: 88, minSize: 80 },
+        { ...col("city", "Ort"), size: 144, minSize: 120 },
         {
             ...col("units_count", "Einheiten", "number"),
+            size: 108,
+            minSize: 96,
             sortable: false,
             filter: {
                 field: "unit_count",
                 operators: ["=", "!=", ">", ">=", "<", "<="],
             },
         },
-        col("status", "Status", "badge"),
+        { ...col("status", "Status", "badge"), size: 116, minSize: 104 },
+        {
+            ...col("manager_name", "Ansprechpartner"),
+            size: 200,
+            minSize: 168,
+            defaultVisible: false,
+        },
+        {
+            ...col("manager_email", "E-Mail"),
+            size: 240,
+            minSize: 200,
+            defaultVisible: false,
+        },
+        {
+            ...col("manager_phone", "Telefon"),
+            size: 168,
+            minSize: 144,
+            defaultVisible: false,
+        },
+        {
+            ...col("country", "Land (ISO)"),
+            size: 116,
+            minSize: 104,
+            defaultVisible: false,
+        },
+        {
+            ...col("management_started_on", "Verwaltungsbeginn", "date"),
+            size: 176,
+            minSize: 160,
+            defaultVisible: false,
+        },
+        {
+            ...col("next_inspection_on", "Nächste Objektprüfung", "date"),
+            size: 192,
+            minSize: 176,
+            defaultVisible: false,
+        },
+        {
+            ...col("land_area", "Grundstücksfläche · m²", "number"),
+            size: 200,
+            minSize: 176,
+            defaultVisible: false,
+        },
+        {
+            ...col("construction_year", "Baujahr"),
+            size: 104,
+            minSize: 96,
+            defaultVisible: false,
+        },
+        {
+            ...col("heating_type", "Heizung"),
+            size: 160,
+            minSize: 136,
+            defaultVisible: false,
+        },
+        {
+            ...col("energy_class", "Energieklasse"),
+            size: 144,
+            minSize: 128,
+            defaultVisible: false,
+        },
     ],
     aggregates: [{ relation: "units", type: "count" }],
     groupBy: [
@@ -148,6 +225,10 @@ export const properties: ResourceDefinition = {
         {
             field: "type",
             label: "Nutzung",
+        },
+        {
+            field: "management_type",
+            label: "Verwaltungsart",
         },
     ],
     actions: [
@@ -169,7 +250,3 @@ export const properties: ResourceDefinition = {
         },
     ],
 };
-
-import { CloneAction } from "@/modules/properties/clone-action";
-
-import { ArchiveAction } from "@/modules/properties/archive-action";

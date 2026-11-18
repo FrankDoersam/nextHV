@@ -1120,11 +1120,71 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     ).toBeVisible();
     await capture("44-einheiten-picker-objektbezug");
 
-    // Whole collection surfaces: mobile uses the workspace scroll owner, not a clipped inner list.
+    // Properties keep their atomic grid; the other collections retain mobile cards.
     await reserveApiBudget(45);
     for (const resource of ["properties", "units"]) {
         await page.setViewportSize({ width: 390, height: 844 });
         await page.goto(`/${resource}`);
+        if (resource === "properties") {
+            const propertiesPage = page.locator(
+                '[data-slot="properties-page"]',
+            );
+            const records = propertiesPage.locator("tbody tr[data-row-id]");
+            const scroll = propertiesPage.locator(
+                '[data-slot="scroll-area-viewport"]',
+            );
+            const pager = propertiesPage.locator(
+                '[data-slot="data-grid-pagination"]',
+            );
+            await expect(records.first()).toBeVisible();
+            await expect(
+                propertiesPage.locator('[data-slot="metric-card"]'),
+            ).toHaveCount(4);
+            await expect(
+                propertiesPage.locator('[data-slot="responsive-record-list"]'),
+            ).toHaveCount(0);
+            await expect(
+                propertiesPage.getByRole("textbox", {
+                    name: "Objekte durchsuchen",
+                    exact: true,
+                }),
+            ).toBeVisible();
+            await expect(
+                propertiesPage.getByRole("combobox", {
+                    name: "Filter hinzufügen",
+                    exact: true,
+                }),
+            ).toBeVisible();
+            await expect(
+                propertiesPage.getByRole("button", {
+                    name: /Ansicht speichern|export/i,
+                }),
+            ).toHaveCount(0);
+            await expect(pager).toBeInViewport();
+            expect(
+                (await pager.boundingBox())!.y +
+                    (await pager.boundingBox())!.height,
+            ).toBeLessThanOrEqual(844);
+            expect(
+                await scroll.evaluate(
+                    (element) => element.scrollWidth - element.clientWidth,
+                ),
+            ).toBeGreaterThan(0);
+            await capture("46-objekte-mobil");
+            await scroll.evaluate((element) => {
+                element.scrollTop = element.scrollHeight;
+                element.scrollLeft = element.scrollWidth;
+            });
+            await expect
+                .poll(() => scroll.evaluate((element) => element.scrollLeft))
+                .toBeGreaterThan(0);
+            const last = (await records.last().boundingBox())!;
+            expect(last.y + last.height).toBeLessThanOrEqual(
+                (await pager.boundingBox())!.y + 1,
+            );
+            await capture("48-objekte-mobil-letzter-datensatz");
+            continue;
+        }
         const records = page.locator(
             '[data-slot="responsive-record-list"] [data-row-id]',
         );
@@ -1196,12 +1256,10 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     for (const width of [768, 1440]) {
         await page.setViewportSize({ width, height: 1000 });
         await page.goto("/properties");
-        await expect(
-            page.locator('[data-slot="collection-surface"]'),
-        ).toBeVisible();
-        await expect(
-            page.locator('[data-slot="resource-collection"]'),
-        ).not.toHaveAttribute("aria-busy", "true");
+        const propertiesPage = page.locator('[data-slot="properties-page"]');
+        await expect(propertiesPage.locator("tbody tr[data-row-id]").first()).toBeVisible();
+        await expect(propertiesPage.locator('[data-slot="collection-kpis"]'))
+            .not.toHaveAttribute("aria-busy", "true");
         const pager = (await page
             .locator('[data-slot="data-grid-pagination"]')
             .boundingBox())!;

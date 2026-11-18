@@ -106,7 +106,8 @@ export function AppShell({
     const collection = resources.some(
         (resource) => location.pathname === `/${resource.name}`,
     );
-    const pageMode = location.pathname.startsWith("/enterprise-demo/")
+    const pageMode = location.pathname === "/properties" ||
+        location.pathname.startsWith("/enterprise-demo/")
         ? "grid"
         : collection
           ? "collection"

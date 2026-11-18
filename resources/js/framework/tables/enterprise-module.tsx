@@ -1182,11 +1182,7 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                     </DataGrid>
                 </CardContent>
             </Card>
-            <div className="flex shrink-0 items-center justify-between gap-2">
-                <p className="min-w-0 flex-1 text-xs text-muted-foreground">
-                    Fiktive Demo-Daten · Änderungen gelten bis zum Neuladen der
-                    Seite.
-                </p>
+            <div className="flex shrink-0 items-center justify-end gap-2">
                 <Button
                     size="sm"
                     variant="ghost"
