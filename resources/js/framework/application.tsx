@@ -12,6 +12,7 @@ import { Loading, EmptyState, ErrorState } from "@/components/blocks/content";
 import { ErrorBoundary } from "@/components/blocks/error-boundary";
 const Dashboard = lazy(() => import("@/pages/dashboard-page"));
 const ResourcePage = lazy(() => import("@/pages/resource-page"));
+const PropertiesPage = lazy(() => import("@/pages/properties-page"));
 const ContractDetailPage = lazy(() => import("@/pages/contract-detail-page"));
 const DetailPage = lazy(() => import("@/pages/detail-page"));
 const ComponentsPage = lazy(() => import("@/pages/components-page"));
@@ -79,10 +80,16 @@ function ApplicationWorkspace() {
                                             <ResourceRouteBoundary
                                                 resource={r.name}
                                             >
-                                                <ResourcePage
-                                                    key={r.name}
-                                                    resource={r}
-                                                />
+                                                {r.name === "properties" ? (
+                                                    <PropertiesPage
+                                                        resource={r}
+                                                    />
+                                                ) : (
+                                                    <ResourcePage
+                                                        key={r.name}
+                                                        resource={r}
+                                                    />
+                                                )}
                                             </ResourceRouteBoundary>
                                         }
                                     />

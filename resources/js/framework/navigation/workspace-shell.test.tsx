@@ -87,7 +87,7 @@ it.each([
     ["/enterprise-demo/objekte-einheiten", "grid"],
     ["/enterprise-demo/finanzen", "grid"],
     ["/enterprise-demo/zahlungen-op", "grid"],
-    ["/properties", "collection"],
+    ["/properties", "grid"],
     ["/properties/12", "page"],
     ["/reui-timeline-demo", "page"],
 ])("uses one %s page wrapper with the %s layout mode", (path, mode) => {

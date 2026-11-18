@@ -181,7 +181,7 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
             data-slot="data-grid-pagination"
             className={cn(
                 "flex w-full flex-wrap items-center justify-end gap-x-5 gap-y-2.5",
-                props.compact && "flex-nowrap justify-between gap-x-2",
+                props.compact && "flex-nowrap gap-x-2",
                 mergedProps.className,
             )}
         >
