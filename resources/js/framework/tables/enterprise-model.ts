@@ -222,6 +222,8 @@ function matchesQuery<T extends EnterpriseRecord>(
     );
     if (!operator) return false;
     if (operator.arity !== "none" && node.value === undefined) return null;
+    if (operator.arity !== "none" && field.type === "text" && node.value === "")
+        return null;
     if (
         operator.arity === "range" &&
         Array.isArray(node.value) &&
@@ -244,6 +246,7 @@ export function selectEnterpriseRows<T extends EnterpriseRecord>(
         .split(/\s+/)
         .filter(Boolean);
     const result = rows.filter((row) => {
+        if (config.scope && !config.scope(row)) return false;
         const searchable = normalize(config.searchText(row));
         return (
             searchTerms.every((term) => searchable.includes(term)) &&

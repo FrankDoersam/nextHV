@@ -106,6 +106,11 @@ export function AppShell({
     const collection = resources.some(
         (resource) => location.pathname === `/${resource.name}`,
     );
+    const pageMode = location.pathname.startsWith("/enterprise-demo/")
+        ? "grid"
+        : collection
+          ? "collection"
+          : "page";
     const detailId =
         current && location.pathname.startsWith(`/${current.name}/`)
             ? location.pathname.slice(current.name.length + 2).split("/")[0]
@@ -394,9 +399,14 @@ export function AppShell({
                 <main
                     ref={scrollArea}
                     data-slot="workspace-scroll"
-                    className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain md:[scrollbar-gutter:stable]"
+                    className={cn(
+                        "min-h-0 min-w-0 flex-1",
+                        pageMode === "grid"
+                            ? "overflow-hidden"
+                            : "overflow-y-auto overscroll-contain md:[scrollbar-gutter:stable]",
+                    )}
                 >
-                    <PageWrapper mode={collection ? "collection" : "page"}>
+                    <PageWrapper mode={pageMode}>
                         {children}
                     </PageWrapper>
                 </main>
@@ -412,7 +422,7 @@ export function PageWrapper({
     width = "workspace",
 }: {
     children: ReactNode;
-    mode?: "page" | "collection";
+    mode?: "page" | "collection" | "grid";
     width?: "workspace" | "reading";
 }) {
     return (
@@ -422,9 +432,11 @@ export function PageWrapper({
             className={cn(
                 "mx-auto w-full min-w-0 px-3 py-4 sm:p-5 lg:p-6",
                 width === "workspace" ? "max-w-[1440px]" : "max-w-5xl",
-                mode === "collection"
-                    ? "flex min-h-full flex-col md:h-full md:min-h-0 md:overflow-hidden"
-                    : "min-h-full pb-10",
+                mode === "grid"
+                    ? "flex h-full min-h-0 flex-col overflow-hidden"
+                    : mode === "collection"
+                      ? "flex min-h-full flex-col md:h-full md:min-h-0 md:overflow-hidden"
+                      : "min-h-full pb-10",
             )}
         >
             {children}

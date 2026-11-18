@@ -83,6 +83,22 @@ it("places branding in the sidebar and shows a readable location breadcrumb", ()
     expect(breadcrumb).toHaveTextContent("#12");
 });
 
+it.each([
+    ["/enterprise-demo/objekte-einheiten", "grid"],
+    ["/enterprise-demo/finanzen", "grid"],
+    ["/enterprise-demo/zahlungen-op", "grid"],
+    ["/properties", "collection"],
+    ["/properties/12", "page"],
+    ["/reui-timeline-demo", "page"],
+])("uses one %s page wrapper with the %s layout mode", (path, mode) => {
+    const { container } = mount(path);
+    const wrappers = container.querySelectorAll('[data-slot="page-wrapper"]');
+
+    expect(wrappers).toHaveLength(1);
+    expect(wrappers[0]).toHaveAttribute("data-mode", mode);
+    expect(wrappers[0]).toContainElement(screen.getByText("Arbeitsinhalt"));
+});
+
 it("collapses and expands the desktop rail without losing the current page", async () => {
     const { container } = mount();
     const user = userEvent.setup();

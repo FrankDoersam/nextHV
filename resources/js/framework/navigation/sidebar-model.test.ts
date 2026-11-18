@@ -126,10 +126,23 @@ describe("sidebar navigation model", () => {
             .toEqual(["Timeline"]);
     });
 
+    it.each([
+        ["enterprise-properties-demo", "Objekte", "/enterprise-demo/objekte-einheiten"],
+        ["enterprise-finance-demo", "Finanzen", "/enterprise-demo/finanzen"],
+        ["enterprise-payments-demo", "Offene Posten", "/enterprise-demo/zahlungen-op"],
+    ])("exposes the %s domain with its own navigation target and breadcrumb", (id, label, path) => {
+        const tree = resolveNavigation(defaultNavigation([properties]), [properties]);
+        const entry = tree.find((item) => item.id === id)!;
+
+        expect(entry).toMatchObject({ to: path, label, badge: "Demo" });
+        expect(navigationSelected(entry, path, "")).toBe(true);
+        expect(navigationPath(tree, path, "").map((item) => item.label)).toEqual([label]);
+    });
+
     it("hides forbidden resources and empty groups in all navigation surfaces", () => {
         const tree = resolveNavigation(defaultNavigation([properties]), [properties], undefined,
             () => ({ allowed: false, reason: "Kein Zugriff" }));
-        expect(tree.map((item) => item.id)).toEqual(["home", "reui-timeline-demo", "enterprise-properties-demo", "enterprise-payments-demo", "csv-import-nova", "kernsanierung-2027"]);
+        expect(tree.map((item) => item.id)).toEqual(["home", "reui-timeline-demo", "enterprise-properties-demo", "enterprise-finance-demo", "enterprise-payments-demo", "csv-import-nova", "kernsanierung-2027"]);
     });
 
     it("does not expose a resource when list access is denied even if another action is allowed", () => {
@@ -158,7 +171,7 @@ describe("sidebar navigation model", () => {
         const hidden = defaultNavigation([properties], {
             Stammdaten: { visible: () => false },
         });
-        expect(resolveNavigation(hidden, [properties]).map((node) => node.id)).toEqual(["home", "reui-timeline-demo", "enterprise-properties-demo", "enterprise-payments-demo", "csv-import-nova", "kernsanierung-2027"]);
+        expect(resolveNavigation(hidden, [properties]).map((node) => node.id)).toEqual(["home", "reui-timeline-demo", "enterprise-properties-demo", "enterprise-finance-demo", "enterprise-payments-demo", "csv-import-nova", "kernsanierung-2027"]);
     });
 
     it("does not turn a stale view link into unrestricted navigation", () => {

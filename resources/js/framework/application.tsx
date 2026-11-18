@@ -17,6 +17,7 @@ const DetailPage = lazy(() => import("@/pages/detail-page"));
 const ComponentsPage = lazy(() => import("@/pages/components-page"));
 const ReuiTimelineDemoPage = lazy(() => import("@/pages/reui-timeline-demo-page"));
 const EnterprisePropertiesDemoPage = lazy(() => import("@/pages/enterprise-properties-demo-page"));
+const EnterpriseFinanceDemoPage = lazy(() => import("@/pages/enterprise-finance-demo-page"));
 const EnterprisePaymentsDemoPage = lazy(() => import("@/pages/enterprise-payments-demo-page"));
 const ReuiCsvImportPage = lazy(() => import("@/pages/reui-csv-import-page"));
 const RenovationProjectPage = lazy(() => import("@/pages/renovation-project-page"));
@@ -66,6 +67,7 @@ function ApplicationWorkspace() {
                             <Route path="/" element={<Dashboard />} />
                             <Route path="/reui-timeline-demo" element={<ReuiTimelineDemoPage />} />
                             <Route path="/enterprise-demo/objekte-einheiten" element={<EnterprisePropertiesDemoPage />} />
+                            <Route path="/enterprise-demo/finanzen" element={<EnterpriseFinanceDemoPage />} />
                             <Route path="/enterprise-demo/zahlungen-op" element={<EnterprisePaymentsDemoPage />} />
                             <Route path="/csv-import-nova" element={<ReuiCsvImportPage />} />
                             <Route path="/kernsanierung-2027" element={<RenovationProjectPage />} />

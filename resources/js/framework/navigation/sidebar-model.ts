@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { House, Hammer, FileSpreadsheet, Building2, WalletCards, History } from "lucide-react";
+import { House, Hammer, FileSpreadsheet, Building2, WalletCards, History, ReceiptText } from "lucide-react";
 import type { ResourceDefinition } from "../types";
 import { access, type PermissionDecision } from "../permissions";
 
@@ -94,8 +94,9 @@ export function defaultNavigation(
     return [
         { id: "home", label: "Übersicht", icon: House, to: "/" },
         { id: "reui-timeline-demo", label: "Timeline", icon: History, to: "/reui-timeline-demo", badge: "Demo" },
-        { id: "enterprise-properties-demo", label: "Portfolio / Einheiten", icon: Building2, to: "/enterprise-demo/objekte-einheiten", badge: "Demo", tooltip: "Objekte und Einheiten mit KPIs, Filtern und Gruppensummen" },
-        { id: "enterprise-payments-demo", label: "Zahlungen / OP", icon: WalletCards, to: "/enterprise-demo/zahlungen-op", badge: "Demo", tooltip: "Enterprise-Demo für Zahlungen und offene Posten" },
+        { id: "enterprise-properties-demo", label: "Objekte", icon: Building2, to: "/enterprise-demo/objekte-einheiten", badge: "Demo", tooltip: "Objektstammdaten im Überblick" },
+        { id: "enterprise-finance-demo", label: "Finanzen", icon: WalletCards, to: "/enterprise-demo/finanzen", badge: "Demo", tooltip: "Soll, Zahlungseingänge und Rückstände" },
+        { id: "enterprise-payments-demo", label: "Offene Posten", icon: ReceiptText, to: "/enterprise-demo/zahlungen-op", badge: "Demo", tooltip: "Forderungen mit offenem Restbetrag" },
         { id: "csv-import-nova", label: "CSV Import ReUI", icon: FileSpreadsheet, to: "/csv-import-nova", badge: "Demo" },
         { id: "kernsanierung-2027", label: "Kernsanierung 2027", icon: Hammer, to: "/kernsanierung-2027", badge: "Demo" },
         ...[...groups].map(([group, children]) => ({
