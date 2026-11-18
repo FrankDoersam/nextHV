@@ -37,9 +37,7 @@ describe("ReUI Renovation architecture", () => {
             expect(source).toContain("@/components/reui/base-icon-placeholder");
             expect(source).not.toContain("@/components/reui/icon-placeholder");
         }
-        const contextMenu = readFileSync(
-            new URL("../../components/ui/context-menu.tsx", import.meta.url), "utf8",
-        );
+        const contextMenu = readFileSync("resources/js/components/ui/context-menu.tsx", "utf8");
         expect(contextMenu).toContain("@/components/reui/base-icon-placeholder");
         expect(ui("task-sheet.tsx")).toContain("@/components/ui/alert-dialog");
         expect(ui("finance-sheet.tsx")).toContain("@/components/ui/alert-dialog");
