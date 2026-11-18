@@ -156,6 +156,24 @@ test("ReUI Nova: Kernsanierung and CSV import with lower select open", async ({ 
     await expect(wizard.getByRole("combobox", { name: "Map Name" })).toHaveText("Full name");
     await expect(wizard.getByRole("combobox", { name: "Map Owner" })).toHaveText("Do not import");
     await expect(wizard.getByRole("table", { name: "Column mapping" }).locator("tbody tr")).toHaveCount(8);
+    await expect(wizard.getByRole("table", { name: "Column mapping" }).locator("..").locator("..")).toHaveClass(/rounded-md/);
+    const ownerMapping = wizard.getByRole("combobox", { name: "Map Owner" });
+    await expect(ownerMapping).toHaveClass(/cn-select-trigger/);
+    await ownerMapping.click();
+    const reuiMappingOptions = page.locator('[data-slot="select-content"]');
+    await expect(reuiMappingOptions).toBeVisible();
+    await expect(reuiMappingOptions).toHaveClass(/cn-select-content/);
+    await page.screenshot({
+        path: "screenshots/csv-import-tab-2-select-geoeffnet.png",
+        animations: "disabled",
+    });
+    await reuiMappingOptions.getByRole("option", { name: "Owner", exact: true }).click();
+    await expect(ownerMapping).toHaveText("Owner");
+    await expect(wizard.getByText("Required field not mapped")).toHaveCount(0);
+    await ownerMapping.click();
+    await page.locator('[data-slot="select-content"]').getByRole("option", { name: "Do not import" }).click();
+    await expect(ownerMapping).toHaveText("Do not import");
+    await expect(wizard.getByText("Required field not mapped")).toBeVisible();
     await wizard.screenshot({
         path: "screenshots/csv-import-tab-2-map-columns.png",
         animations: "disabled",

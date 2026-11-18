@@ -68,7 +68,7 @@ export function ImportFileDropzone({
                 <ItemDescription id="reui-upload-help" className="text-center">
                     Browse or drag files here.
                 </ItemDescription>
-                <ItemDescription className="text-center text-xs">
+                <ItemDescription className="text-center">
                     CSV, Excel, PDF, PNG, or JPG. Max 10MB each.
                 </ItemDescription>
             </ItemContent>
@@ -86,7 +86,7 @@ export function SelectedImportFiles({ files, onRemove }: Pick<UploadProps, "file
                 <ItemMedia><FileText className="size-4" aria-hidden="true" /></ItemMedia>
                 <ItemContent>
                     <ItemTitle>{file.name}</ItemTitle>
-                    <ItemDescription className="flex flex-wrap items-center gap-1.5 text-xs">
+                    <ItemDescription className="flex flex-wrap items-center gap-1.5">
                         <span>{file.kind === "csv" ? "CSV" : file.kind === "excel" ? "Excel" : file.kind === "image" ? "Image" : "PDF"}</span>
                         <span aria-hidden="true" className="size-1 shrink-0 rounded-full bg-muted-foreground/40" />
                         <span>{displayFileSize(file.bytes)}</span>

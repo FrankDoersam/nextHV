@@ -34,28 +34,32 @@ export function MapColumnsStep({
             <AlertDescription><p>{requiredMissing.map((name) => targetFields[target].find((f) => f.value === name)?.label ?? name).join(", ")} needs a target field before validation.</p></AlertDescription>
         </Alert>}
         <Field className="gap-3">
-            <Table className="min-w-[640px] table-auto" aria-label="Column mapping">
+            <div className="overflow-x-auto rounded-md border">
+                <Table className="min-w-[640px] table-auto" aria-label="Column mapping">
                 <TableHeader><TableRow>
                     <TableHead className="w-[34%]">CSV column</TableHead>
                     <TableHead className="w-[26%]">Sample</TableHead>
                     <TableHead>CRM field</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>{view.columns.map((column, index) => <TableRow key={index}>
-                    <TableCell className="font-medium">
-                        {column}{isExample && ["Name", "Email", "Owner"].includes(column) && <span className="ml-0.5 text-destructive">*</span>}
+                    <TableCell>
+                        <span className="flex items-center gap-1.5 font-medium">
+                            {column}{isExample && ["Name", "Email", "Owner"].includes(column) && <span className="text-destructive">*</span>}
+                        </span>
                     </TableCell>
-                    <TableCell className="max-w-52 truncate text-muted-foreground">{view.rows[0]?.[index] || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{view.rows[0]?.[index] || "—"}</TableCell>
                     <TableCell>
                         <Select value={mappedField(column, mapping, target)} onValueChange={(value) => onMap(column, value ?? "skip")}>
                             <SelectTrigger aria-label={"Map " + column} className="w-full [&_small]:hidden"><SelectValue>{mappedField(column, mapping, target) === "skip" ? "Do not import" : targetFields[target].find((option) => option.value === mappedField(column, mapping, target))?.label ?? mappedField(column, mapping, target)}</SelectValue></SelectTrigger>
-                            <SelectContent>
+                            <SelectContent alignItemWithTrigger={false} side="bottom" align="start" sideOffset={4}>
                                 <SelectItem value="skip">Do not import</SelectItem>
                                 {targetFields[target].map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </TableCell>
                 </TableRow>)}</TableBody>
-            </Table>
+                </Table>
+            </div>
         </Field>
     </section>;
 }
@@ -112,7 +116,7 @@ export function PreviewStep({
             <FieldLabel htmlFor="reui-unique-key">Unique key</FieldLabel>
             <Select value={uniqueKey} onValueChange={(value) => value && onUniqueKey(value)}>
                 <SelectTrigger id="reui-unique-key" className="w-full [&_small]:hidden"><SelectValue>{uniqueKey === "fullName" ? "Full name" : uniqueKey === "phone" ? "Phone" : "Email"}</SelectValue></SelectTrigger>
-                <SelectContent><SelectItem value="email">Email</SelectItem><SelectItem value="fullName">Full name</SelectItem><SelectItem value="phone">Phone</SelectItem></SelectContent>
+                <SelectContent alignItemWithTrigger={false} side="bottom" align="start" sideOffset={4}><SelectItem value="email">Email</SelectItem><SelectItem value="fullName">Full name</SelectItem><SelectItem value="phone">Phone</SelectItem></SelectContent>
             </Select>
             <FieldDescription>Rows match existing contacts on this column.</FieldDescription>
         </Field>

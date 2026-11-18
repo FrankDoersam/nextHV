@@ -10,6 +10,7 @@ describe("ReUI horizontal Stepper reference", () => {
         expect(screen.getByRole("heading",{name:"Upload Files"})).toBeTruthy();
         expect(screen.getByRole("tablist")).toBeTruthy();
         expect(screen.getByRole("tab",{name:/Map Columns/})).toBeTruthy();
+        expect(screen.getByRole("tab",{name:/Map Columns/}).getAttribute("type")).toBe("button");
         expect(screen.getByRole("button",{name:/Drop Files/})).toBeTruthy();
     });
     it("follows the supplied HTML states: Upload, mapping warning, Preview", () => {
@@ -23,7 +24,10 @@ describe("ReUI horizontal Stepper reference", () => {
         expect(screen.getByRole("heading", { name: "Map Columns", level: 2 })).toBeTruthy();
         expect(screen.getByText("Required field not mapped")).toBeTruthy();
         expect(screen.getByText(/Owner needs a target field before validation/)).toBeTruthy();
-        expect(screen.getByRole("combobox", { name: "Map Name" }).textContent).toContain("Full name");
+        const nameSelect = screen.getByRole("combobox", { name: "Map Name" });
+        expect(nameSelect.textContent).toContain("Full name");
+        expect(nameSelect.classList.contains("cn-select-trigger")).toBe(true);
+        expect(screen.getByRole("table", { name: "Column mapping" }).closest(".rounded-md.border")).toBeTruthy();
         expect(screen.getByRole("combobox", { name: "Map Owner" }).textContent).toContain("Do not import");
         expect(screen.getByRole("table", { name: "Column mapping" }).querySelectorAll("tbody tr")).toHaveLength(8);
         // Unlike a restrictive validation gate, the source HTML shows the

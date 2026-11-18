@@ -53,7 +53,7 @@ export function CrmImportWizardShell({
                     <div className="flex min-w-0 flex-col gap-px">
                         <FrameTitle>Import Wizard</FrameTitle>
                         <FrameDescription className="flex min-w-0 items-center gap-1.5">
-                            <span className="truncate">{fileSummary}</span>
+                            <span className="shrink-0">{fileSummary}</span>
                             {rowCount !== undefined && (
                                 <>
                                     <span aria-hidden="true" className="size-1 shrink-0 rounded-full bg-muted-foreground/40" />
@@ -68,21 +68,20 @@ export function CrmImportWizardShell({
 
             {variant === "stepper" ? (
                 <FramePanel className="flex items-center overflow-x-auto">
-                    <StepperNav className="min-w-max items-center sm:min-w-full">
+                    <StepperNav className="min-w-full items-center">
                         {CRM_IMPORT_STEPS.map((label, index) => {
                             const number = index + 1;
                             return (
                                 <StepperItem
                                     key={label}
                                     step={number}
-                                    disabled={number > unlockedStep}
                                     className="relative min-w-0"
                                 >
                                     <StepperTrigger className="min-w-0 justify-start gap-2 disabled:opacity-100">
                                         <StepperIndicator className="relative isolate size-6 overflow-visible rounded-full border border-background bg-accent text-foreground data-[state=inactive]:border-border data-[state=active]:border-0 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:before:absolute data-[state=active]:before:inset-0 data-[state=active]:before:rounded-full data-[state=active]:before:border data-[state=active]:before:border-dashed data-[state=active]:before:border-primary data-[state=active]:before:animate-[spin_8s_linear_infinite] motion-reduce:data-[state=active]:before:animate-none data-[state=completed]:border-primary data-[state=completed]:bg-primary data-[state=completed]:text-primary-foreground">
                                             {number < step ? <Check className="size-3.5" aria-hidden="true" /> : number}
                                         </StepperIndicator>
-                                        <StepperTitle className="hidden truncate text-sm capitalize sm:block">
+                                        <StepperTitle className="hidden truncate text-sm font-medium text-foreground capitalize sm:block">
                                             {label}
                                         </StepperTitle>
                                     </StepperTrigger>
@@ -105,7 +104,7 @@ export function CrmImportWizardShell({
                 </FramePanel>
             )}
 
-            <FramePanel className="min-h-72">
+            <FramePanel>
                 {variant === "stepper" ? (
                     <StepperPanel className="text-sm">
                         {panels.map((content, index) => content == null ? null : (

@@ -286,6 +286,7 @@ function StepperTrigger({
   }
 
   const defaultProps = {
+    type: "button" as const,
     role: "tab",
     id,
     "aria-selected": isSelected,
