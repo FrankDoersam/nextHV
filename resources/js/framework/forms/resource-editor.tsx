@@ -1,11 +1,14 @@
 import { useI18n } from "../i18n";
-import { cn } from "@/lib/utils";
 import { FormSummary } from "./form-summary";
 import { FormActionScope } from "./form-action-scope";
 import { Badge } from "@/components/ui/badge";
 import { label } from "@/lib/format";
 import { ErrorState } from "@/components/blocks/content";
-import { FormLayout, FormSection } from "@/components/blocks/form-section";
+import {
+    FormHeading,
+    FormLayout,
+    FormSection,
+} from "@/components/blocks/form-section";
 import { FieldGrid, Stack } from "@/components/blocks/layout";
 import { Overlay } from "@/components/blocks/overlay";
 import { ResourceField } from "@/components/fields/field";
@@ -15,6 +18,7 @@ import {
 } from "@/components/examples/c-stepper-10";
 import { useCStepper10Navigation } from "@/components/examples/c-stepper-10-navigation";
 import { Button } from "@/components/ui/button";
+import { FieldDescription, FieldSet } from "@/components/ui/field";
 import { ChevronLeft, ChevronRight, Save, RefreshCw } from "lucide-react";
 import {
     useEffect,
@@ -270,9 +274,9 @@ export function ResourceEditor({
                 </>
             }
         >
-            <p className="text-sm leading-6">
+            <FieldDescription>
                 Die ungespeicherten Änderungen dieses Formulars gehen verloren.
-            </p>
+            </FieldDescription>
         </Overlay>
     );
     return (
@@ -392,7 +396,9 @@ export function ResourceEditor({
                             disabled={!wizardNavigation.canNext}
                             onClick={() => void wizardNavigation.next()}
                         >
-                            {validating || wizardNavigation.validating ? t("checking") : t("next")}
+                            {validating || wizardNavigation.validating
+                                ? t("checking")
+                                : t("next")}
                             <ChevronRight />
                         </Button>
                     ) : (
@@ -402,7 +408,9 @@ export function ResourceEditor({
                             form={formId}
                             disabled={
                                 busy ||
-                                (request.wizard && !flow && !wizardNavigation.canFinish)
+                                (request.wizard &&
+                                    !flow &&
+                                    !wizardNavigation.canFinish)
                             }
                         >
                             <Save />
@@ -460,13 +468,7 @@ export function ResourceEditor({
                                     void wizardNavigation.next();
                                 } else void save(event);
                             }}
-                            className={cn(
-                                "space-y-6",
-                                (request.wizard || flow) &&
-                                    (summary
-                                        ? "mx-auto w-full max-w-5xl"
-                                        : "mx-auto w-full max-w-3xl"),
-                            )}
+                            className="min-w-0"
                             noValidate
                         >
                             <CStepper10
@@ -479,7 +481,9 @@ export function ResourceEditor({
                                           }))
                                         : groups.map((group) => ({
                                               id: group.id,
-                                              label: group.stepLabel ?? group.label,
+                                              label:
+                                                  group.stepLabel ??
+                                                  group.label,
                                               shortLabel: group.stepShortLabel,
                                               description: group.description,
                                           }))
@@ -490,139 +494,160 @@ export function ResourceEditor({
                                 singleContent={!!flow}
                                 idPrefix={formId + "-stepper"}
                             >
-                            <fieldset
-                                disabled={busy || !!completion}
-                                className="min-w-0"
-                            >
-                                {(request.wizard || flow) && (
-                                    <div
-                                        data-slot="wizard-step-heading"
-                                        className="mb-5 min-w-0"
-                                    >
-                                        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                                            <h2 className="text-base font-semibold tracking-tight text-foreground">
-                                                {flow
-                                                    ? flow.steps[flow.index]
-                                                    : groups[step]?.label === resource.singular
-                                                      ? "Grunddaten"
-                                                      : groups[step]?.label}
-                                            </h2>
-                                            <p className="text-xs font-medium tabular-nums text-muted-foreground" aria-live="polite">
-                                                Schritt {flow ? flow.index + 1 : step + 1} von{" "}
-                                                {flow ? flow.steps.length : groups.length}
-                                            </p>
-                                        </div>
-                                        {request.wizard && groups[step]?.description && (
-                                            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                                                {groups[step].description}
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-                                <FormLayout
-                                    aside={!!request.wizard || !!flow}
-                                    summary={
-                                        summary ? (
-                                            <FormSummary
-                                                definition={summary}
-                                                record={version}
-                                            />
-                                        ) : undefined
-                                    }
+                                <FieldSet
+                                    disabled={busy || !!completion}
+                                    className="min-w-0"
                                 >
-                                    {groups.map((g, i) => (
-                                        <CStepper10Content
-                                            key={g.id}
-                                            enabled={!!request.wizard && !flow}
-                                            step={i + 1}
-                                            active={step}
-                                            idPrefix={formId + "-stepper"}
-                                        >
-                                        <EditorSection
-                                            key={g.id}
-                                            hidden={
-                                                (request.wizard &&
-                                                    step !== i) ||
-                                                (!!activeTab &&
-                                                    !activeTab.groups?.includes(
-                                                        g.id,
-                                                    ))
+                                    {(request.wizard || flow) && (
+                                        <FormHeading
+                                            data-slot="wizard-step-heading"
+                                            title={
+                                                flow
+                                                    ? flow.steps[flow.index]
+                                                    : groups[step]?.label ===
+                                                        resource.singular
+                                                      ? "Grunddaten"
+                                                      : groups[step]?.label
                                             }
-                                            group={g}
-                                            variant={
+                                            status={
+                                                <>
+                                                    Schritt{" "}
+                                                    {flow
+                                                        ? flow.index + 1
+                                                        : step + 1}{" "}
+                                                    von{" "}
+                                                    {flow
+                                                        ? flow.steps.length
+                                                        : groups.length}
+                                                </>
+                                            }
+                                            description={
                                                 request.wizard
-                                                    ? "plain"
-                                                    : resource.editor?.sectionStyle
+                                                    ? groups[step]?.description
+                                                    : undefined
                                             }
-                                            hideHeading={!!request.wizard}
-                                            collapsible={
-                                                request.wizard || flow
-                                                    ? false
-                                                    : g.collapsible
-                                            }
-                                            open={
-                                                openGroups[g.id] ??
-                                                (request.fields
-                                                    ? true
-                                                    : g.defaultOpen) ??
-                                                true
-                                            }
-                                            onOpenChange={(open) =>
-                                                setOpenGroups((current) => ({
-                                                    ...current,
-                                                    [g.id]: open,
-                                                }))
-                                            }
-                                        >
-                                            <FieldGrid>
-                                                {fields
-                                                    .filter(
-                                                        (f) =>
-                                                            (f.group ??
-                                                                "general") ===
-                                                            g.id,
-                                                    )
-                                                    .map((f) => (
-                                                        <ResourceField
-                                                            key={f.name}
-                                                            definition={
-                                                                request.context
-                                                                    ?.field ===
-                                                                    f.name &&
-                                                                request.context
-                                                                    .mode !==
-                                                                    "prefill"
-                                                                    ? {
-                                                                          ...f,
-                                                                          disabled: true,
-                                                                          lockedReason:
-                                                                              row
-                                                                                  ? undefined
-                                                                                  : "Durch den aktuellen Datensatz vorgegeben.",
-                                                                      }
-                                                                    : f
-                                                            }
-                                                            editing={!!row}
-                                                        />
-                                                    ))}
-                                            </FieldGrid>
-                                            {createRelations
-                                                .filter(
-                                                    (relation) =>
-                                                        relation.group === g.id,
-                                                )
-                                                .map((relation) => (
-                                                    <RelationRepeater
-                                                        key={relation.relation}
-                                                        definition={relation}
-                                                        disabled={busy}
-                                                    />
-                                                ))}
-                                        </EditorSection>
-                                        </CStepper10Content>
-                                    ))}
-                                </FormLayout>
-                            </fieldset>
+                                        />
+                                    )}
+                                    <FormLayout
+                                        aside={!!request.wizard || !!flow}
+                                        summary={
+                                            summary ? (
+                                                <FormSummary
+                                                    definition={summary}
+                                                    record={version}
+                                                />
+                                            ) : undefined
+                                        }
+                                    >
+                                        {groups.map((g, i) => (
+                                            <CStepper10Content
+                                                key={g.id}
+                                                enabled={
+                                                    !!request.wizard && !flow
+                                                }
+                                                step={i + 1}
+                                                active={step}
+                                                idPrefix={formId + "-stepper"}
+                                            >
+                                                <EditorSection
+                                                    key={g.id}
+                                                    hidden={
+                                                        (request.wizard &&
+                                                            step !== i) ||
+                                                        (!!activeTab &&
+                                                            !activeTab.groups?.includes(
+                                                                g.id,
+                                                            ))
+                                                    }
+                                                    group={g}
+                                                    variant={
+                                                        request.wizard
+                                                            ? "plain"
+                                                            : resource.editor
+                                                                  ?.sectionStyle
+                                                    }
+                                                    hideHeading={
+                                                        !!request.wizard
+                                                    }
+                                                    collapsible={
+                                                        request.wizard || flow
+                                                            ? false
+                                                            : g.collapsible
+                                                    }
+                                                    open={
+                                                        openGroups[g.id] ??
+                                                        (request.fields
+                                                            ? true
+                                                            : g.defaultOpen) ??
+                                                        true
+                                                    }
+                                                    onOpenChange={(open) =>
+                                                        setOpenGroups(
+                                                            (current) => ({
+                                                                ...current,
+                                                                [g.id]: open,
+                                                            }),
+                                                        )
+                                                    }
+                                                >
+                                                    <FieldGrid>
+                                                        {fields
+                                                            .filter(
+                                                                (f) =>
+                                                                    (f.group ??
+                                                                        "general") ===
+                                                                    g.id,
+                                                            )
+                                                            .map((f) => (
+                                                                <ResourceField
+                                                                    key={f.name}
+                                                                    definition={
+                                                                        request
+                                                                            .context
+                                                                            ?.field ===
+                                                                            f.name &&
+                                                                        request
+                                                                            .context
+                                                                            .mode !==
+                                                                            "prefill"
+                                                                            ? {
+                                                                                  ...f,
+                                                                                  disabled: true,
+                                                                                  lockedReason:
+                                                                                      row
+                                                                                          ? undefined
+                                                                                          : "Durch den aktuellen Datensatz vorgegeben.",
+                                                                              }
+                                                                            : f
+                                                                    }
+                                                                    editing={
+                                                                        !!row
+                                                                    }
+                                                                />
+                                                            ))}
+                                                    </FieldGrid>
+                                                    {createRelations
+                                                        .filter(
+                                                            (relation) =>
+                                                                relation.group ===
+                                                                g.id,
+                                                        )
+                                                        .map((relation) => (
+                                                            <RelationRepeater
+                                                                key={
+                                                                    relation.relation
+                                                                }
+                                                                definition={
+                                                                    relation
+                                                                }
+                                                                disabled={busy}
+                                                            />
+                                                        ))}
+                                                </EditorSection>
+                                            </CStepper10Content>
+                                        ))}
+                                    </FormLayout>
+                                </FieldSet>
                             </CStepper10>
                         </form>
                     </FormProvider>

@@ -1,9 +1,21 @@
-import { DetailCard } from "./key-value-card";
-import { ChevronDown } from "lucide-react";
-import { useId, useState, type ReactNode } from "react";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+    FieldDescription,
+    FieldGroup,
+    FieldLegend,
+    FieldSet,
+    FieldTitle,
+} from "@/components/ui/field";
+import { SheetSection } from "@/components/ui/sheet";
+import { useId, useState, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-/** Shared card anatomy is the default; plain fieldsets remain an explicit option. */
+/** Form semantics compose the shared ReUI section without another surface. */
 export function FormSection({
     title,
     description,
@@ -20,7 +32,6 @@ export function FormSection({
 }: {
     title: string;
     description?: string;
-    /** Wizard steps already carry their own heading above the REUI Frame. */
     hideHeading?: boolean;
     hidden?: boolean;
     variant?: "plain" | "card" | "collapsible";
@@ -43,91 +54,106 @@ export function FormSection({
               : variant;
     if (appearance === "collapsible")
         return (
-            <fieldset
+            <FieldSet
                 data-slot="form-section"
                 hidden={hidden}
-                className="min-w-0 border-0 border-b pb-6 last:border-b-0 last:pb-0"
+                className="min-w-0"
             >
-                <legend className="sr-only">{title}</legend>
-                <div className="flex min-w-0 items-center gap-3">
-                    <button
-                        type="button"
-                        className="flex min-w-0 flex-1 items-center gap-3 rounded-sm py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-                        aria-label={title}
-                        aria-expanded={isOpen}
-                        aria-controls={contentId}
-                        onClick={() => {
-                            setExpanded(!isOpen);
-                            onOpenChange?.(!isOpen);
-                        }}
-                    >
-                        <span className="shrink-0 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                            {title}
-                        </span>
-                        {!isOpen && summary && (
-                            <span className="ml-auto min-w-0 truncate text-xs text-muted-foreground">
-                                {summary}
-                            </span>
-                        )}
-                        <ChevronDown
-                            aria-hidden
-                            className={cn(
-                                "ml-auto size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none",
-                                isOpen && "rotate-180",
-                            )}
-                        />
-                    </button>
-                    {actions}
-                </div>
-                <div id={contentId} hidden={!isOpen} className="pt-5">
-                    {description && (
-                        <p className="mb-4 text-xs leading-5 text-muted-foreground">
-                            {description}
-                        </p>
-                    )}
-                    {children}
-                </div>
-            </fieldset>
+                <FieldLegend className="sr-only">{title}</FieldLegend>
+                <Accordion
+                    value={isOpen ? [contentId] : []}
+                    onValueChange={(values) => {
+                        const nextOpen = values.includes(contentId);
+                        setExpanded(nextOpen);
+                        onOpenChange?.(nextOpen);
+                    }}
+                >
+                    <AccordionItem value={contentId}>
+                        <div className="flex min-w-0 items-center gap-3">
+                            <div className="min-w-0 flex-1">
+                                <AccordionTrigger aria-label={title}>
+                                    <span>{title}</span>
+                                    {!isOpen && summary && (
+                                        <span className="min-w-0 truncate text-muted-foreground">
+                                            {summary}
+                                        </span>
+                                    )}
+                                </AccordionTrigger>
+                            </div>
+                            {actions}
+                        </div>
+                        <AccordionContent keepMounted>
+                            <FieldGroup>
+                                {description && (
+                                    <FieldDescription>
+                                        {description}
+                                    </FieldDescription>
+                                )}
+                                {children}
+                            </FieldGroup>
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
+            </FieldSet>
         );
     if (appearance === "card")
         return (
-            <fieldset
+            <FieldSet
                 data-slot="form-section"
                 hidden={hidden}
-                className="min-w-0 border-0 p-0"
+                className="min-w-0"
             >
-                <legend className="sr-only">{title}</legend>
-                <DetailCard
-                    title={hideHeading ? undefined : title}
-                    description={hideHeading ? undefined : description}
+                <FieldLegend className="sr-only">{title}</FieldLegend>
+                <SheetSection
+                    title={title}
+                    description={description}
                     actions={actions}
+                    hideHeading={hideHeading}
                 >
                     {children}
-                </DetailCard>
-            </fieldset>
+                </SheetSection>
+            </FieldSet>
         );
     return (
-        <fieldset
-            data-slot="form-section"
-            hidden={hidden}
-            className="min-w-0 space-y-4 border-0 p-0 not-first:border-t not-first:pt-6"
-        >
-            <legend className="sr-only">{title}</legend>
-            {!hideHeading && (
-                <>
-                    <div className="flex items-center justify-between gap-3">
-                        <h3 className="text-sm leading-6 font-semibold">{title}</h3>
-                        {actions}
-                    </div>
-                    {description && (
-                        <p className="clear-both text-xs leading-5 text-muted-foreground">
-                            {description}
-                        </p>
-                    )}
-                </>
+        <FieldSet data-slot="form-section" hidden={hidden} className="min-w-0">
+            <FieldLegend className={hideHeading ? "sr-only" : undefined}>
+                <span className="flex items-center justify-between gap-3">
+                    <span>{title}</span>
+                    {!hideHeading && actions}
+                </span>
+            </FieldLegend>
+            {!hideHeading && description && (
+                <FieldDescription>{description}</FieldDescription>
             )}
-            <div className="clear-both">{children}</div>
-        </fieldset>
+            <FieldGroup>{children}</FieldGroup>
+        </FieldSet>
+    );
+}
+
+export function FormHeading({
+    title,
+    description,
+    status,
+    ...props
+}: Omit<ComponentProps<"div">, "title"> & {
+    title: ReactNode;
+    description?: ReactNode;
+    status?: ReactNode;
+}) {
+    return (
+        <FieldGroup {...props}>
+            <div className="flex flex-wrap items-baseline justify-between gap-3">
+                <FieldTitle role="heading" aria-level={2}>
+                    {title}
+                </FieldTitle>
+                {status && (
+                    <FieldDescription aria-live="polite" aria-atomic="true">
+                        {status}
+                    </FieldDescription>
+                )}
+            </div>
+            {description && <FieldDescription>{description}</FieldDescription>}
+        </FieldGroup>
     );
 }
 
@@ -151,7 +177,7 @@ export function FormLayout({
                     "@min-[52rem]/form:grid-cols-[minmax(0,1fr)_18rem]",
             )}
         >
-            <div className="min-w-0 space-y-6">{children}</div>
+            <FieldGroup className="min-w-0">{children}</FieldGroup>
             {summary && (
                 <aside
                     className={cn(

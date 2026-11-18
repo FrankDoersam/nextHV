@@ -18,34 +18,33 @@ export function KeyValueRows({
     return (
         <dl
             data-slot="key-value-list"
-            className="@container/key-values min-w-0 divide-y"
+            className="@container/key-values min-w-0"
         >
             {items.map((item) => (
                 <div
                     key={item.id}
                     className={cn(
-                        "grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] items-start gap-x-5 gap-y-1 py-3 first:pt-0 last:pb-0",
+                        "grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] items-start gap-x-3 gap-y-1 py-1.5 first:pt-0 last:pb-0",
                         item.emphasis && "font-semibold",
                     )}
                 >
                     <dt
                         className={cn(
-                            "min-w-0 break-words text-sm text-muted-foreground",
+                            "min-w-0 break-words text-sm leading-5 text-muted-foreground",
                             item.emphasis && "text-foreground",
                         )}
                     >
                         {item.label}
                         {item.description && (
-                            <span className="mt-1 block text-xs font-normal leading-5 text-muted-foreground">
+                            <span className="block text-xs font-normal leading-4 text-muted-foreground">
                                 {item.description}
                             </span>
                         )}
                     </dt>
                     <dd
                         className={cn(
-                            "min-w-0 whitespace-pre-wrap break-words text-sm tabular-nums",
+                            "min-w-0 whitespace-pre-wrap break-words text-sm leading-5 tabular-nums",
                             align === "spread" && "text-right",
-                            item.emphasis && "text-base",
                         )}
                     >
                         {item.value ?? "—"}

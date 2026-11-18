@@ -77,7 +77,7 @@ export function EditableKeyValueList({
                                     onCancel={() => setEditing(undefined)}
                                 />
                             ) : (
-                                <div className="flex min-w-0 items-start justify-between gap-3">
+                                <div className="flex min-w-0 items-start justify-between gap-2">
                                     <span className="min-w-0 whitespace-pre-wrap break-words">
                                         {property.render?.(
                                             current[field.name],
@@ -87,7 +87,7 @@ export function EditableKeyValueList({
                                     {editable && (
                                         <Button
                                             variant="ghost"
-                                            size="icon-sm"
+                                            size="icon-xs"
                                             aria-label={`${field.label} bearbeiten`}
                                             disabled={!!editing}
                                             onClick={() =>
@@ -132,7 +132,7 @@ function PropertyEditor({
         <FormProvider {...form}>
             <form
                 noValidate
-                className="space-y-3"
+                className="flex min-w-0 flex-col gap-2"
                 aria-label={`${field.label} ändern`}
                 onSubmit={form.handleSubmit(async (values) => {
                     setError(undefined);

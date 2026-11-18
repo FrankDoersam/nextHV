@@ -1,7 +1,24 @@
+import { mkdir } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
+
+test.use({
+    viewport: { width: 1440, height: 1000 },
+    locale: "de-DE",
+    timezoneId: "Europe/Berlin",
+    reducedMotion: "reduce",
+});
+
 test("login, server search, lazy property tabs and wizard persistence", async ({
     page,
 }) => {
+    await mkdir("screenshots", { recursive: true });
+    const capture = async (name: string) => {
+        await page.evaluate(() => document.fonts.ready);
+        await page.screenshot({
+            path: `screenshots/features-properties-${name}.png`,
+            animations: "disabled",
+        });
+    };
     const errors: string[] = [];
     let propertyWrites = 0;
     page.on("request", (request) => {
@@ -34,6 +51,15 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     await expect(
         page.getByRole("heading", { name: "Lindenhöfe", exact: true }),
     ).toBeVisible();
+    await expect(
+        page
+            .getByRole("list", { name: "Einheiten im Objekt", exact: true })
+            .getByText("Wohnung 01", { exact: true }),
+    ).toBeVisible();
+    await capture("detail-populated-desktop");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await capture("detail-populated-mobile");
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await page.getByRole("tab", { name: /Einheiten/ }).click();
     await expect(page.getByText("Wohnung 01", { exact: true })).toBeVisible();
     await page.getByRole("tab", { name: "Zähler", exact: true }).click();
@@ -51,6 +77,7 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     await expect(dialog).toHaveAttribute("data-slot", "sheet-content");
     await expect(dialog).toHaveAttribute("data-wizard", "true");
     await expect(page.locator('[data-slot="dialog-content"]')).toHaveCount(0);
+    await capture("new-01-object");
     await dialog.getByRole("button", { name: "Weiter", exact: true }).click();
     await expect(
         dialog.getByRole("textbox", { name: "Nummer", exact: true }),
@@ -67,9 +94,21 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     await dialog.getByLabel("Hausnummer").fill("7");
     await dialog.getByLabel("PLZ").fill("10115");
     await dialog.getByLabel("Ort", { exact: false }).fill("Berlin");
+    await capture("new-02-address");
     await dialog.getByRole("button", { name: "Weiter", exact: true }).click();
+    await capture("new-03-management");
     await dialog.getByRole("button", { name: "Weiter", exact: true }).click();
     await expect(dialog.getByLabel("Baujahr", { exact: true })).toBeVisible();
+    await capture("new-04-building");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(
+        dialog.getByRole("tab", {
+            name: "Gebäude & Hinweise, Schritt 4",
+            exact: true,
+        }),
+    ).toBeInViewport({ ratio: 0.95 });
+    await capture("new-mobile");
+    await page.setViewportSize({ width: 1440, height: 1000 });
     expect(propertyWrites).toBe(0);
     await dialog
         .getByRole("button", { name: "Speichern", exact: true })

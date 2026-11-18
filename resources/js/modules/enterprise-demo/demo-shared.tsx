@@ -9,6 +9,7 @@ import { Link } from "react-router";
 import { PageHeader } from "@/components/blocks/layout";
 import { Badge } from "@/components/reui/badge";
 import type { FilterQuery } from "@/components/reui/filters/filters-types";
+import { SheetSection } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { demoAsOfLabel } from "./demo-data";
 
@@ -109,14 +110,7 @@ export function DemoDetailSection({
     title: string;
     children: ReactNode;
 }) {
-    return (
-        <section className="flex flex-col gap-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {title}
-            </h3>
-            {children}
-        </section>
-    );
+    return <SheetSection title={<h3>{title}</h3>}>{children}</SheetSection>;
 }
 
 export function DemoDetailField({
