@@ -1,0 +1,4 @@
+directory_group,workspace_role,sync_status
+account-admins,Admin,Verified
+account-managers,Manager,Verified
+account-viewers,Viewer,Verified

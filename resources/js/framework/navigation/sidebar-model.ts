@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { ChartLine, House, FileUp, Table2, Hammer, FileSpreadsheet, Building2, WalletCards } from "lucide-react";
+import { ChartLine, House, FileUp, Table2, Hammer, FileSpreadsheet, Building2, WalletCards, History } from "lucide-react";
 import type { ResourceDefinition } from "../types";
 import { access, type PermissionDecision } from "../permissions";
 
@@ -96,6 +96,7 @@ export function defaultNavigation(
         { id: "charts", label: "Charts", icon: ChartLine, to: "/charts", badge: "Demo" },
         { id: "import-wizard-demo", label: "Import Wizard", icon: FileUp, to: "/import-wizard-demo", badge: "Demo" },
         { id: "reui-grid-demo", label: "CRM Data Grid", icon: Table2, to: "/reui-grid-demo", badge: "Demo" },
+        { id: "reui-timeline-demo", label: "Timeline", icon: History, to: "/reui-timeline-demo", badge: "Demo" },
         { id: "enterprise-properties-demo", label: "Portfolio / Einheiten", icon: Building2, to: "/enterprise-demo/objekte-einheiten", badge: "Demo", tooltip: "Objekte und Einheiten mit KPIs, Filtern und Gruppensummen" },
         { id: "enterprise-payments-demo", label: "Zahlungen / OP", icon: WalletCards, to: "/enterprise-demo/zahlungen-op", badge: "Demo", tooltip: "Enterprise-Demo für Zahlungen und offene Posten" },
         { id: "csv-import-nova", label: "CSV Import ReUI", icon: FileSpreadsheet, to: "/csv-import-nova", badge: "Demo" },
