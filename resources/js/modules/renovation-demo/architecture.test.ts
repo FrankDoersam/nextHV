@@ -28,4 +28,20 @@ describe("ReUI Renovation architecture", () => {
             expect(ui(component)).not.toContain("@/modules/renovation-demo/");
         }
     });
+
+    it("shares the canonical Nova icon adapter and Base controls after PR #22", () => {
+        for (const component of ["gantt-bar.tsx", "gantt-nav.tsx", "gantt-view.tsx"]) {
+            const source = readFileSync(
+                new URL("../../components/reui/gantt/" + component, import.meta.url), "utf8",
+            );
+            expect(source).toContain("@/components/reui/base-icon-placeholder");
+            expect(source).not.toContain("@/components/reui/icon-placeholder");
+        }
+        const contextMenu = readFileSync(
+            new URL("../../components/ui/context-menu.tsx", import.meta.url), "utf8",
+        );
+        expect(contextMenu).toContain("@/components/reui/base-icon-placeholder");
+        expect(ui("task-sheet.tsx")).toContain("@/components/ui/alert-dialog");
+        expect(ui("finance-sheet.tsx")).toContain("@/components/ui/alert-dialog");
+    });
 });

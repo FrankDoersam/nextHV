@@ -13,7 +13,7 @@ describe("Nova line wizard tabs", () => {
                 <WizardTabsNavigation
                     unlockedStep={1}
                     steps={[
-                        { value: "1", label: "Inbox", badge: { value: 12, variant: "primary-light", size: "sm" } },
+                        { value: "1", label: "Inbox", badge: { value: 12, variant: "primary-light", size: "lg" } },
                         { value: "2", label: "Drafts", badge: { value: 3, variant: "info-light" } },
                         { value: "3", label: "Sent" },
                     ]}
@@ -26,7 +26,8 @@ describe("Nova line wizard tabs", () => {
 
         expect(screen.getByRole("tablist")).toHaveAttribute("data-variant", "line");
         expect(screen.getByRole("tab", { name: /Inbox.*12/ })).toHaveAttribute("aria-selected", "true");
-        expect(screen.getByText("12", { selector: '[data-slot="badge"]' })).toHaveAttribute("data-slot", "badge");
+        expect(screen.getByText("12", { selector: '[data-slot="badge"]' })).toHaveClass("h-5.5");
+        expect(screen.getByText("3", { selector: '[data-slot="badge"]' })).toHaveClass("h-4.5");
         expect(screen.getByRole("tab", { name: /Drafts.*3/ })).toHaveAttribute("aria-disabled", "true");
         expect(screen.getByRole("tab", { name: "Sent" })).toHaveAttribute("aria-disabled", "true");
         expect(screen.getByText("First page")).toBeVisible();
