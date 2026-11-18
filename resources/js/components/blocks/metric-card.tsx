@@ -43,7 +43,7 @@ export function MetricCard({
             title={description}
             className={cn(
                 "@container/metric h-full min-w-0 bg-card",
-                appearance === "card" && "rounded-2xl ring-1 ring-foreground/10",
+                appearance === "card" && "rounded-xl ring-1 ring-foreground/10",
             )}
         >
             <div

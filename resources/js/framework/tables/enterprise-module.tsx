@@ -21,23 +21,20 @@ import {
     Ellipsis,
     Eye,
     Layers3,
-    ListFilter,
     RotateCcw,
     Save,
     Search,
-    Settings2,
+    Columns2,
+    Funnel,
     SlidersHorizontal,
     X,
 } from "lucide-react";
+import { PageHeader } from "@/components/blocks/layout";
+import { Separator } from "@/components/ui/separator";
+import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { EnterpriseProgressCell } from "@/components/blocks/enterprise-cells";
 import { Badge } from "@/components/reui/badge";
-import {
-    Frame,
-    FrameDescription,
-    FrameHeader,
-    FramePanel,
-    FrameTitle,
-} from "@/components/reui/frame";
+import { Frame, FrameFooter, FramePanel } from "@/components/reui/frame";
 import {
     DataGrid,
     DataGridContainer,
@@ -165,7 +162,7 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
     );
     const [search, setSearch] = useState("");
     const [query, setQuery] = useState<FilterQuery>(
-        () => firstView?.query ?? createFilterQuery(),
+        () => firstView?.query ?? config.defaultQuery ?? createFilterQuery(),
     );
     const [sorting, setSorting] = useState<SortingState>(
         config.defaultSorting ?? [],
@@ -206,6 +203,13 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
     const [saveError, setSaveError] = useState("");
     const gridI18n = useGridI18n();
     const isMobile = useIsMobile();
+
+    const scopedRows = useMemo(
+        () => (config.scope ? rows.filter(config.scope) : rows),
+        [rows, config],
+    );
+    const hasAggregates = config.columns.some((column) => column.aggregate);
+    const referenceToolbar = Boolean(config.defaultQuery);
 
     const filtered = useMemo(
         () => selectEnterpriseRows(rows, config, { search, query, sorting }),
@@ -249,7 +253,8 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
 
     const applyView = (view: EnterpriseView) => {
         setSearch("");
-        const nextQuery = view.query ?? createFilterQuery();
+        const nextQuery =
+            view.query ?? config.defaultQuery ?? createFilterQuery();
         setQuery(nextQuery);
         const nextGroup = view.groupBy ?? config.defaultGroupBy ?? "";
         setGroupBy(nextGroup);
@@ -419,10 +424,14 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                     ),
                     meta: {
                         headerTitle: definition.label,
-                        headerClassName:
-                            definition.align === "right" ? "text-right" : "",
-                        cellClassName:
-                            definition.align === "right" ? "text-right" : "",
+                        headerClassName: cn(
+                            referenceToolbar && "h-8 px-2",
+                            definition.align === "right" && "text-right",
+                        ),
+                        cellClassName: cn(
+                            referenceToolbar && "px-2 py-1.5",
+                            definition.align === "right" && "text-right",
+                        ),
                     },
                     size: definition.width ?? 150,
                     minSize: definition.primary ? 220 : 100,
@@ -515,7 +524,7 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                     ) : null,
             },
         ],
-        [config, collapsed, toggleGroup, groupBy, runAction],
+        [config, collapsed, toggleGroup, groupBy, runAction, referenceToolbar],
     );
 
     const table = useTable({
@@ -596,198 +605,20 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
         <div
             data-slot="enterprise-module"
             data-module={config.id}
-            className="flex min-w-0 flex-col gap-3"
+            className="flex min-h-0 min-w-0 flex-1 flex-col gap-4"
         >
-            <Frame stacked className="min-w-0">
-                <FrameHeader className="gap-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-2">
-                                <FrameTitle className="text-base">
-                                    {config.title}
-                                </FrameTitle>
-                                <Badge variant="secondary" size="sm">
-                                    {rows.length}
-                                </Badge>
-                            </div>
-                            <FrameDescription className="text-xs">
-                                {config.description}
-                            </FrameDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                    setViewName("");
-                                    setSaveError("");
-                                    setSaveOpen(true);
-                                }}
-                                disabled={savedViews.length >= 12}
-                            >
-                                <Bookmark className="size-3.5" />
-                                Ansicht speichern
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="default"
-                                size="sm"
-                                disabled={!filtered.length}
-                                onClick={() =>
-                                    download(
-                                        filtered,
-                                        exportColumns(),
-                                        "gefiltert",
-                                    )
-                                }
-                            >
-                                <Download className="size-3.5" />
-                                Export
-                            </Button>
-                        </div>
-                    </div>
-                    <div
-                        aria-label="Kennzahlen der gefilterten Datensätze"
-                        className="grid grid-cols-2 gap-4 rounded-lg border bg-background/70 p-4 xl:grid-cols-4"
-                    >
-                        {metrics.map((metric) => (
-                            <div
-                                key={metric.id}
-                                data-testid={`metric-${metric.id}`}
-                                className="flex min-w-0 items-center justify-between gap-2 xl:border-r xl:pr-4 xl:last:border-r-0 xl:last:pr-0"
-                            >
-                                <div className="flex min-w-0 flex-col gap-1">
-                                    <span className="text-xs text-muted-foreground">
-                                        {metric.label}
-                                    </span>
-                                    <span
-                                        className={cn(
-                                            "text-lg font-semibold tracking-tight tabular-nums sm:text-2xl",
-                                            metric.tone === "danger" &&
-                                                "text-destructive",
-                                            metric.tone === "success" &&
-                                                "text-success-foreground",
-                                        )}
-                                    >
-                                        {metric.value}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                        {metric.hint}
-                                    </span>
-                                </div>
-                                {metric.progress !== undefined && (
-                                    <div className="hidden shrink-0 sm:block">
-                                        <EnterpriseProgressCell
-                                            value={metric.progress}
-                                            label={metric.label}
-                                            variant="ring"
-                                            tone={metric.tone}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </FrameHeader>
-                <FramePanel className="min-w-0 p-0">
-                    <DataGrid
-                        table={table}
-                        recordCount={page.recordCount}
-                        i18n={{
-                            labels: {
-                                ...gridI18n.labels,
-                                selectAll: "Alle sichtbaren Zeilen auswählen",
-                                pinColumnStart: "Links fixieren",
-                                pinColumnEnd: "Rechts fixieren",
-                                moveColumnStart: "Nach links verschieben",
-                                moveColumnEnd: "Nach rechts verschieben",
-                                unpinColumn: (title) =>
-                                    `Fixierung von ${title} aufheben`,
-                            },
-                        }}
-                        tableLayout={{
-                            width: "fixed",
-                            dense: density === "compact",
-                            rowBorder: true,
-                            headerBackground: true,
-                            footerBackground: true,
-                            headerSticky: true,
-                            columnsVisibility: true,
-                            columnsResizable: true,
-                            columnsPinnable: !isMobile,
-                            columnsMovable: true,
-                        }}
-                        tableClassNames={{
-                            bodyRow:
-                                "has-[[data-enterprise-group]]:bg-muted/45",
-                        }}
-                        emptyMessage={
-                            <div className="flex flex-col items-center gap-2 py-8">
-                                <Search className="size-6 text-muted-foreground" />
-                                <span className="font-medium text-foreground">
-                                    Keine passenden {config.itemLabel}
-                                </span>
-                                <span>Suche oder Filter anpassen.</span>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                        setSearch("");
-                                        setQuery(createFilterQuery());
-                                        resetScope();
-                                    }}
-                                >
-                                    Filter zurücksetzen
-                                </Button>
-                            </div>
-                        }
-                    >
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 pt-2">
-                            <div
-                                role="group"
-                                aria-label="Vordefinierte Ansichten"
-                                className="flex max-w-full items-center gap-1 overflow-x-auto"
-                            >
-                                {config.views.map((view) => (
-                                    <button
-                                        key={view.id}
-                                        type="button"
-                                        aria-pressed={activeView === view.id}
-                                        onClick={() => applyView(view)}
-                                        className={cn(
-                                            "flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-2.5 py-2.5 text-xs font-medium whitespace-nowrap text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
-                                            activeView === view.id &&
-                                                "border-foreground text-foreground",
-                                        )}
-                                    >
-                                        {view.label}
-                                        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">
-                                            {
-                                                selectEnterpriseRows(
-                                                    rows,
-                                                    config,
-                                                    {
-                                                        search: "",
-                                                        query:
-                                                            view.query ??
-                                                            createFilterQuery(),
-                                                        sorting: [],
-                                                    },
-                                                ).length
-                                            }
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
+            <div className="shrink-0">
+                <PageHeader
+                    title={config.title}
+                    description={config.description}
+                    actions={
+                        <>
                             {savedViews.length > 0 && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger
                                         render={
                                             <Button
-                                                type="button"
-                                                variant="ghost"
+                                                variant="outline"
                                                 size="sm"
                                             />
                                         }
@@ -834,9 +665,188 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             )}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={savedViews.length >= 12}
+                                onClick={() => {
+                                    setViewName("");
+                                    setSaveError("");
+                                    setSaveOpen(true);
+                                }}
+                            >
+                                <Bookmark className="size-3.5" />
+                                Ansicht speichern
+                            </Button>
+                            <Button
+                                size="sm"
+                                disabled={!filtered.length}
+                                onClick={() =>
+                                    download(
+                                        filtered,
+                                        exportColumns(),
+                                        "gefiltert",
+                                    )
+                                }
+                            >
+                                <Download className="size-3.5" />
+                                Export
+                            </Button>
+                        </>
+                    }
+                />
+            </div>
+            {metrics.length > 0 && (
+                <div
+                    data-slot="enterprise-kpis"
+                    aria-label="Kennzahlen der gefilterten Datensätze"
+                    className="grid shrink-0 grid-cols-2 gap-x-4 gap-y-3 rounded-xl border bg-card p-3 sm:p-4 xl:grid-cols-4"
+                >
+                    {metrics.map((metric) => (
+                        <div
+                            key={metric.id}
+                            data-testid={`metric-${metric.id}`}
+                            className="flex min-w-0 items-center justify-between gap-2 xl:border-r xl:pr-4 xl:last:border-r-0 xl:last:pr-0"
+                        >
+                            <div className="flex min-w-0 flex-col gap-1">
+                                <span className="text-xs text-muted-foreground">
+                                    {metric.label}
+                                </span>
+                                <span
+                                    className={cn(
+                                        "text-lg font-semibold tracking-tight tabular-nums sm:text-2xl",
+                                        metric.tone === "danger" &&
+                                            "text-destructive",
+                                        metric.tone === "success" &&
+                                            "text-success-foreground",
+                                    )}
+                                >
+                                    {metric.value}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                    {metric.hint}
+                                </span>
+                            </div>
+                            {metric.progress !== undefined && (
+                                <div className="hidden shrink-0 sm:block">
+                                    <EnterpriseProgressCell
+                                        value={metric.progress}
+                                        label={metric.label}
+                                        variant="ring"
+                                        tone={metric.tone}
+                                    />
+                                </div>
+                            )}
                         </div>
-                        <div className="flex flex-col gap-3 px-4 py-3">
-                            <div className="flex flex-wrap items-center gap-2">
+                    ))}
+                </div>
+            )}
+            <Frame
+                spacing="sm"
+                data-testid="enterprise-frame"
+                className="min-h-0 min-w-0 flex-1"
+            >
+                <FramePanel className="flex min-h-0 min-w-0 flex-1 flex-col bg-card p-0! shadow-none!">
+                    <DataGrid
+                        table={table}
+                        recordCount={page.recordCount}
+                        i18n={{
+                            labels: {
+                                ...gridI18n.labels,
+                                selectAll: "Alle sichtbaren Zeilen auswählen",
+                                pinColumnStart: "Links fixieren",
+                                pinColumnEnd: "Rechts fixieren",
+                                moveColumnStart: "Nach links verschieben",
+                                moveColumnEnd: "Nach rechts verschieben",
+                                unpinColumn: (title) =>
+                                    `Fixierung von ${title} aufheben`,
+                            },
+                        }}
+                        tableLayout={{
+                            width: "fixed",
+                            dense: density === "compact",
+                            cellBorder: false,
+                            rowBorder: true,
+                            headerBackground: false,
+                            footerBackground: true,
+                            headerSticky: true,
+                            columnsVisibility: true,
+                            columnsResizable: true,
+                            columnsPinnable: !isMobile,
+                            columnsMovable: true,
+                        }}
+                        tableClassNames={{
+                            headerRow: "h-8",
+                            bodyRow:
+                                "has-[[data-enterprise-group]]:bg-muted/45",
+                        }}
+                        emptyMessage={
+                            <div className="flex flex-col items-center gap-2 py-8">
+                                <Search className="size-6 text-muted-foreground" />
+                                <span className="font-medium text-foreground">
+                                    Keine passenden {config.itemLabel}
+                                </span>
+                                <span>Suche oder Filter anpassen.</span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        setSearch("");
+                                        setQuery(
+                                            config.defaultQuery ??
+                                                createFilterQuery(),
+                                        );
+                                        resetScope();
+                                    }}
+                                >
+                                    Filter zurücksetzen
+                                </Button>
+                            </div>
+                        }
+                    >
+                        {config.views.length > 0 && (
+                            <div
+                                role="group"
+                                aria-label="Vordefinierte Ansichten"
+                                className="flex shrink-0 items-center gap-1 overflow-x-auto border-b px-3 pt-2"
+                            >
+                                {config.views.map((view) => (
+                                    <Button
+                                        key={view.id}
+                                        variant="ghost"
+                                        size="sm"
+                                        aria-pressed={activeView === view.id}
+                                        onClick={() => applyView(view)}
+                                        className={cn(
+                                            activeView === view.id &&
+                                                "bg-muted",
+                                        )}
+                                    >
+                                        {view.label}
+                                        <Badge variant="secondary" size="sm">
+                                            {
+                                                selectEnterpriseRows(
+                                                    rows,
+                                                    config,
+                                                    {
+                                                        search: "",
+                                                        query:
+                                                            view.query ??
+                                                            createFilterQuery(),
+                                                        sorting: [],
+                                                    },
+                                                ).length
+                                            }
+                                        </Badge>
+                                    </Button>
+                                ))}
+                            </div>
+                        )}
+                        <div
+                            data-slot="enterprise-toolbar"
+                            className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-(--frame-panel-header-px) py-2.5 [--control-height:2rem]"
+                        >
+                            {!referenceToolbar && (
                                 <div className="relative min-w-48 flex-1 sm:max-w-80">
                                     <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
                                     <Input
@@ -850,19 +860,65 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                                         className="h-8 pr-8 pl-8 text-xs"
                                     />
                                     {search && (
-                                        <button
-                                            type="button"
+                                        <Button
+                                            variant="ghost"
+                                            size="icon-sm"
                                             aria-label="Suche löschen"
+                                            className="absolute top-0 right-0"
                                             onClick={() => {
                                                 setSearch("");
                                                 resetScope();
                                             }}
-                                            className="absolute top-1/2 right-2 -translate-y-1/2 rounded-sm text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
                                         >
                                             <X className="size-3.5" />
-                                        </button>
+                                        </Button>
                                     )}
                                 </div>
+                            )}
+                            <Filters
+                                fields={config.filters}
+                                query={query}
+                                onQueryChange={(next) => {
+                                    setQuery(next);
+                                    resetScope();
+                                }}
+                                labels={enterpriseFilterLabels}
+                                operatorLabels={enterpriseOperatorLabels}
+                                variant={
+                                    advanced || needsAdvanced(query)
+                                        ? "advanced"
+                                        : "basic"
+                                }
+                                onConvertToAdvanced={() => setAdvanced(true)}
+                                size="default"
+                                className="min-w-0"
+                                trigger={
+                                    referenceToolbar ? (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8"
+                                            aria-label="Filter"
+                                        >
+                                            <Funnel className="size-4" />
+                                            Filter
+                                        </Button>
+                                    ) : undefined
+                                }
+                            />
+                            {referenceToolbar &&
+                                advanced &&
+                                !needsAdvanced(query) && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8"
+                                        onClick={() => setAdvanced(false)}
+                                    >
+                                        Einfache Filter
+                                    </Button>
+                                )}
+                            {config.groups.length > 0 && (
                                 <Select
                                     value={groupBy || "none"}
                                     onValueChange={(value) =>
@@ -898,60 +954,55 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {group && (
-                                    <Button
-                                        type="button"
-                                        size="icon-sm"
-                                        variant="outline"
-                                        aria-label={
+                            )}
+                            {group && (
+                                <Button
+                                    size="icon-sm"
+                                    variant="outline"
+                                    aria-label={
+                                        allCollapsed
+                                            ? "Alle Gruppen aufklappen"
+                                            : "Alle Gruppen zuklappen"
+                                    }
+                                    onClick={() =>
+                                        setCollapsed(
                                             allCollapsed
-                                                ? "Alle Gruppen aufklappen"
-                                                : "Alle Gruppen zuklappen"
-                                        }
-                                        title={
-                                            allCollapsed
-                                                ? "Alle Gruppen aufklappen"
-                                                : "Alle Gruppen zuklappen"
-                                        }
-                                        onClick={() =>
-                                            setCollapsed(
-                                                allCollapsed
-                                                    ? new Set()
-                                                    : new Set(
-                                                          page.groups.map(
-                                                              (entry) =>
-                                                                  entry.id,
-                                                          ),
+                                                ? new Set()
+                                                : new Set(
+                                                      page.groups.map(
+                                                          (entry) => entry.id,
                                                       ),
-                                            )
-                                        }
-                                    >
-                                        {allCollapsed ? (
-                                            <ChevronsUpDown />
-                                        ) : (
-                                            <ChevronsDownUp />
-                                        )}
-                                    </Button>
-                                )}
-                                <div className="ml-auto flex gap-2">
-                                    <DataGridColumnVisibility
-                                        table={table}
-                                        trigger={
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                            >
-                                                <Settings2 className="size-3.5" />
-                                                Spalten
-                                            </Button>
-                                        }
-                                    />
+                                                  ),
+                                        )
+                                    }
+                                >
+                                    {allCollapsed ? (
+                                        <ChevronsUpDown />
+                                    ) : (
+                                        <ChevronsDownUp />
+                                    )}
+                                </Button>
+                            )}
+                            <div className="ml-auto flex flex-wrap items-center gap-2">
+                                <DataGridColumnVisibility
+                                    table={table}
+                                    trigger={
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8"
+                                            aria-label="Spalten"
+                                        >
+                                            <Columns2 className="size-4" />
+                                            Spalten
+                                        </Button>
+                                    }
+                                />
+                                {!referenceToolbar && (
                                     <DropdownMenu>
                                         <DropdownMenuTrigger
                                             render={
                                                 <Button
-                                                    type="button"
                                                     variant="outline"
                                                     size="icon-sm"
                                                     aria-label="Darstellung einstellen"
@@ -1014,140 +1065,120 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
-                                </div>
+                                )}
                             </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <ListFilter
-                                    className="size-3.5 shrink-0 text-muted-foreground"
-                                    aria-hidden="true"
-                                />
-                                <Filters
-                                    fields={config.filters}
-                                    query={query}
-                                    onQueryChange={(next) => {
-                                        setQuery(next);
-                                        resetScope();
-                                    }}
-                                    labels={enterpriseFilterLabels}
-                                    operatorLabels={enterpriseOperatorLabels}
-                                    variant={
-                                        advanced || needsAdvanced(query)
-                                            ? "advanced"
-                                            : "basic"
-                                    }
-                                    onConvertToAdvanced={() =>
-                                        setAdvanced(true)
-                                    }
+                        </div>
+                        {selectedRows.length > 0 && (
+                            <div
+                                role="region"
+                                aria-label="Ausgewählte Datensätze"
+                                className="flex shrink-0 flex-wrap items-center gap-2 border-t bg-primary/5 px-3 py-2"
+                            >
+                                <Badge variant="primary-light">
+                                    {selectedRows.length} ausgewählt
+                                </Badge>
+                                <Button
+                                    variant="ghost"
                                     size="sm"
-                                />
-                                <span
-                                    className="ml-auto text-xs text-muted-foreground"
-                                    aria-live="polite"
+                                    onClick={() =>
+                                        setSelection(
+                                            Object.fromEntries(
+                                                filtered.map((row) => [
+                                                    `record:${row.id}`,
+                                                    true,
+                                                ]),
+                                            ),
+                                        )
+                                    }
                                 >
-                                    {filtered.length} von {rows.length}{" "}
-                                    {config.itemLabel}
-                                </span>
-                            </div>
-                            {selectedRows.length > 0 && (
-                                <div
-                                    role="region"
-                                    aria-label="Ausgewählte Datensätze"
-                                    className="flex flex-wrap items-center gap-2 rounded-md border border-primary/20 bg-primary/5 px-3 py-2"
+                                    Alle {filtered.length} Treffer auswählen
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                        download(
+                                            selectedRows,
+                                            exportColumns(),
+                                            "auswahl",
+                                        )
+                                    }
                                 >
-                                    <Badge variant="primary-light">
-                                        {selectedRows.length} ausgewählt
-                                    </Badge>
+                                    <Download className="size-3.5" />
+                                    Auswahl exportieren
+                                </Button>
+                                {config.actions?.map((action) => (
                                     <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                            setSelection(
-                                                Object.fromEntries(
-                                                    filtered.map((row) => [
-                                                        `record:${row.id}`,
-                                                        true,
-                                                    ]),
-                                                ),
-                                            )
-                                        }
-                                    >
-                                        Alle {filtered.length} Treffer auswählen
-                                    </Button>
-                                    <Button
-                                        type="button"
+                                        key={action.id}
                                         variant="outline"
                                         size="sm"
-                                        onClick={() =>
-                                            download(
-                                                selectedRows,
-                                                exportColumns(),
-                                                "auswahl",
+                                        disabled={
+                                            !selectedRows.some(
+                                                (row) =>
+                                                    !action.eligible ||
+                                                    action.eligible(row),
                                             )
                                         }
+                                        onClick={() =>
+                                            runAction(action, selectedRows)
+                                        }
                                     >
-                                        <Download className="size-3.5" />
-                                        Auswahl exportieren
+                                        {action.label}
                                     </Button>
-                                    {config.actions?.map((action) => (
-                                        <Button
-                                            key={action.id}
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            disabled={
-                                                !selectedRows.some(
-                                                    (row) =>
-                                                        !action.eligible ||
-                                                        action.eligible(row),
-                                                )
-                                            }
-                                            onClick={() =>
-                                                runAction(action, selectedRows)
-                                            }
-                                        >
-                                            {action.label}
-                                        </Button>
-                                    ))}
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon-sm"
-                                        className="ml-auto"
-                                        aria-label="Auswahl aufheben"
-                                        onClick={() => setSelection({})}
-                                    >
-                                        <X className="size-3.5" />
-                                    </Button>
-                                </div>
-                            )}
+                                ))}
+                                <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="ml-auto"
+                                    aria-label="Auswahl aufheben"
+                                    onClick={() => setSelection({})}
+                                >
+                                    <X className="size-3.5" />
+                                </Button>
+                            </div>
+                        )}
+                        <Separator />
+                        <div
+                            data-slot="enterprise-grid-scroll"
+                            className="min-h-0 flex-1"
+                        >
+                            <DataGridContainer className="h-full [&>div]:h-full">
+                                <DataGridScrollArea className="h-full">
+                                    <DataGridTable
+                                        footerContent={
+                                            hasAggregates ? (
+                                                <>
+                                                    <EnterpriseTotals
+                                                        config={config}
+                                                        rows={filtered}
+                                                        label="Gesamtsumme"
+                                                    />
+                                                    {selectedRows.length >
+                                                        0 && (
+                                                        <EnterpriseTotals
+                                                            config={config}
+                                                            rows={selectedRows}
+                                                            label="Auswahl"
+                                                        />
+                                                    )}
+                                                </>
+                                            ) : undefined
+                                        }
+                                    />
+                                </DataGridScrollArea>
+                            </DataGridContainer>
                         </div>
-                        <DataGridContainer className="max-h-[640px] overflow-auto rounded-none border-x-0">
-                            <DataGridTable
-                                footerContent={
-                                    <>
-                                        <EnterpriseTotals
-                                            config={config}
-                                            rows={filtered}
-                                            label="Gesamtsumme"
-                                        />
-                                        {selectedRows.length > 0 && (
-                                            <EnterpriseTotals
-                                                config={config}
-                                                rows={selectedRows}
-                                                label="Auswahl"
-                                            />
-                                        )}
-                                    </>
-                                }
-                            />
-                        </DataGridContainer>
-                        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                            <span className="text-xs text-muted-foreground">
-                                Summen und KPIs: alle {filtered.length} Treffer
-                                {group
-                                    ? ` · ${page.groups.length} Gruppen`
-                                    : ""}
+                        <Separator />
+                        <FrameFooter
+                            data-testid="enterprise-footer"
+                            className="shrink-0 flex-row flex-wrap items-center justify-between gap-x-4 gap-y-2"
+                        >
+                            <span
+                                className="text-xs text-muted-foreground"
+                                aria-live="polite"
+                            >
+                                {filtered.length} von {scopedRows.length}{" "}
+                                {config.itemLabel}
                             </span>
                             <DataGridPagination
                                 compact
@@ -1163,21 +1194,16 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                                         : "{from}–{to} von {count}"
                                 }
                             />
-                        </div>
+                        </FrameFooter>
                     </DataGrid>
                 </FramePanel>
             </Frame>
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
                 <p className="text-xs text-muted-foreground">
                     Fiktive Demo-Daten · Änderungen gelten bis zum Neuladen der
                     Seite.
                 </p>
-                <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={resetDemo}
-                >
+                <Button size="sm" variant="ghost" onClick={resetDemo}>
                     <RotateCcw className="size-3.5" />
                     Demo zurücksetzen
                 </Button>
@@ -1186,7 +1212,7 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                 role="status"
                 aria-live="polite"
                 className={cn(
-                    "text-xs",
+                    "shrink-0 text-xs",
                     notice
                         ? "rounded-md border bg-muted/30 px-3 py-2"
                         : "sr-only",
@@ -1265,9 +1291,8 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                     <DialogHeader>
                         <DialogTitle>Ansicht speichern</DialogTitle>
                         <DialogDescription>
-                            Suche, Filter, Gruppierung, Sortierung und Spalten
-                            in diesem Browser speichern. Die Demo-Daten werden
-                            nicht gespeichert.
+                            Filter, Sortierung und Spalten in diesem Browser
+                            speichern. Die Demo-Daten werden nicht gespeichert.
                         </DialogDescription>
                     </DialogHeader>
                     <form

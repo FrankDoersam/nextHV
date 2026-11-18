@@ -13,7 +13,7 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     });
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto("/");
-    await page.getByLabel("E-Mail-Adresse").fill("e2e@example.test");
+    await page.getByLabel("E-Mail-Adresse").fill("workspace-e2e@example.test");
     await page
         .getByLabel("Passwort", { exact: true })
         .fill(process.env.E2E_PASSWORD ?? "local-e2e-password-only");

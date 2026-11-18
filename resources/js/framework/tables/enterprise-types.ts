@@ -66,12 +66,15 @@ export interface EnterpriseModuleConfig<T extends EnterpriseRecord> {
     description: string;
     itemLabel: string;
     rows: readonly T[];
+    /** Permanent domain boundary, applied before user filters, totals and exports. */
+    scope?: (row: T) => boolean;
     columns: EnterpriseColumn<T>[];
     filters: EnterpriseFilter<T>[];
     groups: EnterpriseGroup<T>[];
     views: EnterpriseView[];
     defaultGroupBy?: string;
     defaultSorting?: SortingState;
+    defaultQuery?: FilterQuery;
     searchText: (row: T) => string;
     metrics: (rows: readonly T[]) => EnterpriseMetric[];
     detailTitle: (row: T) => string;

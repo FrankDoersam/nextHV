@@ -123,6 +123,7 @@ describe("enterprise filtered records", () => {
         const rows = [row("open"), row("paid", { status: "ausgeglichen" })];
         const fieldDraft = rule("status", "");
         const valueDraft = rule("amount", "gte");
+        const textDraft = rule("name", "contains", "");
         const partialRange = rule("amount", "between", [0, undefined]);
         const active = rule("status", "is", "offen");
         const select = (filter: FilterQuery) =>
@@ -133,6 +134,7 @@ describe("enterprise filtered records", () => {
             }).map((entry) => entry.id);
 
         expect(select(query(fieldDraft))).toEqual(["open", "paid"]);
+        expect(select(query(textDraft))).toEqual(["open", "paid"]);
         expect(select(query(valueDraft, partialRange))).toEqual([
             "open",
             "paid",
@@ -140,7 +142,7 @@ describe("enterprise filtered records", () => {
         expect(select(query(active, fieldDraft, valueDraft))).toEqual(["open"]);
         expect(
             select({
-                ...query(active, fieldDraft, valueDraft),
+                ...query(active, fieldDraft, valueDraft, textDraft),
                 combinator: "or",
             }),
         ).toEqual(["open"]);

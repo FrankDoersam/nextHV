@@ -19,6 +19,10 @@ jobs:
           node-version: "24"
           cache: npm
       - run: composer install --no-interaction --prefer-dist
+      - name: Check browser fixture formatting
+        run: |
+          vendor/bin/pint tests/e2e/seed.php --format agent
+          git diff --exit-code -- tests/e2e/seed.php
       - run: cp .env.example .env
       - run: php artisan key:generate
       - run: composer validate --strict
