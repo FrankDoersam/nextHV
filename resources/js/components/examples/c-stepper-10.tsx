@@ -1,7 +1,20 @@
 "use client";
 
-import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, LoaderCircleIcon } from "lucide-react";
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import {
+    CheckIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    LoaderCircleIcon,
+} from "lucide-react";
+import {
+    useCallback,
+    useEffect,
+    useId,
+    useLayoutEffect,
+    useRef,
+    useState,
+    type ReactNode,
+} from "react";
 import {
     Stepper,
     StepperContent,
@@ -15,6 +28,7 @@ import {
     StepperTrigger,
 } from "@/components/reui/stepper";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
     useCStepper10Navigation,
     type Stepper10Navigation,
@@ -50,7 +64,9 @@ export interface CStepper10Props {
     busy?: boolean;
     singleContent?: boolean;
     idPrefix?: string;
-    children: ReactNode;
+    label?: string;
+    panelId?: string;
+    children?: ReactNode;
 }
 
 export function CStepper10({
@@ -68,6 +84,8 @@ export function CStepper10({
     busy = false,
     singleContent = false,
     idPrefix,
+    label = "Erfassungsschritte",
+    panelId,
     children,
 }: CStepper10Props) {
     const generatedId = useId();
@@ -86,8 +104,12 @@ export function CStepper10({
     });
     const controls = navigation ?? fallback;
     const interactive = Boolean(navigation || onSelect);
+    const hasContent = children !== undefined && children !== null;
     const scrollRef = useRef<HTMLDivElement>(null);
-    const [scrollability, setScrollability] = useState({ left: false, right: false });
+    const [scrollability, setScrollability] = useState({
+        left: false,
+        right: false,
+    });
     const compact = steps.length > 4;
 
     const updateScrollability = useCallback(() => {
@@ -110,9 +132,10 @@ export function CStepper10({
         const handler = () => updateScrollability();
         element.addEventListener("scroll", handler, { passive: true });
         window.addEventListener("resize", handler);
-        const observer = typeof ResizeObserver === "function"
-            ? new ResizeObserver(handler)
-            : null;
+        const observer =
+            typeof ResizeObserver === "function"
+                ? new ResizeObserver(handler)
+                : null;
         observer?.observe(element);
         const rail = element.querySelector('[data-slot="stepper-nav"]');
         if (rail) observer?.observe(rail);
@@ -129,7 +152,9 @@ export function CStepper10({
     useLayoutEffect(() => {
         if (!enabled) return;
         const element = scrollRef.current;
-        const current = element?.querySelector<HTMLElement>('[data-current-step="true"]');
+        const current = element?.querySelector<HTMLElement>(
+            '[data-current-step="true"]',
+        );
         if (!element || !current) return;
         const railRect = element.getBoundingClientRect();
         const tabRect = current.getBoundingClientRect();
@@ -144,14 +169,19 @@ export function CStepper10({
     const scrollTabs = (direction: -1 | 1) => {
         const element = scrollRef.current;
         if (!element) return;
-        element.scrollLeft += direction * Math.max(140, element.clientWidth * 0.65);
+        element.scrollLeft +=
+            direction * Math.max(140, element.clientWidth * 0.65);
         updateScrollability();
     };
 
     if (!enabled) return <>{children}</>;
 
     return (
-        <div data-slot="reui-c-stepper-10" data-step-count={steps.length} className="min-w-0">
+        <div
+            data-slot="reui-c-stepper-10"
+            data-step-count={steps.length}
+            className="min-w-0"
+        >
             <Stepper
                 value={active + 1}
                 onValueChange={(value) => {
@@ -159,31 +189,44 @@ export function CStepper10({
                 }}
                 indicators={{
                     completed: <CheckIcon className="size-3.5" />,
-                    loading: <LoaderCircleIcon className="size-3.5 animate-spin" />,
+                    loading: (
+                        <LoaderCircleIcon className="size-3.5 animate-spin" />
+                    ),
                 }}
-                aria-label="Erfassungsschritte"
-                className="w-full min-w-0 space-y-3"
+                aria-label={label}
+                className="w-full min-w-0 space-y-8"
             >
-                <div data-slot="reui-stepper-10-navigation" className="relative min-w-0">
+                <div
+                    data-slot="reui-stepper-10-navigation"
+                    className="relative min-w-0"
+                >
                     <div
                         ref={scrollRef}
                         data-slot="reui-stepper-10-scroll"
-                        className="min-w-0 max-w-full overflow-x-auto overscroll-x-contain border-b border-border/60 pb-3 [scrollbar-width:thin]"
+                        className="min-w-0 max-w-full overflow-x-auto overscroll-x-contain [scrollbar-width:thin]"
                     >
-                        <StepperNav className="flex w-full min-w-max items-center gap-0">
+                        <StepperNav className="min-w-max">
                             {steps.map((stage, index) => {
                                 const completed = index < active;
                                 const current = index === active;
-                                const status = completed ? "Erledigt" : current ? "Aktuell" : "Offen";
-                                const permitted = interactive && controls.canSelectStep(index);
+                                const status = completed
+                                    ? "Erledigt"
+                                    : current
+                                      ? "Aktuell"
+                                      : "Offen";
+                                const permitted =
+                                    interactive &&
+                                    controls.canSelectStep(index);
                                 return (
                                     <StepperItem
                                         key={stage.id}
                                         step={index + 1}
                                         disabled={!permitted}
-                                        data-current-step={current ? "true" : undefined}
+                                        data-current-step={
+                                            current ? "true" : undefined
+                                        }
                                         className={cn(
-                                            "relative min-w-0 justify-start",
+                                            "relative min-w-0",
                                             compact
                                                 ? "!flex-[1_0_6.75rem]"
                                                 : "!flex-[1_0_8rem]",
@@ -191,30 +234,48 @@ export function CStepper10({
                                     >
                                         <StepperTrigger
                                             type="button"
-                                            id={baseId + "-trigger-" + (index + 1)}
-                                            aria-controls={baseId + "-panel-" + (index + 1)}
-                                            aria-label={stage.label + ", Schritt " + (index + 1)}
+                                            id={
+                                                baseId +
+                                                "-trigger-" +
+                                                (index + 1)
+                                            }
+                                            aria-controls={
+                                                panelId ??
+                                                (hasContent
+                                                    ? baseId +
+                                                      "-panel-" +
+                                                      (index + 1)
+                                                    : undefined)
+                                            }
+                                            aria-label={
+                                                stage.label +
+                                                ", Schritt " +
+                                                (index + 1)
+                                            }
                                             disabled={!permitted}
-                                            className={cn(
-                                                "min-w-0 flex-1 justify-start gap-1.5 rounded-md px-1 py-1.5 text-left focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-100",
-                                                completed && permitted && "hover:bg-muted/50",
-                                            )}
+                                            className="flex min-w-0 justify-start gap-1.5"
                                         >
-                                            <StepperIndicator className="size-6 shrink-0 rounded-full border border-border bg-background text-[11px] font-semibold text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=completed]:border-primary/20 data-[state=completed]:bg-primary/10 data-[state=completed]:text-primary">
+                                            <StepperIndicator>
                                                 {index + 1}
                                             </StepperIndicator>
                                             <div className="flex min-w-0 flex-col items-start gap-0.5">
-                                                <StepperTitle className="line-clamp-2 max-w-36 break-words text-xs leading-4 data-[state=inactive]:text-muted-foreground">
-                                                    <span className="sm:hidden">{stage.shortLabel ?? stage.label}</span>
-                                                    <span className="hidden sm:inline">{stage.label}</span>
+                                                <StepperTitle>
+                                                    <span className="sm:hidden">
+                                                        {stage.shortLabel ??
+                                                            stage.label}
+                                                    </span>
+                                                    <span className="hidden sm:inline">
+                                                        {stage.label}
+                                                    </span>
                                                 </StepperTitle>
-                                                <StepperDescription className="hidden text-[10px] leading-4 text-muted-foreground @min-[38rem]/overlay:block">
-                                                    {status}
+                                                <StepperDescription>
+                                                    {stage.description ??
+                                                        status}
                                                 </StepperDescription>
                                             </div>
                                         </StepperTrigger>
                                         {index < steps.length - 1 && (
-                                            <StepperSeparator className="mx-0.5 h-px w-2.5 flex-none self-center bg-border/70 @min-[44rem]/overlay:mx-1 @min-[44rem]/overlay:w-3" />
+                                            <StepperSeparator className="md:mx-2.5" />
                                         )}
                                     </StepperItem>
                                 );
@@ -222,42 +283,48 @@ export function CStepper10({
                         </StepperNav>
                     </div>
                     {scrollability.left && (
-                        <button
+                        <Button
                             type="button"
+                            variant="outline"
+                            size="icon-sm"
                             data-slot="reui-stepper-10-scroll-prev"
                             aria-label="Frühere Schritte anzeigen"
                             onClick={() => scrollTabs(-1)}
-                            className="absolute top-1/2 left-0 z-10 flex size-7 -translate-y-[65%] items-center justify-center rounded-md border bg-background/95 shadow-sm focus-visible:ring-2 focus-visible:ring-ring/50"
+                            className="absolute top-1/2 left-0 z-10 -translate-y-1/2"
                         >
                             <ChevronLeftIcon className="size-4" />
-                        </button>
+                        </Button>
                     )}
                     {scrollability.right && (
-                        <button
+                        <Button
                             type="button"
+                            variant="outline"
+                            size="icon-sm"
                             data-slot="reui-stepper-10-scroll-next"
                             aria-label="Weitere Schritte anzeigen"
                             onClick={() => scrollTabs(1)}
-                            className="absolute top-1/2 right-0 z-10 flex size-7 -translate-y-[65%] items-center justify-center rounded-md border bg-background/95 shadow-sm focus-visible:ring-2 focus-visible:ring-ring/50"
+                            className="absolute top-1/2 right-0 z-10 -translate-y-1/2"
                         >
                             <ChevronRightIcon className="size-4" />
-                        </button>
+                        </Button>
                     )}
                 </div>
-                <StepperPanel className="min-w-0 text-sm">
-                    {singleContent ? (
-                        <CStepper10Content
-                            enabled
-                            step={active + 1}
-                            active={active}
-                            idPrefix={baseId}
-                        >
-                            {children}
-                        </CStepper10Content>
-                    ) : (
-                        children
-                    )}
-                </StepperPanel>
+                {hasContent && (
+                    <StepperPanel className="min-w-0 text-sm">
+                        {singleContent ? (
+                            <CStepper10Content
+                                enabled
+                                step={active + 1}
+                                active={active}
+                                idPrefix={baseId}
+                            >
+                                {children}
+                            </CStepper10Content>
+                        ) : (
+                            children
+                        )}
+                    </StepperPanel>
+                )}
             </Stepper>
         </div>
     );

@@ -15,6 +15,7 @@ import {
 import { LazyTabs, type LazyTab } from "@/components/blocks/lazy-tabs";
 import { Button } from "@/components/ui/button";
 import { useResource } from "@/framework/data/hooks";
+import { can, usePermissionRevision } from "@/framework/permissions";
 import { RelationCollection } from "@/framework/tables/relation-collection";
 import { RowActions } from "@/framework/tables/resource-collection";
 import type { RecordData, ResourceDefinition } from "@/framework/types";
@@ -56,6 +57,7 @@ export default function DetailPage({
     const { id } = useParams();
     const result = useResource(resource, Number(id));
     const w = useWorkbench();
+    usePermissionRevision();
     if (result.isPending) return <Loading />;
     if (result.error)
         return (
@@ -69,7 +71,10 @@ export default function DetailPage({
             label: "Übersicht",
             render: () =>
                 resource.name === "properties" ? (
-                    <div data-slot="property-overview" className="flex min-w-0 flex-col gap-5">
+                    <div
+                        data-slot="property-overview"
+                        className="flex min-w-0 flex-col gap-4"
+                    >
                         <OverviewMetrics propertyId={record.id} />
                         <PropertyOverview property={record} />
                     </div>
@@ -78,7 +83,8 @@ export default function DetailPage({
                 ),
         },
     ];
-    tabs.push(...auditTabs(resource, record.id));
+    const activityTabs = auditTabs(resource, record.id);
+    if (resource.name !== "properties") tabs.push(...activityTabs);
     for (const relation of resource.relations ?? [])
         tabs.push({
             id: relation.resource + relation.field,
@@ -95,6 +101,9 @@ export default function DetailPage({
             ),
         });
     if (resource.name === "properties") {
+        tabs.push(
+            ...activityTabs.map((tab) => ({ ...tab, label: "Aktivität" })),
+        );
         tabs.push({
             id: "contracts",
             icon: FileText,
@@ -153,30 +162,44 @@ export default function DetailPage({
                 title={String(record[resource.titleField] ?? resource.singular)}
                 description={
                     resource.name === "properties"
-                        ? `${record.street} ${record.house_number} · ${record.postal_code} ${record.city}`
+                        ? [
+                              [record.street, record.house_number]
+                                  .filter(Boolean)
+                                  .join(" "),
+                              [record.postal_code, record.city]
+                                  .filter(Boolean)
+                                  .join(" "),
+                          ]
+                              .filter(Boolean)
+                              .join(" · ")
                         : resource.description
                 }
                 actions={
                     <>
                         <Button
                             variant="outline"
+                            size="icon-sm"
                             aria-label="Datensatz aktualisieren"
+                            disabled={result.isFetching}
                             onClick={() => result.refetch()}
                         >
                             <RefreshCw />
                         </Button>
-                        <Button
-                            onClick={() =>
-                                w.openForm({
-                                    resource,
-                                    mode: "edit",
-                                    row: record,
-                                })
-                            }
-                        >
-                            <Pencil />
-                            Bearbeiten
-                        </Button>
+                        {can(resource.name, "edit", record) && (
+                            <Button
+                                size="sm"
+                                onClick={() =>
+                                    w.openForm({
+                                        resource,
+                                        mode: "edit",
+                                        row: record,
+                                    })
+                                }
+                            >
+                                <Pencil />
+                                Bearbeiten
+                            </Button>
+                        )}
                         <RowActions
                             placement="detail"
                             resource={resource}

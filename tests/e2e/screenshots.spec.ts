@@ -910,7 +910,7 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await expect(propertyMetrics).toHaveCount(4);
     await expect(propertyCards.first()).toBeVisible();
     expect(await propertyCards.count()).toBeGreaterThanOrEqual(5);
-    // Maia: KPI and sections use one card surface, never nested frames.
+    // Nova: KPI and sections use one card surface, never nested frames.
     await expect(propertyCards.locator('[data-slot="frame-panel"]')).toHaveCount(0);
     expect(await propertyCards.locator('[data-slot="card-content"]').count())
         .toBe(await propertyCards.count());
@@ -925,8 +925,10 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     );
     expect(cardRadius).toBe(metricRadius);
     await capture("60-objekt-maia-uebersicht");
-    const buildingDetails = page.locator('[data-slot="property-building-management"]');
-    await expect(buildingDetails.locator('[data-slot="key-value-list"] dt')).toHaveCount(7);
+    await expect(propertyOverview.locator('[data-slot="property-general-values"] dt')).toHaveCount(9);
+    await expect(propertyOverview.locator('[data-slot="property-management-values"] dt')).toHaveCount(6);
+    const buildingDetails = propertyOverview.locator('[data-slot="property-building-values"]');
+    await expect(buildingDetails.locator('[data-slot="key-value-list"] dt')).toHaveCount(4);
     await expect(buildingDetails.getByRole("button", { name: "Heizung bearbeiten" })).toBeVisible();
     await buildingDetails.getByRole("button", { name: "Heizung bearbeiten" }).click();
     await expect(buildingDetails.getByRole("form", { name: "Heizung ändern" })).toBeVisible();
