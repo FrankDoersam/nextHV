@@ -1,0 +1,92 @@
+name: ReUI demo screenshots
+
+on:
+  push:
+    branches:
+      - feature/reui-nova-renovation-gantt-2027
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ${{ github.workspace }}/database/e2e.sqlite
+      E2E_PASSWORD: local-e2e-password-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          extensions: gd, mbstring, pdo_sqlite, fileinfo, intl, bcmath
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: npm ci
+      - name: Prepare isolated screenshot database
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          touch database/e2e.sqlite
+          php artisan migrate --force
+          php artisan db:seed --class=PropertySeeder --force
+          php tests/e2e/seed.php
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Capture wizard tabs 1–5 and Gantt
+        run: npx playwright test --config=playwright.reui-screenshots.config.ts
+      - name: Upload wizard tabs 1–5 and baseline screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reui-nova-sheet18-renovation
+          path: |
+            screenshots/kernsanierung-2027.png
+            screenshots/kernsanierung-finanz-sheet.png
+            screenshots/kernsanierung-rechnungen-sheet.png
+            screenshots/kernsanierung-gantt-1-settings.png
+            screenshots/kernsanierung-gantt-1-add-task-sheet.png
+            screenshots/kernsanierung-reui-sheet18-edit-timeline-entry.png
+            screenshots/kernsanierung-reui-sheet18-dependencies-tab.png
+            screenshots/csv-import-nova-select-geoeffnet.png
+            screenshots/csv-import-tab-1-upload.png
+            screenshots/csv-import-tab-2-map-columns.png
+            screenshots/csv-import-tab-3-preview.png
+            screenshots/csv-import-tab-4-duplicates.png
+            screenshots/csv-import-tab-5-summary.png
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reui-screenshot-diagnostics
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Screenshots summary
+        if: success()
+        run: |
+          echo "## ReUI Screenshots" >> "$GITHUB_STEP_SUMMARY"
+          echo "- kernsanierung-2027.png – Gantt (März 2027)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- kernsanierung-finanz-sheet.png – Budget & Rechnungen" >> "$GITHUB_STEP_SUMMARY"
+          echo "- kernsanierung-rechnungen-sheet.png – offene Eingangsrechnungen" >> "$GITHUB_STEP_SUMMARY"
+          echo "- kernsanierung-gantt-1-settings.png – ReUI c-gantt-1 Einstellungen" >> "$GITHUB_STEP_SUMMARY"
+          echo "- kernsanierung-gantt-1-add-task-sheet.png – ReUI Add Task Sheet" >> "$GITHUB_STEP_SUMMARY"
+          echo "- kernsanierung-reui-sheet18-edit-timeline-entry.png – ReUI Sheet 18: Timeline-Eintrag bearbeiten" >> "$GITHUB_STEP_SUMMARY"
+          echo "- kernsanierung-reui-sheet18-dependencies-tab.png – ReUI Sheet 18: Abhängigkeiten" >> "$GITHUB_STEP_SUMMARY"
+          echo "- csv-import-nova-select-geoeffnet.png – Schritt 1, unteres Select geöffnet" >> "$GITHUB_STEP_SUMMARY"
+          echo "- csv-import-tab-1-upload.png – Upload" >> "$GITHUB_STEP_SUMMARY"
+          echo "- csv-import-tab-2-map-columns.png – Map Columns + Owner warning" >> "$GITHUB_STEP_SUMMARY"
+          echo "- csv-import-tab-3-preview.png – Preview Rows" >> "$GITHUB_STEP_SUMMARY"
+          echo "- csv-import-tab-4-duplicates.png – Duplicate Handling / Skip existing" >> "$GITHUB_STEP_SUMMARY"
+          echo "- csv-import-tab-5-summary.png – Run Import / Import plan" >> "$GITHUB_STEP_SUMMARY"
+          echo "1600×1200 Chromium; Tab 1–5 screenshots crop the wizard itself for the original HTML comparison." >> "$GITHUB_STEP_SUMMARY"
