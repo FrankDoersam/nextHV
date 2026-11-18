@@ -29,9 +29,9 @@ it("renders reusable Base controls and resolves a Lucide icon", () => {
 });
 
 it("retains nested AND/OR rules and typed filter values", () => {
-    const query = createFilterQuery([
+    const query = createFilterQuery<unknown>([
         createFilterRule({ id: "one", path: ["status"], operator: "is", value: "active" }),
-        createFilterGroup({
+        createFilterGroup<unknown>({
             id: "nested",
             combinator: "or",
             rules: [
