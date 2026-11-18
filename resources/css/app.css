@@ -1,17 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./fonts.css";
 @import "./reui-base-nova.css";
 @source "../js";
 @custom-variant dark (&:is(.dark *));
 @custom-variant style-nova (&:is(.style-nova *));
-/* Inter Project, SIL OFL 1.1; source and license are bundled in public/fonts. */
-@font-face {
-    font-family: "Inter";
-    src: url("/fonts/InterVariable.woff2") format("woff2");
-    font-style: normal;
-    font-weight: 100 900;
-    font-display: swap;
-}
 @theme inline {
     --font-sans:
         "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
@@ -63,7 +56,7 @@
     /* ReUI Nova Default / Base UI / Neutral / Inter */
     --radius: 0.625rem;
     --control-height: 2rem;
-    --control-height-sm: 2rem;
+    --control-height-sm: 1.75rem;
     --control-height-lg: 2.25rem;
     --control-height-field: 2rem;
     --background: oklch(1 0 0);
@@ -167,6 +160,7 @@
     }
     [data-slot="collection-toolbar"] {
         --control-height: 2.5rem;
+        --control-height-lg: 2.5rem;
     }
     .nav-item {
         @apply flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground;

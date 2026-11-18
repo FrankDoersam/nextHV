@@ -34,7 +34,7 @@ import { Separator } from "@/components/ui/separator";
 import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
 import { EnterpriseProgressCell } from "@/components/blocks/enterprise-cells";
 import { Badge } from "@/components/reui/badge";
-import { Frame, FrameFooter, FramePanel } from "@/components/reui/frame";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
     DataGrid,
     DataGridContainer,
@@ -181,11 +181,7 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
     );
     const [columnOrder, setColumnOrder] = useState<string[]>([]);
     const [pinning, setPinning] = useState<ColumnPinningState>({
-        start: [
-            "selection",
-            config.columns.find((column) => column.primary)?.id ??
-                config.columns[0].id,
-        ],
+        start: [],
         end: [],
     });
     const [density, setDensity] = useState<"comfortable" | "compact">(
@@ -392,6 +388,7 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
         () => [
             {
                 id: "selection",
+                meta: { headerClassName: "ps-4", cellClassName: "ps-4" },
                 header: () => <DataGridTableRowSelectAll />,
                 cell: ({ row }) =>
                     row.original.kind === "record" ? (
@@ -425,11 +422,9 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                     meta: {
                         headerTitle: definition.label,
                         headerClassName: cn(
-                            referenceToolbar && "h-8 px-2",
                             definition.align === "right" && "text-right",
                         ),
                         cellClassName: cn(
-                            referenceToolbar && "px-2 py-1.5",
                             definition.align === "right" && "text-right",
                         ),
                     },
@@ -500,9 +495,10 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
             {
                 id: "actions",
                 header: "",
-                size: 44,
-                minSize: 44,
-                maxSize: 44,
+                meta: { headerClassName: "pe-4", cellClassName: "pe-4" },
+                size: 52,
+                minSize: 52,
+                maxSize: 52,
                 enableSorting: false,
                 enableHiding: false,
                 enableResizing: false,
@@ -524,7 +520,7 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                     ) : null,
             },
         ],
-        [config, collapsed, toggleGroup, groupBy, runAction, referenceToolbar],
+        [config, collapsed, toggleGroup, groupBy, runAction],
     );
 
     const table = useTable({
@@ -586,11 +582,7 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
         setVisibility(initialVisibility(config));
         setColumnOrder([]);
         setPinning({
-            start: [
-                "selection",
-                config.columns.find((column) => column.primary)?.id ??
-                    config.columns[0].id,
-            ],
+            start: [],
             end: [],
         });
         setDensity("comfortable");
@@ -697,10 +689,10 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                 />
             </div>
             {metrics.length > 0 && (
-                <div
+                <Card
                     data-slot="enterprise-kpis"
                     aria-label="Kennzahlen der gefilterten Datensätze"
-                    className="grid shrink-0 grid-cols-2 gap-x-4 gap-y-3 rounded-xl border bg-card p-3 sm:p-4 xl:grid-cols-4"
+                    className="grid shrink-0 grid-cols-2 gap-x-4 gap-y-3 p-3 sm:p-4 xl:grid-cols-4"
                 >
                     {metrics.map((metric) => (
                         <div
@@ -739,14 +731,13 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                             )}
                         </div>
                     ))}
-                </div>
+                </Card>
             )}
-            <Frame
-                spacing="sm"
-                data-testid="enterprise-frame"
-                className="min-h-0 min-w-0 flex-1"
+            <Card
+                data-testid="enterprise-grid"
+                className="min-h-0 min-w-0 flex-1 gap-0 p-0"
             >
-                <FramePanel className="flex min-h-0 min-w-0 flex-1 flex-col bg-card p-0! shadow-none!">
+                <CardContent className="flex min-h-0 min-w-0 flex-1 flex-col p-0">
                     <DataGrid
                         table={table}
                         recordCount={page.recordCount}
@@ -764,7 +755,7 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                         }}
                         tableLayout={{
                             width: "fixed",
-                            dense: density === "compact",
+                            dense: referenceToolbar || density === "compact",
                             cellBorder: false,
                             rowBorder: true,
                             headerBackground: false,
@@ -776,7 +767,6 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                             columnsMovable: true,
                         }}
                         tableClassNames={{
-                            headerRow: "h-8",
                             bodyRow:
                                 "has-[[data-enterprise-group]]:bg-muted/45",
                         }}
@@ -844,7 +834,7 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                         )}
                         <div
                             data-slot="enterprise-toolbar"
-                            className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-(--frame-panel-header-px) py-2.5 [--control-height:2rem]"
+                            className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-5 py-3"
                         >
                             {!referenceToolbar && (
                                 <div className="relative min-w-48 flex-1 sm:max-w-80">
@@ -902,8 +892,7 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                                     referenceToolbar ? (
                                         <Button
                                             variant="outline"
-                                            size="sm"
-                                            className="h-8"
+                                            size="default"
                                             aria-label="Filter"
                                         >
                                             <Funnel className="size-4" />
@@ -917,8 +906,7 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                                 !needsAdvanced(query) && (
                                     <Button
                                         variant="outline"
-                                        size="sm"
-                                        className="h-8"
+                                        size="default"
                                         onClick={() => setAdvanced(false)}
                                     >
                                         Einfache Filter
@@ -995,8 +983,7 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                                     trigger={
                                         <Button
                                             variant="outline"
-                                            size="sm"
-                                            className="h-8"
+                                            size="default"
                                             aria-label="Spalten"
                                         >
                                             <Columns2 className="size-4" />
@@ -1052,16 +1039,7 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                                                     );
                                                     setColumnOrder([]);
                                                     setPinning({
-                                                        start: [
-                                                            "selection",
-                                                            config.columns.find(
-                                                                (column) =>
-                                                                    column.primary,
-                                                            )?.id ??
-                                                                config
-                                                                    .columns[0]
-                                                                    .id,
-                                                        ],
+                                                        start: [],
                                                         end: [],
                                                     });
                                                     table.resetColumnSizing();
@@ -1174,10 +1152,9 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                                 </DataGridScrollArea>
                             </DataGridContainer>
                         </div>
-                        <Separator />
-                        <FrameFooter
+                        <CardFooter
                             data-testid="enterprise-footer"
-                            className="shrink-0 flex-row flex-wrap items-center justify-between gap-x-4 gap-y-2"
+                            className="shrink-0 flex-row flex-wrap items-center justify-between gap-x-4 gap-y-2 bg-card px-4 py-2"
                         >
                             <span
                                 className="sr-only text-xs text-muted-foreground sm:not-sr-only"
@@ -1201,10 +1178,10 @@ export function EnterpriseModule<T extends EnterpriseRecord>({
                                         : "{from}–{to} von {count}"
                                 }
                             />
-                        </FrameFooter>
+                        </CardFooter>
                     </DataGrid>
-                </FramePanel>
-            </Frame>
+                </CardContent>
+            </Card>
             <div className="flex shrink-0 items-center justify-between gap-2">
                 <p className="min-w-0 flex-1 text-xs text-muted-foreground">
                     Fiktive Demo-Daten · Änderungen gelten bis zum Neuladen der

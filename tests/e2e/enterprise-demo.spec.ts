@@ -89,6 +89,90 @@ async function currencyCents(locator: Locator) {
     );
 }
 
+async function expectInterLoaded(page: Page) {
+    await page.evaluate(() => document.fonts.ready);
+    const font = await page.evaluate(() => {
+        const familyName = (family: string) =>
+            family.trim().replace(/^["']|["']$/g, "");
+        let loadedInter = false;
+        document.fonts.forEach((face) => {
+            if (familyName(face.family) === "Inter" && face.status === "loaded")
+                loadedInter = true;
+        });
+        return {
+            bodyFamily: familyName(
+                getComputedStyle(document.body).fontFamily.split(",")[0],
+            ),
+            loadedInter,
+        };
+    });
+    expect(font.bodyFamily).toBe("Inter");
+    // fonts.check() alone also succeeds when the requested family falls back.
+    expect(font.loadedInter).toBe(true);
+}
+
+async function expectFilterChipStyle(page: Page, module: Locator) {
+    const chip = module.locator('[data-slot="filter-chip"]');
+    await expect(chip).toHaveCount(1);
+    const segments = chip.locator(":scope > *");
+    await expect(segments).toHaveCount(4);
+    await page.mouse.move(0, 0);
+    await expect
+        .poll(
+            () =>
+                segments.evaluateAll((nodes) => {
+                    const colors = nodes.map(
+                        (node) => getComputedStyle(node).backgroundColor,
+                    );
+                    return colors.map((color) => color === colors[3]);
+                }),
+            { message: "Every filter segment shares the kebab background" },
+        )
+        .toEqual([true, true, true, true]);
+    const styles = await segments.evaluateAll((nodes) =>
+        nodes.map((node) => {
+            const box = node.getBoundingClientRect();
+            const style = getComputedStyle(node);
+            return {
+                height: box.height,
+                top: box.top,
+                left: box.left,
+                right: box.right,
+                borderLeft: Number.parseFloat(style.borderLeftWidth),
+                borderRight: Number.parseFloat(style.borderRightWidth),
+                borderTop: Number.parseFloat(style.borderTopWidth),
+                borderBottom: Number.parseFloat(style.borderBottomWidth),
+                corners: [
+                    style.borderTopLeftRadius,
+                    style.borderTopRightRadius,
+                    style.borderBottomRightRadius,
+                    style.borderBottomLeftRadius,
+                ].map(Number.parseFloat),
+            };
+        }),
+    );
+    expect(styles.map((segment) => segment.height)).toEqual([32, 32, 32, 32]);
+    const radius = styles[0].corners[0];
+    expect(radius).toBeGreaterThan(0);
+    expect(styles.map((segment) => segment.corners)).toEqual([
+        [radius, 0, 0, radius],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, radius, radius, 0],
+    ]);
+    for (const [index, segment] of styles.entries()) {
+        expect(segment.top).toBe(styles[0].top);
+        expect(segment.borderLeft).toBe(index === 0 ? 1 : 0);
+        expect(segment.borderRight).toBe(1);
+        expect(segment.borderTop).toBe(1);
+        expect(segment.borderBottom).toBe(1);
+        if (index > 0)
+            expect(
+                Math.abs(segment.left - styles[index - 1].right),
+            ).toBeLessThanOrEqual(0.5);
+    }
+}
+
 async function editTextFilter(
     page: Page,
     module: Locator,
@@ -128,22 +212,28 @@ async function expectGridLayout(
     module: Locator,
     hasMetrics: boolean,
 ) {
+    await expectInterLoaded(page);
+    await expectFilterChipStyle(page, module);
+    if (page.viewportSize()!.width >= 768)
+        await expect(
+            module.locator("th[data-pinned], td[data-pinned]"),
+        ).toHaveCount(0);
     const toolbar = module.locator('[data-slot="enterprise-toolbar"]');
     const scroll = module.locator('[data-slot="enterprise-grid-scroll"]');
     const footer = module.getByTestId("enterprise-footer");
-    const frame = module.getByTestId("enterprise-frame");
+    const grid = module.getByTestId("enterprise-grid");
     await expect(footer).toBeVisible();
     await expect(scroll).toBeVisible();
-    const [toolbarBox, scrollBox, footerBox, frameBox] = await Promise.all([
+    const [toolbarBox, scrollBox, footerBox, gridBox] = await Promise.all([
         toolbar.boundingBox(),
         scroll.boundingBox(),
         footer.boundingBox(),
-        frame.boundingBox(),
+        grid.boundingBox(),
     ]);
     expect(toolbarBox).not.toBeNull();
     expect(scrollBox).not.toBeNull();
     expect(footerBox).not.toBeNull();
-    expect(frameBox).not.toBeNull();
+    expect(gridBox).not.toBeNull();
     expect(scrollBox!.height).toBeGreaterThan(180);
     expect(scrollBox!.y).toBeGreaterThanOrEqual(
         toolbarBox!.y + toolbarBox!.height - 1,
@@ -154,19 +244,19 @@ async function expectGridLayout(
     expect(footerBox!.y + footerBox!.height).toBeLessThanOrEqual(
         page.viewportSize()!.height,
     );
-    expect(frameBox!.x).toBeGreaterThanOrEqual(0);
-    expect(frameBox!.x + frameBox!.width).toBeLessThanOrEqual(
+    expect(gridBox!.x).toBeGreaterThanOrEqual(0);
+    expect(gridBox!.x + gridBox!.width).toBeLessThanOrEqual(
         page.viewportSize()!.width,
     );
     const kpis = module.locator('[data-slot="enterprise-kpis"]');
     if (hasMetrics) {
         const kpiBox = await kpis.boundingBox();
         expect(kpiBox).not.toBeNull();
-        expect(Math.abs(kpiBox!.x - frameBox!.x)).toBeLessThan(2);
+        expect(Math.abs(kpiBox!.x - gridBox!.x)).toBeLessThan(2);
         expect(
-            Math.abs(kpiBox!.x + kpiBox!.width - frameBox!.x - frameBox!.width),
+            Math.abs(kpiBox!.x + kpiBox!.width - gridBox!.x - gridBox!.width),
         ).toBeLessThan(2);
-        expect(kpiBox!.y + kpiBox!.height).toBeLessThanOrEqual(frameBox!.y);
+        expect(kpiBox!.y + kpiBox!.height).toBeLessThanOrEqual(gridBox!.y);
     } else {
         await expect(kpis).toHaveCount(0);
     }
@@ -556,6 +646,10 @@ test("mobile object, finance and open-item grids keep scrolling inside the table
         document.documentElement.classList.add("dark");
         document.documentElement.style.colorScheme = "dark";
     });
+    await expectFilterChipStyle(
+        page,
+        page.locator('[data-module="open-items"]'),
+    );
     await capture(page, "open-items-mobile-dark");
     expect(writes).toEqual([]);
     expect(errors).toEqual([]);
