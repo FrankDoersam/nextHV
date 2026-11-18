@@ -4,7 +4,7 @@ import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 export interface WizardTab {
     value: string;
     label: string;
-    badge?: { value: string | number; variant?: BadgeProps["variant"] };
+    badge?: { value: string | number; variant?: BadgeProps["variant"]; size?: BadgeProps["size"] };
 }
 
 /** ReUI line tabs; badge is intentionally optional for each step. */
@@ -27,7 +27,7 @@ export function WizardTabsNavigation({
                     >
                         {step.label}
                         {step.badge && (
-                            <Badge variant={step.badge.variant ?? "primary-light"} size="sm">
+                            <Badge variant={step.badge.variant ?? "primary-light"} size={step.badge.size ?? "sm"}>
                                 {step.badge.value}
                             </Badge>
                         )}
