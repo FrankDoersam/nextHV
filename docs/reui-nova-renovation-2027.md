@@ -31,7 +31,7 @@ comparison of a deployed build we cannot claim pixel parity.
 - resources/js/hooks/use-file-upload.ts – original ReUI hook.
 - resources/js/components/ui/ – shared Base UI controls.
 - resources/js/modules/import-wizard-demo/ – a horizontal Stepper reference
-  at /csv-import-nova and the preserved Tabs wizard at /import-wizard-demo.
+  at /csv-import-nova.
 - resources/js/modules/renovation-demo/plan.ts – pure DAG scheduler, no React
   or Laravel data access.
 - resources/js/modules/renovation-demo/renovation-planner.tsx – Gantt, Timeline,

@@ -2,7 +2,7 @@
 
 ## Architektur
 
-Beide CSV-Import-Demoseiten verwenden dieselben zentralen ReUI-Nova-Komponenten.
+Die CSV-Import-ReUI-Demoseite unter `/csv-import-nova` verwendet zentrale ReUI-Nova-Komponenten.
 
 | Verantwortung | Speicherort |
 | --- | --- |
@@ -12,7 +12,7 @@ Beide CSV-Import-Demoseiten verwenden dieselben zentralen ReUI-Nova-Komponenten.
 | Spaltenzuordnung, Preview, Duplicate-Karten, Importplan | `resources/js/components/reui/crm-import/steps.tsx` |
 | Tabs-Navigation und Badges | `resources/js/components/reui/crm-import/wizard-tabs.tsx` |
 | CSV-Modell, Parser und Beispieldaten | `resources/js/lib/crm-import/model.ts` |
-| Zustand, Navigation, Ereignisbehandlung (ohne Styling/DOM) | `resources/js/modules/import-wizard-demo/{original-wizard,import-wizard}.tsx` |
+| Zustand, Navigation, Ereignisbehandlung (ohne Styling/DOM) | `resources/js/modules/import-wizard-demo/original-wizard.tsx` |
 
 Die bisherigen Modulpfade `upload-step.tsx`, `steps.tsx`, `import-target-select.tsx`, `wizard-tabs.tsx` und `model.ts` sind ausschließlich Kompatibilitäts-Exporte. Die zentralen Komponenten importieren keine Dateien aus dem Wizard-Modul.
 

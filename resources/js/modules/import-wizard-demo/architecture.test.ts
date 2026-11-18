@@ -7,14 +7,12 @@ const componentFile = (name: string) =>
     readFileSync(new URL("../../components/reui/crm-import/" + name, import.meta.url), "utf8");
 
 describe("CRM import presentation architecture", () => {
-    it("keeps rendering classes, DOM layout and ReUI anatomy out of both wizard controllers", () => {
-        for (const name of ["original-wizard.tsx", "import-wizard.tsx"]) {
-            const controller = moduleFile(name);
-            expect(controller).toContain("CrmImportWizardShell");
-            expect(controller).not.toContain("className=");
-            expect(controller).not.toContain("data-slot=");
-            expect(controller).not.toMatch(/<(?:Frame|Stepper|Tabs|Select|Item|Field|RadioGroup)(?:\s|>)/);
-        }
+    it("keeps rendering classes, DOM layout and ReUI anatomy out of the wizard controller", () => {
+        const controller = moduleFile("original-wizard.tsx");
+        expect(controller).toContain("CrmImportWizardShell");
+        expect(controller).not.toContain("className=");
+        expect(controller).not.toContain("data-slot=");
+        expect(controller).not.toMatch(/<(?:Frame|Stepper|Tabs|Select|Item|Field|RadioGroup)(?:\s|>)/);
     });
 
     it("only reexports shared components from the legacy module paths", () => {

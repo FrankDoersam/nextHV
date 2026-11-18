@@ -112,31 +112,6 @@ test("capture dashboard, contracts table, detail, create and edit with responsiv
     await page.getByRole("tab", { name: "Übersicht", exact: true }).click();
     await page.setViewportSize({ width: 1440, height: 1000 });
 
-    // ReUI Chart 4: navigation, all controls, demo notice and responsive plot.
-    await page
-        .getByRole("navigation", { name: "Hauptnavigation" })
-        .getByRole("link", { name: /^Charts(?:\s|$)/ })
-        .click();
-    await expect(page).toHaveURL(/\/charts$/);
-    const balanceChart = page.locator('[data-slot="reui-chart-4"]');
-    await expect(balanceChart).toBeVisible();
-    await expect(page.getByText("Beispieldaten · USD · keine Live-Verbindung")).toBeVisible();
-    await expect(balanceChart.locator('[data-slot="chart"]')).toBeVisible();
-    await capture("61-reui-chart-4");
-    await balanceChart.getByRole("button", { name: "Vergleich", exact: true }).click();
-    await balanceChart.getByRole("group", { name: "Zeitraum" }).getByRole("button", { name: "1M" }).click();
-    await expect(balanceChart.getByRole("button", { name: "Vergleich" })).toHaveAttribute("aria-pressed", "true");
-    await expect(balanceChart.getByRole("button", { name: "1M" })).toHaveAttribute("aria-pressed", "true");
-    await capture("62-reui-chart-4-vergleich");
-    await page.setViewportSize({ width: 390, height: 844 });
-    await capture("63-reui-chart-4-mobil");
-    await page.setViewportSize({ width: 1440, height: 1000 });
-    await page
-        .getByRole("navigation", { name: "Hauptnavigation" })
-        .getByRole("link", { name: "Übersicht", exact: true })
-        .click();
-    await expect(page.getByRole("heading", { name: "Willkommen, Browser." })).toBeVisible();
-
     await page.getByRole("link", { name: "Verträge", exact: true }).click();
     await page
         .getByRole("textbox", { name: "Verträge durchsuchen" })

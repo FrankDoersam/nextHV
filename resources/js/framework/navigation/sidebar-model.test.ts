@@ -111,19 +111,6 @@ describe("sidebar navigation model", () => {
             .flatMap((item) => flattenNavigation(item.children).map((child) => child.id))).toEqual(["denied"]);
     });
 
-    it("exposes the new standalone chart menu with an accurate breadcrumb", () => {
-        const tree = resolveNavigation(defaultNavigation([properties]), [properties]);
-        const charts = tree.find((item) => item.id === "charts");
-        expect(charts).toMatchObject({
-            to: "/charts",
-            label: "Charts",
-            badge: "Demo",
-        });
-        expect(navigationSelected(charts!, "/charts", "")).toBe(true);
-        expect(navigationPath(tree, "/charts", "").map((item) => item.label))
-            .toEqual(["Charts"]);
-    });
-
     it("exposes the timeline demo in navigation and its active breadcrumb", () => {
         const tree = resolveNavigation(defaultNavigation([properties]), [properties]);
         const timeline = tree.find((item) => item.id === "reui-timeline-demo")!;
@@ -134,7 +121,7 @@ describe("sidebar navigation model", () => {
             badge: "Demo",
         });
         expect(navigationSelected(timeline, "/reui-timeline-demo", "")).toBe(true);
-        expect(navigationSelected(timeline, "/charts", "")).toBe(false);
+        expect(navigationSelected(timeline, "/csv-import-nova", "")).toBe(false);
         expect(navigationPath(tree, "/reui-timeline-demo", "").map((item) => item.label))
             .toEqual(["Timeline"]);
     });
@@ -142,7 +129,7 @@ describe("sidebar navigation model", () => {
     it("hides forbidden resources and empty groups in all navigation surfaces", () => {
         const tree = resolveNavigation(defaultNavigation([properties]), [properties], undefined,
             () => ({ allowed: false, reason: "Kein Zugriff" }));
-        expect(tree.map((item) => item.id)).toEqual(["home", "charts", "import-wizard-demo", "reui-grid-demo", "reui-timeline-demo", "enterprise-properties-demo", "enterprise-payments-demo", "csv-import-nova", "kernsanierung-2027"]);
+        expect(tree.map((item) => item.id)).toEqual(["home", "reui-timeline-demo", "enterprise-properties-demo", "enterprise-payments-demo", "csv-import-nova", "kernsanierung-2027"]);
     });
 
     it("does not expose a resource when list access is denied even if another action is allowed", () => {
@@ -171,7 +158,7 @@ describe("sidebar navigation model", () => {
         const hidden = defaultNavigation([properties], {
             Stammdaten: { visible: () => false },
         });
-        expect(resolveNavigation(hidden, [properties]).map((node) => node.id)).toEqual(["home", "charts", "import-wizard-demo", "reui-grid-demo", "reui-timeline-demo", "enterprise-properties-demo", "enterprise-payments-demo", "csv-import-nova", "kernsanierung-2027"]);
+        expect(resolveNavigation(hidden, [properties]).map((node) => node.id)).toEqual(["home", "reui-timeline-demo", "enterprise-properties-demo", "enterprise-payments-demo", "csv-import-nova", "kernsanierung-2027"]);
     });
 
     it("does not turn a stale view link into unrestricted navigation", () => {
