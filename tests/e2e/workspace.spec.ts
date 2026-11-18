@@ -25,7 +25,7 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     ).toBeVisible();
     await page
         .getByRole("navigation", { name: "Hauptnavigation", exact: true })
-        .getByRole("link", { name: /^Objekte(?:\s|$)/ })
+        .locator('a[href="/properties"]')
         .click();
     await page
         .getByRole("textbox", { name: "Objekte durchsuchen" })
@@ -42,7 +42,7 @@ test("login, server search, lazy property tabs and wizard persistence", async ({
     ).toBeVisible();
     await page
         .getByRole("navigation", { name: "Hauptnavigation", exact: true })
-        .getByRole("link", { name: /^Objekte(?:\s|$)/ })
+        .locator('a[href="/properties"]')
         .click();
     await page
         .getByRole("button", { name: "Objekt anlegen", exact: true })
