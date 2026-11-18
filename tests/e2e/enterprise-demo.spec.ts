@@ -1,4 +1,35 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import {
+    expect,
+    test as base,
+    type BrowserContext,
+    type Locator,
+    type Page,
+} from "@playwright/test";
+
+type DemoStorageState = Awaited<ReturnType<BrowserContext["storageState"]>>;
+
+// Share one login while each scenario keeps its own browser context and UI state.
+const test = base.extend<{}, { enterpriseStorageState: DemoStorageState }>({
+    enterpriseStorageState: [
+        async ({ browser }, use) => {
+            const context = await browser.newContext({
+                baseURL: process.env.E2E_URL ?? "http://127.0.0.1:8000",
+            });
+            let state: DemoStorageState;
+            try {
+                await login(await context.newPage());
+                state = await context.storageState();
+            } finally {
+                await context.close();
+            }
+            await use(state);
+        },
+        { scope: "worker" },
+    ],
+    storageState: async ({ enterpriseStorageState }, use) => {
+        await use(enterpriseStorageState);
+    },
+});
 
 test.use({
     viewport: { width: 1600, height: 1100 },
@@ -61,7 +92,6 @@ async function currencyCents(locator: Locator) {
 test("portfolio totals survive group paging and collapse while filters clear selection", async ({
     page,
 }) => {
-    await login(page);
     const { writes, errors } = observeDemo(page);
     await page.goto("/enterprise-demo/objekte-einheiten");
     await expect(
@@ -88,8 +118,11 @@ test("portfolio totals survive group paging and collapse while filters clear sel
     ).toBeVisible();
     await expect(module.getByTestId("total-filtered-rent")).toHaveText(
         rentTotal,
+        { useInnerText: true },
     );
-    await expect(module.getByTestId("metric-rent")).toHaveText(rentMetric);
+    await expect(module.getByTestId("metric-rent")).toHaveText(rentMetric, {
+        useInnerText: true,
+    });
     await module
         .getByRole("button", { name: "Vorherige Seite", exact: true })
         .click();
@@ -112,12 +145,14 @@ test("portfolio totals survive group paging and collapse while filters clear sel
     await expect(collapsedGroup).toHaveAttribute("aria-expanded", "false");
     await expect(collapsedGroup.locator("xpath=ancestor::tr")).toHaveText(
         groupTotal,
+        { useInnerText: true },
     );
     await expect(
         module.getByRole("button", { name: / – Details öffnen$/ }),
     ).toHaveCount(0);
     await expect(module.getByTestId("total-filtered-rent")).toHaveText(
         rentTotal,
+        { useInnerText: true },
     );
     await collapsedGroup.click();
 
@@ -170,6 +205,7 @@ test("portfolio totals survive group paging and collapse while filters clear sel
     ).toBeVisible();
     await expect(module.getByTestId("total-filtered-rent")).toHaveText(
         rentTotal,
+        { useInnerText: true },
     );
 
     await page
@@ -196,7 +232,6 @@ test("portfolio totals survive group paging and collapse while filters clear sel
 test("a simulated payment updates the detail history and full balance without a business API write", async ({
     page,
 }) => {
-    await login(page);
     const { writes, errors } = observeDemo(page);
     await page.goto("/enterprise-demo/zahlungen-op");
     await expect(
@@ -276,7 +311,6 @@ test("mobile payment controls fit the viewport with internal table scrolling in 
     page,
 }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await login(page);
     const { writes, errors } = observeDemo(page);
     await page.goto("/enterprise-demo/zahlungen-op");
     await expect(
