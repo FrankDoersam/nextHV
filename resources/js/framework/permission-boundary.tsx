@@ -1,3 +1,4 @@
+import { parseRecordId } from "@/framework/record-id";
 import type { ReactNode } from "react";
 import { useParams } from "react-router";
 import { EmptyState, Loading } from "@/components/blocks/content";
@@ -43,7 +44,7 @@ export function ResourceRouteBoundary({
         <PermissionBoundary
             resource={resource}
             action={detail ? "view" : "list"}
-            row={detail && id ? { id: Number(id) } : undefined}
+            row={detail && id ? { id: parseRecordId(id) ?? "" } : undefined}
         >
             {children}
         </PermissionBoundary>

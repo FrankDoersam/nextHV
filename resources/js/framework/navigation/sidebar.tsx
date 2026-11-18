@@ -1,3 +1,4 @@
+import type { RecordId } from "@/framework/record-id";
 import { Collapsible } from "@base-ui/react/collapsible";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, FolderClosed } from "lucide-react";
@@ -37,7 +38,7 @@ function storedExpansion(key: string): Expansion {
 }
 
 /** One disclosure state is shared by desktop and mobile, scoped to the signed-in user. */
-export function useSidebarExpansion(items: NavigationItem[], userId?: number) {
+export function useSidebarExpansion(items: NavigationItem[], userId?: RecordId) {
     const { pathname, search } = useLocation();
     const key = `nexthv.sidebar.expanded.v1.${userId ?? "current"}`;
     const [overrides, setOverrides] = useState<Expansion>(() =>

@@ -1,3 +1,4 @@
+import type { RecordId } from "@/framework/record-id";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { History } from "lucide-react";
 import { request } from "@/framework/data/http";
@@ -19,7 +20,7 @@ import { ErrorState, Loading, EmptyState, SectionCard } from "./content";
 import type { LazyTab } from "./lazy-tabs";
 interface AuditPage {
     data: {
-        id: number;
+        id: RecordId;
         event: string;
         actor: string;
         created_at: string;
@@ -40,7 +41,7 @@ export function AuditTimeline({
     id,
 }: {
     resource: ResourceDefinition;
-    id: number;
+    id: RecordId;
 }) {
     const { t, locale } = useI18n();
     const query = useInfiniteQuery({
@@ -164,7 +165,7 @@ export function AuditTimeline({
     );
 }
 /** A single opt-in adds a lazy tab to any resource detail page. */
-export function auditTabs(resource: ResourceDefinition, id: number): LazyTab[] {
+export function auditTabs(resource: ResourceDefinition, id: RecordId): LazyTab[] {
     return resource.features?.audit
         ? [
               {

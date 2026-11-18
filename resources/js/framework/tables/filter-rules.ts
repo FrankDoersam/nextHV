@@ -1,3 +1,4 @@
+import { parseRecordId } from "@/framework/record-id";
 import type { Filter, FilterDefinition, ResourceDefinition } from "../types";
 export type GridFilterOperator = NonNullable<
     FilterDefinition["operators"]
@@ -99,8 +100,7 @@ export function sanitizeGridFilters(
                           return false;
                       if (definition.kind === "relation")
                           return (
-                              /^[1-9]\d*$/.test(v) &&
-                              Number.isSafeInteger(Number(v))
+                              parseRecordId(v) !== undefined
                           );
                       if (definition.kind === "number")
                           return (
@@ -151,7 +151,7 @@ export function compileGridFilters(
         if (!rule.values.length) return [];
         const kind = definitions.find((d) => d.field === field)?.kind;
         const values = rule.values.map((v) =>
-            kind === "number" || kind === "relation" ? Number(v) : v,
+            kind === "number" ? Number(v) : kind === "relation" ? parseRecordId(v) : v,
         );
         const pattern = ["contains", "not contains"].includes(rule.operator);
         return [

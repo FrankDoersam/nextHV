@@ -1,3 +1,4 @@
+import { parseRecordId, type RecordId } from "@/framework/record-id";
 import { useQuery } from "@tanstack/react-query";
 import type { RecordData, ResourceDefinition } from "../types";
 import type { TableQueryOptions } from "../tables/table-contract";
@@ -8,15 +9,15 @@ import { resourceKey, resourceListParams } from "./resource-key";
 /** Bounded batch reader; no N+1 requests and no cross-provider detail-cache reuse. */
 export function useResourceMany(
     resource: ResourceDefinition,
-    ids: number[],
+    ids: RecordId[],
     options: TableQueryOptions &
         Pick<ListParams, "includes" | "aggregates"> = {},
 ) {
     const orderedIds = [...new Set(ids)];
     const invalid =
-        orderedIds.some((id) => !Number.isSafeInteger(id) || id <= 0) ||
+        orderedIds.some((id) => parseRecordId(id) === undefined) ||
         orderedIds.length > 1000;
-    const canonical = [...orderedIds].sort((a, b) => a - b);
+    const canonical = [...orderedIds].sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }));
     const params = resourceListParams(resource, {
         includes: options.includes,
         aggregates: options.aggregates,
@@ -37,7 +38,7 @@ export function useResourceMany(
                     "Es sind maximal 1.000 gültige Datensatz-IDs erlaubt.",
                 );
             const provider = resolveDataProvider(resource);
-            const records = new Map<number, RecordData>();
+            const records = new Map<RecordId, RecordData>();
             for (let index = 0; index < canonical.length; index += 100) {
                 signal.throwIfAborted();
                 const batch = canonical.slice(index, index + 100);

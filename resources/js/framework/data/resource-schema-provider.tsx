@@ -1,3 +1,4 @@
+import type { RecordId } from "@/framework/record-id";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { ErrorState, Loading } from "@/components/blocks/content";
@@ -12,7 +13,7 @@ export function ResourceSchemaProvider({
     children,
 }: {
     resources: ResourceDefinition[];
-    userId: number;
+    userId: RecordId;
     children: ReactNode;
 }) {
     const schema = useQuery({

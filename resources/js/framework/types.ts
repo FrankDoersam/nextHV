@@ -1,3 +1,4 @@
+import type { RecordId } from "@/framework/record-id";
 import type { KeyValueItem } from "@/components/blocks/key-value-card";
 import type { NavigationItemDefinition } from "./navigation/sidebar-model";
 import type {
@@ -12,7 +13,7 @@ import type { ReactNode } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { ResourceAction } from "./actions";
 export type RecordData = {
-    id: number;
+    id: RecordId;
     updated_at: string;
     [key: string]: unknown;
 };
@@ -432,7 +433,7 @@ export interface FormRequest {
     fields?: string[];
     context?: {
         resource: string;
-        id: number;
+        id: RecordId;
         field: string;
         mode?: "locked" | "prefill";
     };

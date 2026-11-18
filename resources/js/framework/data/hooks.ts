@@ -1,3 +1,4 @@
+import { parseRecordId, type RecordId } from "@/framework/record-id";
 import { getResource } from "@/modules/registry";
 import { patchRecord } from "./record-cache";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -55,15 +56,15 @@ export function useCollectionSummary(
         enabled: enabled && !!resource.summary,
     });
 }
-export function useResource(resource: ResourceDefinition, id: number) {
+export function useResource(resource: ResourceDefinition, id: RecordId) {
     return useQuery({
         queryKey: [...resourceKey(resource), "detail", id],
         queryFn: ({ signal }) =>
             resolveDataProvider(resource).one(resource, id, signal),
-        enabled: Number.isFinite(id) && id > 0,
+        enabled: parseRecordId(id) !== undefined,
     });
 }
-export function useOverview(id?: number) {
+export function useOverview(id?: RecordId) {
     return useQuery({
         queryKey: ["overview", id],
         queryFn: ({ signal }) => dataProvider.overview(id, signal),
@@ -129,15 +130,16 @@ export function useSaveRecord(resource: ResourceDefinition) {
         const countResources = new Map([[resource.name, resource]]);
         const parents = new Map<
             string,
-            { resource: ResourceDefinition; id: number }
+            { resource: ResourceDefinition; id: RecordId }
         >();
         for (const field of resource.fields) {
             if (field.kind !== "relation" || !field.resource) continue;
-            for (const id of new Set([
+            for (const value of new Set([
                 saved[field.name],
                 previous?.[field.name],
             ])) {
-                if (typeof id !== "number" || id <= 0) continue;
+                const id = parseRecordId(value);
+                if (id === undefined) continue;
                 countResources.set(field.resource, getResource(field.resource));
                 const cached = client
                     .getQueriesData({
@@ -145,7 +147,7 @@ export function useSaveRecord(resource: ResourceDefinition) {
                     })
                     .some(([, value]) => {
                         const entry = value as
-                            | { id?: number; data?: { id: number }[] }
+                            | { id?: RecordId; data?: { id: RecordId }[] }
                             | undefined;
                         return (
                             entry?.id === id ||

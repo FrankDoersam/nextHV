@@ -1,3 +1,4 @@
+import { parseRecordId } from "@/framework/record-id";
 import { auditTabs } from "@/components/blocks/audit-timeline";
 import { lazy, Suspense } from "react";
 import { useParams } from "react-router";
@@ -18,7 +19,7 @@ const ContractOverview = lazy(
 );
 export default function ContractDetailPage() {
     const { id } = useParams();
-    const result = useResource(contracts, Number(id));
+    const result = useResource(contracts, parseRecordId(id) ?? "");
     const workbench = useWorkbench();
     if (result.isPending) return <Loading />;
     if (result.error)

@@ -1,0 +1,131 @@
+{
+  "code": "housing-provider-confirmation-residential",
+  "name": "Wohnungsgeberbestätigung nach § 19 BMG",
+  "description": "Kompakte Wohnungsgeberbestätigung nach § 19 Abs. 3 BMG im neutralen Business-Layout mit editor-sichtbaren Key-Value-Tabellen und einem regulären Signaturblock.",
+  "documentType": "letter",
+  "contractTypes": ["residential_lease", "mixed_lease"],
+  "mainContractOnly": true,
+  "filenamePattern": "Wohnungsgeberbestaetigung_{{ contract.number }}.pdf",
+  "categoryPath": ["Mietvertragsakte", "Mietvertrag"],
+  "title": "Wohnungsgeberbestätigung nach § 19 BMG",
+  "subtitle": null,
+  "isDefault": true,
+  "isActive": true,
+  "sortOrder": 50,
+  "inputDefinitions": [
+    {
+      "key": "housing.ownerName",
+      "label": "Eigentümer, falls abweichend",
+      "type": "text",
+      "group": "Eigentümer",
+      "required": false,
+      "placeholder": "Nur wenn Wohnungsgeber und Eigentümer nicht identisch sind",
+      "helpText": "Nach § 19 Abs. 3 BMG ist bei abweichendem Wohnungsgeber zusätzlich der Name des Eigentümers anzugeben."
+    }
+  ],
+  "style": {
+    "engine": "tiptap-fpdf",
+    "editorSchemaVersion": 15,
+    "reportWorkspaceVersion": 15,
+    "pageSize": "A4",
+    "orientation": "portrait",
+    "headerPreset": "none",
+    "marginTop": 18,
+    "marginRight": 20,
+    "marginBottom": 17,
+    "marginLeft": 20,
+    "fontSize": 9.6,
+    "lineHeight": 4.45,
+    "paragraphGap": 1.15,
+    "emptyParagraphHeight": 4.2,
+    "h1FontSize": 17,
+    "h1LineHeight": 6.5,
+    "h1GapBefore": 0,
+    "h1GapAfter": 3.5,
+    "h2FontSize": 10.7,
+    "h2LineHeight": 5,
+    "h2GapBefore": 4,
+    "h2GapAfter": 1.2,
+    "headingTreatment": "editorial",
+    "headingTextColor": "20282C",
+    "headingAccentColor": "657078",
+    "headingRuleColor": "D8DDDF",
+    "horizontalRuleColor": "D8DDDF",
+    "tableGap": 2,
+    "tableHeaderFill": "F3F4F2",
+    "tableHeaderTextColor": "30383C",
+    "tableBodyTextColor": "252C30",
+    "tableBorderColor": "D8DDDF",
+    "tableBorderWidth": 0.12,
+    "tableCellPaddingX": 2.6,
+    "tableCellPaddingY": 1.9,
+    "tableMinRowHeight": 7.6,
+    "tableHeaderTextAlign": "L",
+    "tableBodyTextAlign": "L",
+    "tableAlternateRows": false,
+    "tableRowAlternateFill": "FFFFFF",
+    "signatureSingleWidth": 82,
+    "signatureGapBefore": 6,
+    "signatureRuleColor": "6E777C",
+    "signatureTextColor": "5B6469",
+    "signaturePlaceDateColor": "30383C",
+    "footerTextColor": "737B7F",
+    "preserveSourcePageBreaks": false,
+    "optionalPlaceholders": ["inputs.housing.ownerName"]
+  },
+  "editorBlocks": [
+    {"type": "documentFormat", "attrs": {"fontFamily": "Helvetica", "fontSize": 9.6}},
+    {"type": "pageHeader", "attrs": {"align": "right", "fontFamily": "Helvetica", "fontSize": 7.1}, "content": [{"type": "text", "text": "WOHNUNGSGEBERBESTÄTIGUNG · § 19 BMG"}]},
+    {"type": "heading", "attrs": {"level": 1}, "content": [{"type": "text", "text": "Wohnungsgeberbestätigung"}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Bestätigung des Einzugs nach § 19 Abs. 3 Bundesmeldegesetz (BMG)"}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Vertragsreferenz "}, {"type": "variable", "attrs": {"path": "contract.number", "label": "Vertragsnummer"}}]},
+
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "Wohnungsgeber und Eigentümer"}]},
+    {"type": "table", "content": [
+      {"type": "tableRow", "content": [
+        {"type": "tableHeader", "attrs": {"colspan": 1, "rowspan": 1, "colwidth": [205]}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Wohnungsgeber"}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1, "colwidth": [415]}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "organization.name", "label": "Wohnungsgeber"}}]}]}
+      ]},
+      {"type": "tableRow", "content": [
+        {"type": "tableHeader", "attrs": {"colspan": 1, "rowspan": 1, "colwidth": [205]}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Anschrift"}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1, "colwidth": [415]}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "organization.address", "label": "Anschrift Wohnungsgeber"}}]}]}
+      ]},
+      {"type": "tableRow", "content": [
+        {"type": "tableHeader", "attrs": {"colspan": 1, "rowspan": 1, "colwidth": [205]}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Eigentümer, falls abweichend"}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1, "colwidth": [415]}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "inputs.housing.ownerName", "label": "Eigentümer"}}]}]}
+      ]}
+    ]},
+
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "Wohnung und Einzug"}]},
+    {"type": "table", "content": [
+      {"type": "tableRow", "content": [
+        {"type": "tableHeader", "attrs": {"colspan": 1, "rowspan": 1, "colwidth": [205]}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Anschrift der Wohnung"}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1, "colwidth": [415]}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "property.fullAddress", "label": "Anschrift Wohnung"}}]}]}
+      ]},
+      {"type": "tableRow", "content": [
+        {"type": "tableHeader", "attrs": {"colspan": 1, "rowspan": 1, "colwidth": [205]}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Einheit"}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1, "colwidth": [415]}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "unit.label", "label": "Einheit"}}]}]}
+      ]},
+      {"type": "tableRow", "content": [
+        {"type": "tableHeader", "attrs": {"colspan": 1, "rowspan": 1, "colwidth": [205]}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Einzugsdatum"}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1, "colwidth": [415]}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "contract.startsOn", "label": "Einzugsdatum"}}]}]}
+      ]}
+    ]},
+
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "Einziehende Personen"}]},
+    {"type": "table", "content": [
+      {"type": "tableRow", "content": [
+        {"type": "tableHeader", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Vor- und Familienname"}]}]}
+      ]},
+      {"type": "tableRow", "content": [
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "tenants.signatureNames", "label": "Vor- und Familienname"}}]}]}
+      ]}
+    ]},
+
+    {"type": "paragraph", "content": []},
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "Bestätigung"}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Hiermit wird bestätigt, dass die vorstehend genannten Personen zum angegebenen Datum in die bezeichnete Wohnung eingezogen sind."}]},
+    {"type": "signatureBlock", "attrs": {"layout": "closing", "compact": false, "locationPath": "organization.city", "datePath": "today.date", "placeDateLabel": "Ort, Datum", "leftEnabled": true, "rightEnabled": false, "leftLabel": "Unterschrift Wohnungsgeber / beauftragte Person", "rightLabel": "", "leftNamePath": "organization.signatureName", "rightNamePath": ""}},
+    {"type": "pageFooter", "attrs": {"align": "left", "fontFamily": "Helvetica", "fontSize": 6.7, "pageNumbers": true, "pageNumberFormat": "Seite {pageNo} / {pageCount}", "pageNumberAlign": "right", "pageNumberFontSize": 6.7}, "content": [{"type": "text", "text": "Wohnungsgeberbestätigung · § 19 BMG"}]}
+  ]
+}

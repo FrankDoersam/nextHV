@@ -1,3 +1,4 @@
+import { parseRecordId } from "@/framework/record-id";
 import { ChoicePicker } from "@/components/fields/choice-picker";
 import { RelationPicker } from "@/components/fields/entity-picker";
 import type { FilterDefinition } from "../types";
@@ -57,9 +58,9 @@ export function DirectFilters({
                                 creatable={false}
                                 value={
                                     multiple
-                                        ? selected.map(Number)
+                                        ? selected.map(parseRecordId)
                                         : selected[0]
-                                          ? Number(selected[0])
+                                          ? parseRecordId(selected[0])
                                           : null
                                 }
                             />

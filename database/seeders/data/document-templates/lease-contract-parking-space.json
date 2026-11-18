@@ -1,0 +1,180 @@
+{
+  "code": "lease-contract-parking-space",
+  "name": "Mietvertrag über einen Kfz-Stellplatz",
+  "description": "Juristisch überarbeiteter, eigenständiger Stellplatzmietvertrag mit editierbaren Tabellen, sichtbarer Kopf- und Fußzeile sowie gemeinsamem Signaturblock.",
+  "documentType": "lease_contract",
+  "contractTypes": ["parking_lease"],
+  "mainContractOnly": false,
+  "filenamePattern": "Mietvertrag_Stellplatz_{{ contract.number }}.pdf",
+  "categoryPath": ["Mietvertragsakte", "Mietvertrag"],
+  "title": "Mietvertrag über einen Kfz-Stellplatz",
+  "subtitle": null,
+  "isDefault": true,
+  "isActive": true,
+  "sortOrder": 21,
+  "inputDefinitions": [
+    {
+      "key": "parking.otherAgreement",
+      "label": "Sonstige Vereinbarung",
+      "type": "textarea",
+      "group": "Vereinbarung",
+      "required": false,
+      "defaultValue": "Keine zusätzliche Vereinbarung.",
+      "placeholder": "Zum Beispiel: Montage eines Boden- oder Radstoppers genehmigt; fachgerechte Befestigung; Rückbau bei Vertragsende, sofern bei Rückgabe nichts anderes vereinbart wird."
+    }
+  ],
+  "style": {
+    "engine": "tiptap-fpdf",
+    "editorSchemaVersion": 14,
+    "reportWorkspaceVersion": 14,
+    "pageSize": "A4",
+    "orientation": "portrait",
+    "headerPreset": "none",
+    "marginLeft": 20,
+    "marginRight": 20,
+    "marginTop": 18,
+    "marginBottom": 17,
+    "fontSize": 9.2,
+    "lineHeight": 4.15,
+    "paragraphGap": 0.9,
+    "emptyParagraphHeight": 3,
+    "h1FontSize": 16,
+    "h1LineHeight": 6.1,
+    "h1GapBefore": 0,
+    "h1GapAfter": 3,
+    "h2FontSize": 10.2,
+    "h2LineHeight": 4.7,
+    "h2GapBefore": 3.1,
+    "h2GapAfter": 1,
+    "h3FontSize": 9.4,
+    "h3LineHeight": 4.3,
+    "h3GapBefore": 2.2,
+    "h3GapAfter": 0.7,
+    "headingTreatment": "editorial",
+    "headingTextColor": "1F2D36",
+    "headingAccentColor": "54778C",
+    "headingRuleColor": "D9E2E7",
+    "horizontalRuleColor": "D9E2E7",
+    "horizontalRuleGapBefore": 1.3,
+    "horizontalRuleGapAfter": 2.1,
+    "horizontalRuleLineWidth": 0.14,
+    "tableGap": 1.7,
+    "tableHeaderFill": "F1F5F7",
+    "tableHeaderTextColor": "263740",
+    "tableBodyTextColor": "303B42",
+    "tableBorderColor": "D3DDE2",
+    "tableBorderWidth": 0.12,
+    "tableCellPaddingX": 2.2,
+    "tableCellPaddingY": 1.6,
+    "tableMinRowHeight": 7,
+    "footerTextColor": "6F7A80",
+    "preserveSourcePageBreaks": false,
+    "optionalPlaceholders": ["inputs.parking.otherAgreement"]
+  },
+  "editorBlocks": [
+    {"type": "documentFormat", "attrs": {"fontFamily": "Helvetica", "fontSize": 9.2}},
+    {"type": "pageHeader", "attrs": {"align": "right", "fontFamily": "Helvetica", "fontSize": 7.2}, "content": [{"type": "text", "text": "MIETVERTRAG · KFZ-STELLPLATZ"}]},
+    {"type": "heading", "attrs": {"level": 1}, "content": [{"type": "text", "text": "Mietvertrag über einen Kfz-Stellplatz"}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Vertrag "}, {"type": "variable", "attrs": {"path": "contract.number", "label": "Vertragsnummer"}}]},
+    {"type": "table", "content": [
+      {"type": "tableRow", "content": [
+        {"type": "tableHeader", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Vermieter"}]}]},
+        {"type": "tableHeader", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Mieter"}]}]}
+      ]},
+      {"type": "tableRow", "content": [
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "organization.signatureName", "label": "Vermieter"}}, {"type": "hardBreak"}, {"type": "variable", "attrs": {"path": "organization.address", "label": "Vermieteranschrift"}}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "tenants.all", "label": "Mieter"}}]}]}
+      ]}
+    ]},
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "§ 1 Mietobjekt"}]},
+    {"type": "table", "content": [
+      {"type": "tableRow", "content": [
+        {"type": "tableHeader", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Angabe"}]}]},
+        {"type": "tableHeader", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Vertragsobjekt"}]}]}
+      ]},
+      {"type": "tableRow", "content": [
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Art"}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Kfz-Stellplatz"}]}]}
+      ]},
+      {"type": "tableRow", "content": [
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Lage / Nummer"}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "unit.label", "label": "Mietobjekt"}}]}]}
+      ]},
+      {"type": "tableRow", "content": [
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Anschrift"}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "property.fullAddress", "label": "Objektanschrift"}}]}]}
+      ]}
+    ]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Vermietet wird ausschließlich der vorstehend bezeichnete Kfz-Stellplatz einschließlich der für seine vertragsgemäße Nutzung vorgesehenen Zufahrt und Zugangsmöglichkeit. Weitere Flächen, Einrichtungen oder ausschließliche Nutzungsrechte sind nur mitvermietet, wenn sie ausdrücklich vereinbart sind."}]},
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "§ 2 Nutzung und Gebrauchsüberlassung"}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Der Stellplatz darf zum Abstellen eines zugelassenen beziehungsweise betriebsbereiten Kraftfahrzeugs und für damit typischerweise verbundene kurzfristige Handlungen genutzt werden. Eine Nutzung als Lager-, Werkstatt-, Wasch-, Verkaufs- oder Aufenthaltsfläche ist nicht gestattet, soweit nicht ausdrücklich etwas anderes vereinbart ist. Zufahrten, Fahrgassen, Rettungswege und Sicherheitsbereiche sind freizuhalten."}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Die Gebrauchsüberlassung an Dritte, insbesondere eine Untervermietung, bedarf nach Maßgabe des § 540 BGB grundsätzlich der vorherigen Erlaubnis des Vermieters. Eine bloß vorübergehende Nutzung des abgestellten Fahrzeugs oder Stellplatzes durch Haushaltsangehörige oder Besucher bleibt im Rahmen des vertragsgemäßen Gebrauchs möglich, solange der Mieter sein eigenes Gebrauchsrecht nicht dauerhaft aufgibt und keine sonstigen berechtigten Interessen entgegenstehen."}]},
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "§ 3 Mietzeit, Mindestbindung und Kündigung"}]},
+    {"type": "table", "content": [
+      {"type": "tableRow", "content": [
+        {"type": "tableHeader", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Regelung"}]}]},
+        {"type": "tableHeader", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Vereinbart"}]}]}
+      ]},
+      {"type": "tableRow", "content": [
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Vertragsbeginn"}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "contract.startsOn", "label": "Vertragsbeginn"}}]}]}
+      ]},
+      {"type": "tableRow", "content": [
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Laufzeit"}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "contract.termTypeLabel", "label": "Laufzeit"}}]}]}
+      ]},
+      {"type": "tableRow", "content": [
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Mindestbindung"}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "contract.minimumMonths", "label": "Mindestbindung Monate"}}, {"type": "text", "text": " Monate"}]}]}
+      ]},
+      {"type": "tableRow", "content": [
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Ordentliche Kündigung"}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "contract.noticePeriodLabel", "label": "Kündigungsfrist"}}]}]}
+      ]}
+    ]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Eine Mindestbindung von 0 Monaten bedeutet ausschließlich, dass keine zusätzliche Mindestlaufzeit vereinbart ist. Sie bedeutet nicht automatisch eine ordentliche Kündigung ohne Frist."}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Bei einem rechtlich selbstständigen, auf unbestimmte Zeit geschlossenen und nach Monaten bemessenen Stellplatzmietverhältnis richtet sich die ordentliche Kündigung, soweit keine wirksame abweichende Vereinbarung getroffen ist, nach § 580a Abs. 1 Nr. 3 BGB. Eine abweichend ausgewiesene Kündigungsfrist gilt nur, soweit sie wirksam vereinbart ist. Das Recht beider Parteien zur außerordentlichen fristlosen Kündigung aus wichtigem Grund nach § 543 BGB bleibt unberührt."}]},
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "§ 4 Miete und Zahlung"}]},
+    {"type": "table", "content": [
+      {"type": "tableRow", "content": [
+        {"type": "tableHeader", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Zahlung"}]}]},
+        {"type": "tableHeader", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Angabe"}]}]}
+      ]},
+      {"type": "tableRow", "content": [
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Stellplatzmiete monatlich"}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "rent.parking", "label": "Stellplatzmiete"}}]}]}
+      ]},
+      {"type": "tableRow", "content": [
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Kontoinhaber"}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "bank.accountHolder", "label": "Kontoinhaber"}}]}]}
+      ]},
+      {"type": "tableRow", "content": [
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "text", "text": "IBAN"}]}]},
+        {"type": "tableCell", "attrs": {"colspan": 1, "rowspan": 1}, "content": [{"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "bank.iban", "label": "IBAN"}}]}]}
+      ]}
+    ]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Die Stellplatzmiete ist aufgrund dieser vertraglichen Fälligkeitsabrede monatlich im Voraus spätestens bis zum dritten Werktag des Kalendermonats zu zahlen. Änderungen der Miete bedürfen einer wirksamen Vereinbarung oder gesetzlichen Grundlage."}]},
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "§ 5 Obhut, Mängel und Verkehrssicherheit"}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Der Mieter hat Stellplatz, Zufahrt und vorhandene Einrichtungen pfleglich zu behandeln. Schäden, Mängel oder erkennbare Gefahren sind dem Vermieter unverzüglich anzuzeigen. Veränderungen und Verschlechterungen durch vertragsgemäßen Gebrauch hat der Mieter nach § 538 BGB nicht zu vertreten. Bei einem offenen Stellplatz wird kein Schutz vor üblichen Witterungs- und Umwelteinwirkungen oder eine Bewachung des Fahrzeugs geschuldet. Gesetzliche Mängelrechte, insbesondere nach §§ 536 ff. BGB, und Ansprüche wegen Pflichtverletzungen bleiben unberührt."}]},
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "§ 6 Veränderungen, Radstopper und E-Mobilität"}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Feste Einbauten, am Boden befestigte Rad- oder Bodenstopper und sonstige Eingriffe in Boden, Bauwerk oder technische Anlagen bedürfen vor Ausführung der Zustimmung des Vermieters, soweit kein gesetzlicher Anspruch auf Erlaubnis besteht. Leitungen, Abdichtung, Entwässerung, Verkehrs- und Brandschutz dürfen nicht beeinträchtigt werden. Ein vereinbarter Rückbau ist fachgerecht auszuführen."}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Gesetzliche Ansprüche des Mieters auf Erlaubnis baulicher Veränderungen zum Laden elektrisch betriebener Fahrzeuge, insbesondere nach § 554 BGB in Verbindung mit § 578 BGB, bleiben unberührt. Planung, Genehmigungen, fachgerechte Ausführung, technische Sicherheit, Verbrauchserfassung, Kosten, eine gegebenenfalls vereinbarte Sicherheit und ein späterer Rückbau richten sich nach der konkreten Zustimmung und den gesetzlichen Vorschriften."}]},
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "§ 7 Umwelt- und Sicherheitsregeln"}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Gefährliche, explosionsgefährliche oder leicht entzündliche Stoffe dürfen nur in dem Umfang eingebracht werden, der nach den anwendbaren Vorschriften und dem üblichen Fahrzeugbetrieb zulässig ist. Austretendes Öl, Kraftstoff, Kühlmittel oder andere Betriebsstoffe sind unverzüglich einzudämmen; drohende Schäden an Boden, Bauwerk oder Umwelt sind dem Vermieter anzuzeigen. Eine Kostenpflicht des Mieters setzt die gesetzlichen Verantwortlichkeits- und Schadensersatzvoraussetzungen voraus."}]},
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "§ 8 Zugangsmittel"}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Überlassene Schlüssel, Transponder, Karten oder Fernbedienungen sind sorgfältig aufzubewahren. Verlust oder Funktionsstörungen sind unverzüglich mitzuteilen. Ersatzkosten richten sich nach den gesetzlichen Schadensersatzvoraussetzungen und den tatsächlich erforderlichen Maßnahmen. Sämtliche Zugangsmittel sind bei Vertragsende zurückzugeben."}]},
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "§ 9 Sonstige Vereinbarung"}]},
+    {"type": "paragraph", "content": [{"type": "variable", "attrs": {"path": "inputs.parking.otherAgreement", "label": "Sonstige Vereinbarung"}}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Individuell ausgehandelte Vereinbarungen haben nach § 305b BGB Vorrang vor entgegenstehenden vorformulierten Vertragsbedingungen."}]},
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "§ 10 Verhältnis zu einem Wohnraummietvertrag"}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Dieser Vertrag ist als eigenständiger Stellplatzmietvertrag ausgestaltet. Getrennte Vertragsurkunden für Wohnung und Stellplatz sprechen regelmäßig für rechtlich selbstständige Mietverhältnisse. Besondere Umstände des Einzelfalls können jedoch ergeben, dass beide Verträge nach dem Willen der Parteien eine rechtliche Einheit bilden. In diesem Fall können zwingende wohnraummietrechtliche Schutzvorschriften maßgeblich sein und eine isolierte ordentliche Beendigung nur des Stellplatzvertrags ausgeschlossen sein."}]},
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "§ 11 Rückgabe"}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Bei Vertragsende ist der Stellplatz gemäß § 546 BGB vollständig geräumt und in vertragsgemäßem Zustand zurückzugeben. Nicht übernommene Einbauten sind zu entfernen, soweit ein Rückbau gesetzlich oder wirksam vertraglich geschuldet ist. Normale Abnutzung durch vertragsgemäßen Gebrauch bleibt außer Betracht."}]},
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "§ 12 Form und Schlussbestimmungen"}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Änderungen und Ergänzungen sollen aus Beweisgründen in Textform dokumentiert werden, soweit gesetzlich keine strengere Form vorgeschrieben ist. Bei Mietverhältnissen über Grundstücke oder nicht zu Wohnzwecken vermietete Räume mit einer Laufzeit von mehr als einem Jahr sind die gesetzlichen Formfolgen, insbesondere § 578 BGB in Verbindung mit § 550 BGB, zu beachten. Gesetzlich wirksame Individualabreden bleiben unberührt."}]},
+    {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "§ 13 Verwahrung und Haftung"}]},
+    {"type": "paragraph", "content": [{"type": "text", "text": "Mit der Vermietung des Stellplatzes wird grundsätzlich keine Bewachungs- oder Verwahrungsverpflichtung für das abgestellte Fahrzeug oder darin befindliche Gegenstände übernommen. Die Haftung beider Vertragsparteien richtet sich im Übrigen nach den gesetzlichen Vorschriften; gesetzlich zwingende Ansprüche werden durch diesen Vertrag nicht ausgeschlossen oder beschränkt."}]},
+    {"type": "signatureBlock", "attrs": {"layout": "closing", "compact": true, "locationPath": "organization.city", "datePath": "today.date", "placeDateLabel": "Ort, Datum", "leftEnabled": true, "rightEnabled": true, "leftLabel": "Vermieter / Vertretung", "rightLabel": "Mieter / Mieterin", "leftNamePath": "organization.signatureName", "rightNamePath": "tenants.signatureNames"}},
+    {"type": "pageFooter", "attrs": {"align": "left", "fontFamily": "Helvetica", "fontSize": 6.8, "pageNumbers": true, "pageNumberFormat": "Seite {pageNo} / {pageCount}", "pageNumberAlign": "right", "pageNumberFontSize": 6.8}, "content": [{"type": "text", "text": "Mietvertrag Kfz-Stellplatz"}]}
+  ]
+}

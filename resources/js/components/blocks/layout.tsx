@@ -1,3 +1,4 @@
+import type { RecordId } from "@/framework/record-id";
 import { GlobalSearch } from "./global-search";
 import { useI18n } from "@/framework/i18n";
 import { usePermissionRevision } from "@/framework/permissions";
@@ -53,7 +54,7 @@ type AppShellProps = {
     resources: ResourceDefinition[];
     navigation?: NavigationItemDefinition[];
     navigationGroups?: Record<string, NavigationGroupSettings>;
-    user: { id?: number; name: string; email: string };
+    user: { id?: RecordId; name: string; email: string };
     onLogout: () => void;
     children: ReactNode;
 };

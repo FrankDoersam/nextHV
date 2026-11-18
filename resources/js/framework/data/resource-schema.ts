@@ -1,3 +1,4 @@
+import type { RecordId } from "@/framework/record-id";
 import type {
     ColumnDefinition,
     FieldDefinition,
@@ -141,7 +142,7 @@ export function parseResourceSchema(raw: unknown): ResourceSchema {
     return raw as unknown as ResourceSchema;
 }
 
-function cacheKey(userId: number) {
+function cacheKey(userId: RecordId) {
     // Vite's hashed module URL invalidates metadata when a new frontend build is deployed.
     return `${CACHE_PREFIX}${userId}:${import.meta.url}`;
 }
@@ -155,7 +156,7 @@ export function clearResourceSchemaCache() {
 }
 export async function loadResourceSchemas(
     resources: ResourceDefinition[],
-    userId: number,
+    userId: RecordId,
     signal?: AbortSignal,
 ): Promise<Record<string, ResourceSchema>> {
     try {

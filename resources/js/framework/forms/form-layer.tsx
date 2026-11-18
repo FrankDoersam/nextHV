@@ -98,7 +98,7 @@ export function FormLayer({
             if (
                 row &&
                 panel.context &&
-                Number(row[panel.context.field]) !== panel.context.id
+                String(row[panel.context.field]) !== String(panel.context.id)
             )
                 throw new Error(
                     "Dieser Datensatz gehört nicht zum übergeordneten Bezug.",

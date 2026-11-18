@@ -1,3 +1,4 @@
+import { parseRecordId } from "@/framework/record-id";
 import { auditTabs } from "@/components/blocks/audit-timeline";
 import { BooleanPropertyList } from "@/framework/forms/editable-key-value-list";
 import {
@@ -54,7 +55,7 @@ export default function DetailPage({
     resource: ResourceDefinition;
 }) {
     const { id } = useParams();
-    const result = useResource(resource, Number(id));
+    const result = useResource(resource, parseRecordId(id) ?? "");
     const w = useWorkbench();
     if (result.isPending) return <Loading />;
     if (result.error)

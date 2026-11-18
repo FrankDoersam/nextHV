@@ -1,3 +1,4 @@
+import type { RecordId } from "@/framework/record-id";
 import type {
     Filter,
     PageResult,
@@ -112,7 +113,7 @@ export const dataProvider = {
             "POST",
             signal,
         ),
-    async one(resource: ResourceDefinition, id: number, signal?: AbortSignal) {
+    async one(resource: ResourceDefinition, id: RecordId, signal?: AbortSignal) {
         const result = await this.list(
             resource,
             {
@@ -186,7 +187,7 @@ export const dataProvider = {
             })),
         };
         type ActionResponse = {
-            data: { impacted: number; result?: { data?: { ids: number[] } } };
+            data: { impacted: number; result?: { data?: { ids: RecordId[] } } };
         };
         try {
             return signal
@@ -252,7 +253,7 @@ export const dataProvider = {
             "POST",
             signal,
         ),
-    overview: (id?: number, signal?: AbortSignal) =>
+    overview: (id?: RecordId, signal?: AbortSignal) =>
         request<{ data: Record<string, number | null> }>(
             "/api/v1/properties/metrics/overview",
             { search: { filters: id ? [{ field: "id", value: id }] : [] } },

@@ -1,3 +1,4 @@
+import { parseRecordId, type RecordId } from "@/framework/record-id";
 import { usePermissionRevision } from "@/framework/permissions";
 import { useState } from "react";
 import { hashKey, useQuery } from "@tanstack/react-query";
@@ -84,7 +85,7 @@ export function RelationPicker({
                     .map(String),
             ),
         ].join(" · ");
-    const ids: number[] = (
+    const ids: RecordId[] = (
         props.multiple
             ? Array.isArray(props.value)
                 ? props.value
@@ -93,8 +94,8 @@ export function RelationPicker({
               ? [props.value]
               : []
     )
-        .map(Number)
-        .filter((id) => Number.isInteger(id) && id > 0);
+        .map(parseRecordId)
+        .filter((id): id is RecordId => id !== undefined);
     // One batched hydration request, independent of the current search term.
     const selected = useResourceMany(resource, ids, {
         includes,
@@ -122,7 +123,7 @@ export function RelationPicker({
         staleTime: 30_000,
         retry: false,
     });
-    const rows = new Map<number, RecordData>();
+    const rows = new Map<RecordId, RecordData>();
     if (recentSelection.scope === selectionScope)
         for (const row of recentSelection.records)
             if (ids.includes(row.id) && !selected.missingIds.includes(row.id))
@@ -153,7 +154,7 @@ export function RelationPicker({
     const commitSelection = (value: unknown, created?: RecordData) => {
         const nextIds = (
             Array.isArray(value) ? value : value == null ? [] : [value]
-        ).map(Number);
+        ).flatMap((value) => parseRecordId(value) ?? []);
         const known = new Map(rows);
         if (created) known.set(created.id, created);
         setRecentSelection({

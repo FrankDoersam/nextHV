@@ -1,3 +1,4 @@
+import type { RecordId } from "@/framework/record-id";
 import {
     DetailList,
     DynamicList,
@@ -23,7 +24,7 @@ export function OverviewMetrics({
     propertyId,
     compact = false,
 }: {
-    propertyId?: number;
+    propertyId?: RecordId;
     compact?: boolean;
 }) {
     const overview = useOverview(propertyId);

@@ -1,3 +1,4 @@
+import type { RecordId } from "@/framework/record-id";
 import { invalidatePermissions } from "./permissions";
 import { clearResourceSchemaCache } from "./data/resource-schema";
 import { AuthScreen } from "@/components/blocks/auth-screen";
@@ -13,7 +14,7 @@ import {
 } from "react";
 import { ApiError, csrf, request } from "./data/http";
 interface Identity {
-    id: number;
+    id: RecordId;
     name: string;
     email: string;
 }

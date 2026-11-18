@@ -1,3 +1,4 @@
+import { parseRecordId, type RecordId } from "@/framework/record-id";
 import type { FormRequest, Presentation } from "../types";
 import { flowPanel, type FlowState } from "../forms/flow";
 import { getFlow } from "@/modules/flows";
@@ -5,7 +6,7 @@ export interface PanelLink {
     key: string;
     resource: string;
     mode: FormRequest["mode"];
-    id?: number;
+    id?: RecordId;
     presentation: Presentation;
     wizard?: boolean;
     reduced?: boolean;
@@ -37,7 +38,7 @@ export function readPanels(search: string): PanelLink[] {
                     !["create", "edit", "view"].includes(v.mode) ||
                     !["sheet", "dialog"].includes(v.presentation) ||
                     (v.mode !== "create" &&
-                        (!Number.isSafeInteger(v.id) || v.id < 1))
+                        parseRecordId(v.id) === undefined)
                 )
                     return false;
                 if (
@@ -61,8 +62,7 @@ export function readPanels(search: string): PanelLink[] {
                         !/^[a-zA-Z_][a-zA-Z0-9_]{0,79}$/.test(
                             v.context.field,
                         ) ||
-                        !Number.isSafeInteger(v.context.id) ||
-                        v.context.id < 1)
+                        parseRecordId(v.context.id) === undefined)
                 )
                     return false;
                 keys.add(v.key);
@@ -109,7 +109,7 @@ export function readPanels(search: string): PanelLink[] {
         return [];
     }
 }
-/** Public links contain record references and display options, never UUIDs or form values. */
+/** Public links contain record references and display options only. */
 const optionNames = [
     "panel",
     "parent",
@@ -126,10 +126,11 @@ const optionNames = [
 ];
 const prefixFor = (index: number) => (index ? `p${index + 1}.` : "");
 function reference(value: string | null) {
-    const match = value?.match(/^([a-z-]+)\/([1-9]\d*)$/);
-    if (!match || !Number.isSafeInteger(Number(match[2])))
+    const match = value?.match(/^([a-z-]+)\/([a-f\d-]+)$/i);
+    const id = parseRecordId(match?.[2]);
+    if (!match || id === undefined)
         throw new Error("Ungültiger Bezug");
-    return { resource: match[1], id: Number(match[2]) };
+    return { resource: match[1], id };
 }
 function compactPanels(params: URLSearchParams): PanelLink[] {
     const panels: PanelLink[] = [];
@@ -139,7 +140,7 @@ function compactPanels(params: URLSearchParams): PanelLink[] {
         const descriptor = get("panel");
         if (!descriptor) break;
         const match = descriptor.match(
-            /^([a-z-]+)\/(new|[1-9]\d*\/(edit|view))$/,
+            /^([a-z-]+)\/(new|[\da-fA-F-]+\/(edit|view))$/,
         );
         if (!match) throw new Error("Ungültiger Formularlink");
         const parent = get("parent") ? reference(get("parent")) : undefined;
@@ -152,7 +153,7 @@ function compactPanels(params: URLSearchParams): PanelLink[] {
                     ? "sheet"
                     : ((get("layout") ?? "sheet") as Presentation),
             ...(match[2] !== "new"
-                ? { id: Number(match[2].split("/")[0]) }
+                ? { id: parseRecordId(match[2].split("/")[0]) }
                 : {}),
             ...(get("wizard") === "1" ? { wizard: true } : {}),
             ...(get("reduced") === "1" ? { reduced: true } : {}),

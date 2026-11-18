@@ -1,10 +1,11 @@
+import type { RecordId } from "@/framework/record-id";
 import type { LucideIcon } from "lucide-react";
 import { House, Hammer, FileSpreadsheet, WalletCards, History, ReceiptText } from "lucide-react";
 import type { ResourceDefinition } from "../types";
 import { access, type PermissionDecision } from "../permissions";
 
 export interface NavigationContext {
-    user?: { id?: number; name: string; email: string };
+    user?: { id?: RecordId; name: string; email: string };
     can: (resource: string, action: string) => boolean;
 }
 

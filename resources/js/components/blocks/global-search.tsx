@@ -1,3 +1,4 @@
+import type { RecordId } from "@/framework/record-id";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
@@ -17,7 +18,7 @@ type SearchGroup = {
     resource: string;
     label: string;
     total: number;
-    items: { id: number; title: string; subtitle: string; url: string }[];
+    items: { id: RecordId; title: string; subtitle: string; url: string }[];
 };
 export function GlobalSearch({
     open,

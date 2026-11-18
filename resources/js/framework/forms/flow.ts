@@ -1,9 +1,10 @@
+import { parseRecordId, type RecordId } from "@/framework/record-id";
 import type { FormRequest, Presentation, RecordData } from "../types";
 import type { PanelLink } from "../navigation/panels";
 
 export interface RecordReference {
     resource: string;
-    id: number;
+    id: RecordId;
 }
 export interface FormFlowDefinition {
     id: string;
@@ -60,8 +61,7 @@ export function flowPanel(
     if (
         state.parent &&
         (typeof state.parent.resource !== "string" ||
-            !Number.isSafeInteger(state.parent.id) ||
-            state.parent.id < 1)
+            parseRecordId(state.parent.id) === undefined)
     )
         throw new Error("Ungültiger übergeordneter Bezug.");
     const references: FlowState["records"] = {};
@@ -71,8 +71,7 @@ export function flowPanel(
             !reference ||
             !step ||
             step.resource !== reference.resource ||
-            !Number.isSafeInteger(reference.id) ||
-            reference.id < 1
+            parseRecordId(reference.id) === undefined
         )
             throw new Error("Ungültiger gespeicherter Ablauf-Bezug.");
         references[id] = { resource: reference.resource, id: reference.id };
