@@ -40,6 +40,7 @@ import {
     ChevronsUpDownIcon,
     PinOffIcon,
     Settings2Icon,
+    Layers3Icon,
 } from "lucide-react";
 
 interface DataGridColumnHeaderProps<
@@ -54,6 +55,8 @@ interface DataGridColumnHeaderProps<
     pinnable?: boolean;
     filter?: ReactNode;
     visibility?: boolean;
+    /** The resource owns grouping and its server query; this menu only requests it. */
+    grouping?: { active: boolean; onToggle: () => void };
 }
 
 // Unpinning moves a column into another header list (pinned, windowed center),
@@ -68,6 +71,7 @@ function DataGridColumnHeaderInner<TData extends object, TValue>({
     className,
     filter,
     visibility = false,
+    grouping,
 }: DataGridColumnHeaderProps<TData, TValue>) {
     const { i18n, isLoading, table, props } = useDataGrid();
     const resolvedTitle = title ?? getColumnHeaderLabel(column);
@@ -227,7 +231,8 @@ function DataGridColumnHeaderInner<TData extends object, TValue>({
         props.tableLayout?.columnsMovable ||
         (props.tableLayout?.columnsVisibility && visibility) ||
         (props.tableLayout?.columnsPinnable && canPin) ||
-        filter;
+        filter ||
+        grouping;
 
     const menuItems = useMemo(() => {
         const items: ReactNode[] = [];
@@ -281,6 +286,25 @@ function DataGridColumnHeaderInner<TData extends object, TValue>({
                     <span className="grow">{i18n.labels.sortDescending}</span>
                     {isSorted === "desc" && (
                         <CheckIcon className="text-primary size-4 opacity-100!" />
+                    )}
+                </DropdownMenuItem>,
+            );
+            hasPreviousSection = true;
+        }
+
+        if (grouping) {
+            if (hasPreviousSection)
+                items.push(<DropdownMenuSeparator key="sep-group" />);
+            items.push(
+                <DropdownMenuItem key="group" onClick={grouping.onToggle}>
+                    <Layers3Icon className="size-3.5!" />
+                    <span className="grow">
+                        {grouping.active
+                            ? "Gruppierung aufheben"
+                            : "Nach dieser Spalte gruppieren"}
+                    </span>
+                    {grouping.active && (
+                        <CheckIcon className="size-4 text-primary" />
                     )}
                 </DropdownMenuItem>,
             );
@@ -404,6 +428,7 @@ function DataGridColumnHeaderInner<TData extends object, TValue>({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         filter,
+        grouping,
         canSort,
         isSorted,
         column,
@@ -440,7 +465,10 @@ function DataGridColumnHeaderInner<TData extends object, TValue>({
                             </Button>
                         }
                     />
-                    <DropdownMenuContent className="w-40" align="start">
+                    <DropdownMenuContent
+                        className={grouping ? "w-60" : "w-40"}
+                        align="start"
+                    >
                         {menuItems}
                     </DropdownMenuContent>
                 </DropdownMenu>

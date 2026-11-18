@@ -115,8 +115,92 @@ export interface FilterDefinition {
         | "is not null"
     )[];
 }
+export type CellScalar = string | number | boolean | null;
+export type CellDraftValues = Readonly<Record<string, CellScalar>>;
+export type CellTone = "neutral" | "success" | "warning" | "danger" | "info";
+
+/** Serializable expressions only: no executable code or implicit field writes. */
+export type ColumnExpression =
+    | { type: "literal"; value: CellScalar }
+    | { type: "field"; field: string }
+    | { type: "column"; field: string }
+    | {
+          type: "operation";
+          operator:
+              | "add"
+              | "subtract"
+              | "multiply"
+              | "divide"
+              | "min"
+              | "max"
+              | "round"
+              | "coalesce";
+          values: ColumnExpression[];
+      }
+    | {
+          type: "date-part";
+          part: "year" | "month" | "day";
+          value: ColumnExpression;
+      }
+    | {
+          type: "if";
+          condition: CellCondition;
+          then: ColumnExpression;
+          otherwise: ColumnExpression;
+      };
+
+export type CellCondition =
+    | {
+          type: "compare";
+          left: ColumnExpression;
+          operator: "eq" | "ne" | "gt" | "gte" | "lt" | "lte";
+          right: ColumnExpression;
+      }
+    | { type: "all" | "any"; conditions: CellCondition[] }
+    | { type: "not"; condition: CellCondition };
+
+export interface CellColorRule {
+    when: CellCondition;
+    tone: CellTone;
+    /** A visible explanation keeps meaning available without color perception. */
+    label?: string;
+}
+
+export interface ColumnInputDefinition {
+    kind:
+        | "text"
+        | "number"
+        | "percent"
+        | "currency"
+        | "date"
+        | "choice"
+        | "boolean";
+    /** Preview drafts are the default. Record writes require an explicit commit. */
+    mode?: "draft" | "record";
+    initial?: CellScalar;
+    nullable?: boolean;
+    min?: number;
+    max?: number;
+    step?: number;
+    integer?: boolean;
+    minDate?: string;
+    maxDate?: string;
+    options?: { value: string | number; label: string }[];
+}
+
 export interface CellDefinition {
-    type: "avatar" | "avatars" | "tags" | "icon-text" | "text";
+    type:
+        | "avatar"
+        | "avatars"
+        | "tags"
+        | "icon-text"
+        | "text"
+        | "progress"
+        | "delta"
+        | "comparison"
+        | "sparkline"
+        | "boolean"
+        | "ratio";
     primary?: string | ((row: RecordData) => string);
     secondary?: string | ((row: RecordData) => string);
     image?: string;
@@ -125,11 +209,20 @@ export interface CellDefinition {
     nameField?: string;
     imageField?: string;
     max?: number;
+    /** Target/baseline for progress, delta and stacked plan/actual cells. */
+    target?: ColumnExpression;
+    targetLabel?: string;
+    valueLabel?: string;
+    deltaMode?: "absolute" | "percent";
+    positive?: "good" | "bad";
+    /** Row path containing finite numeric samples for a small trend chart. */
+    series?: string;
+    precision?: number;
 }
 export interface ColumnDefinition {
     field: string;
     label: string;
-    kind?: "currency" | "date" | "number" | "badge";
+    kind?: "currency" | "date" | "number" | "badge" | "percent" | "boolean";
     sortable?: boolean;
     size?: number | `${number}%`;
     minSize?: number;
@@ -140,6 +233,11 @@ export interface ColumnDefinition {
     defaultVisible?: boolean;
     hideable?: boolean;
     cell?: CellDefinition;
+    entity?: { id: string; label: string };
+    input?: ColumnInputDefinition;
+    computed?: ColumnExpression;
+    colors?: CellColorRule[];
+    aggregate?: "sum" | "average" | "min" | "max" | "count";
     options?: { value: string | number; label: string }[];
     /** Canonical REST sort path for a related display column (e.g. property_record.name → property.name). */
     sortField?: string;
@@ -262,6 +360,12 @@ export interface ResourceDefinition {
 }
 /** The same capabilities apply to full-page grids and embedded relations. */
 export interface CollectionOptions {
+    /** Resource-driven ReUI workspace; the existing table remains the default. */
+    renderer?: "table" | "grid";
+    /** Fetch successive native REST pages on scroll; hides the page navigator. */
+    infiniteScroll?: boolean;
+    /** Additional local calculation columns in the grid; CRUD fields stay on the resource. */
+    previewColumns?: ColumnDefinition[];
     views?: CollectionViewDefinition[] | false;
     tabIcons?: boolean;
     toolbarFilters?: string[];

@@ -26,6 +26,7 @@ export interface ChoiceOption {
     badgeTone?: "neutral" | "success" | "warning" | "danger";
     image?: string;
     disabled?: boolean;
+    group?: string;
 }
 export interface ChoicePickerProps extends AriaAttributes {
     id?: string;
@@ -43,6 +44,10 @@ export interface ChoicePickerProps extends AriaAttributes {
     onOpenChange?: (open: boolean) => void;
     loading?: boolean;
     error?: string;
+    onRetry?: () => void;
+    loadingContent?: ReactNode;
+    emptyContent?: ReactNode;
+    renderOption?: (option: ChoiceOption) => ReactNode;
     footer?: ReactNode;
     maxSelected?: number;
     /** One selection model for form inputs, toolbar menus and filter chips. */
@@ -51,6 +56,23 @@ export interface ChoicePickerProps extends AriaAttributes {
     triggerIcon?: ReactNode;
     iconOnly?: boolean;
     size?: "default" | "sm";
+}
+
+interface ChoiceGroup {
+    [key: string]: unknown;
+    label: string;
+    items: ChoiceOption[];
+}
+
+function groupChoices(options: ChoiceOption[]): ChoiceGroup[] {
+    const groups = new Map<string, ChoiceOption[]>();
+    for (const option of options) {
+        const name = option.group?.trim() ?? "";
+        const items = groups.get(name) ?? [];
+        items.push(option);
+        groups.set(name, items);
+    }
+    return [...groups].map(([label, items]) => ({ label, items }));
 }
 
 /** Searchable input, shared by enums and asynchronous entity selections. */
@@ -70,6 +92,10 @@ export function ChoicePicker({
     onOpenChange,
     loading,
     error,
+    onRetry,
+    loadingContent = "Wird gesucht …",
+    emptyContent = "Keine Ergebnisse",
+    renderOption,
     footer,
     maxSelected,
     presentation = "input",
@@ -110,15 +136,50 @@ export function ChoicePicker({
         if (onSearch || !open || !query.trim()) return options;
         const term = query.toLocaleLowerCase("de");
         return options.filter((option) =>
-            `${option.label} ${option.description ?? ""}`
+            `${option.label} ${option.description ?? ""} ${option.group ?? ""}`
                 .toLocaleLowerCase("de")
                 .includes(term),
         );
     }, [onSearch, open, options, query]);
+    const grouped = options.some((option) => !!option.group?.trim());
+    const items = useMemo(() => {
+        // Base UI restores the full item list when a single selected label is
+        // shown on open. Remote captions must never become selectable results.
+        const source = visibleOptions ?? options;
+        return grouped ? groupChoices(source) : source;
+    }, [grouped, visibleOptions, options]);
+    const filteredItems = useMemo(() => {
+        const visible = visibleOptions ?? matchingOptions;
+        return grouped ? groupChoices(visible) : visible;
+    }, [grouped, visibleOptions, matchingOptions]);
+    const renderItem = (option: ChoiceOption) => (
+        <Combobox.Item
+            key={option.value}
+            value={option}
+            disabled={
+                option.disabled ||
+                !!loading ||
+                (multiple &&
+                    !!maxSelected &&
+                    ids.length >= maxSelected &&
+                    !ids.includes(option.value))
+            }
+            className="relative flex cursor-default items-center gap-2 rounded-md py-2 pr-8 pl-2 text-sm outline-none select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50"
+        >
+            {renderOption ? (
+                renderOption(option)
+            ) : (
+                <ChoiceContent option={option} />
+            )}
+            <Combobox.ItemIndicator className="absolute right-2">
+                <Check className="size-4" />
+            </Combobox.ItemIndicator>
+        </Combobox.Item>
+    );
     return (
         <Combobox.Root<ChoiceOption, boolean>
-            items={options}
-            filteredItems={visibleOptions ?? matchingOptions}
+            items={items}
+            filteredItems={filteredItems}
             filter={null}
             multiple={multiple}
             value={multiple ? selected : (selected[0] ?? null)}
@@ -209,7 +270,8 @@ export function ChoicePicker({
                         title={caption || placeholder}
                         className={cn(
                             "h-(--control-height) min-w-0 max-w-full flex-1 shrink gap-2 text-xs/relaxed",
-                            iconOnly && "size-(--control-height) flex-none px-0",
+                            iconOnly &&
+                                "size-(--control-height) flex-none px-0",
                             size === "sm" &&
                                 "h-(--control-height-sm) gap-1.5 px-2 text-xs [&_svg]:size-3.5",
                             presentation === "chip" &&
@@ -372,19 +434,32 @@ export function ChoicePicker({
                             </div>
                         )}
                         {error ? (
-                            <p
-                                role="alert"
-                                className="p-3 text-xs text-destructive"
-                            >
-                                {error}
-                            </p>
+                            <div className="flex items-center gap-2 p-3">
+                                <p
+                                    role="alert"
+                                    className="min-w-0 flex-1 text-xs text-destructive"
+                                >
+                                    {error}
+                                </p>
+                                {onRetry && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="xs"
+                                        disabled={disabled || loading}
+                                        onClick={onRetry}
+                                    >
+                                        Erneut versuchen
+                                    </Button>
+                                )}
+                            </div>
                         ) : (
                             loading && (
                                 <p
                                     role="status"
                                     className="p-3 text-xs text-muted-foreground"
                                 >
-                                    Wird gesucht …
+                                    {loadingContent}
                                 </p>
                             )
                         )}
@@ -392,30 +467,29 @@ export function ChoicePicker({
                             className="max-h-64 scroll-py-1 overflow-y-auto overscroll-contain p-1"
                             aria-busy={loading}
                         >
-                            {(option: ChoiceOption) => (
-                                <Combobox.Item
-                                    key={option.value}
-                                    value={option}
-                                    disabled={
-                                        option.disabled ||
-                                        !!loading ||
-                                        (multiple &&
-                                            !!maxSelected &&
-                                            ids.length >= maxSelected &&
-                                            !ids.includes(option.value))
-                                    }
-                                    className="relative flex cursor-default items-center gap-2 rounded-md py-2 pr-8 pl-2 text-sm outline-none select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50"
-                                >
-                                    <ChoiceContent option={option} />
-                                    <Combobox.ItemIndicator className="absolute right-2">
-                                        <Check className="size-4" />
-                                    </Combobox.ItemIndicator>
-                                </Combobox.Item>
-                            )}
+                            {(item: ChoiceOption | ChoiceGroup) =>
+                                "items" in item ? (
+                                    <Combobox.Group
+                                        key={item.label}
+                                        items={item.items}
+                                    >
+                                        {item.label && (
+                                            <Combobox.GroupLabel className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                                                {item.label}
+                                            </Combobox.GroupLabel>
+                                        )}
+                                        <Combobox.Collection>
+                                            {renderItem}
+                                        </Combobox.Collection>
+                                    </Combobox.Group>
+                                ) : (
+                                    renderItem(item)
+                                )
+                            }
                         </Combobox.List>
                         {!loading && !error && (
                             <Combobox.Empty className="p-3 text-xs text-muted-foreground empty:hidden">
-                                Keine Ergebnisse
+                                {emptyContent}
                             </Combobox.Empty>
                         )}
                         {(footer || (multiple && !!maxSelected)) && (

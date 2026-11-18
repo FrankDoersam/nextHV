@@ -171,13 +171,16 @@ it("lets the icon rail open a parent's subtree and preserves labelled controls",
     const opener = screen.getByRole("button", {
         name: "Stammdaten Untermenü öffnen",
     });
-    expect(screen.queryByRole("button", { name: "Objekte Untermenü öffnen" })).not.toBeInTheDocument();
+    expect(
+        screen.queryByRole("button", { name: "Objekte Untermenü öffnen" }),
+    ).not.toBeInTheDocument();
 
     await userEvent.setup().click(opener);
     expect(expand).toHaveBeenCalledOnce();
     expect(
         JSON.parse(
-            window.localStorage.getItem("nexthv.sidebar.expanded.v1.42") ?? "{}",
+            window.localStorage.getItem("nexthv.sidebar.expanded.v1.42") ??
+                "{}",
         ),
     ).toHaveProperty("group:Stammdaten", true);
 });
@@ -187,7 +190,7 @@ it("uses a quiet full-row REUI selection without the old half-round left marker"
     const link = await screen.findByRole("link", { name: /Aktiv\s*7/ });
     expect(link).toHaveAttribute("aria-current", "page");
     expect(link).toHaveAttribute("data-active", "true");
-    expect(link.className).toContain("bg-primary/");
+    expect(link.className).toContain("bg-sidebar-accent");
     expect(link.className).not.toContain("border-l-2");
     expect(link.className).not.toContain("rounded-r-full");
 

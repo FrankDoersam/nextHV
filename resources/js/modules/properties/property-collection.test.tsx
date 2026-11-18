@@ -16,6 +16,7 @@ import { EditAction } from "@/framework/actions";
 import { dataProvider } from "@/framework/data/provider";
 import { readPanels } from "@/framework/navigation/panels";
 import { configurePermissions } from "@/framework/permissions";
+import { ResourceGrid } from "@/framework/tables/resource-grid";
 import type {
     PageResult,
     RecordData,
@@ -23,7 +24,6 @@ import type {
 } from "@/framework/types";
 import { WorkbenchProvider } from "@/framework/workbench";
 import { properties } from "./properties-resource";
-import { PropertyCollection } from "./property-collection";
 
 const NativeRequest = globalThis.Request;
 const clients: QueryClient[] = [];
@@ -112,7 +112,7 @@ function mount(resource = resourceFixture(), entry = "/properties") {
                 element: (
                     <QueryClientProvider client={client}>
                         <WorkbenchProvider>
-                            <PropertyCollection resource={resource} />
+                            <ResourceGrid resource={resource} />
                         </WorkbenchProvider>
                     </QueryClientProvider>
                 ),
@@ -173,7 +173,7 @@ afterEach(() => {
     configurePermissions({ enabled: false, adapter: { can: () => true } });
 });
 
-describe("property collection", () => {
+describe("properties in the shared resource grid", () => {
     it("keeps all-result metrics across pages and sends the same search and filters to rows and metrics", async () => {
         const resource = resourceFixture();
         const firstPage = Array.from({ length: 10 }, (_, index) =>
@@ -293,17 +293,18 @@ describe("property collection", () => {
             screen.queryByRole("columnheader", { name: /E-Mail/ }),
         ).not.toBeInTheDocument();
 
-        screen.getByRole("button", { name: "Spalten" }).focus();
+        screen.getByRole("combobox", { name: "Spalten" }).focus();
         await user.keyboard("{Enter}");
         await user.click(
-            await screen.findByRole("menuitemcheckbox", { name: "Straße" }),
+            await screen.findByRole("option", { name: /^Objekte/ }),
         );
         await user.click(
-            screen.getByRole("menuitemcheckbox", { name: "E-Mail" }),
+            await screen.findByRole("option", { name: /^Straße/ }),
         );
+        await user.click(screen.getByRole("option", { name: /^E-Mail/ }));
         await user.click(
-            screen.getByRole("menuitemcheckbox", {
-                name: "Grundstücksfläche · m²",
+            screen.getByRole("option", {
+                name: /^Grundstücksfläche · m²/,
             }),
         );
         await user.keyboard("{Escape}");

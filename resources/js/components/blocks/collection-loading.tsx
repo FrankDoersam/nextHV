@@ -4,20 +4,13 @@ import { CollectionKpis } from "./collection-kpis";
 import { ResponsiveTabList } from "./responsive-tab-list";
 import { Tabs } from "@/components/ui/tabs";
 import { CollectionPage, PageHeader } from "./layout";
-import type { ResourceDefinition } from "@/framework/types";
+import type { ColumnDefinition, ResourceDefinition } from "@/framework/types";
 export function GridCellSkeleton({
     kind = "text",
     dense = false,
 }: {
     dense?: boolean;
-    kind?:
-        | "text"
-        | "number"
-        | "currency"
-        | "date"
-        | "badge"
-        | "selection"
-        | "actions";
+    kind?: ColumnDefinition["kind"] | "text" | "selection" | "actions";
 }) {
     return (
         <div
@@ -36,7 +29,9 @@ export function GridCellSkeleton({
                           ? "ml-auto h-4 w-5"
                           : kind === "badge"
                             ? "h-5 w-20 rounded-full"
-                            : kind === "number" || kind === "currency"
+                            : kind === "number" ||
+                                kind === "currency" ||
+                                kind === "percent"
                               ? "ml-auto h-4 w-16"
                               : "h-4 w-3/4 max-w-48"
                 }

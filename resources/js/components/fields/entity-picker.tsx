@@ -1,10 +1,12 @@
 import { usePermissionRevision } from "@/framework/permissions";
 import { useState } from "react";
+import { hashKey, useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useDebounced, useResourceList } from "@/framework/data/hooks";
+import { useDebounced } from "@/framework/data/hooks";
 import { useResourceMany } from "@/framework/data/many";
 import { resolveDataProvider } from "@/framework/data/provider-registry";
+import { resourceKey, resourceListParams } from "@/framework/data/resource-key";
 import { recordValue } from "@/framework/tables/cell-value";
 import { can } from "@/framework/permissions";
 import type { Filter, RecordData } from "@/framework/types";
@@ -24,6 +26,7 @@ export interface EntityPickerProps extends Omit<
     | "onOpenChange"
     | "loading"
     | "error"
+    | "onRetry"
     | "footer"
 > {
     resource: string;
@@ -34,7 +37,7 @@ export interface EntityPickerProps extends Omit<
     secondaryText?: (row: RecordData) => string;
     optionMeta?: (
         row: RecordData,
-    ) => Pick<ChoiceOption, "image" | "icon" | "badge" | "badgeTone">;
+    ) => Pick<ChoiceOption, "image" | "icon" | "badge" | "badgeTone" | "group">;
 }
 export function RelationPicker({
     resource: name,
@@ -56,6 +59,11 @@ export function RelationPicker({
     const [creationError, setCreationError] = useState<string>();
     const query = useDebounced(search);
     const includes = resource.picker?.includes ?? resource.includes;
+    const selectionScope = hashKey([resourceKey(resource), includes]);
+    const [recentSelection, setRecentSelection] = useState<{
+        scope: string;
+        records: RecordData[];
+    }>({ scope: selectionScope, records: [] });
     const primary = (row: RecordData) =>
         displayText?.(row) ??
         String(
@@ -93,19 +101,37 @@ export function RelationPicker({
         aggregates: [],
         staleTime: 30_000,
     });
-    const result = useResourceList(
-        resource,
-        { query, limit: 25, filters, includes, aggregates: [] },
-        open && !props.disabled && search === query,
-        false,
-        30_000,
-    );
+    const searching = open && !props.disabled && search === query;
+    const params = resourceListParams(resource, {
+        query,
+        limit: 25,
+        filters,
+        includes,
+        aggregates: [],
+    });
+    const result = useQuery({
+        // Leaving the active key removes this observer immediately, so TanStack
+        // aborts unused requests on close or while the next term is debounced.
+        // Keep active keys compatible with record patching and invalidation.
+        queryKey: searching
+            ? [...resourceKey(resource), "list", params]
+            : [...resourceKey(resource), "picker", "idle"],
+        queryFn: ({ signal }) =>
+            resolveDataProvider(resource).list(resource, params, signal),
+        enabled: searching,
+        staleTime: 30_000,
+        retry: false,
+    });
     const rows = new Map<number, RecordData>();
-    if (!query) for (const row of selected.records) rows.set(row.id, row);
+    if (recentSelection.scope === selectionScope)
+        for (const row of recentSelection.records)
+            if (ids.includes(row.id) && !selected.missingIds.includes(row.id))
+                rows.set(row.id, row);
+    for (const row of selected.records) rows.set(row.id, row);
     for (const row of result.data?.data ?? []) rows.set(row.id, row);
-    // The selected title must remain available while a different term is searched.
-    const displayRows = !open ? selected.records : [...rows.values()];
-    const options: ChoiceOption[] = displayRows.map((row) => ({
+    const pendingSelection =
+        selected.isFetching && ids.some((id) => !rows.has(id));
+    const options: ChoiceOption[] = [...rows.values()].map((row) => ({
         ...optionMeta?.(row),
         value: row.id,
         label: primary(row),
@@ -114,32 +140,44 @@ export function RelationPicker({
     // Retain the caption during loading and for a current value that is no longer available.
     for (const id of ids)
         if (!options.some((option) => option.value === id)) {
-            const row = selected.records.find((record) => record.id === id);
             options.push({
-                ...(row ? optionMeta?.(row) : {}),
                 value: id,
-                label: row
-                    ? primary(row)
-                    : selected.isFetching
-                      ? "Wird geladen …"
+                label: selected.isFetching
+                    ? "Wird geladen …"
+                    : selected.isError
+                      ? `#${id} · Laden fehlgeschlagen`
                       : `#${id} · nicht verfügbar`,
-                description: row ? secondary(row) : undefined,
+                disabled: true,
             });
         }
+    const commitSelection = (value: unknown, created?: RecordData) => {
+        const nextIds = (
+            Array.isArray(value) ? value : value == null ? [] : [value]
+        ).map(Number);
+        const known = new Map(rows);
+        if (created) known.set(created.id, created);
+        setRecentSelection({
+            scope: selectionScope,
+            records: nextIds.flatMap((id) =>
+                known.has(id) ? [known.get(id)!] : [],
+            ),
+        });
+        props.onChange(value);
+    };
+    const searchFailed = searching && result.isError;
     return (
         <ChoicePicker
             {...props}
+            onChange={commitSelection}
             options={options}
             visibleOptions={
-                search !== query
-                    ? []
-                    : open && query
-                      ? options.filter((option) =>
-                            result.data?.data.some(
-                                (row) => row.id === option.value,
-                            ),
-                        )
-                      : undefined
+                searching
+                    ? options.filter((option) =>
+                          result.data?.data.some(
+                              (row) => row.id === option.value,
+                          ),
+                      )
+                    : []
             }
             maxSelected={maxSelected}
             onOpenChange={setOpen}
@@ -147,14 +185,22 @@ export function RelationPicker({
                 setSearch(text);
                 setCreationError(undefined);
             }}
-            loading={result.isFetching || search !== query}
+            loading={result.isFetching || search !== query || pendingSelection}
             error={
                 creationError ??
-                (result.isError
-                    ? "Suche fehlgeschlagen. Bitte erneut suchen."
+                (searchFailed
+                    ? "Suche fehlgeschlagen. Bitte erneut versuchen."
                     : selected.isError
                       ? "Auswahl konnte nicht geladen werden."
                       : undefined)
+            }
+            onRetry={
+                !creationError && (searchFailed || selected.isError)
+                    ? () => {
+                          if (searchFailed) void result.refetch();
+                          if (selected.isError) void selected.refetch();
+                      }
+                    : undefined
             }
             footer={
                 creatable &&
@@ -163,7 +209,10 @@ export function RelationPicker({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        disabled={props.disabled}
+                        disabled={
+                            props.disabled ||
+                            (props.multiple && ids.length >= maxSelected)
+                        }
                         onClick={() => {
                             workbench.openForm({
                                 resource,
@@ -179,6 +228,8 @@ export function RelationPicker({
                                             ...filters,
                                             { field: "id", value: row.id },
                                         ],
+                                        includes,
+                                        aggregates: [],
                                     });
                                     if (!matching.data.length) {
                                         setCreationError(
@@ -186,12 +237,13 @@ export function RelationPicker({
                                         );
                                         return;
                                     }
-                                    props.onChange(
+                                    commitSelection(
                                         props.multiple
                                             ? [
                                                   ...new Set([...ids, row.id]),
                                               ].slice(0, maxSelected)
                                             : row.id,
+                                        matching.data[0],
                                     );
                                 },
                             });

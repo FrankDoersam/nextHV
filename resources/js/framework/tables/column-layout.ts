@@ -19,7 +19,10 @@ export function columnLayout(
         0,
     );
     const badgeWidth = Math.ceil(longestLabel * 8.5 + 56);
-    const numeric = column.kind === "number" || column.kind === "currency";
+    const numeric =
+        column.kind === "number" ||
+        column.kind === "currency" ||
+        column.kind === "percent";
     const defaults =
         column.field === "code"
             ? [108, 88, 144, 0]
@@ -29,14 +32,16 @@ export function columnLayout(
                 ? [Math.min(200, Math.max(132, badgeWidth)), 112, 208, 0]
                 : column.kind === "date"
                   ? [144, 128, 176, 0]
-                  : numeric
-                    ? column.kind === "currency"
-                        ? [152, 128, 192, 0]
-                        : [100, 88, 132, 0]
-                    : column.field === resource.titleField ||
-                        /address|name/.test(column.field)
-                      ? [240, 192, 480, 2]
-                      : [180, 144, 400, 1];
+                  : column.kind === "boolean"
+                    ? [104, 88, 132, 0]
+                    : numeric
+                      ? column.kind === "currency"
+                          ? [152, 128, 192, 0]
+                          : [100, 88, 132, 0]
+                      : column.field === resource.titleField ||
+                          /address|name/.test(column.field)
+                        ? [240, 192, 480, 2]
+                        : [180, 144, 400, 1];
     const minSize = column.minSize ?? defaults[1],
         maxSize = Math.max(minSize, column.maxSize ?? defaults[2]);
     const requested =

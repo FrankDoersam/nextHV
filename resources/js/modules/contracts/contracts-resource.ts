@@ -23,6 +23,15 @@ export const contracts: ResourceDefinition = {
         "Entwurf anlegen, Mieter zuordnen und Konditionen erfassen. Anschließend aktivieren.",
     icon: FileText,
     navigationGroup: "Vermietung",
+    navigationItem: {
+        children: [
+            {
+                id: "rent-preview",
+                label: "Konditionen & Mietvorschau",
+                resource: "rent-conditions",
+            },
+        ],
+    },
     titleField: "code",
     bulkActions: ["delete"],
     views: [
