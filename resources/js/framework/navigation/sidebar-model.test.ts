@@ -124,10 +124,25 @@ describe("sidebar navigation model", () => {
             .toEqual(["Charts"]);
     });
 
+    it("exposes the timeline demo in navigation and its active breadcrumb", () => {
+        const tree = resolveNavigation(defaultNavigation([properties]), [properties]);
+        const timeline = tree.find((item) => item.id === "reui-timeline-demo")!;
+
+        expect(timeline).toMatchObject({
+            to: "/reui-timeline-demo",
+            label: "Timeline",
+            badge: "Demo",
+        });
+        expect(navigationSelected(timeline, "/reui-timeline-demo", "")).toBe(true);
+        expect(navigationSelected(timeline, "/charts", "")).toBe(false);
+        expect(navigationPath(tree, "/reui-timeline-demo", "").map((item) => item.label))
+            .toEqual(["Timeline"]);
+    });
+
     it("hides forbidden resources and empty groups in all navigation surfaces", () => {
         const tree = resolveNavigation(defaultNavigation([properties]), [properties], undefined,
             () => ({ allowed: false, reason: "Kein Zugriff" }));
-        expect(tree.map((item) => item.id)).toEqual(["home", "charts", "import-wizard-demo", "reui-grid-demo", "enterprise-properties-demo", "enterprise-payments-demo", "csv-import-nova", "kernsanierung-2027"]);
+        expect(tree.map((item) => item.id)).toEqual(["home", "charts", "import-wizard-demo", "reui-grid-demo", "reui-timeline-demo", "enterprise-properties-demo", "enterprise-payments-demo", "csv-import-nova", "kernsanierung-2027"]);
     });
 
     it("does not expose a resource when list access is denied even if another action is allowed", () => {
@@ -156,7 +171,7 @@ describe("sidebar navigation model", () => {
         const hidden = defaultNavigation([properties], {
             Stammdaten: { visible: () => false },
         });
-        expect(resolveNavigation(hidden, [properties]).map((node) => node.id)).toEqual(["home", "charts", "import-wizard-demo", "reui-grid-demo", "enterprise-properties-demo", "enterprise-payments-demo", "csv-import-nova", "kernsanierung-2027"]);
+        expect(resolveNavigation(hidden, [properties]).map((node) => node.id)).toEqual(["home", "charts", "import-wizard-demo", "reui-grid-demo", "reui-timeline-demo", "enterprise-properties-demo", "enterprise-payments-demo", "csv-import-nova", "kernsanierung-2027"]);
     });
 
     it("does not turn a stale view link into unrestricted navigation", () => {
